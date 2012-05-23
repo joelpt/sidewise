@@ -47,7 +47,7 @@
         font-family: 'Lobster', cursive;
         font-size: 38pt;
         border-bottom: 1px solid #999;
-        margin-bottom: 0.75em;
+        margin-bottom: 0.375em;
     }
 
     h2 {
@@ -106,6 +106,12 @@
         display: inline-block;
     }
 
+    .hintIcon {
+        position: relative;
+        top: 2px;
+        left: 0.5em;
+    }
+
     .optionsLabel::after {
         content: ': ';
     }
@@ -137,6 +143,20 @@
         background-color: #fee;
     }
 
+    div.tooltip {
+        display: none;
+        position: absolute;
+        background: -webkit-linear-gradient(top, rgba(242,245,246,1) 0%,rgba(227,234,237,1) 100%);
+        border: 1px solid #333;
+        border-radius: 3px;
+        font-size: 11px;
+        color: #000;
+        font-size: 12px;
+        font-family: 'segoe ui', 'ms sans serif', sans-serif;
+        -webkit-box-shadow: 2px 2px 11px #666;
+        padding: 0.75em;
+        width: 400px;
+    }
     </style>
 
     <script>
@@ -146,17 +166,26 @@
             var $e = $(e);
             var name = e.attributes.name.value;
             var type = $e.attr('type') || e.tagName.toLowerCase();
-
-            var label = getMessage('option_' + name);
+            var msgName = 'option_' + name;
+            var label = getMessage(msgName);
             var labelElem = $('<div class="optionsLabel">')
                 .append($('<label/>', { for: name }).text(label));
 
-            var units = getMessage('option_' + name + '_units');
+            var units = getMessage(msgName + '_units');
             if (units) {
                 var unitsElem = $('<span class="optionsUnits"/>').text(units);
             }
             else {
                 var unitsElem = $('');
+            }
+
+            var hint = getMessage(msgName + '_hint');
+            if (hint) {
+                var hintElem = $('<img/>', { class: 'hintIcon', src: '/images/help.png', title: hint })
+                    .tooltip({ position: 'top right' }).dynamic();
+            }
+            else {
+                var hintElem = $('');
             }
 
             var inputElem = $e.clone();
@@ -171,6 +200,7 @@
                     rep.append(labelElem).append(inputBox);
                     break;
                 case 'checkbox':
+                    labelElem.append(hintElem);
                     rep.append(inputElem).append(labelElem);
                     break;
                 case 'button':
@@ -350,6 +380,7 @@
 
             <h2 i18n="optionsHeadingSidebar"></h2>
             <input type="checkbox" name="openSidebarOnStartup"/>
+            <input type="checkbox" name="keepSidebarOnTop"/>
             <select name="dockState">
                 <option value="left" i18n="option_dockState_left"/>
                 <option value="right" i18n="option_dockState_right"/>
