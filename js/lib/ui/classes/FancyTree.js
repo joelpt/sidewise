@@ -551,7 +551,7 @@ FancyTree.prototype = {
                 //     <div class="ftItemRow">
                 //         <img class="ftIconButton ftExpander" src="/images/x.gif"/>
                 //         <div class="ftInnerRow">
-                //             <img class="ftIconButton" src="/images/light-bulb-sideways4_16x16.png"/>
+                //             <img class="ftIconButton" src="/images/sidewise_icon_16.png"/>
                 //             <div class="ftItemText"><span class="ftItemLabel">Label: </span>this is a little bit this is a little bit this is a little bit this is a little bit</div>
                 //             <div class="hideUntilHover">
                 //                 <img class="ftIconButton" src="/images/reload.png"/><img class="ftIconButton" src="/images/close.png"/>
