@@ -142,12 +142,13 @@ function onCompleted(details)
         //     setTimeout(function() { updatePageOnComplete(tree, tab, url, favicon); }, 250);
         // }
 
+        var favicon = getFixedFavIconUrl(tab.favIconUrl, url);
         if (tab.favIconUrl && tab.favIconUrl != '' && tab.favIconUrl.indexOf('chrome://favicon/') == -1) {
-            updatePageOnComplete(tree, tab, url, tab.favIconUrl);
+            updatePageOnComplete(tree, tab, url, favicon);
         }
         else {
             console.log('********** delayed favicon update');
-            var favicon = 'chrome://favicon/' + url;
+            favicon = 'chrome://favicon/' + url;
             setTimeout(function() { updatePageOnComplete(tree, tab, url, favicon); }, 500);
         }
 
