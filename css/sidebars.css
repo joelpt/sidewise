@@ -44,7 +44,7 @@ ul#sidebarButtons > li > div > img {
     height: 16px;
 }
 
-ul#sidebarButtons > li > div, div#headerRight a {
+ul#sidebarButtons > li > div, #optionsButton {
     display: block;
     background: -webkit-linear-gradient(top, rgba(196,203,212,1) 0%,rgba(155,164,171,1) 73%);
     border-radius: 5px;
@@ -59,7 +59,7 @@ ul#sidebarButtons > li > div, div#headerRight a {
     font-size: 14px;
 }
 
-ul#sidebarButtons > li > div:hover, div#headerRight a:hover {
+ul#sidebarButtons > li > div:hover, #optionsButton:hover {
     background: -webkit-linear-gradient(top, rgba(207,212,219,1) 0%,rgba(174,180,186,1) 73%);
 }
 
