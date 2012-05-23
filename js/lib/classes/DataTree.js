@@ -5,7 +5,6 @@
   */
 var DataTree = function() {
     this.tree = []; // primary internal data structure's top level of children
-    // this.root = { elemType: 'root', id: 'root', children: this.tree }; // root node
 };
 
 // TODO give the tree a root node, probably makes traversal functions more logical:
