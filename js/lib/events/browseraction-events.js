@@ -18,11 +18,16 @@ function onBrowserActionClicked()
 
     // // No sidebar exists so just create it now
     // sidebarHandler.createDockedToCurrentWin(newSide);
+    var action = loadSetting('browserActionButtonBehavior', 'toggle');
+
     if (sidebarHandler.sidebarExists()) {
-        sidebarHandler.remove();
+        if (action == 'toggle') {
+            sidebarHandler.remove();
+            return;
+        }
+        chrome.windows.update(sidebarHandler.windowId, { focused: true });
         return;
     }
+
     sidebarHandler.createWithDockState(loadSetting('dockState', 'right'));
 }
-
-
