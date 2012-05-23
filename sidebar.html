@@ -60,7 +60,10 @@
             return true;
         });
 
-        $('div#headerRight > a').tooltip({ position: 'bottom center', predelay: 400, offset: [15, -10]});
+        $('#optionsButton')
+            .attr('title', getMessage('sidebars_optionsButtonTooltip'))
+            .tooltip({ position: 'bottom center', predelay: 400, offset: [15, -15]})
+            .click(function() { window.open('options.html') });
 
         setI18NText();
     });
@@ -76,7 +79,9 @@
                 <div id="headerBox">
                     <ul id="sidebarButtons"/>
                     <div id="headerRight">
-                        <a href="#" title="Options"><img src="/images/settings_solid.png"/></a>
+                        <div id="optionsButton">
+                            <img id="optionsButtonIcon" src="/images/settings_solid.png"/>
+                        </div>
                     </div>
                 </div>
             </td>
