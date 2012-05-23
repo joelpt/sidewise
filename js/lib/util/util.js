@@ -1,9 +1,10 @@
-var UrlFaviconReplacements = {
+var URL_FAVICON_REPLACEMENTS = {
   'chrome://chrome/extensions': '/images/favicon/extensions.png'
 };
+URL_FAVICON_REPLACEMENTS[chrome.extension.getURL('/options.html')] = '/images/sidewise_icon_16.png';
 
 function getFixedFavIconUrl(favIconUrl, url) {
-    var replacedFavicon = UrlFaviconReplacements[url];
+    var replacedFavicon = URL_FAVICON_REPLACEMENTS[url];
 
     if (replacedFavicon) {
         return replacedFavicon;
