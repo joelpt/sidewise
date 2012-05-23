@@ -14,7 +14,7 @@ function registerRequestEvents()
 
 function getPageDetails(tab)
 {
-    executeContentScript(tab.url, tab.id, getPageDetailsScriptBody);
+    executeContentScript(tab.url, tab.id, GET_PAGE_DETAILS_SCRIPT);
 }
 
 function getIsFullScreen(tab)
