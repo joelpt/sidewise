@@ -1,0 +1,24 @@
+<html>
+<head>
+  <script type="text/javascript" src="file://c:/code/chrome/sidewise/ext/js/jquery/jquery-1.7.2.min.js"></script>
+
+  <script>
+  var buttons = ['dog', 'cat', 'bear'];
+
+  $(document).ready(function() {
+
+    for (var i in buttons) {
+      var elem = $('<div>').text(buttons[i]);
+      var clickHandler = function(evt) { alert(evt.data.yay); }
+      elem.click({ yay: buttons[i] }, clickHandler);
+      $('#container').append(elem);
+    }
+  });
+  </script>
+
+</head>
+
+<body>
+  <div id="container"/>
+</body>
+</html>

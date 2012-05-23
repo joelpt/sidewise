@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link type="text/css" rel="stylesheet" href="/css/reset.css"/>
+    <link type="text/css" rel="stylesheet" href="/css/fancytree.css"/>
+    <link type="text/css" rel="stylesheet" href="/css/sidebars/pages.css"/>
+    <script type="text/javascript" src="/js/jquery/jquery-1.7.2.min.js"></script>
+    <script type='text/javascript' src='/js/jquery/jquery-ui-1.8.13.custom.min.js'></script>
+    <script type='text/javascript' src='/js/jquery/jquery.scrollTo-min.js'></script>
+    <script type='text/javascript' src='/js/jquery/jquery.contextMenu.js'></script>
+    <script type="text/javascript" src="/js/jquery/jquery.tools.min.js"></script>
+
+    <script type="text/javascript" src="/js/lib/util/i18n.js"></script>
+    <script type="text/javascript" src="/js/lib/ui/classes/FancyTree.js"></script>
+
+      <!--<script type='text/javascript' src='/js/jquery/jquery.marquee.js'></script> -->
+    <!-- <script type='text/javascript' src='jqueryRotate.2.1.js'></script> -->
+    <!-- <script type="text/javascript" src="/js/sidebar.js"></script> -->
+    <style>
+/* scrollbar on left hack
+div#outerContainer { direction: rtl ; overflow: auto; }
+div#outerContainer * { direction: ltr; }
+*/  </style>
+    <script>
+
+        function isScrolledIntoView(elem)
+        {
+            var docViewTop = $(window).scrollTop();
+            var docViewBottom = docViewTop + $(window).height();
+
+            var elemTop = $(elem).offset().top;
+            var elemBottom = elemTop + $(elem).height();
+
+            return ((elemBottom >= docViewTop) && (elemTop <= docViewBottom)
+              && (elemBottom <= docViewBottom) &&  (elemTop >= docViewTop) );
+        }
+
+        function getBigTooltipContent(header, icon, body) {
+            var elem = $('<div class="ftBigTip"/>');
+            var table = $('<table/>');
+            var tr = $('<tr/>');
+
+            var img = $('<img class="ftBigTipImage">').attr('src', icon);
+            var header = $('<div class="ftBigTipHeader">').text(header);
+            var body = $('<div class="ftBigTipBody">').text(body);
+
+            tr.append($('<td>').append(img));
+            tr.append($('<td>').append(header).append(body));
+            table.append(tr);
+            elem.append(table);
+            return elem;
+        }
+
+        function onPageRowFormatTooltip(evt) {
+            return getBigTooltipContent(evt.data.title, evt.data.icon, evt.data.row.attr('url'));
+        }
+
+        function onResizeTooltip(evt) {
+            evt.data.tooltip.find('td:nth-child(2) > div').width(evt.data.width - 47);
+        }
+
+        function onWindowRowFormatTooltip(evt) {
+            var incognito = (evt.data.row.attr('incognito') == 'true');
+            var childCount = evt.data.row.children('.ftChildren').find('.ftItemRow').length;
+            var img = (incognito ? '/images/incognito-32.png' : '/images/tab-stack-32.png');
+            var body = childCount + ' '
+                + (incognito ? 'incognito' + ' ' : '')
+                + (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'));
+            return getBigTooltipContent(evt.data.label, img, body);
+        }
+
+        function onCloseButtonPageRow(evt)
+        {
+            //evt.data.treeObj.removeElem(evt.data.row);
+            evt.data.row.addClass('closing');
+            chrome.tabs.remove(parseInt(evt.data.row.attr('id').slice(1)));
+        }
+
+        function onCloseButtonWindowRow(evt)
+        {
+            //alert('oh youd like that huh');
+            chrome.windows.remove(parseInt(evt.data.row.attr('id').slice(1)));
+        }
+
+        // function onHoverLiIn() {
+        //     var x =1 ;
+        // }
+
+        // function onHoverLiOut() {
+        // }
+
+        function onPageRowClicked(evt) {
+            // set visible focus immediately
+            evt.data.treeObj.focusElem(evt.data.row);
+
+            // TODO find a way to tell this row to NOT show the tooltip AFTER predelay
+            // hide page row's tooltip
+            // evt.data.treeObj._getInnerRow(evt.data.row).data('tooltip').getConf().predelay = 0;
+            // evt.data.treeObj._getInnerRow(evt.data.row).data('tooltip').getConf().delay = 1;
+            // evt.data.treeObj._getInnerRow(evt.data.row).data('tooltip').hide();
+
+            // actually set the focused tab; this will trigger a callback to us to visibly focus
+            // the row again redundantly, but we allow for this so visual response is fast
+            chrome.tabs.update(parseInt(evt.data.row.attr('id').slice(1)), { active: true }, function(tab) {
+                // if the tab's hosting window is currently minimzed, un-minimize it
+                chrome.windows.get(tab.windowId, function(win) {
+                    if (win.state == 'minimized') {
+                        chrome.windows.update(win.id, { state: 'normal' });
+                    }
+                });
+            });
+
+            // trigger page row tooltip to appear after 2s
+            evt.data.treeObj.startTooltipTimer(evt.data.row, evt, 2000);
+
+        }
+
+        function onWindowRowClicked(evt) {
+            var winId = parseInt(evt.data.row.attr('id').slice(1));
+            chrome.windows.update(winId, { focused: true });
+        }
+
+        // function registerRequestEvents()
+        // {
+        //     chrome.extension.onRequest.addListener(onRequest);
+        // }
+
+        // function onRequest(request, sender, sendResponse)
+        // {
+        //     // Only listen to requests meant for us
+        //     if (request.target != 'pages') {
+        //         return;
+        //     }
+
+        //     console.log('** ONREQUEST **', JSON.stringify(request));
+        //     switch (request.op)
+        //     {
+        //         case 'add':
+        //             var elem = request.element;
+        //             var newRow;
+        //             if (elem.elemType == 'window') {
+        //                 newRow = ft.getNewElem('window', elem.id, '/images/tab-stack-16.png',
+        //                     'Window ' + elem.id.slice(1), '', { incognito: elem.incognito }, false, null);
+        //             }
+        //             else if (elem.elemType == 'page') {
+        //                 newRow = ft.getNewElem('page', elem.id, elem.favicon,
+        //                     '', elem.title, { url: elem.url }, false, null);
+        //             }
+        //             ft.addElem(newRow, request.parentId);
+        //             break;
+        //         case 'remove':
+        //             ft.removeElem(request.id);
+        //             break;
+        //         case 'move':
+        //             ft.moveElem(request.id, request.newParentId);
+        //             break;
+        //     }
+        // }
+
+        function PageTreeCallbackProxyListener(op, args)
+        {
+            console.log('** ONREQUEST **', op, JSON.stringify(args));
+            switch (op)
+            {
+                case 'add':
+                    addPageTreeElemToFancyTree(ft, args.element, args.parentId, true);
+                    break;
+                case 'remove':
+                    ft.removeElem(args.id);
+                    break;
+                case 'move':
+                    ft.moveElem(args.id, args.newParentId);
+                    break;
+                case 'updatePage':
+                    var elem = args.element;
+                    ft.updateElem(elem.id, elem.favicon, null, elem.title, {
+                        url: elem.url,
+                        status: elem.status,
+                        pinned: elem.pinned
+                    });
+                    break;
+                case 'focusPage':
+                    ft.focusElem(args.id);
+                    break;
+            }
+        }
+
+        function addPageTreeElemToFancyTree(fancyTree, pageTreeElem, parentId, unread)
+        {
+            var newRow;
+            if (pageTreeElem.elemType == 'window') {
+                var img = (pageTreeElem.incognito ? '/images/incognito-16.png' : '/images/tab-stack-16.png');
+                newRow = fancyTree.getNewElem('window', pageTreeElem.id, img,
+                    'Window ' + pageTreeElem.id.slice(1), '', { incognito: pageTreeElem.incognito }, false, null);
+            }
+            else if (pageTreeElem.elemType == 'page') {
+                newRow = fancyTree.getNewElem('page', pageTreeElem.id, pageTreeElem.favicon,
+                    pageTreeElem.id, pageTreeElem.title, {
+                        url: pageTreeElem.url,
+                        status: pageTreeElem.status,
+                        pinned: pageTreeElem.pinned,
+                        unread: unread || false,
+                    }, false, null);
+            }
+            fancyTree.addElem(newRow, parentId);
+        }
+
+        var ft;
+        var bg;
+
+        function onPermitFancyTreeTooltip() {
+            // Return false if a Chrome window isn't currently focused
+            // to block the tooltips from showing
+            return bg.isChromeWindowFocused();
+        }
+
+        function onPageRowFocused(data) {
+            data.row.attr('unread', false);
+        }
+
+        function initTree(attachToSelector, pageTree) {
+            tree = new FancyTree($(attachToSelector), onPermitFancyTreeTooltip);
+
+            tree.addRowType('page', {
+                onClick: onPageRowClicked,
+                onMiddleClick: onCloseButtonPageRow,
+                onFocusElem: onPageRowFocused,
+                onFormatTooltip: onPageRowFormatTooltip,
+                onResizeTooltip: onResizeTooltip,
+                tooltipMaxWidthPercent: 0.9,
+                buttons: [
+                    {icon: '/images/reload.png', tooltip: 'Reload', onClick: function() { alert('reload'); } },
+                    {icon: '/images/close.png', tooltip: 'Close', onClick: onCloseButtonPageRow }
+                ]
+            });
+
+            tree.addRowType('window', {
+                onClick: onWindowRowClicked,
+                onFormatTooltip: onWindowRowFormatTooltip,
+                onResizeTooltip: onResizeTooltip,
+                tooltipMaxWidthFixed: 150,
+                buttons: [
+                    {icon: '/images/close.png', tooltip: 'Close&nbsp;window', onClick: onCloseButtonWindowRow }
+                ]
+            });
+
+            populateFancyTreeFromPageTree(tree, pageTree);
+
+            return tree;
+        }
+
+        function populateFancyTreeFromPageTree(fancyTree, pageTree) {
+            pageTree.forEach(function(e, d, i, p) {
+                var parentId = (p ? p.id : undefined);
+                addPageTreeElemToFancyTree(fancyTree, e, parentId, false);
+                // console.log(e, d, p);
+            });
+        }
+
+        $(document).ready(function() {
+            // TODO abandon Jquery Tools .tooltip, it's too flaky
+            // TODO use one div#ftTooltip ONLY, and dynamically populate it as needed
+            // $('.ftItemText').tooltip({ tip: '#ftFancyTip', predelay: 800, onBeforeShow: onPageRowFormatTooltip, position: 'bottom center', offset: [5, 0] }).dynamic();
+
+            // TODO make the selector 'not(.childless) > .itemRow > .ftExpander' and use .live()
+            // to make .click, .attr, .tooltip work only on the ftExpanders that have kids
+            // ... might be more sensical to just change .ftExpander class to .ftNode ...
+                // .attr('title', 'ajj')
+                // .tooltip({ predelay: 800 }).dynamic();
+
+            $(document).keydown(function(evt) {
+                if (evt.keyCode == 70 && evt.ctrlKey) {
+                    $('#pageFilter').focus();
+                    evt.stopPropagation();
+                    return false;
+                }
+                return true;
+            });
+
+            bg = chrome.extension.getBackgroundPage();
+            ft = initTree('#tester', bg.tree);
+
+            bg.sidebarHandler.registerSidebarPane('pages', window);
+            bg.focusCurrentTabInPageTree();
+
+
+
+            // populateFancyTreeFromPageTree(ft, bg.tree);
+
+            // var mom = ft.getNewElem('window', 'wx1', '/images/tab-stack-16.png',
+            //     'Window 1', '',
+            //     {url: 'http://www.google.com'},
+            //     false, null);
+            // ft.addElem(mom);
+            // var elem = ft.getNewElem('page', 'px999', '/images/light-bulb-sideways4_16x16.png',
+            //     'label', 'texty is the new hamburger of glory',
+            //     {url: 'http://www.google.com'},
+            //     false, null);
+            // ft.addElem(elem, 'wx1');
+            // var elem2 = ft.getNewElem('page', 'px1999', '/images/light-bulb-sideways4_16x16.png',
+            //     null, 'spoot is the new hamburger of glory my sandwich laden camaraderios',
+            //     {url: 'http://www.google.com'},
+            //     false, null);
+            // var elem3 = ft.getNewElem('page', 'px13999', '/images/light-bulb-sideways4_16x16.png',
+            //     null, 'froot is the new hamburger of glory my sandwich laden camaraderios',
+            //     {url: 'http://www.google.com'},
+            //     false, null);
+            // ft.addElem(elem2, 'px999');
+            // ft.addElem(elem3, 'px1999');
+
+
+            // var mom = ft.getNewElem('window', 'wx2', '/images/tab-stack-16.png',
+            //     'Window 2', '',
+            //     {url: 'http://www.google.com'},
+            //     false, null);
+            // ft.addElem(mom);
+            // var elem = ft.getNewElem('page', 'px9991', '/images/light-bulb-sideways4_16x16.png',
+            //     'label', 'GGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTAS<',
+            //     {url: 'GGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTAS<'},
+            //     false, null);
+            // ft.addElem(elem, 'wx2');
+            // var elem2 = ft.getNewElem('page', 'px19991', '/images/light-bulb-sideways4_16x16.png',
+            //     null, 'spoot is the new hamburger of glory my sandwich laden camaraderios',
+            //     {url: 'http://www.google.com'},
+            //     false, null);
+            // var elem3 = ft.getNewElem('page', 'px139991', '/images/light-bulb-sideways4_16x16.png',
+            //     null, 'froot is the new hamburger of glory my sandwich laden camaraderios',
+            //     {url: 'http://www.google.com'},
+            //     false, null);
+            // ft.addElem(elem2, 'px9991');
+            // ft.addElem(elem3, 'px19991');
+
+            // $(document).on('mouseenter', window, function() {
+            //     $('body').append('<span>mouseenter</span><br/>');
+            // });
+            // $(document).on('mouseleave', window, function() {
+            //     $('body').append('<span>mouseleave</span><br/>');
+            // });
+            // $(document).on('mousemove', 'body', function() {
+            //     $('body').append('<span>mousemove</span><br/>');
+            // });
+            // registerRequestEvents();
+
+
+
+        });
+    </script>
+</head>
+<body>
+    <a href="javascript:window.parent.location='pages.html'">promote</a> -
+    <a href="javascript:alert(document.body.clientWidth)">width</a>
+
+    <div id="outerContainer">
+        <div class="topControls">
+            <input type="search" id="pageFilter" placeholder="Enter text to search for" results="5" autosave="unique" />
+            <div id="pageFilterStatus">Matching pages shown, click x or hit Esc to clear</div>
+        </div>
+        <div class="fancyTree" id="tester"/>
+    </div>
+
+    <ul id="pageRowContextMenu" class="contextMenu">
+        <li class="reload">
+            <a name="reload">Reload</a>
+        </li>
+        <li class="close">
+            <a name="close">Close</a>
+        </li>
+    </ul>
+</div>
+</body>
+</html>

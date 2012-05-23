@@ -1,0 +1,33 @@
+{
+    "extName": { "message": "Sidewise Tree Style Tabs BETA" },
+    "extDescription": { "message": "A persistent sidebar for Chrome, with tree-style tabs, branching tab histories, bookmarks bar, and more." },
+
+    "sidebarTitle": { "message": "Sidewise" },
+
+    "text_page": { "message": "page" },
+    "text_pages": { "message": "pages" },
+
+    "optionsPageTitle": { "message": "Sidewise Settings" },
+    "optionsPageHeading": { "message": "Sidewise" },
+
+    "optionsErrorSavingSetting": { "message": "Please correct your entry." },
+    "optionsSuccessSavingSetting": { "message": "Setting saved." },
+    "optionsSavedAllSettings": { "message": "Settings saved." },
+    "optionsDefaultStatus": { "message": "Modify Sidewise's settings below." },
+
+    "optionsHeadingMonitors": { "message": "Monitors" },
+    "optionsHeadingSidebar": { "message": "Sidebar behavior" },
+
+    "option_openSidebarOnStartup": { "message": "Open sidebar on startup" },
+    "option_dockState": { "message": "Dock sidebar to this side of the window" },
+    "option_dockState_left": { "message": "left" },
+    "option_dockState_right": { "message": "right" },
+    "option_dockState_undocked": { "message": "undocked" },
+
+    "option_maximizedMonitorOffset": { "message": "Maximized window screen-edge overhang" },
+    "option_maximizedMonitorOffset_units": { "message": "pixels" },
+    "option_detectMonitorsButton": { "message": "Detect all monitors now" },
+
+    "option_saveButton": { "message": "Save settings" },
+    "optionsSaveNotNeeded": { "message": "Note: Settings are automatically saved as you change them." }
+}

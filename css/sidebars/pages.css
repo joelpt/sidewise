@@ -1,0 +1,125 @@
+div.fancyTree {
+    margin: 1em 0em;
+}
+
+body {
+    -webkit-user-select: none;
+    user-select: none;
+    margin: 0.25em 0em 0em 0.25em;
+}
+
+/* window tree rows */
+
+.ftRowNode[rowtype=window] > .ftItemRow {
+    background: #ffc;
+    border-top: 1px solid #ccc;
+    border-bottom: 1px solid #ccc;
+    padding-top: 2px;
+    padding-bottom: 0px;
+}
+
+.ftRowNode[rowtype=window] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText > .ftItemLabel {
+    font-weight: normal;
+    font-style: italic;
+}
+
+.ftRowNode[rowtype=window] > .ftItemRow > .ftItemRowContent {
+    border: none;
+    padding-left: 3px;
+}
+
+.ftRowNode[rowtype=window] > .ftItemRow:hover {
+    background: #ffb;
+}
+
+.ftRowNode[rowtype=window] > .ftChildren {
+    margin-left: -3px !important;
+}
+
+.ftRowNode[rowtype=window] > .ftChildren:hover {
+    border-left: none !important;
+    margin-left: -2px !important;
+}
+
+.ftRowNode[rowtype=window]+.ftRowNode[rowtype=window] {
+    margin-top: 0.75em;
+}
+
+.ftRowNode[rowtype=window] > .ftItemRow > .ftItemRowContent:hover {
+    background: inherit;
+    border: none;
+    border-radius: 0;
+}
+
+/* page tree rows */
+
+
+.ftRowNode[rowtype=page][unread=true] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText {
+    color: blue;
+}
+
+.ftRowNode[rowtype=page].closing > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText {
+    color: gray;
+}
+
+
+/* tooltip styling */
+
+#ftTooltip[rowtype=page] .ftBigTip {
+    margin: 0.675em 0.5em 0.675em 0.5em;
+}
+
+#ftTooltip[rowtype=page] .ftBigTipBody {
+    font-family: Consolas, "Lucida Console", monospace;
+    font-size: 8pt;
+}
+
+#ftTooltip[rowtype=page] .ftBigTipHeader {
+}
+
+#ftTooltip[rowtype=page] td:first-child {
+    /*background: -webkit-linear-gradient(top, rgba(156,180,208,0.66) 0%,rgba(208,223,234,0) 100%);*/
+    border-right: 1px solid #ccc;
+}
+
+#ftTooltip[rowtype=window] .ftBigTip {
+    margin: 0.25em 0.75em 0.25em 0.25em;
+}
+
+#ftTooltip[rowtype=window] .ftBigTipImage {
+    height: 32px;
+    width: 32px;
+}
+
+#ftTooltip[rowtype=window] td {
+    vertical-align: middle;
+}
+
+
+/* page icon status effects */
+
+.ftRowNode[rowtype=page][status=loading] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
+    -webkit-animation-name: 'spin-throbber';
+    -webkit-animation-iteration-count: 30;
+    -webkit-animation-direction: normal;
+    -webkit-animation-timing-function: linear;
+    -webkit-animation-duration: 1.2s;
+}
+
+@-webkit-keyframes spin-throbber {
+    0%   { -webkit-transform: rotate(0deg); }
+    100%  { -webkit-transform: rotate(360deg); }
+}
+
+.ftRowNode[rowtype=page][status=preload] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
+    -webkit-animation-name: 'spin-throbber-preload';
+    -webkit-animation-iteration-count: 10;
+    -webkit-animation-direction: opposite;
+    -webkit-animation-timing-function: linear;
+    -webkit-animation-duration: 2.4s;
+}
+
+@-webkit-keyframes spin-throbber-preload {
+    0%   { -webkit-transform: rotate(360deg); }
+    100%  { -webkit-transform: rotate(0deg); }
+}

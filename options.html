@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title i18n="optionsPageTitle"></title>
+
+    <link type="text/css" rel="stylesheet" href="/css/reset.css"/>
+    <link rel='shortcut icon' href="images/light-bulb-sideways4_16x16.png" type="image/x-icon" />
+    <link href='http://fonts.googleapis.com/css?family=Lobster' rel='stylesheet' type='text/css'>
+
+    <script type="text/javascript" src="/js/jquery/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="/js/jquery/jquery.tools.min.js"></script>
+    <script type='text/javascript' src='/js/jquery/jquery.scrollTo-min.js'></script>
+    <script type="text/javascript" src="/js/lib/util/settings.js"></script>
+    <script type="text/javascript" src="/js/lib/util/i18n.js"></script>
+
+    <style>
+    html {
+        height: 100%;
+    }
+
+    body {
+        margin-top: 2em;
+        background: -webkit-linear-gradient(top, rgba(30,87,153,1) 0%,rgba(255,255,255,1) 100%);
+    }
+
+    body, input, select {
+        font-family: 'Verdana', sans-serif;
+        font-size: 10pt;
+    }
+
+    #pageContainer {
+        margin: 0 auto;
+        width: 50em;
+        padding: 1em;
+        border: 3px solid rgba(30,87,153,1);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        border-radius: 0.5em;
+        background: white;
+    }
+
+    #optionsContainer {
+        margin-top: 2em;
+    }
+
+    h1 {
+        font-family: 'Lobster', cursive;
+        font-size: 38pt;
+        border-bottom: 1px solid #999;
+        margin-bottom: 0.75em;
+    }
+
+    h2 {
+        font-family: 'Trebuchet MS', 'Liberation Sans', 'DejaVu Sans', sans-serif;
+        font-size: 18pt;
+        border-bottom: 1px solid #999;
+        margin-top: 1em;
+    }
+
+    #statusBar {
+        height: 2em;
+        padding-top: 0.875em;
+        padding-left: 0.875em;
+        border: 1px solid white;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+
+    #statusBar.statusOK {
+        border: 1px solid green;
+        background-color: #dfd;
+    }
+
+    #statusBar.statusError {
+        border: 1px solid red;
+        background-color: #fee;
+    }
+
+    #saveBox {
+        margin-top: 4em;
+        padding-top: 1em;
+        border-top: 1px solid #ccc;
+    }
+
+    .hint {
+        color: #666;
+        font-style: italic;
+    }
+
+    .optionsRow {
+        margin: 1em 0em 0em 1em;
+        vertical-align: top;
+    }
+
+    .optionsUnits {
+        padding-left: 0.75em;
+        font-style: italic;
+    }
+
+    .optionsLabel {
+        width: 25em;
+        display: inline-block;
+    }
+
+    .optionsInputBox {
+        display: inline-block;
+    }
+
+    .optionsLabel::after {
+        content: ': ';
+    }
+
+    input[type=checkbox]+.optionsLabel::after {
+        content: none;
+    }
+
+    input, select {
+        margin: 0;
+    }
+
+    input[type=checkbox] {
+        margin-right: 0.5em;
+        position: relative;
+        top: 1px;
+    }
+
+    input[type=text][datatype=int] {
+        width: 64px;
+    }
+
+    input[type=button] {
+        padding: 0.25em 0.5em;
+    }
+
+    input.invalid {
+        border-color: red;
+        background-color: #fee;
+    }
+
+    </style>
+
+    <script>
+    function transformInputElements() {
+        var elems = $('input, select');
+        elems.each(function(i, e) {
+            var $e = $(e);
+            var name = e.attributes.name.value;
+            var type = $e.attr('type') || e.tagName.toLowerCase();
+
+            var label = getMessage('option_' + name);
+            var labelElem = $('<div class="optionsLabel">')
+                .append($('<label/>', { for: name }).text(label));
+
+            var units = getMessage('option_' + name + '_units');
+            if (units) {
+                var unitsElem = $('<span class="optionsUnits"/>').text(units);
+            }
+            else {
+                var unitsElem = $('');
+            }
+
+            var inputElem = $e.clone();
+            inputElem.attr('id', name);
+
+            var inputBox = $('<div class="optionsInputBox"/>');
+
+            var rep = $('<div class="optionsRow"/>');
+            switch (type) {
+                case 'text':
+                    inputBox.append(inputElem).append(unitsElem);
+                    rep.append(labelElem).append(inputBox);
+                    break;
+                case 'checkbox':
+                    rep.append(inputElem).append(labelElem);
+                    break;
+                case 'button':
+                    inputElem.val(label);
+                    rep.append(inputElem);
+                    break;
+                case 'select':
+                    rep.append(labelElem).append(inputElem);
+                    break;
+                default:
+                    throw 'Unsupported input element type, cannot transform: ' + type;
+            }
+
+            $e.replaceWith(rep);
+        });
+    }
+
+    function loadSettings() {
+        var elems = $('input, select');
+        elems.each(function(i, e) {
+            var $e = $(e);
+            var type = $e.attr('type') || e.tagName.toLowerCase();
+            var name = $e.attr('name');
+            var value = loadSetting(name);
+
+            switch (type) {
+                case 'button':
+                    return;
+                    break;
+
+                case 'checkbox':
+                    e.checked = value;
+                    break;
+
+                default:
+                    $e.val(value);
+                    break;
+            }
+        });
+    }
+
+    function saveOneSetting(e) {
+        var $e = $(e);
+        var name = $e.attr('name');
+        var value = e.value;
+        var type = $e.attr('type') || e.tagName.toLowerCase();
+        var datatype = $e.attr('datatype');
+        var storeValue;
+
+        // validate
+        var valid = true;
+
+        switch (type) {
+            case 'button':
+                // ignore for purposes of saving settings
+                return;
+                break;
+
+            case 'text':
+                switch (datatype) {
+                    case 'int':
+                        storeValue = parseInt(value);
+                        if (storeValue.toString() != value) {
+                            valid = false;
+                            break;
+                        }
+                        break;
+
+                    default:
+                        storeValue = value;
+                        break;
+                }
+                break;
+
+            case 'checkbox':
+                storeValue = e.checked;
+                break;
+
+            default:
+                storeValue = value;
+                break;
+        }
+
+        if (!valid) {
+            return false;
+        }
+
+        saveSetting(name, storeValue);
+        return true;
+    }
+
+    function onSettingModified(evt) {
+        var target = evt.target;
+        var $target = $(target);
+        if (saveOneSetting(target)) {
+            $target.removeClass('invalid');
+            showStatusMessage(getMessage('optionsSuccessSavingSetting'));
+            updateSidebarHandler();
+            return;
+        }
+
+        $target.addClass('invalid');
+        showErrorMessage(getMessage('optionsErrorSavingSetting'));
+    }
+
+    function saveAllSettings(evt) {
+        $('input').each(function(i, e) {
+            saveOneSetting(e);
+        });
+        showStatusMessage(getMessage('optionsSavedAllSettings'));
+    }
+
+    function updateSidebarHandler() {
+        var bg = chrome.extension.getBackgroundPage();
+        var sh = bg.sidebarHandler;
+
+        sh.monitorMetrics = loadSetting('monitorMetrics');
+        sh.maximizedMonitorOffset = loadSetting('maximizedMonitorOffset');
+
+        var dockState = loadSetting('dockState');
+        if (sh.sidebarExists() && sh.dockState != dockState) {
+            sh.remove(function() {
+                sh.createWithDockState(dockState);
+            });
+        }
+        // TODO implement redock/undock type functionality instead of recreating sidebar
+    }
+
+    function showStatusMessage(msg) {
+        $('#statusBar').addClass('statusOK').removeClass('statusError');
+        $('#statusMessage').stop().animate({opacity:'100'});
+        $('#statusMessage').text(msg).show().fadeOut(2000);
+    }
+
+    function showErrorMessage(msg) {
+        $('#statusBar').removeClass('statusOK').addClass('statusError');
+        $('#statusMessage').stop().animate({opacity:'100'});
+        $('#statusMessage').text(msg).show();
+    }
+
+    function detectMonitors() {
+        chrome.extension.getBackgroundPage().detectAllMonitorMetrics(function(monitors, maxOffset) {
+            saveSetting('monitorMetrics', monitors);
+            saveSetting('maximizedMonitorOffset', maxOffset);
+            updateSidebarHandler();
+            alert('Monitor detection complete.');
+            window.location.reload(true);
+        });
+    }
+
+    $(document).ready(function() {
+        setI18NText();
+        transformInputElements();
+        loadSettings();
+
+        $(document).on('change', 'input[type=text], select', onSettingModified);
+        $(document).on('click', 'input[type=checkbox]', onSettingModified);
+        $(document).on('click', '#saveButton', saveAllSettings);
+        $(document).on('click', '#detectMonitorsButton', detectMonitors);
+
+        setTimeout(function() {
+            // delay to avoid F5 (reload) spuriously triggering this
+            $(document).on('keyup', 'input[type=text]', onSettingModified);
+        }, 250);
+
+        $('input,select').first().focus();
+    });
+    </script>
+</head>
+<body>
+    <div id="pageContainer">
+        <h1 i18n="optionsPageHeading"></h1>
+
+        <div id="statusBar" class="statusOK"><div id="statusMessage" i18n="optionsDefaultStatus"></div></div>
+
+        <div id="optionsContainer">
+
+            <h2 i18n="optionsHeadingSidebar"></h2>
+            <input type="checkbox" name="openSidebarOnStartup"/>
+            <select name="dockState">
+                <option value="left" i18n="option_dockState_left"/>
+                <option value="right" i18n="option_dockState_right"/>
+                <option value="undocked" i18n="option_dockState_undocked"/>
+            </select>
+
+            <h2 i18n="optionsHeadingMonitors"></h2>
+            <input type="text" name="maximizedMonitorOffset" datatype="int" />
+            <input type="button" id="detectMonitorsButton" name="detectMonitorsButton"/>
+
+            <div id="saveBox" align="right">
+                <div class="hint" i18n="optionsSaveNotNeeded"></div>
+                <input type="button" id="saveButton" name="saveButton"/>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

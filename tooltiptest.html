@@ -1,0 +1,162 @@
+<html>
+<head>
+    <script type="text/javascript" src="/js/jquery/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="/js/jquery/jquery.tooltip.min.js"></script>
+    <script type="text/javascript" src="/js/jquery/jquery.spritely-0.6.1.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('a').tooltip({
+            showURL: false,
+            bodyHandler: function() {
+                return $('<div class="wrapMe">GTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC</div>');
+            }
+        });
+
+        $('#sprite').click(function() {
+            $('#sprite').attr('status', 'loading');
+        });
+
+        // TODO:
+        //  reduce to 30fps
+        //  make a throbber_waiting that is only 36 frames == (179=1)/5
+        //  then we can use same fps and no_of_frames on both
+        //  figure out how to stop the sprite animation!
+        //  .rewind ?
+        // $('#testBox.loading').sprite({fps: 36, no_of_frames: 36});
+        $('#testBox.loading').click(function() {
+            // $('#testBox.loading').spStop();
+            // $('#testBox.loading').sprite({fps: 12, no_of_frames: 179, rewind: true});
+            var rewindingNow = $(this).spGet('rewind');
+            // alert(curDir);
+            if (rewindingNow) {
+                $(this).spSet('rewind', false);
+                $(this).spSet('fps', 36);
+                $(this).css('opacity', '');
+            }
+            else {
+                $(this).spSet('rewind', true);
+                $(this).spSet('fps', 18);
+                $(this).css('opacity', 0.6);
+            }
+            // $(this).removeClass('waiting');
+            // $(this).addClass('loading');
+            // $(this).sprite({fps: 12, no_of_frames: 36});
+        });
+    });
+
+
+    </script>
+    <style>
+    #tooltip {
+        position: absolute;
+        z-index: 3000;
+        background: -webkit-linear-gradient(top, rgba(242,245,246,1) 0%,rgba(227,234,237,1) 100%);
+        border: 1px solid #333;
+        border-radius: 3px;
+        font-size: 11px;
+        color: #000;
+        padding: 2px 5px 4px 5px;
+        font-size: 12px;
+        font-family: 'segoe ui', 'ms sans serif', sans-serif;
+        -webkit-box-shadow: 2px 2px 11px #666;
+    }
+    #tooltip h3, #tooltip div { margin: 0; }
+    .viewport-right {
+        position: relative !important:
+        left: 0px !important;
+    }
+
+    #testBox {
+        width: 16px;
+        height: 16px;
+    }
+
+    #testBox.waiting {
+        background-image: url('/images/throbber_waiting.png');
+    }
+
+    #testBox.loading {
+        background-image: url('/images/throbber.png');
+    }
+
+    #animation-button {
+        width:64px;
+        height:64px;
+        background:#c00;
+        -webkit-animation-duration:1000ms;
+        -webkit-animation-iteration-count:infinite;
+        -webkit-animation-timing-function:step-start;
+        -webkit-animation-name:animate02;
+    }
+
+    @-webkit-keyframes animate02 {
+        0%         { background:#c00; }
+        33%        { background:#0c0; }
+        66%       { background:#333; }
+   }
+
+   #sprite.reverse {
+    -webkit-animation-direction: reverse;
+   }
+
+   #sprite[status='loading'] {
+    width: 16px;
+    height: 16px;
+    background: url('/images/throbber.png') 0 0;
+    -webkit-animation-duration: 1000ms;
+    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-timing-function: step-start;
+    -webkit-animation-name: throbberSprite;
+    -webkit-filter: brightness(10%);
+    }
+
+    @-webkit-keyframes throbberSprite {
+        0.00000%    {background-position-x: 0px; }
+        2.77778%    {background-position-x: 544px; }
+        5.55556%    {background-position-x: 528px; }
+        8.33333%    {background-position-x: 512px; }
+        11.11111%   {background-position-x: 496px; }
+        13.88889%   {background-position-x: 480px; }
+        16.66667%   {background-position-x: 464px; }
+        19.44444%   {background-position-x: 448px; }
+        22.22222%   {background-position-x: 432px; }
+        25.00000%   {background-position-x: 416px; }
+        27.77778%   {background-position-x: 400px; }
+        30.55556%   {background-position-x: 384px; }
+        33.33333%   {background-position-x: 368px; }
+        36.11111%   {background-position-x: 352px; }
+        38.88889%   {background-position-x: 336px; }
+        41.66667%   {background-position-x: 320px; }
+        44.44444%   {background-position-x: 304px; }
+        47.22222%   {background-position-x: 288px; }
+        50.00000%   {background-position-x: 272px; }
+        52.77778%   {background-position-x: 256px; }
+        55.55556%   {background-position-x: 240px; }
+        58.33333%   {background-position-x: 224px; }
+        61.11111%   {background-position-x: 208px; }
+        63.88889%   {background-position-x: 192px; }
+        66.66667%   {background-position-x: 176px; }
+        69.44444%   {background-position-x: 160px; }
+        72.22222%   {background-position-x: 144px; }
+        75.00000%   {background-position-x: 128px; }
+        77.77778%   {background-position-x: 112px; }
+        80.55556%   {background-position-x: 96px; }
+        83.33333%   {background-position-x: 80px; }
+        86.11111%   {background-position-x: 64px; }
+        88.88889%   {background-position-x: 48px; }
+        91.66667%   {background-position-x: 32px; }
+        94.44444%   {background-position-x: 16px; }
+        97.22222%   {background-position-x: 0px; }
+        100.00000%  {background-position-x: 0px; }
+   }
+   </style>
+</head>
+<body>
+    <a href="http://google.com" title="this tip">that</a>
+    <br/>
+    <div id="testBox" class="loading"></div>
+    <!-- <div id="animation-button"></div> -->
+    <div id="sprite">O</div>
+
+</body>
+</html>

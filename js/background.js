@@ -1,0 +1,114 @@
+var tree;
+var sidebarHandler;
+var knownFaviconDomains;
+
+function onLoad()
+{
+    tree = new PageTree(PageTreeCallbackProxy);
+    sidebarHandler = new SidebarHandler();
+
+    registerRequestEvents();
+
+    populatePages();
+    injectContentScriptInExistingTabs('content_script.js');
+
+    registerWindowEvents();
+    registerTabEvents();
+    registerWebNavigationEvents();
+    registerBrowserActionEvents();
+
+    initializeFocusedChromeWindow(function() {
+        loadMonitorMetrics(function(monitors, maximizedOffset) {
+            sidebarHandler.monitorMetrics = monitors;
+            sidebarHandler.maximizedMonitorOffset = maximizedOffset;
+
+            if (loadSetting('openSidebarOnStartup', true)) {
+                sidebarHandler.createWithDockState(loadSetting('dockState', 'right'));
+            }
+        });
+    });
+
+    // this functions like a bit like an onready event for Chrome
+    chrome.tabs.getCurrent(function() {
+    });
+}
+
+function loadMonitorMetrics(callback) {
+    var monitors = loadSetting('monitorMetrics');
+    var maximizedOffset = loadSetting('maximizedMonitorOffset');
+
+    if (!monitors) {
+        if (!confirm('Detect monitors?')) {
+            return;
+        }
+
+        detectAllMonitorMetrics(function(detectedMonitors, maximizedMonitorOffset) {
+            saveSetting('monitorMetrics', detectedMonitors);
+            saveSetting('maximizedMonitorOffset', maximizedMonitorOffset);
+            callback(detectedMonitors, maximizedMonitorOffset);
+        });
+        return;
+    }
+
+    callback(monitors, maximizedOffset);
+}
+
+
+function PageTreeCallbackProxy(methodName, args) {
+    log(methodName, args);
+
+    var pagesWindow = sidebarHandler.sidebarPanes['pages'];
+
+    if (!pagesWindow) {
+        log('proxy target does not yet exist');
+        return;
+    }
+
+    pagesWindow.PageTreeCallbackProxyListener(methodName, args);
+
+    // args.target = 'pages';
+    // args.op = methodName;
+    // chrome.extension.sendRequest(args);
+}
+
+// TODO move this to a new file
+// TODO probably wanna sort by tabs.index
+// TODO find out if we need concern ourselves with the possibility that on session restore
+//      chrome might restore tabs in an order which would have us trying to add children
+//      to parents that aren't yet in the tree. this should NOT be an issue though because
+//      all we do is add the tabs in one loop, THEN do parent-child relating in a second loop
+//      after all pages are in the tree. so NO this will be a non issue !
+function populatePages()
+{
+    chrome.windows.getAll({ populate: true }, function(windows) {
+        var numWindows = windows.length;
+        s = '';
+
+        for (var i = 0; i < numWindows; i++) {
+            var win = windows[i];
+            var tabs = win.tabs;
+            var numTabs = tabs.length;
+
+            if (win.type != 'normal') {
+                continue; // only want actual tab-windows
+            }
+
+            tree.add(new Window(win));
+
+            // log(tabs);
+            // tabs = win.tabs.sort(function(a, b) { return (a.id > b.id) - (a.id < b.id); });
+            // log(tabs);
+
+            for (var j = 0; j < numTabs; j++) {
+                var tab = tabs[j];
+                var page = new Page(tab);
+                tree.add(page, 'w' + win.id, 'complete');
+            }
+            for (var j = 0; j < numTabs; j++) {
+                // try to guess child/parent tab relationships by asking each page for its referrer
+                getPageDetails(tabs[j]);
+            }
+        }
+    });
+}
+

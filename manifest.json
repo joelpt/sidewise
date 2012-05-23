@@ -1,0 +1,24 @@
+{
+	"name": "__MSG_extName__",
+	"version": "1.0.0.0",
+	"description": "__MSG_extDescription__",
+	"icons": {
+		"48": "images/panty-pull-48.png",
+		"128": "images/panty-pull-128.png"
+	},
+	"background_page": "background.html",
+	"browser_action": {
+		"default_icon": "images/light-bulb-sideways4_16x16.png",
+		"default_title": "Open Sidewise"
+	},
+	"content_scripts": [
+		{
+		  "matches": ["http://*/*", "https://*/*"],
+		  "js": ["content_script.js"],
+		  "run_at": "document_start"
+		}
+	],
+	"default_locale": "en",
+	"options_page": "options.html",
+	"permissions": ["tabs", "webNavigation", "*://*/*", "chrome://favicon/", "history", "bookmarks"]
+}

@@ -1,0 +1,18 @@
+#tooltip {
+    position: absolute;
+    z-index: 3000;
+    background: -webkit-linear-gradient(top, rgba(242,245,246,1) 0%,rgba(227,234,237,1) 100%);
+    border: 1px solid #333;
+    border-radius: 3px;
+    font-size: 11px;
+    color: #000;
+    padding: 2px 5px 4px 5px;
+    font-size: 12px;
+    font-family: 'segoe ui', 'ms sans serif', sans-serif;
+    -webkit-box-shadow: 2px 2px 11px #666;
+    max-width: 80%;
+}
+
+#tooltip h3 {
+    font-weight: bold;
+}

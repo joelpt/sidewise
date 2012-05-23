@@ -1,0 +1,205 @@
+/* .ftRoot */
+
+.ftRoot {
+    list-style: none;
+}
+
+
+/* .ftChildren, .ftRowNode */
+
+.ftChildren {
+}
+
+.ftChildren > .ftRowNode > .ftChildren {
+    margin-left: 8px;
+    padding-left: 2px;
+    border-left: 1px solid white;
+}
+
+.ftRowNode:hover > .ftChildren {
+    border-left: 1px dotted #bbb;
+}
+
+
+/* .ftItemRow, .ftItemRowContent, .ftInnerRow */
+
+.ftItemRow, .ftItemRowContent, .ftInnerRow {
+    display: -webkit-box;
+    display: box;
+    width: 100%;
+}
+
+.ftItemRow {
+    -webkit-box-flex: 1.0;
+    box-flex: 1.0;
+    cursor: pointer;
+    margin-top: 1px;
+}
+
+.ftInnerRow {
+   -webkit-box-flex: 1.0;
+    box-flex: 1.0;
+ }
+
+.ftItemRowContent {
+    -webkit-box-flex: 1.0;
+    box-flex: 1.0;
+    border: 1px solid white;
+    border-radius: 2px;
+    padding-left: 2px;
+    padding-top: 1px;
+    padding-bottom: 0px;
+}
+
+
+/* .ftIconButton */
+
+.ftIconButton {
+    -webkit-box-flex: 0.0;
+    box-flex: 0.0;
+    /*border: 1px solid red;*/
+    width: 16px;
+    overflow: hidden;
+    height: 16px;
+}
+
+
+/* .ftItemText, .ftItemLabel */
+
+.ftItemText {
+    -webkit-box-flex: 1.0;
+    box-flex: 1.0;
+    /*border: 1px solid blue;*/
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-left: .5em;
+    margin-right: 0.25em;
+    font-family: Verdana;
+    font-size: 8pt;
+    padding-top: 2px;
+    padding-bottom: 4px;
+}
+
+.ftItemLabel {
+    font-weight: bold;
+}
+
+
+/* .ftButtons */
+
+div.ftButtons {
+    display: none;
+    padding-right: 0.25em;
+    -webkit-box-flex: 0.0;
+    box-flex: 0.0;
+}
+
+.ftButtons .ftIconButton {
+    -webkit-filter: grayscale(100%);
+}
+
+.ftButtons .ftIconButton:hover {
+    -webkit-filter: grayscale(0%);
+}
+
+
+/* tooltip */
+
+#ftTooltip, #ftSimpleTip {
+    display: none;
+    position: absolute;
+    background: -webkit-linear-gradient(top, rgba(242,245,246,1) 0%,rgba(227,234,237,1) 100%);
+    border: 1px solid #333;
+    border-radius: 3px;
+    font-size: 11px;
+    color: #000;
+    font-size: 12px;
+    font-family: 'segoe ui', 'ms sans serif', sans-serif;
+    -webkit-box-shadow: 2px 2px 11px #666;
+}
+
+#ftSimpleTip {
+    padding: 2px 5px 4px 5px;
+}
+
+.ftBigTip td {
+    vertical-align: top;
+}
+
+.ftBigTip td:nth-child(1) {
+    padding: 1px 4px 0px 2px;
+}
+
+.ftBigTip td:nth-child(2) {
+    padding-left: 0.5em;
+}
+
+.ftBigTipHeader {
+    font-weight: bold;
+    word-wrap: break-word;
+}
+
+.ftBigTipBody {
+    margin-top: 0.5em;
+    word-wrap: break-word;
+}
+
+.ftBigTipImage {
+    width: 16px;
+    height: 16px;
+}
+
+
+/* expanded/collapsed styles */
+
+.collapsed > .ftChildren {
+    display: none;
+}
+
+.ftNode {
+    background: none;
+    cursor: auto;
+}
+
+.ftExpander {
+    background-image: url('../images/toggle_arrow_expanded.png');
+    cursor: pointer;
+}
+
+.ftExpander:hover {
+    background-image: url('../images/toggle_arrow_expanded_hover.png');
+}
+
+.collapsed > .ftItemRow > .ftExpander {
+    background-image: url('../images/toggle_arrow_collapsed.png');
+}
+
+.collapsed > .ftItemRow > .ftExpander:hover {
+    background-image: url('../images/toggle_arrow_collapsed_hover.png');
+}
+
+
+
+/* standard styling for focused, hovered, and selected rows */
+
+.ftRowNode.focused > .ftItemRow > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #c1dbfc),color-stop(1, white));
+    border: 1px solid rgb(125, 162, 206);
+    border-radius: 2px;
+    -webkit-box-shadow: 0 0 0 1px #dbeafd inset;
+}
+
+.ftRowNode > .ftItemRow > .ftItemRowContent:hover {
+    background: #f2f7fe;
+    border: 1px solid #b8d6fb;
+    border-radius:2px;
+}
+
+.ftRowNode.focused > .ftItemRow > .ftItemRowContent:hover {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #c1dbfc),color-stop(1, white));
+    border: 1px solid rgb(85, 122, 166);
+    border-radius: 2px;
+    -webkit-box-shadow: 0 0 0 1px #dbeafd inset;
+}
+
