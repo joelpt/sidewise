@@ -17,13 +17,15 @@
     <style>
     html {
         height: 100%;
-        overflow: none;
     }
 
     body {
-        margin-top: 2em;
+    }
+
+    div#top  {
         background: -webkit-linear-gradient(top, rgba(30,87,153,1) 0%,rgba(255,255,255,1) 100%);
-        overflow: none;
+        padding: 2em 0em;
+        z-index: -1000;
     }
 
     body, input, select {
@@ -40,7 +42,9 @@
         border-radius: 0.5em;
         background: white;
     }
-
+    #pageContainer * {
+        z-index: 5000;
+    }
     #optionsContainer {
         margin-top: 2em;
     }
@@ -161,34 +165,61 @@
     }
 
     #clouds {
-      position: absolute;
-      width: 100%;
-    }
-    #clouds_1 {
-      position: relative;
-      z-index: -1000;
-      height: 276px;
-      width: 175px;
-      left: 200px;
-      top: 100px;
-      background-repeat: no-repeat;
+        position: absolute;
+        width: 100%;
+        overflow: hidden;
     }
 
-    @-webkit-keyframes slider100 {
-      from {
-        left: 0;
-      }
-      to {
-        left: 100%;
-      }
+    #clouds > div {
+        position: fixed;
+        height: 300px;
+        width: 276px;
+        background-repeat: no-repeat;
+        z-index: 1;
     }
 
     #clouds_1 {
-      background-image: url(/images/cloud1.png);
-      -webkit-animation-name: slider100;
-      -webkit-animation-duration: 4s;
-      -webkit-animation-timing-function: linear;
-      -webkit-animation-iteration-count: infinite;
+        top: 100px;
+    }
+
+    #clouds_2 {
+        top: 100px;
+    }
+
+    #clouds_3 {
+        top: 100px;
+    }
+
+    #clouds_4 {
+        top: 100px;
+    }
+
+    @-webkit-keyframes cloud1 {
+        from { left: 120%; }
+        to { left: -20%; }
+    }
+
+    @-webkit-keyframes cloud2 {
+        from { left: 120%; }
+        to { left: -20%; }
+    }
+
+    @-webkit-keyframes cloud3 {
+        from { left: 120%; }
+        to { left: -20%; }
+    }
+
+    @-webkit-keyframes cloud4 {
+        from { left: 120%; }
+        to { left: -20%; }
+    }
+
+    #clouds_1 {
+        background-image: url(/images/cloud1.png);
+        -webkit-animation-name: cloud1;
+        -webkit-animation-duration: 10s;
+        -webkit-animation-timing-function: linear;
+        -webkit-animation-iteration-count: infinite;
     }
 
     </style>
@@ -438,10 +469,12 @@
     </script>
 </head>
 <body>
+<div id="top">
     <div id="clouds">
-      <div id="clouds_1">
-        &nbsp;
-      </div>
+      <div id="clouds_1"></div>
+      <div id="clouds_2"></div>
+      <div id="clouds_3"></div>
+      <div id="clouds_4"></div>
     </div>
     <div id="pageContainer">
         <h1 i18n="optionsPageHeading"></h1>
@@ -472,7 +505,10 @@
                 <input type="button" id="saveButton" name="saveButton"/>
             </div>
         </div>
+    <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
 
     </div>
+</div>
+
 </body>
 </html>
