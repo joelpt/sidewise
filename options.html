@@ -20,12 +20,13 @@
     }
 
     body {
+        height: 100%;
+        background: -webkit-linear-gradient(top, rgba(30,87,153,1) 0%,rgba(255,255,255,1) 100%);
+        background-repeat: no-repeat;
     }
 
     div#top  {
-        background: -webkit-linear-gradient(top, rgba(30,87,153,1) 0%,rgba(255,255,255,1) 100%);
         padding: 2em 0em;
-        z-index: -1000;
     }
 
     body, input, select {
@@ -42,9 +43,7 @@
         border-radius: 0.5em;
         background: white;
     }
-    #pageContainer * {
-        z-index: 5000;
-    }
+
     #optionsContainer {
         margin-top: 2em;
     }
@@ -175,51 +174,56 @@
         height: 300px;
         width: 276px;
         background-repeat: no-repeat;
-        z-index: 1;
+        z-index: -1000;
+        left: -1000px;
+        background-image: url(/images/cloud1.png);
+        -webkit-animation-timing-function: linear;
+        -webkit-animation-iteration-count: infinite;
+        -webkit-animation-delay: 45s;
     }
 
     #clouds_1 {
-        top: 100px;
+        top: 60px;
+        -webkit-animation-name: cloud1;
+        -webkit-animation-duration: 100s;
     }
 
     #clouds_2 {
-        top: 100px;
+        top: 120px;
+        -webkit-animation-name: cloud2;
+        -webkit-animation-duration: 140s;
     }
 
     #clouds_3 {
-        top: 100px;
+        top: 150px;
+        -webkit-animation-name: cloud3;
+        -webkit-animation-duration: 150s;
     }
 
     #clouds_4 {
-        top: 100px;
+        top: 200px;
+        -webkit-animation-name: cloud4;
+        -webkit-animation-duration: 120s;
     }
 
     @-webkit-keyframes cloud1 {
-        from { left: 120%; }
+        from { left: 100%; }
         to { left: -20%; }
     }
 
     @-webkit-keyframes cloud2 {
-        from { left: 120%; }
-        to { left: -20%; }
+        from { left: 110%; }
+        to { left: -30%; }
     }
 
     @-webkit-keyframes cloud3 {
-        from { left: 120%; }
+        from { left: 150%; }
         to { left: -20%; }
     }
 
     @-webkit-keyframes cloud4 {
         from { left: 120%; }
-        to { left: -20%; }
-    }
-
-    #clouds_1 {
-        background-image: url(/images/cloud1.png);
-        -webkit-animation-name: cloud1;
-        -webkit-animation-duration: 10s;
-        -webkit-animation-timing-function: linear;
-        -webkit-animation-iteration-count: infinite;
+        to { left: -50%; }
     }
 
     </style>
@@ -458,7 +462,6 @@
         $(document).on('click', 'input[type=checkbox]', onSettingModified);
         $(document).on('click', '#saveButton', saveAllSettings);
         $(document).on('click', '#detectMonitorsButton', detectMonitors);
-
         setTimeout(function() {
             // delay to avoid F5 (reload) spuriously triggering this
             $(document).on('keyup', 'input[type=text]', onSettingModified);
@@ -470,12 +473,6 @@
 </head>
 <body>
 <div id="top">
-    <div id="clouds">
-      <div id="clouds_1"></div>
-      <div id="clouds_2"></div>
-      <div id="clouds_3"></div>
-      <div id="clouds_4"></div>
-    </div>
     <div id="pageContainer">
         <h1 i18n="optionsPageHeading"></h1>
 
@@ -505,9 +502,13 @@
                 <input type="button" id="saveButton" name="saveButton"/>
             </div>
         </div>
-    <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
-
     </div>
+</div>
+<div id="clouds">
+    <div id="clouds_1"></div>
+    <div id="clouds_2"></div>
+    <div id="clouds_3"></div>
+    <div id="clouds_4"></div>
 </div>
 
 </body>
