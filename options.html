@@ -17,11 +17,13 @@
     <style>
     html {
         height: 100%;
+        overflow: none;
     }
 
     body {
         margin-top: 2em;
         background: -webkit-linear-gradient(top, rgba(30,87,153,1) 0%,rgba(255,255,255,1) 100%);
+        overflow: none;
     }
 
     body, input, select {
@@ -157,6 +159,38 @@
         padding: 0.75em;
         width: 400px;
     }
+
+    #clouds {
+      position: absolute;
+      width: 100%;
+    }
+    #clouds_1 {
+      position: relative;
+      z-index: -1000;
+      height: 276px;
+      width: 175px;
+      left: 200px;
+      top: 100px;
+      background-repeat: no-repeat;
+    }
+
+    @-webkit-keyframes slider100 {
+      from {
+        left: 0;
+      }
+      to {
+        left: 100%;
+      }
+    }
+
+    #clouds_1 {
+      background-image: url(/images/cloud1.png);
+      -webkit-animation-name: slider100;
+      -webkit-animation-duration: 4s;
+      -webkit-animation-timing-function: linear;
+      -webkit-animation-iteration-count: infinite;
+    }
+
     </style>
 
     <script>
@@ -404,6 +438,11 @@
     </script>
 </head>
 <body>
+    <div id="clouds">
+      <div id="clouds_1">
+        &nbsp;
+      </div>
+    </div>
     <div id="pageContainer">
         <h1 i18n="optionsPageHeading"></h1>
 
