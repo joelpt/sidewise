@@ -4,11 +4,13 @@
 
     "sidebarTitle": { "message": "Sidewise" },
 
+    "sidebars_optionsButtonTooltip": { "message": "Options" },
+
     "text_page": { "message": "page" },
     "text_pages": { "message": "pages" },
 
-    "optionsPageTitle": { "message": "Sidewise Settings" },
-    "optionsPageHeading": { "message": "Sidewise" },
+    "optionsPageTitle": { "message": "Sidewise options" },
+    "optionsPageHeading": { "message": "Sidewise Options" },
 
     "optionsErrorSavingSetting": { "message": "Please correct your entry." },
     "optionsSuccessSavingSetting": { "message": "Setting saved." },
@@ -19,6 +21,8 @@
     "optionsHeadingSidebar": { "message": "Sidebar behavior" },
 
     "option_openSidebarOnStartup": { "message": "Open sidebar on startup" },
+    "option_keepSidebarOnTop": { "message": "Keep sidebar visible next to dock window" },
+    "option_keepSidebarOnTop_hint": { "message": "If enabled, when switching to Chrome from another app, Sidewise will bring the sidebar to the front, so other windows don't obscure or hide it.<br/><br/>Note: unfortunately this messes with the OS's window-ordering; on Windows, you'll have to Alt-Tab twice to get back to your last non-Chrome window when this option is enabled." },
     "option_dockState": { "message": "Dock sidebar to this side of the window" },
     "option_dockState_left": { "message": "left" },
     "option_dockState_right": { "message": "right" },
