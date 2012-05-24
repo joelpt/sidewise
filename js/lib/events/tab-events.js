@@ -19,6 +19,7 @@ function onTabCreated(tab)
     }
 
     var page = new Page(tab, 'preload');
+    page.unread = true;
 
     // TODO find any edge cases where chrome doesn't add a child tab to the right of parent tab in tabbar
     // TODO consider adding pages to the tree in the same order as they appear on tabbar
@@ -142,7 +143,7 @@ function onTabUpdated(tabId, changeInfo, tab)
     var favicon;
     if (!page.favicon || page.favicon == '' || page.favicon == 'chrome://favicon/') {
         // existing page element doesn't have a "good" favicon, try to replace it
-        favicon = getFixedFavIconUrl(tab.favIconUrl, url);
+        favicon = getBestFavIconUrl(tab.favIconUrl, url);
     }
     else {
         // existing page element already has a "good" favicon, don't mess with it
@@ -186,6 +187,12 @@ function onTabUpdated(tabId, changeInfo, tab)
 
 function onTabActivated(activeInfo) {
     if (isDetectingMonitors()) {
+        return;
+    }
+    if (sidebarHandler.creatingSidebar) {
+        return;
+    }
+    if (sidebarHandler.tabId == activeInfo.tabId) {
         return;
     }
     tree.focusPage(activeInfo.tabId);
