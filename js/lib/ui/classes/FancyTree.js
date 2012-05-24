@@ -204,7 +204,6 @@ FancyTree.prototype = {
       *                     onMiddleClick: Function(Event),   // called when row is middle-clicked
       *                     onFormatTooltip: Function(Event), // called to obtain row's tooltip html content
       *                     onResizeTooltip: Function(Event), // called when tooltip must be width-resized
-      *                     onFocusElem: Function(data),      // called when .focusElem() is called
       *                     tooltipMaxWidthPercent: number,   // expects 0.0 - 1.0
       *                     tooltipMaxWidthFixed: number,     // expects an integer
       *                     buttons: [
@@ -370,12 +369,6 @@ FancyTree.prototype = {
         this.focusedRow = elem;
         elem.addClass('focused');
 
-        var onFocusElem = this.rowTypes[elem.attr('rowtype')].onFocusElem;
-        if (onFocusElem) {
-            var data = { treeObj: this, row: elem };
-            onFocusElem(data);
-        }
-
         if (!isScrolledIntoView(elem)) {
             $.scrollTo(elem, 150);
         }
@@ -480,6 +473,7 @@ FancyTree.prototype = {
     },
 
     getNewElem: function(rowType, id, icon, label, text, extraAttributes, collapsed, cssClasses) {
+        var params = this.rowTypes[rowType];
         var li = $('<li>', { id: id, rowtype: rowType })
             .addClass(cssClasses)
             .addClass('ftRowNode');
@@ -494,14 +488,18 @@ FancyTree.prototype = {
 
         var itemRow = $('<div class="ftItemRow">');
 
-        var expander = $('<img class="ftIconButton ftTreeControl ftNode" src="/images/x.gif">');
+        var expander = $('<img/>', { class: 'ftIconButton ftTreeControl ftNode', src: '/images/x.gif' });
 
         var itemRowContent = $('<div class="ftItemRowContent">');
         itemRow.append(itemRowContent);
 
         var innerRow = $('<div class="ftInnerRow">');
 
-        var iconButton = $('<img class="ftIconButton ftRowIcon" src="' + icon + '">');
+        var icon = $('<img/>', { class: 'ftIconButton ftRowIcon', src: icon });
+        if (params.onIconError) {
+            icon.error({ treeObj: this, row: li }, params.onIconError);
+        }
+
         var itemTitle = $('<div class="ftItemText">');
 
         var itemLabel = $('<span class="ftItemLabel">');
@@ -515,10 +513,10 @@ FancyTree.prototype = {
 
         var buttons = $('<div class="ftButtons">');
 
-        for (var i in this.rowTypes[rowType].buttons) {
-            var buttonSpec = this.rowTypes[rowType].buttons[i];
+        for (var i in params.buttons) {
+            var buttonSpec = params.buttons[i];
             var button = $('<img>', {
-                class: 'ftIconButton ftButton__' + rowType + '__' + i,
+                class: 'ftIconButton',
                 src: buttonSpec.icon,
                 tooltip: buttonSpec.tooltip
             });
@@ -526,7 +524,7 @@ FancyTree.prototype = {
         }
 
         innerRow
-            .append(iconButton)
+            .append(icon)
             .append(itemTitle);
 
         itemRowContent
