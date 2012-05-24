@@ -4,7 +4,7 @@
 function setI18NText() {
     var elems = $('[i18n]');
     elems.each(function(i, e) {
-        e.innerText = getMessage(e.attributes.i18n.value);
+        e.innerHTML = getMessage(e.attributes.i18n.value);
     });
 }
 
