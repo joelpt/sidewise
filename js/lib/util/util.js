@@ -1,9 +1,16 @@
 var URL_FAVICON_REPLACEMENTS = {
-  'chrome://chrome/extensions': '/images/favicon/extensions.png'
+    'chrome://chrome/extensions': '/images/favicon/extensions.png',
+    'chrome://chrome/extensions/': '/images/favicon/extensions.png'
 };
 URL_FAVICON_REPLACEMENTS[chrome.extension.getURL('/options.html')] = '/images/sidewise_icon_16.png';
 
-function getFixedFavIconUrl(favIconUrl, url) {
+var URL_TITLE_REPLACEMENTS = {
+    'chrome://chrome/extensions': getMessage('text_Extensions'),
+    'chrome://chrome/extensions/': getMessage('text_Extensions')
+};
+
+
+function getBestFavIconUrl(favIconUrl, url) {
     var replacedFavicon = URL_FAVICON_REPLACEMENTS[url];
 
     if (replacedFavicon) {
@@ -17,10 +24,21 @@ function getFixedFavIconUrl(favIconUrl, url) {
     return 'chrome://favicon/';
 }
 
+function getChromeFavIconUrl(url) {
+    return 'chrome://favicon/' + dropUrlHash(url);
+}
+
 function getBestPageTitle(title, url) {
+    var replacedTitle = URL_TITLE_REPLACEMENTS[url];
+
+    if (replacedTitle) {
+        return replacedTitle;
+    }
+
     if (title && title != '') {
         return title;
     }
+
     return url;
 }
 
@@ -70,68 +88,68 @@ function readFile(url, callback)
 
 function isScriptableUrl(url)
 {
-  // log(url);
-  return !(url == ''
-    || url.match('^(about|file|view-source|chrome.*):')
-    || url.match('^https?://chrome.google.com/webstore')
-  );
+    // log(url);
+    return !(url == ''
+        || url.match('^(about|file|view-source|chrome.*):')
+        || url.match('^https?://chrome.google.com/webstore')
+    );
 }
 
 function isExtensionUrl(url)
 {
-  return url.indexOf(chrome.extension.getURL('/')) == 0;
+    return url.indexOf(chrome.extension.getURL('/')) == 0;
 }
 
 function executeContentScript(url, tabId, scriptBody)
 {
-  if (isScriptableUrl(url))
-  {
-    log_brief(tabId, scriptBody);
-    chrome.tabs.executeScript(tabId, { code: scriptBody });
-  }
+    if (isScriptableUrl(url))
+    {
+        log_brief(tabId, scriptBody);
+        chrome.tabs.executeScript(tabId, { code: scriptBody });
+    }
 }
 
 function splitUrl(url)
 {
-  var r = {};
-  var m = url.match(/(?:()(www\.[^\s\/?#]+\.[^\s\/?#]+)|([^\s:\/?#]+):\/\/([^\s\/?#]*))([^\s?#]*)(?:\?([^\s#]*))?(?:#(\S*))?/);
+    var r = {};
+    var m = url.match(/(?:()(www\.[^\s\/?#]+\.[^\s\/?#]+)|([^\s:\/?#]+):\/\/([^\s\/?#]*))([^\s?#]*)(?:\?([^\s#]*))?(?:#(\S*))?/);
 
-  if (m)
-  {
-    r.protocol = m[3];
-    r.host = m[4];
-    r.path = m[5];
-    r.query = m[6];
-    r.hash = m[7];
-    var m = r.host.match(/([^\.]+\.(org|com|net|info|[a-z]{2,3}(\.[a-z]{2,3})?))$/);
-    r.domain = m ? m[0] : r.host;
-    return r;
-  }
+    if (m)
+    {
+        r.protocol = m[3];
+        r.host = m[4];
+        r.path = m[5];
+        r.query = m[6];
+        r.hash = m[7];
+        var m = r.host.match(/([^\.]+\.(org|com|net|info|[a-z]{2,3}(\.[a-z]{2,3})?))$/);
+        r.domain = m ? m[0] : r.host;
+        return r;
+    }
 
-  // that didn't work, try about:foo format
-  m = url.match(/(.+):(.+)/)
-  {
-    r.protocol = 'about';
-    r.host = 'memory';
-    return r;
-  }
+    // that didn't work, try about:foo format
+    m = url.match(/(.+):(.+)/)
+    {
+        r.protocol = 'about';
+        r.host = 'memory';
+        return r;
+    }
 
 
 }
 
 function dropUrlHash(url)
 {
-  return url.replace(/#.*$/, '');
+    return url.replace(/#.*$/, '');
 }
 
 function getClampedWindowDimensions(left, top, width, height, minLeft, minTop, maxWidth, maxHeight)
 {
-  left = clamp(left, minLeft, minLeft + maxWidth);
-  top = clamp(top, minTop, minTop + maxHeight);
-  width = clamp(width, 0, maxWidth);
-  height = clamp(height, 0, maxHeight);
-  r = {left: left, top: top, width: width, height: height};
-  return r;
+    left = clamp(left, minLeft, minLeft + maxWidth);
+    top = clamp(top, minTop, minTop + maxHeight);
+    width = clamp(width, 0, maxWidth);
+    height = clamp(height, 0, maxHeight);
+    r = {left: left, top: top, width: width, height: height};
+    return r;
 }
 
 function clone(obj) {
@@ -169,9 +187,9 @@ function clone(obj) {
 
 // Array Remove - By John Resig (MIT Licensed)
 function remove(array, from, to) {
-  var rest = array.slice((to || from) + 1 || array.length);
-  array.length = from < 0 ? array.length + from : from;
-  return array.push.apply(array, rest);
+    var rest = array.slice((to || from) + 1 || array.length);
+    array.length = from < 0 ? array.length + from : from;
+    return array.push.apply(array, rest);
 };
 
 // Extend prototype of childObject with the prototype of parentObject non-destructively
@@ -188,7 +206,7 @@ function extend(childObject, parentObject)
 
 function clamp(value, min, max)
 {
-  value = value < min ? min : value;
-  value = value > max ? max : value;
-  return value;
+    value = value < min ? min : value;
+    value = value > max ? max : value;
+    return value;
 }
