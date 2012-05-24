@@ -5,7 +5,7 @@
   * @constructor
   * @extends DataTree
   */
-var PageTree = function(callbackProxyFn)
+var PageTree = function(callbackProxyFn, onModifiedDelayed)
 {
     /////////////////////////////////////////////////////
     // INITIALIZATION
@@ -14,6 +14,10 @@ var PageTree = function(callbackProxyFn)
     DataTree.call(this);
     this.callbackProxyFn = callbackProxyFn; // callback proxy function for page/window functions
     this.focusedTabId = null;
+    this.onModified = this._onPageTreeModified;
+    this.onModifiedDelayed = onModifiedDelayed;
+    this.onModifiedDelayedWaitMs = 5000;
+    this.onModifiedDelayedTimeout = null;
 };
 
 PageTree.prototype = {
@@ -35,9 +39,14 @@ PageTree.prototype = {
 
     focusPage: function(tabId, blockCallback)
     {
+        log(tabId);
+        var page = this.getPage(tabId);
+        page.unread = false;
+
         this.focusedTabId = tabId;
         if (!blockCallback) {
             this.callbackProxyFn('focusPage', { id: 'p' + tabId });
+            this.callbackProxyFn('updatePage', { tabId: tabId, element: page });
         }
     },
 
@@ -145,6 +154,22 @@ PageTree.prototype = {
                 + (e.placed ? ' P' : ' -');
         }
         return this.reduce(toStringFn, '');
+    },
+
+    // Handles onModified event for DataTree, updating a timer and calling
+    // this.onModifiedDelayed after the timeout; prevents executing
+    // this.onModifiedDelayed every time tree is updated
+    _onPageTreeModified: function() {
+        if (!this.onModifiedDelayed) {
+            return;
+        }
+
+        if (this.onModifiedDelayedTimeout) {
+            clearTimeout(this.onModifiedDelayedTimeout);
+        }
+
+        this.onModifiedDelayedTimeout =
+            setTimeout(this.onModifiedDelayed, this.onModifiedDelayedWaitMs);
     },
 
 
