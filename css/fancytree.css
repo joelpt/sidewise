@@ -116,7 +116,7 @@ div.ftButtons {
     color: #000;
     font-size: 12px;
     font-family: 'segoe ui', 'ms sans serif', sans-serif;
-    -webkit-box-shadow: 2px 2px 11px #666;
+    box-shadow: 2px 2px 11px #666;
 }
 
 #ftSimpleTip {
@@ -187,7 +187,7 @@ div.ftButtons {
     background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #c1dbfc),color-stop(1, white));
     border: 1px solid rgb(125, 162, 206);
     border-radius: 2px;
-    -webkit-box-shadow: 0 0 0 1px #dbeafd inset;
+    box-shadow: 0 0 0 1px #dbeafd inset;
 }
 
 .ftRowNode > .ftItemRow > .ftItemRowContent:hover {
@@ -200,6 +200,6 @@ div.ftButtons {
     background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #c1dbfc),color-stop(1, white));
     border: 1px solid rgb(85, 122, 166);
     border-radius: 2px;
-    -webkit-box-shadow: 0 0 0 1px #dbeafd inset;
+    box-shadow: 0 0 0 1px #dbeafd inset;
 }
 
