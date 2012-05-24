@@ -1,18 +1,55 @@
 var detectedMonitors = null;
-var maximizedMonitorOffset = 0;
+var detectedMaximizedMonitorOffset = 0;
 var detectOnComplete = null;
 var detectingMonitors = false;
+var lastDetectionWindowId = null;
+
+function retrieveMonitorMetrics(callback) {
+    var monitors;
+    var maximizedOffset;
+    var os = window.navigator.platform;
+
+    if (os == 'MacPPC' || os == 'MacIntel') {
+        alert(getMessage('prompt_DetectMonitors_Mac'));
+
+         // Detect single monitor
+         log('Detecting single monitor');
+         var monitor = [getPrimaryMonitorMetrics()];
+         detectingMonitors = true;
+         getMaximizedMonitorOffset(true, function(maximizedMonitorOffset) {
+            log('detection window removed, in callback now');
+            detectingMonitors = false;
+            // alert(getMessage('prompt_DetectMonitors_complete'));
+            callback(monitor, maximizedMonitorOffset);
+         });
+
+         return;
+     }
+
+     alert(getMessage('prompt_DetectMonitors'));
+
+    // Detect multiple monitors
+    log('Detecting multiple monitors');
+    detectingMonitors = true;
+    detectAllMonitorMetrics(function(detectedMonitors, maximizedMonitorOffset) {
+        detectingMonitors = false;
+        // alert(getMessage('prompt_DetectMonitors_complete'));
+        callback(detectedMonitors, maximizedMonitorOffset);
+    });
+}
+
+function saveMonitorMetrics(monitors, maxOffset) {
+    log(monitors, maxOffset);
+    saveSetting('monitorMetrics', monitors);
+    saveSetting('maximizedMonitorOffset', maxOffset);
+}
 
 function isDetectingMonitors() {
     return detectingMonitors;
 }
 
-function detectAllMonitorMetrics(onComplete) {
-    detectedMonitors = [];
-    detectOnComplete = onComplete;
-    detectingMonitors = true;
-
-    // ascertain the primary monitor's metrics using background page screen object
+function getPrimaryMonitorMetrics() {
+     // ascertain the primary monitor's metrics using background page screen object
     var mon = {
         detectedLeft: screen.availLeft,
         availWidth: screen.availWidth,
@@ -21,26 +58,45 @@ function detectAllMonitorMetrics(onComplete) {
         left: 0,
         width: screen.width
     };
+    return mon;
+}
 
-    detectedMonitors.push(mon);
-
-    // create out testing window
+function getMaximizedMonitorOffset(closeTestWindowAfter, callback) {
+    // create window used for monitor metric detection
     chrome.windows.create(
-        { url: 'detect-monitor.html', left: screen.availLeft, top: screen.availTop,
-            width: 500, height: 200 },
+        { url: 'detect-monitor.html', left: screen.availLeft, top: screen.availTop, width: 500, height: 200 },
         function(win) {
-            console.log('detection window id', win.id);
+            log('Created detection window', win.id);
+            lastDetectionWindowId = win.id;
+
             // ascertain maximizedMonitorOffset
             detectMonitorMetrics(win.id, 0, function(winId, testedAtLeft, left, top, width, height) {
-                // TODO MAKE THIS WORK RIGHT
                 maximizedMonitorOffset = screen.availTop - top;
-
-                // detect additional monitors to the right
-                detectMonitorMetrics(win.id, mon.width, onDetectingMonitorToRight);
+                if (closeTestWindowAfter) {
+                    chrome.windows.remove(win.id, function() {
+                        callback(maximizedMonitorOffset, undefined);
+                    });
+                    return;
+                }
+                callback(maximizedMonitorOffset, win);
             });
         }
     );
+}
 
+function detectAllMonitorMetrics(onComplete) {
+    detectedMonitors = [];
+    detectOnComplete = onComplete;
+
+    var mon = getPrimaryMonitorMetrics();
+    detectedMonitors.push(mon);
+
+    getMaximizedMonitorOffset(false, function(maxOffset, win) {
+        log('detection window id', win.id);
+        detectedMaximizedMonitorOffset = maxOffset;
+        // detect additional monitors to the right
+        detectMonitorMetrics(win.id, mon.width, onDetectingMonitorToRight);
+    });
 }
 
 function detectMonitorMetrics(winId, atLeft, callback) {
@@ -56,13 +112,13 @@ function detectMonitorMetrics(winId, atLeft, callback) {
 function onDetectingMonitorToRight(winId, testedAtLeft, left, top, width, height) {
     // do we already know about this monitor?
     // if so it actually means there are no more monitors to the right to be found
-    var matching = detectedMonitors.filter(function(m) { return m.detectedLeft == left + maximizedMonitorOffset; });
+    var matching = detectedMonitors.filter(function(m) { return m.detectedLeft == left + detectedMaximizedMonitorOffset; });
     if (matching.length == 0) {
         // don't know about this monitor yet, record it
         var mon = {
-            detectedLeft: left + maximizedMonitorOffset,
-            availWidth: width - 2 * maximizedMonitorOffset,
-            marginLeft: left - testedAtLeft + maximizedMonitorOffset,
+            detectedLeft: left + detectedMaximizedMonitorOffset,
+            availWidth: width - 2 * detectedMaximizedMonitorOffset,
+            marginLeft: left - testedAtLeft + detectedMaximizedMonitorOffset,
             marginRight: 0, // TODO figure out a way to actually determine this
             left: testedAtLeft
         };
@@ -86,15 +142,15 @@ function onDetectingMonitorToRight(winId, testedAtLeft, left, top, width, height
 function onDetectingMonitorToLeft(winId, testedAtLeft, left, top, width, height) {
     // do we already know about this monitor?
     // if so it actually means there are no more monitors to the left to be found
-    var matching = detectedMonitors.filter(function(m) { return m.detectedLeft == left + maximizedMonitorOffset; });
+    var matching = detectedMonitors.filter(function(m) { return m.detectedLeft >= left + detectedMaximizedMonitorOffset; });
     if (matching.length == 0) {
         // don't know about this monitor yet, record it
         var mon = {
-            detectedLeft: left + maximizedMonitorOffset,
-            availWidth: width - 2 * maximizedMonitorOffset,
+            detectedLeft: left + detectedMaximizedMonitorOffset,
+            availWidth: width - 2 * detectedMaximizedMonitorOffset,
             marginLeft: 0, // TODO puzzle out a way to get these values
             marginRight: 0,
-            left: left + maximizedMonitorOffset
+            left: left + detectedMaximizedMonitorOffset
         };
         mon.width = mon.marginLeft + mon.availWidth + mon.marginRight;
 
@@ -106,7 +162,7 @@ function onDetectingMonitorToLeft(winId, testedAtLeft, left, top, width, height)
     }
 
     // all done, close the detection window
-    chrome.windows.remove(winId);
-    detectingMonitors = false;
-    detectOnComplete(detectedMonitors, maximizedMonitorOffset);
+    chrome.windows.remove(winId, function() {
+        detectOnComplete(detectedMonitors, detectedMaximizedMonitorOffset);
+    });
 }
