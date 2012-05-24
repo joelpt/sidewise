@@ -63,6 +63,11 @@ ul#sidebarButtons > li > div:hover, #optionsButton:hover {
     background: -webkit-linear-gradient(top, rgba(207,212,219,1) 0%,rgba(174,180,186,1) 73%);
 }
 
+#optionsButtonIcon {
+    height: 16px;
+    width: 16px;
+}
+
 .tooltip {
     display:none;
     background: -webkit-linear-gradient(top, rgba(242,245,246,1) 0%,rgba(227,234,237,1) 100%);
@@ -71,5 +76,5 @@ ul#sidebarButtons > li > div:hover, #optionsButton:hover {
     padding:2px 5px 4px 5px;
     font-size:12px;
     font-family: 'segoe ui', 'ms sans serif', sans-serif;
-    -webkit-box-shadow: 2px 2px 11px #666;
+    box-shadow: 2px 2px 11px #666;
 }
