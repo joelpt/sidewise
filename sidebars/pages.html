@@ -5,6 +5,7 @@
     <link type="text/css" rel="stylesheet" href="/css/reset.css"/>
     <link type="text/css" rel="stylesheet" href="/css/fancytree.css"/>
     <link type="text/css" rel="stylesheet" href="/css/sidebars/pages.css"/>
+
     <script type="text/javascript" src="/js/jquery/jquery-1.7.2.min.js"></script>
     <script type='text/javascript' src='/js/jquery/jquery-ui-1.8.13.custom.min.js'></script>
     <script type='text/javascript' src='/js/jquery/jquery.scrollTo-min.js'></script>
@@ -12,6 +13,8 @@
     <script type="text/javascript" src="/js/jquery/jquery.tools.min.js"></script>
 
     <script type="text/javascript" src="/js/lib/util/i18n.js"></script>
+    <script type="text/javascript" src="/js/lib/util/util.js"></script>
+
     <script type="text/javascript" src="/js/lib/ui/classes/FancyTree.js"></script>
 
       <!--<script type='text/javascript' src='/js/jquery/jquery.marquee.js'></script> -->
@@ -164,7 +167,7 @@ div#outerContainer * { direction: ltr; }
             switch (op)
             {
                 case 'add':
-                    addPageTreeElemToFancyTree(ft, args.element, args.parentId, true);
+                    addPageTreeElemToFancyTree(ft, args.element, args.parentId);
                     break;
                 case 'remove':
                     ft.removeElem(args.id);
@@ -177,7 +180,8 @@ div#outerContainer * { direction: ltr; }
                     ft.updateElem(elem.id, elem.favicon, null, elem.title, {
                         url: elem.url,
                         status: elem.status,
-                        pinned: elem.pinned
+                        pinned: elem.pinned,
+                        unread: elem.unread
                     });
                     break;
                 case 'focusPage':
@@ -186,7 +190,7 @@ div#outerContainer * { direction: ltr; }
             }
         }
 
-        function addPageTreeElemToFancyTree(fancyTree, pageTreeElem, parentId, unread)
+        function addPageTreeElemToFancyTree(fancyTree, pageTreeElem, parentId)
         {
             var newRow;
             if (pageTreeElem.elemType == 'window') {
@@ -199,8 +203,7 @@ div#outerContainer * { direction: ltr; }
                     pageTreeElem.id, pageTreeElem.title, {
                         url: pageTreeElem.url,
                         status: pageTreeElem.status,
-                        pinned: pageTreeElem.pinned,
-                        unread: unread || false,
+                        pinned: pageTreeElem.pinned
                     }, false, null);
             }
             fancyTree.addElem(newRow, parentId);
@@ -215,8 +218,8 @@ div#outerContainer * { direction: ltr; }
             return bg.isChromeWindowFocused();
         }
 
-        function onPageRowFocused(data) {
-            data.row.attr('unread', false);
+        function onPageRowIconError(evt) {
+            evt.target.src = getChromeFavIconUrl(evt.data.row.attr('url'));
         }
 
         function initTree(attachToSelector, pageTree) {
@@ -225,7 +228,7 @@ div#outerContainer * { direction: ltr; }
             tree.addRowType('page', {
                 onClick: onPageRowClicked,
                 onMiddleClick: onCloseButtonPageRow,
-                onFocusElem: onPageRowFocused,
+                onIconError: onPageRowIconError,
                 onFormatTooltip: onPageRowFormatTooltip,
                 onResizeTooltip: onResizeTooltip,
                 tooltipMaxWidthPercent: 0.9,
@@ -253,7 +256,7 @@ div#outerContainer * { direction: ltr; }
         function populateFancyTreeFromPageTree(fancyTree, pageTree) {
             pageTree.forEach(function(e, d, i, p) {
                 var parentId = (p ? p.id : undefined);
-                addPageTreeElemToFancyTree(fancyTree, e, parentId, false);
+                addPageTreeElemToFancyTree(fancyTree, e, parentId);
                 // console.log(e, d, p);
             });
         }
@@ -283,8 +286,6 @@ div#outerContainer * { direction: ltr; }
 
             bg.sidebarHandler.registerSidebarPane('pages', window);
             bg.focusCurrentTabInPageTree();
-
-
 
             // populateFancyTreeFromPageTree(ft, bg.tree);
 
