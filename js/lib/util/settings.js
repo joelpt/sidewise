@@ -4,6 +4,7 @@ function saveSetting(name, value) {
         return;
     }
     localStorage[name] = JSON.stringify(value);
+    localStorage['settingsLastSaved'] = Date.now();
 }
 
 function loadSetting(name, defaultValue) {
@@ -14,4 +15,40 @@ function loadSetting(name, defaultValue) {
     }
 
     return defaultValue;
+}
+
+function updateStateFromSettings() {
+    var bg = chrome.extension.getBackgroundPage();
+    var sh = bg.sidebarHandler;
+
+    bg.loggingEnabled = loadSetting("loggingEnabled");
+
+    sh.monitorMetrics = loadSetting('monitorMetrics');
+    sh.maximizedMonitorOffset = loadSetting('maximizedMonitorOffset');
+
+    var dockState = loadSetting('dockState');
+    if (sh.sidebarExists() && sh.dockState != dockState) {
+        sh.remove(function() {
+            sh.createWithDockState(dockState);
+        });
+    }
+    // TODO implement redock/undock type functionality instead of recreating sidebar
+}
+
+function initializeDefaultSettings() {
+    if (loadSetting('settingsLastSaved')) {
+        return;
+    }
+
+    var defaultSettings = {
+        openSidebarOnStartup: true,
+        keepSidebarOnTop: false,
+        dockState: 'right',
+        browserActionButtonBehavior: 'toggle',
+        loggingEnabled:  false
+    };
+
+    for (var setting in defaultSettings) {
+        saveSetting(setting, defaultSettings[setting]);
+    }
 }
