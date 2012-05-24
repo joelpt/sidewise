@@ -4,10 +4,32 @@ var knownFaviconDomains;
 
 function onLoad()
 {
-    tree = new PageTree(PageTreeCallbackProxy);
+    tree = new PageTree(PageTreeCallbackProxy, savePageTreeToLocalStorage);
+//    loadPageTreeFromLocalStorage();
     sidebarHandler = new SidebarHandler();
 
+    initializeDefaultSettings();
+    updateStateFromSettings();
+
     registerRequestEvents();
+
+
+    // load page tree from settings
+    // hibernate all pages and windows
+    // correlate existing pages:
+    //      existence == url && referrer && historylength matchup
+    //      if page exists in tree:
+    //          awaken its hibernated entry, set new tabId
+    //          if tab's windowId exists in tree as non hibernated window:
+    //              transfer tab to the existing windowId
+    //          else:
+    //              wake hibernated window, set new windowId
+    //          if parent hibernated window has no children left remove it
+    //      if page does not exist in tree:
+    //          add an entry for it
+    //          put in existing window if found matching windowId, else create new windowId for it
+    //          utilize the existing logic for guessing parent/child relations
+
 
     populatePages();
     injectContentScriptInExistingTabs('content_script.js');
@@ -18,13 +40,14 @@ function onLoad()
     registerBrowserActionEvents();
 
     initializeFocusedChromeWindow(function() {
-        loadMonitorMetrics(function(monitors, maximizedOffset) {
-            sidebarHandler.monitorMetrics = monitors;
-            sidebarHandler.maximizedMonitorOffset = maximizedOffset;
+        if (loadSetting('monitorMetrics')) {
+            createSidebarOnStartup();
+            return;
+        }
 
-            if (loadSetting('openSidebarOnStartup', true)) {
-                sidebarHandler.createWithDockState(loadSetting('dockState', 'right'));
-            }
+        retrieveMonitorMetrics(function(monitors, maxOffset) {
+            saveMonitorMetrics(monitors, maxOffset);
+            createSidebarOnStartup();
         });
     });
 
@@ -33,26 +56,24 @@ function onLoad()
     });
 }
 
-function loadMonitorMetrics(callback) {
-    var monitors = loadSetting('monitorMetrics');
-    var maximizedOffset = loadSetting('maximizedMonitorOffset');
-
-    if (!monitors) {
-        if (!confirm('Detect monitors?')) {
-            return;
-        }
-
-        detectAllMonitorMetrics(function(detectedMonitors, maximizedMonitorOffset) {
-            saveSetting('monitorMetrics', detectedMonitors);
-            saveSetting('maximizedMonitorOffset', maximizedMonitorOffset);
-            callback(detectedMonitors, maximizedMonitorOffset);
-        });
-        return;
+function createSidebarOnStartup() {
+    if (loadSetting('openSidebarOnStartup', true)) {
+        sidebarHandler.monitorMetrics = loadSetting('monitorMetrics');
+        sidebarHandler.maximizedMonitorOffset = loadSetting('maximizedMonitorOffset');
+        sidebarHandler.createWithDockState(loadSetting('dockState', 'right'));
     }
-
-    callback(monitors, maximizedOffset);
 }
 
+function savePageTreeToLocalStorage() {
+    if (tree.lastModified != tree.lastSaved) {
+        saveSetting('pageTree', tree.tree);
+        tree.lastSaved = tree.lastModified;
+    }
+}
+
+function loadPageTreeFromLocalStorage() {
+    tree.tree = loadSetting('pageTree', []);
+}
 
 function PageTreeCallbackProxy(methodName, args) {
     log(methodName, args);
