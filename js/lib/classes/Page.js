@@ -13,7 +13,8 @@ var Page = function(tab, overrideStatus)
     this.status = overrideStatus || tab.status;
     this.pinned = tab.pinned;
     this.placed = false;
-    this.favicon = getFixedFavIconUrl(tab.favIconUrl, url);
+    this.favicon = getBestFavIconUrl(tab.favIconUrl, url);
+    this.unread = false;
 
     PageTreeElement.call(this);
 
