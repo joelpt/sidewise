@@ -1,4 +1,4 @@
-var loggingEnabled = true;
+var loggingEnabled = loadSetting('loggingEnabled', false);
 var logObjectsAsJSON = false;
 // loggingEnabled = false;
 
