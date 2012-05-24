@@ -1,6 +1,11 @@
-get this shit into dreamhost-git or local-git ... even local-git should be adequate if we are
-    being backed up since a local git repo == a real git repo ... but a remote repo would still
-    be good to have for an additional layer of backup
+fix the "focused chrome window" functionality:
+    turn it into a class
+    .windows
+    .chromeIsFocused
+    setFocus(): remove windowId from array, then push windowId on top
+    removeWindow(): remove windowId from array
+    getCurrentFocus(): get top
+    setChromeFocused(true/false): flag
 find out exact reason why tabs mass moved from an "open selected links" open are showing up in
     pagetree in a different order than in fancytree; probably something to do with event timings;
     we should fix this so that (a) smart on close works as visually expected, (b) so that
@@ -10,9 +15,6 @@ find out exact reason why tabs mass moved from an "open selected links" open are
     might have to pass both if we want to ensure things always get ordered properly because
     if things happen to fire out-of-order we may not have the beforeSiblingId we would expect
     to find there
-ask chromium devs to add a mechanism for extension to control next-tab-order when tabs are being removed;
-    best approach may be creating an onBeforeRemove(tab, nextTabId) event and let the user set
-    nextTabId if they want to control this
 fix detect-monitors.html for macs:
     macs don't maximize a chrome win to width, just height. so we cannot use that for detection of widths.
     alternate plan:
