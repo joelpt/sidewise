@@ -5,6 +5,8 @@
   */
 var DataTree = function() {
     this.tree = []; // primary internal data structure's top level of children
+    this.lastModified = null;
+    this.onModified = null;
 };
 
 // TODO give the tree a root node, probably makes traversal functions more logical:
@@ -35,6 +37,7 @@ DataTree.prototype = {
             throw 'addElem not find parent element matching parentMatcherFn';
         }
         parent.children.push(elem);
+        this.updateLastModified();
         return elem;
     },
 
@@ -97,6 +100,7 @@ DataTree.prototype = {
         {
             elem[key] = details[key];
         }
+        this.updateLastModified();
         return elem;
     },
 
@@ -142,6 +146,7 @@ DataTree.prototype = {
         }
         moving.children = []; // remove all of its children
         parent.children.push(moving); // put moving back into tree as child of desired new parent
+        this.updateLastModified();
         return moving;
     },
 
@@ -160,6 +165,7 @@ DataTree.prototype = {
             a.splice(i, 1); // remove moving page from its current spot
             parent.children.push(e); // insert moving page as child of new parent
         });
+        this.updateLastModified();
         return result;
     },
 
@@ -167,6 +173,7 @@ DataTree.prototype = {
     // removeChildren: if given as true, also remove all the element's children, otherwise splice them into tree
     removeElem: function(matcherFn, removeChildren)
     {
+        this.updateLastModified();
         return this.findElem(matcherFn, this.tree, function(e, i, a) {
             if (removeChildren) {
                 a.splice(i, 1);
@@ -177,6 +184,12 @@ DataTree.prototype = {
         });
     },
 
+    updateLastModified: function() {
+        this.lastModified = Date.now();
+        if (this.onModified) {
+            this.onModified();
+        }
+    },
 
     /////////////////////////////////////////////////////
     // MISCELLANEOUS FUNCTIONS
