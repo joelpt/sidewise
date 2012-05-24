@@ -8,6 +8,13 @@
 
     "text_page": { "message": "page" },
     "text_pages": { "message": "pages" },
+    "text_Extensions": { "message": "Extensions" },
+    "text_SidewiseBelievesYouHave": { "message": "Sidewise currently believes you have" },
+    "text_monitorsOnYourSystem": { "message": "monitor(s) connected to your system." },
+
+    "prompt_detectMonitors": { "message": "Sidewise will detect your monitor(s) now." },
+    "prompt_detectMonitors_complete": { "message": "Monitor detection complete." },
+    "prompt_detectMonitors_mac": { "message": "Sidewise will detect your monitor details now.\n\nUnfortunately, Sidewise currently cannot detect multiple monitors properly on Mac OSX. Sidewise will assume you only have a single monitor." },
 
     "optionsPageTitle": { "message": "Sidewise Options" },
     "optionsPageHeading": { "message": "Sidewise Options" },
@@ -17,12 +24,13 @@
     "optionsSavedAllSettings": { "message": "Settings saved." },
     "optionsDefaultStatus": { "message": "Modify Sidewise's settings below." },
 
-    "optionsHeadingMonitors": { "message": "Monitors" },
     "optionsHeadingSidebar": { "message": "Sidebar behavior" },
+    "optionsHeadingMonitors": { "message": "Monitors" },
+    "optionsHeadingMisc": { "message": "Miscellaneous" },
 
     "option_openSidebarOnStartup": { "message": "Open sidebar on startup" },
     "option_keepSidebarOnTop": { "message": "Keep sidebar visible next to dock window" },
-    "option_keepSidebarOnTop_hint": { "message": "If enabled, when switching to Chrome from another app, Sidewise will bring the sidebar to the front, so other windows don't obscure or hide it.<br/><br/>Note: unfortunately this messes with the OS's window-ordering; on Windows, you'll have to Alt-Tab twice to get back to your last non-Chrome window when this option is enabled." },
+    "option_keepSidebarOnTop_hint": { "message": "!If enabled, when switching to Chrome from another app, Sidewise will bring the sidebar to the front, so other windows don't obscure or hide it.<br/><br/>Unfortunately, this messes with the OS's window-ordering. For example, on Windows, you'll have to Alt-Tab twice to get back to your last non-Chrome window when this option is enabled." },
     "option_browserActionButtonBehavior": { "message": "When browser toolbar button is clicked" },
     "option_browserActionButtonBehavior_toggle": { "message": "show/hide sidebar" },
     "option_browserActionButtonBehavior_show": { "message": "just show sidebar" },
@@ -31,9 +39,12 @@
     "option_dockState_right": { "message": "right" },
     "option_dockState_undocked": { "message": "undocked" },
 
+    "optionsMonitorDetectionInfo": { "message": "<p>Whenever you change your monitor configuration, <b>reload Chrome</b>, then come here and click 'Detect all monitors now' below.</p><p>This should be done whenever you add or remove monitors, change monitor resolutions, reposition monitors in your OS settings, or change the location/size of your system taskbars.</p>"},
     "option_maximizedMonitorOffset": { "message": "Maximized window screen-edge overhang" },
     "option_maximizedMonitorOffset_units": { "message": "pixels" },
     "option_detectMonitorsButton": { "message": "Detect all monitors now" },
+
+    "option_loggingEnabled": { "message": "Enable debug logging in background page" },
 
     "option_saveButton": { "message": "Save settings" },
     "optionsSaveNotNeeded": { "message": "Note: Settings are automatically saved as you change them." }
