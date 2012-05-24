@@ -7,11 +7,11 @@ function registerWindowEvents()
 
 function onWindowCreated(win)
 {
-    log(win);
     if ((win.type == 'popup' && sidebarHandler.creatingSidebar) || isDetectingMonitors())
     {
         return;
     }
+    log(win);
 
     winElem = new Window(win);
     tree.add(winElem);
@@ -24,11 +24,23 @@ function onWindowRemoved(windowId)
         sidebarHandler.onRemoved();
         return;
     }
-    if (isDetectingMonitors()) {
+    if (windowId == lastDetectionWindowId) {
         return;
     }
     log(windowId);
     tree.remove('w' + windowId);
+
+    if (sidebarHandler.sidebarExists())
+    {
+        chrome.windows.getAll(null, function(windows) {
+            if (windows.length == 1)
+            {
+                // no windows left except the sidebar's window.
+                // so close the sidebar so chrome may exit.
+                sidebarHandler.remove();
+            }
+        });
+    }
 }
 
 // TODO address Linux case where we get windowId==-1's in between switching between
@@ -57,11 +69,11 @@ function onWindowRemoved(windowId)
 
 function onWindowFocusChanged(windowId)
 {
-    log(windowId);
-
     if (isDetectingMonitors()) {
         return;
     }
+
+    log(windowId);
 
     if (windowId == -1) {
         // focus has moved to a non Chrome window
