@@ -72,7 +72,7 @@
         100%  { -webkit-transform: rotate(360deg); }
       }
 
-      .favicon.preload { 
+      .favicon.preload {
         -webkit-animation-name: 'spin-throbber-preload';
         -webkit-animation-iteration-count: 10;
         -webkit-animation-direction: opposite;
@@ -112,21 +112,21 @@
         background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #c1dbfc),color-stop(1, white));
         border: 1px solid rgb(125, 162, 206);
         border-radius:2px;
-        -webkit-box-shadow: 0 0 0 1px #dbeafd inset;
+        box-shadow: 0 0 0 1px #dbeafd inset;
       }
 
       #sidebarContent.multiselecting .pageRow.focused:not(.selected) > .innerRow {
         background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #f1fbff),color-stop(1, white));
         border: 1px solid rgb(165, 202, 246);
         border-radius:2px;
-        -webkit-box-shadow: 0 0 0 1px #dbeafd inset;
+        box-shadow: 0 0 0 1px #dbeafd inset;
       }
 
       #sidebarContent.multiselecting .pageRow.focused.selected > .innerRow {
         background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #a1bbdc),color-stop(1, white));
         border: 1px solid rgb(125, 162, 206);
         border-radius:2px;
-        -webkit-box-shadow: 0 0 0 1px #dbeafd inset;
+        box-shadow: 0 0 0 1px #dbeafd inset;
       }
 
       .pageRow.unread > .innerRow .pageTitle {
@@ -279,7 +279,7 @@
         padding-bottom: 3px;
         margin-bottom: 3px;
       }
- 
+
       .pageRow.dragToChild > .innerRow {
         background-image: none !important;
         /*background: #fcffc6;*/
