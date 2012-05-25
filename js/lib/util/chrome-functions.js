@@ -1,5 +1,10 @@
-/* Functions relating to Chrome specific functionality and interfacing with the background page's
-   architecture */
+/* Functions relating to Chrome specific functionality */
+
+// Get extension version from manifest.json.
+ function getVersion() {
+    var details = chrome.app.getDetails();
+    return details.version;
+  }
 
 // Used to track the current or last focused Chrome window, and whether any Chrome window
 // currently has focus
