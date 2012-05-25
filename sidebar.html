@@ -17,6 +17,16 @@
     <script type="text/javascript" src="/js/lib/ui/classes/SidebarNavManager.js"></script>
 
     <script>
+    function onClickOptionsButton() {
+        chrome.tabs.query({ url: chrome.extension.getURL('/options.html') }, function(tabs) {
+            if (tabs.length == 0) {
+                window.open('options.html');
+                return;
+            }
+            chrome.tabs.update(tabs[0].id, { active: true });
+        });
+    }
+
     var sidebars = {
         'pages': ['sidebars/pages.html', 'Pages', 'images/nav/pages.png'],
         'reddit': ['sidebars/external-site.html#http://i.reddit.com', 'Reddit', 'images/nav/reddit.png'],
@@ -63,7 +73,7 @@
         $('#optionsButton')
             .attr('title', getMessage('sidebars_optionsButtonTooltip'))
             .tooltip({ position: 'bottom center', predelay: 400, offset: [15, -15]})
-            .click(function() { window.open('options.html') });
+            .click(onClickOptionsButton);
 
         setI18NText();
     });
