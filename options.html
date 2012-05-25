@@ -488,8 +488,6 @@
             // delay to avoid F5 (reload) spuriously triggering this
             $(document).on('keyup', 'input[type=text]', onSettingModified);
         }, 250);
-
-        $('input,select').first().focus();
     });
     </script>
 </head>
@@ -516,7 +514,6 @@
             </select>
 
             <h2 i18n="optionsHeadingMonitors"></h2>
-            <!-- <input type="text" name="maximizedMonitorOffset" datatype="int" /> -->
             <div class="optionsRow">
                 <div class="info" i18n="optionsMonitorDetectionInfo"></div>
             </div>
