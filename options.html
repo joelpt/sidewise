@@ -16,6 +16,7 @@
     <script type="text/javascript" src="/js/lib/util/logging.js"></script>
     <script type="text/javascript" src="/js/lib/util/i18n.js"></script>
     <script type="text/javascript" src="/js/lib/util/detect-monitors.js"></script>
+    <script type="text/javascript" src="/js/lib/util/chrome-functions.js"></script>
 
     <style>
     html {
@@ -177,6 +178,12 @@
 
     #monitorCount {
         font-weight: bold;
+    }
+
+    #version {
+        float: right;
+        font-size: 7pt;
+        color: #999;
     }
 
     .tooltip {
@@ -478,6 +485,7 @@
         transformInputElements();
         loadSettings();
 
+        $('#version').text(getMessage('text_Version') + ' ' + getVersion());
         $('#monitorCount').text(loadSetting('monitorMetrics').length);
 
         $(document).on('change', 'input[type=text], select', onSettingModified);
@@ -494,7 +502,10 @@
 <body>
 <div id="top">
     <div id="pageContainer">
-        <h1 i18n="optionsPageHeading"></h1>
+        <header>
+            <div id="version"></div>
+            <h1 i18n="optionsPageHeading"></h1>
+        </header>
 
         <div id="statusBar" class="statusOK"><div id="statusMessage" i18n="optionsDefaultStatus"></div></div>
 
