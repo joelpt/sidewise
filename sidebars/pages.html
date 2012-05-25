@@ -12,19 +12,13 @@
     <script type='text/javascript' src='/js/jquery/jquery.contextMenu.js'></script>
     <script type="text/javascript" src="/js/jquery/jquery.tools.min.js"></script>
 
+    <script type="text/javascript" src="/js/lib/util/settings.js"></script>
+    <script type="text/javascript" src="/js/lib/util/logging.js"></script>
     <script type="text/javascript" src="/js/lib/util/i18n.js"></script>
     <script type="text/javascript" src="/js/lib/util/util.js"></script>
 
     <script type="text/javascript" src="/js/lib/ui/classes/FancyTree.js"></script>
 
-      <!--<script type='text/javascript' src='/js/jquery/jquery.marquee.js'></script> -->
-    <!-- <script type='text/javascript' src='jqueryRotate.2.1.js'></script> -->
-    <!-- <script type="text/javascript" src="/js/sidebar.js"></script> -->
-    <style>
-/* scrollbar on left hack
-div#outerContainer { direction: rtl ; overflow: auto; }
-div#outerContainer * { direction: ltr; }
-*/  </style>
     <script>
 
         function isScrolledIntoView(elem)
@@ -86,25 +80,13 @@ div#outerContainer * { direction: ltr; }
             chrome.windows.remove(parseInt(evt.data.row.attr('id').slice(1)));
         }
 
-        // function onHoverLiIn() {
-        //     var x =1 ;
-        // }
-
-        // function onHoverLiOut() {
-        // }
-
         function onPageRowClicked(evt) {
             // set visible focus immediately
             evt.data.treeObj.focusElem(evt.data.row);
 
-            // TODO find a way to tell this row to NOT show the tooltip AFTER predelay
-            // hide page row's tooltip
-            // evt.data.treeObj._getInnerRow(evt.data.row).data('tooltip').getConf().predelay = 0;
-            // evt.data.treeObj._getInnerRow(evt.data.row).data('tooltip').getConf().delay = 1;
-            // evt.data.treeObj._getInnerRow(evt.data.row).data('tooltip').hide();
-
             // actually set the focused tab; this will trigger a callback to us to visibly focus
-            // the row again redundantly, but we allow for this so visual response is fast
+            // the row again as above, but we do it twice so the visual responseness is as fast
+            // as possible
             chrome.tabs.update(parseInt(evt.data.row.attr('id').slice(1)), { active: true }, function(tab) {
                 // if the tab's hosting window is currently minimzed, un-minimize it
                 chrome.windows.get(tab.windowId, function(win) {
@@ -124,46 +106,9 @@ div#outerContainer * { direction: ltr; }
             chrome.windows.update(winId, { focused: true });
         }
 
-        // function registerRequestEvents()
-        // {
-        //     chrome.extension.onRequest.addListener(onRequest);
-        // }
-
-        // function onRequest(request, sender, sendResponse)
-        // {
-        //     // Only listen to requests meant for us
-        //     if (request.target != 'pages') {
-        //         return;
-        //     }
-
-        //     console.log('** ONREQUEST **', JSON.stringify(request));
-        //     switch (request.op)
-        //     {
-        //         case 'add':
-        //             var elem = request.element;
-        //             var newRow;
-        //             if (elem.elemType == 'window') {
-        //                 newRow = ft.getNewElem('window', elem.id, '/images/tab-stack-16.png',
-        //                     'Window ' + elem.id.slice(1), '', { incognito: elem.incognito }, false, null);
-        //             }
-        //             else if (elem.elemType == 'page') {
-        //                 newRow = ft.getNewElem('page', elem.id, elem.favicon,
-        //                     '', elem.title, { url: elem.url }, false, null);
-        //             }
-        //             ft.addElem(newRow, request.parentId);
-        //             break;
-        //         case 'remove':
-        //             ft.removeElem(request.id);
-        //             break;
-        //         case 'move':
-        //             ft.moveElem(request.id, request.newParentId);
-        //             break;
-        //     }
-        // }
-
         function PageTreeCallbackProxyListener(op, args)
         {
-            console.log('** ONREQUEST **', op, JSON.stringify(args));
+            log(op, args);
             switch (op)
             {
                 case 'add':
@@ -257,20 +202,10 @@ div#outerContainer * { direction: ltr; }
             pageTree.forEach(function(e, d, i, p) {
                 var parentId = (p ? p.id : undefined);
                 addPageTreeElemToFancyTree(fancyTree, e, parentId);
-                // console.log(e, d, p);
             });
         }
 
         $(document).ready(function() {
-            // TODO abandon Jquery Tools .tooltip, it's too flaky
-            // TODO use one div#ftTooltip ONLY, and dynamically populate it as needed
-            // $('.ftItemText').tooltip({ tip: '#ftFancyTip', predelay: 800, onBeforeShow: onPageRowFormatTooltip, position: 'bottom center', offset: [5, 0] }).dynamic();
-
-            // TODO make the selector 'not(.childless) > .itemRow > .ftExpander' and use .live()
-            // to make .click, .attr, .tooltip work only on the ftExpanders that have kids
-            // ... might be more sensical to just change .ftExpander class to .ftNode ...
-                // .attr('title', 'ajj')
-                // .tooltip({ predelay: 800 }).dynamic();
 
             $(document).keydown(function(evt) {
                 if (evt.keyCode == 70 && evt.ctrlKey) {
@@ -287,72 +222,15 @@ div#outerContainer * { direction: ltr; }
             bg.sidebarHandler.registerSidebarPane('pages', window);
             bg.focusCurrentTabInPageTree();
 
-            // populateFancyTreeFromPageTree(ft, bg.tree);
-
-            // var mom = ft.getNewElem('window', 'wx1', '/images/tab-stack-16.png',
-            //     'Window 1', '',
-            //     {url: 'http://www.google.com'},
-            //     false, null);
-            // ft.addElem(mom);
-            // var elem = ft.getNewElem('page', 'px999', '/images/sidewise_icon_16.png',
-            //     'label', 'texty is the new hamburger of glory',
-            //     {url: 'http://www.google.com'},
-            //     false, null);
-            // ft.addElem(elem, 'wx1');
-            // var elem2 = ft.getNewElem('page', 'px1999', '/images/sidewise_icon_16.png',
-            //     null, 'spoot is the new hamburger of glory my sandwich laden camaraderios',
-            //     {url: 'http://www.google.com'},
-            //     false, null);
-            // var elem3 = ft.getNewElem('page', 'px13999', '/images/sidewise_icon_16.png',
-            //     null, 'froot is the new hamburger of glory my sandwich laden camaraderios',
-            //     {url: 'http://www.google.com'},
-            //     false, null);
-            // ft.addElem(elem2, 'px999');
-            // ft.addElem(elem3, 'px1999');
-
-
-            // var mom = ft.getNewElem('window', 'wx2', '/images/tab-stack-16.png',
-            //     'Window 2', '',
-            //     {url: 'http://www.google.com'},
-            //     false, null);
-            // ft.addElem(mom);
-            // var elem = ft.getNewElem('page', 'px9991', '/images/sidewise_icon_16.png',
-            //     'label', 'GGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTAS<',
-            //     {url: 'GGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTASGGTAS<'},
-            //     false, null);
-            // ft.addElem(elem, 'wx2');
-            // var elem2 = ft.getNewElem('page', 'px19991', '/images/sidewise_icon_16.png',
-            //     null, 'spoot is the new hamburger of glory my sandwich laden camaraderios',
-            //     {url: 'http://www.google.com'},
-            //     false, null);
-            // var elem3 = ft.getNewElem('page', 'px139991', '/images/sidewise_icon_16.png',
-            //     null, 'froot is the new hamburger of glory my sandwich laden camaraderios',
-            //     {url: 'http://www.google.com'},
-            //     false, null);
-            // ft.addElem(elem2, 'px9991');
-            // ft.addElem(elem3, 'px19991');
-
-            // $(document).on('mouseenter', window, function() {
-            //     $('body').append('<span>mouseenter</span><br/>');
-            // });
-            // $(document).on('mouseleave', window, function() {
-            //     $('body').append('<span>mouseleave</span><br/>');
-            // });
-            // $(document).on('mousemove', 'body', function() {
-            //     $('body').append('<span>mousemove</span><br/>');
-            // });
-            // registerRequestEvents();
-
-
-
         });
     </script>
 </head>
 <body>
-    <a href="javascript:window.parent.location='pages.html'">promote</a> -
-    <a href="javascript:alert(document.body.clientWidth)">width</a>
 
     <div id="outerContainer">
+        <a href="javascript:window.parent.location='pages.html'">promote</a> -
+        <a href="javascript:alert(document.body.clientWidth)">width</a>
+
         <div class="topControls">
             <input type="search" id="pageFilter" placeholder="Enter text to search for" results="5" autosave="unique" />
             <div id="pageFilterStatus">Matching pages shown, click x or hit Esc to clear</div>
@@ -360,7 +238,7 @@ div#outerContainer * { direction: ltr; }
         <div class="fancyTree" id="tester"/>
     </div>
 
-    <ul id="pageRowContextMenu" class="contextMenu">
+    <ul id="pageRowContextMenu" class="ftContextMenu">
         <li class="reload">
             <a name="reload">Reload</a>
         </li>
