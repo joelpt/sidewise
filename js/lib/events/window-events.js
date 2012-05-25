@@ -84,9 +84,9 @@ function onWindowFocusChanged(windowId)
     var wasFocused = isChromeWindowFocused();
     setChromeWindowIsFocused(true); // some Chrome window is now in focus
 
-    if (!wasFocused && sidebarHandler.sidebarExists() && sidebarHandler.dockWindowId && loadSetting('keepSidebarOnTop', false)) {
+    if (!wasFocused && sidebarHandler.sidebarExists() && loadSetting('keepSidebarOnTop', false)) {
         // Chrome was not focused and just became focused; do sidebar+dockwin force-on-top handling
-        if (windowId == sidebarHandler.windowId) {
+        if (windowId == sidebarHandler.windowId && sidebarHandler.dockState != 'undocked') {
             // Sidebar has been focused; raise the dock window alongside it
             chrome.windows.update(sidebarHandler.dockWindowId, { focused: true }, function() {
                 chrome.windows.update(sidebarHandler.windowId, { focused: true });
