@@ -9,6 +9,7 @@
     "text_page": { "message": "page" },
     "text_pages": { "message": "pages" },
     "text_Extensions": { "message": "Extensions" },
+    "text_Version": { "message": "Version" },
     "text_SidewiseBelievesYouHave": { "message": "Sidewise currently believes you have" },
     "text_monitorsOnYourSystem": { "message": "monitor(s) connected to your system." },
 
