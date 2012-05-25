@@ -22,7 +22,7 @@
     "optionsErrorSavingSetting": { "message": "Please correct your entry." },
     "optionsSuccessSavingSetting": { "message": "Setting saved." },
     "optionsSavedAllSettings": { "message": "Settings saved." },
-    "optionsDefaultStatus": { "message": "Modify Sidewise's settings below." },
+    "optionsDefaultStatus": { "message": "This is Sidewise's options page. Modify your options below." },
 
     "optionsHeadingSidebar": { "message": "Sidebar behavior" },
     "optionsHeadingMonitors": { "message": "Monitors" },
