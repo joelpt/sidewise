@@ -28,7 +28,6 @@ function SidebarHandler()
         this.windowId = null;
         this.tabId = null;
         this.exists = false;
-        this.dockState = 'undocked'; // 'undocked', 'left', 'right'
         this.dockWindowId = null;
         this.dockRememberedWidth = null;
         this.dockRememberedLeft = null;
@@ -54,7 +53,7 @@ function SidebarHandler()
         this.creatingSidebar = true;
         var handler = this;
         if (this.dockState == 'undocked') {
-            chrome.windows.get(getFocusedChromeWindowId(), function(focusWin) {
+            chrome.windows.get(focusTracker.getFocused(), function(focusWin) {
                 var winSpec = {
                     url: 'sidebar.html',
                     type: 'popup',
@@ -93,7 +92,7 @@ function SidebarHandler()
     };
 
     this.createDockedToCurrentWin = function() {
-        this.dockWindowId = getFocusedChromeWindowId();
+        this.dockWindowId = focusTracker.getFocused();
         this.create();
     }
 
@@ -122,64 +121,38 @@ function SidebarHandler()
 
         var handler = this;
         chrome.tabs.remove(this.tabId, function() {
-            handler.onRemoved();
-            if (callback) {
-                callback();
-            }
+            handler.onRemoved(callback);
         });
     }
 
-    // should be called after sidebar has been removed
-    this.onRemoved = function() {
+    // called by .remove() after sidebar has been removed
+    this.onRemoved = function(callback) {
         if (this.dockRememberedLeft != null && this.dockRememberedWidth != null) {
             positionWindow(this.dockWindowId, this.dockRememberedState, this.dockRememberedLeft, null, this.dockRememberedWidth, null);
         }
         this.reset();
+        if (callback) {
+            callback();
+        }
     };
 
-    this.forgetDockWinRememberedMetrics = function() {
-        this.dockRememberedWidth = null;
-        this.dockRememberedLeft = null;
-        this.dockRememberedState = null;
-    }
+    // this.forgetDockWinRememberedMetrics = function() {
+    //     this.dockRememberedWidth = null;
+    //     this.dockRememberedLeft = null;
+    //     this.dockRememberedState = null;
+    // }
 
-    // dock the sidebar window to an existing window
-    // win: window to dock to
-    // side: either 'left' or 'right'
-    this.dockTo = function(win, side) {
-        this.dockTargetWin = win;
-        this.dockState = side;
+    // redock the sidebar window to a different window
+    this.redock = function(windowId) {
+        if (!this.sidebarExists()) {
+            throw 'Cannot redock a nonexistent sidebar';
+        };
+        var handler = this;
+        this.remove(function() {
+            handler.dockWindowId = windowId;
+            handler.create();
+        });
     };
-
-    // undock the sidebar window
-    this.undock = function() {
-        this.dockTargetWin = null;
-        this.dockState = 'undocked';
-    };
-
-    // to dock the sidebar we need to...
-    // get max screen dimensions
-    // figure out if our sidebar can fit on the current screen without overflowing
-    //      if not we must adjust dockto.left and/or dockto.width:
-    //      if docking on left:
-    //          maxLeft+dockTo.width+targetwidth must be less than screen total width
-    //          if too large:
-    //              first try to make things fit by shifting dockTo to the right
-    //              if that is inadequate, reduce width of dockTo
-    //      if docking on right:
-    //          maxLeft+dockTo.width+targetwidth must be less than screen total width
-    //          if too large:
-    //              first try to make things fit by shifting dockTo to the left
-    //              if that is inadequate, reduce width of dockTo
-    // set width of sidebar to its target width
-    // set top of sidebar to dockto.top
-    // set height of sidebar to dockto.height
-    // if docking on left:
-    //     set sidebar.left at current dockto.left-targetwidth
-    //     move dockto win to right by sidebar's target width
-    // if docking on right:
-    //     place sidebar at dockto.left+width
-    // all done?
 
     // adjust the window metrics of a window which is maximized
     // (has its edges going off the edge of the screen)
@@ -313,145 +286,6 @@ function SidebarHandler()
         };
     };
 
-
-
-    this.dock = function(windowId, side) {
-        var handler = this;
-
-        // retrieve a fresh Window object for windowId
-        chrome.windows.get(windowId, function(win) {
-            // retrieve the active tab in the dock target window
-            chrome.tabs.query({windowId: win.id, active: true}, function(tabs) {
-                var tab = tabs[0];
-                // retrieve that tab's screen metrics if we can
-                getScreen(tab, function(tab, screen) {
-                    var winLeft = win.left, winWidth = win.width, winTop = win.top, winHeight = win.height;
-                    var maximizedBorderPadding = 8; // arbitrary, accurate on Windows
-                    if (win.state == 'maximized') {
-                        // The dock-to window will be unmaximized after this process.
-                        // Therefore adjust its dimensions here for what we expect them to be unmaxed.
-                        winWidth += maximizedBorderPadding;
-                        winLeft += maximizedBorderPadding;
-                        winHeight += maximizedBorderPadding;
-                        winTop += maximizedBorderPadding;
-                    }
-
-
-
-
-                    var totalWidth = handler.targetWidth + winLeft + winWidth + screen.availLeft;
-                    var shift = 0, shrinkage = 0;
-                    // TODO see what availLeft is after i put the wintaskbar on the left, right
-                    // TODO rework this logic:
-                    // single mon mode: populate width array as [screen.availWidth]
-                    // multi mon mode populate from options: [1920, 1024]
-                    // adjust for maxed window by -8 from win.l/t/w/h (config in options)
-                    // infer which monitor we're on:
-                    //      absoluteLeftChecOffset
-                    //      on_mon = undefined
-                    //      for (var i in mon_widths) {
-                    //          absoluteLeftCheck += mon_width[i]
-                    //          if (win.left < absoluteLeftOffset
-                    //              on_mon = i;
-                    //              absoluteAvailWidth = mon_width[i];
-                    //              break;
-                    //      }
-                    //      if (on_mon === undefined)
-                    //          on_mon = mon_widths.length - 1 // rightmost mon
-                    //          absoluteAvailWidth = mon_width[i];
-                //          absoluteLeftCheck -= absoluteAvailWidth;
-                    //  absoluteLeftCheck is now this mon's offset for Offset
-                    //  e.g. for determining freeOnLeft
-                    //  leftSysTaskbarWidth = screen.availLeft - absoluteLeftOffset
-                    //  freeOnLeft = winLeft - absoluteLeftOffset - leftSysTaskbarWidth
-                    //  freeOnRight = absoluteAvailableWidth - winLeft - winWidth - leftSysTaskbarWidth
-                    // determine how much free space is to the left and right of the dock win
-                    // if want to dock on left:
-                    //   if sidebar fits in free left, yay
-                    //   if not:
-                    //       shift dockwin to the right by (targetWidth - freeOnLeft)
-                    //       if dockwin.left+dockwin.width+availLeft+shift > availWidth:
-                    //          shrink dockwin width by the amount it's overflowing
-                    // if want to dock on right:
-                    //   if sidebar fits in free right, yay
-                    //   if not:
-                    //       shift dockwin to the left by (targetWidth - freeOnRight)
-                    //       if dockwin.left - availLeft - shift < 0:
-                    //         shrink dockwin width by the amount it is under 0
-                    if (totalWidth > screen.availWidth) {
-                        // not enough space to do this without adjusting dockTarget winLeft/.width
-                        // first try to shift dockTargetWin's horizontal placement to make room
-                        if (side == 'left') {
-                            // try to shift dockTargetWin to the right
-                            var freeOnRight = screen.availWidth - (winLeft + winWidth);
-                            shift = Math.min(freeOnRight, handler.targetWidth);
-                        }
-                        else {
-                            // try to shift dockTargetWin to the left
-                            var freeOnLeft = winLeft - screen.availLeft;
-                            shift = -Math.min(freeOnLeft, handler.targetWidth);
-                        }
-
-                        // was that enough to fit the sidebar onto the screen?
-                        if (Math.abs(shift) < handler.targetWidth) {
-                            // Not enough, need to reduce the width of dockTo as well
-                            shrinkage = handler.targetWidth - Math.abs(shift); // make up the difference
-                        }
-
-                        // ensure we didn't shrink too far
-                        if (winWidth - shrinkage < 100) {
-                            shrinkage = winWidth - 100;
-                        }
-
-                        // we're now confident that we can fit everything, assuming there  is enough
-                        // space on the screen to fit everything
-                    }
-
-                    // Position dock-to window
-                    positionWindow(win.id, winLeft + shift, winTop, winWidth - shrinkage, winHeight);
-
-                    // Position sidebar window
-                    if (side == 'left') {
-                        positionWindow(handler.windowId, winLeft + shift - handler.targetWidth, winTop, handler.targetWidth, winHeight);
-                    }
-                    else {
-                        positionWindow(handler.windowId, winLeft + shift + winWidth - shrinkage, winTop, handler.targetWidth, winHeight);
-                    }
-                });
-            });
-        });
-    };
-
-    //                 screen.availLeft
-    //                 1400
-
-    //             // configure max clamping values
-    //             var maxLeft = screen.availLeft;
-    //             var maxTop = screen.availTop;
-    //             var maxHeight = screen.availHeight;
-    //             var maxWidth;
-    //             if (screen.availWidth - this.targetWidth > win.left + win.width) {
-    //                 // will not need to shrink dockTo window in width because there is enough
-    //                 // free space for the sidebar to fit on this monitor without shrinkage
-    //                 maxWidth = screen.availWidth;
-    //             }
-    //             else {
-    //                 // require width of dockTo window to leave enough space on the monitor
-    //                 // to add the sidebar window at its targetWidth
-    //                 maxWidth = screen.availWidth - this.targetWidth;
-    //             }
-
-    //             // clamp dockTo window's dimensions to its target maximum dimensions
-    //             var dimensions = getClampedWindowDimensions(
-    //                 win.left, win.top, win.width, win.height,
-    //                 maxLeft, maxTop, maxWidth, maxHeight);
-
-    //             // return results to callback
-    //             callback(dimensions);
-    //         });
-    //     });
-    // };
-
     // called after creating the sidebar window
     this.onCreatedSidebarWindow = function(win) {
         log(win);
@@ -461,22 +295,4 @@ function SidebarHandler()
         this.tabId = win.tabs[0].id;
         this.creatingSidebar = false;
     };
-}
-
-
-function positionWindow(winId, state, left, top, width, height)
-{
-    var metrics = {};
-    if (state != null)
-        metrics.state = state;
-    if (left != null)
-        metrics.left = left;
-    if (top != null)
-        metrics.top = top;
-    if (width != null)
-        metrics.width = width;
-    if (height != null)
-        metrics.height = height;
-
-    chrome.windows.update(winId, metrics);
 }
