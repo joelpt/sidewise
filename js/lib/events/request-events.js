@@ -57,18 +57,21 @@ function onGetIsFullScreenMessage(tab, request) {
     // if the window is in HTML5 fullscreen mode; if it is we do not want to bring the sidebar to top.
 
     if (request.isFullScreen) {
+        log('Denying auto-raise of sidebar because current window\'s tab is in fullscreen mode');
         return;
     }
 
     if (!sidebarHandler.sidebarExists()) {
         // sidebar must have gotten closed in the meantime somehow
+        log('Denying auto-raise of sidebar because it has ceased to exist');
         return;
     }
 
     // focus the sidebar window ...
+    log('Auto-raising sidebar because current window\'s tab is NOT in fullscreen mode');
     chrome.windows.update(sidebarHandler.windowId, { focused: true }, function() {
-        // ... then focus the window that should have focus.
-        chrome.windows.update(getFocusedChromeWindowId(), { focused: true });
+        // ... then focus the window that the user really focused.
+        chrome.windows.update(focusTracker.getFocused(), { focused: true });
     });
 }
 
