@@ -160,7 +160,7 @@
         function onPermitFancyTreeTooltip() {
             // Return false if a Chrome window isn't currently focused
             // to block the tooltips from showing
-            return bg.isChromeWindowFocused();
+            return bg.focusTracker.chromeHasFocus;
         }
 
         function onPageRowIconError(evt) {
