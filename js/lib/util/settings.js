@@ -4,7 +4,6 @@ function saveSetting(name, value) {
         return;
     }
     localStorage[name] = JSON.stringify(value);
-    localStorage['settingsLastSaved'] = Date.now();
 }
 
 function loadSetting(name, defaultValue) {
@@ -35,8 +34,9 @@ function updateStateFromSettings() {
     // TODO implement redock/undock type functionality instead of recreating sidebar
 }
 
+// One-time initialization of default settings; if already initialized, does nothing
 function initializeDefaultSettings() {
-    if (loadSetting('settingsLastSaved')) {
+    if (loadSetting('settingsInitialized')) {
         return;
     }
 
@@ -45,7 +45,8 @@ function initializeDefaultSettings() {
         keepSidebarOnTop: false,
         dockState: 'right',
         browserActionButtonBehavior: 'toggle',
-        loggingEnabled:  false
+        loggingEnabled:  false,
+        settingsInitialized: true
     };
 
     for (var setting in defaultSettings) {
