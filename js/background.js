@@ -1,18 +1,26 @@
 var tree;
 var sidebarHandler;
-var knownFaviconDomains;
+var focusTracker;
 
 function onLoad()
 {
-    tree = new PageTree(PageTreeCallbackProxy, savePageTreeToLocalStorage);
-//    loadPageTreeFromLocalStorage();
-    sidebarHandler = new SidebarHandler();
+    // this functions like a bit like an onready event for Chrome
+    chrome.tabs.getCurrent(function() {
+        // Early initialization
 
+        tree = new PageTree(PageTreeCallbackProxy, savePageTreeToLocalStorage);
+        // loadPageTreeFromLocalStorage();
+        sidebarHandler = new SidebarHandler();
+        focusTracker = new ChromeWindowFocusTracker();
+
+        // Call postLoad() after focusTracker initializes to do remaining initialization
+        focusTracker.initFocused(postLoad);
+    });
+}
+
+function postLoad() {
     initializeDefaultSettings();
     updateStateFromSettings();
-
-    registerRequestEvents();
-
 
     // load page tree from settings
     // hibernate all pages and windows
@@ -30,6 +38,7 @@ function onLoad()
     //          put in existing window if found matching windowId, else create new windowId for it
     //          utilize the existing logic for guessing parent/child relations
 
+    registerRequestEvents();
 
     populatePages();
     injectContentScriptInExistingTabs('content_script.js');
@@ -39,20 +48,16 @@ function onLoad()
     registerWebNavigationEvents();
     registerBrowserActionEvents();
 
-    initializeFocusedChromeWindow(function() {
-        if (loadSetting('monitorMetrics')) {
-            createSidebarOnStartup();
-            return;
-        }
+    // If we already know monitor metrics, create sidebar on startup
+    if (loadSetting('monitorMetrics')) {
+        createSidebarOnStartup();
+        return;
+    }
 
-        retrieveMonitorMetrics(function(monitors, maxOffset) {
-            saveMonitorMetrics(monitors, maxOffset);
-            createSidebarOnStartup();
-        });
-    });
-
-    // this functions like a bit like an onready event for Chrome
-    chrome.tabs.getCurrent(function() {
+    // We don't know monitor metrics, so obtain them, save them, then create sidebar on startup
+    retrieveMonitorMetrics(function(monitors, maxOffset) {
+        saveMonitorMetrics(monitors, maxOffset);
+        createSidebarOnStartup();
     });
 }
 
