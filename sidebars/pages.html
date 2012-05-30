@@ -39,27 +39,46 @@
             var tr = $('<tr/>');
 
             var img = $('<img class="ftBigTipImage">').attr('src', icon);
-            var header = $('<div class="ftBigTipHeader">').text(header);
-            var body = $('<div class="ftBigTipBody">').text(body);
 
             tr.append($('<td>').append(img));
-            tr.append($('<td>').append(header).append(body));
+
+            var td = $('<td>');
+            tr.append(td);
+
+            if (header) {
+                var headerElem = $('<div class="ftBigTipHeader">').text(header);
+                td.append(headerElem);
+            }
+
+            if (body) {
+                var bodyElem = $('<div class="ftBigTipBody">').text(body);
+                td.append(bodyElem);
+            }
+
             table.append(tr);
             elem.append(table);
             return elem;
         }
 
         function onPageRowFormatTooltip(evt) {
-            return getBigTooltipContent(evt.data.title, evt.data.icon, evt.data.row.attr('url'));
+            var icon = evt.data.icon;
+            var url = evt.data.row.attr('url');
+            var title = evt.data.title;
+            if (url == title) {
+                title = '';
+            }
+            return getBigTooltipContent(title, icon, url);
         }
 
         function onResizeTooltip(evt) {
+            // Manually set a fixed width for the tooltip's text content region; without this
+            // the CSS 'word-wrap: break-word' has no effect
             evt.data.tooltip.find('td:nth-child(2) > div').width(evt.data.width - 47);
         }
 
         function onWindowRowFormatTooltip(evt) {
             var incognito = (evt.data.row.attr('incognito') == 'true');
-            var childCount = evt.data.row.children('.ftChildren').find('.ftItemRow').length;
+            var childCount = evt.data.treeObj.getChildrenCount(evt.data.row);
             var img = (incognito ? '/images/incognito-32.png' : '/images/tab-stack-32.png');
             var body = childCount + ' '
                 + (incognito ? 'incognito' + ' ' : '')
@@ -69,14 +88,21 @@
 
         function onCloseButtonPageRow(evt)
         {
-            //evt.data.treeObj.removeElem(evt.data.row);
-            evt.data.row.addClass('closing');
+            evt.data.row.addClass('closing'); // "about to close" styling
             chrome.tabs.remove(parseInt(evt.data.row.attr('id').slice(1)));
         }
 
         function onCloseButtonWindowRow(evt)
         {
-            //alert('oh youd like that huh');
+            var childCount = evt.data.treeObj.getChildrenCount(evt.data.row);
+
+            var msg = getMessage('prompt_closeWindow',
+                [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
+
+            if (!confirm(msg)) {
+                return;
+            }
+
             chrome.windows.remove(parseInt(evt.data.row.attr('id').slice(1)));
         }
 
@@ -140,8 +166,14 @@
             var newRow;
             if (pageTreeElem.elemType == 'window') {
                 var img = (pageTreeElem.incognito ? '/images/incognito-16.png' : '/images/tab-stack-16.png');
-                newRow = fancyTree.getNewElem('window', pageTreeElem.id, img,
-                    'Window ' + pageTreeElem.id.slice(1), '', { incognito: pageTreeElem.incognito }, false, null);
+                newRow = fancyTree.getNewElem('window',
+                    pageTreeElem.id,
+                    img,
+                    getMessage('text_Window') + ' ' + pageTreeElem.id.slice(1),
+                    '',
+                    { incognito: pageTreeElem.incognito },
+                    false,
+                    null);
             }
             else if (pageTreeElem.elemType == 'page') {
                 newRow = fancyTree.getNewElem('page', pageTreeElem.id, pageTreeElem.favicon,
