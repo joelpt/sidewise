@@ -141,8 +141,11 @@ div.ftButtons {
 }
 
 .ftBigTipBody {
-    margin-top: 0.5em;
     word-wrap: break-word;
+}
+
+.ftBigTipHeader + .ftBigTipBody {
+    margin-top: 0.5em;
 }
 
 .ftBigTipImage {
