@@ -9,6 +9,6 @@ function setI18NText() {
 }
 
 // Get an i18n message from _locales/xx/messages.json
-function getMessage(key) {
-    return chrome.i18n.getMessage(key);
+function getMessage(key, placeholderValues) {
+    return chrome.i18n.getMessage(key, placeholderValues);
 }
