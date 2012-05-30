@@ -53,7 +53,6 @@ body {
 
 /* page tree rows */
 
-
 .ftRowNode[rowtype=page][unread=true] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText {
     color: blue;
 }
