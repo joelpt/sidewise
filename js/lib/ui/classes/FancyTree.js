@@ -262,7 +262,7 @@ FancyTree.prototype = {
 
         for (var i in params.buttons)
         {
-            var buttonClass = '.ftButton__' + name + '__' + i;
+            var buttonClass = '.ftButton__' + name + '_' + i;
             var buttonData = { treeObj: this, onClick: params.buttons[i].onClick };
             $(document).on('click', buttonClass, buttonData, function(evt) {
                 $('#ftSimpleTip').hide();
@@ -449,6 +449,10 @@ FancyTree.prototype = {
         return elem.children('.ftChildren');
     },
 
+    getChildrenCount: function(elem) {
+        return this.getChildrenContainer(elem).find('.ftRowNode').length;
+    },
+
     setRowButtonTooltips: function(elem) {
         var rowType = elem.attr('rowtype');
         var buttons = this.getButtons(elem);
@@ -516,7 +520,7 @@ FancyTree.prototype = {
         for (var i in params.buttons) {
             var buttonSpec = params.buttons[i];
             var button = $('<img>', {
-                class: 'ftIconButton',
+                class: 'ftIconButton ftButton__' + rowType + '_' + i,
                 src: buttonSpec.icon,
                 tooltip: buttonSpec.tooltip
             });
