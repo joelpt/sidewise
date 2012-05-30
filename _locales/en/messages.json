@@ -10,12 +10,20 @@
     "text_pages": { "message": "pages" },
     "text_Extensions": { "message": "Extensions" },
     "text_Version": { "message": "Version" },
-    "text_SidewiseBelievesYouHave": { "message": "Sidewise currently believes you have" },
-    "text_monitorsOnYourSystem": { "message": "monitor(s) connected to your system." },
+    "text_monitor": { "message": "monitor" },
+    "text_monitors": { "message": "monitors" },
+    "text_Window": { "message": "Window" },
 
     "prompt_detectMonitors": { "message": "Sidewise will detect your monitor(s) now." },
     "prompt_detectMonitors_complete": { "message": "Monitor detection complete." },
     "prompt_detectMonitors_mac": { "message": "Sidewise will detect your monitor details now.\n\nUnfortunately, Sidewise currently cannot detect multiple monitors properly on Mac OSX. Sidewise will assume you only have a single monitor." },
+    "prompt_closeWindow": {
+        "message": "Are you sure you want to close this window and its $COUNT$ $PAGES$?",
+        "placeholders": {
+            "count": { "content": "$1", "example": "4" },
+            "pages": { "content": "$2", "example": "pages" }
+        }
+     },
 
     "optionsPageTitle": { "message": "Sidewise Options" },
     "optionsPageHeading": { "message": "Sidewise Options" },
@@ -41,7 +49,8 @@
     "option_dockState_right": { "message": "right" },
     "option_dockState_undocked": { "message": "undocked" },
 
-    "optionsMonitorDetectionInfo": { "message": "<p>Whenever you change your monitor configuration, <b>reload Chrome</b>, then come here and click 'Detect all monitors now' below.</p><p>This should be done whenever you add or remove monitors, change monitor resolutions, reposition monitors in your OS settings, or change the location/size of your system taskbars.</p>"},
+    "optionsInfoMonitorDetection": { "message": "<p>Whenever you change your monitor configuration, <b>reload Chrome</b>, then come here and click 'Detect all monitors now' below.</p><p>This should be done whenever you add or remove monitors, change monitor resolutions, reposition monitors in your OS settings, or change the location/size of your system taskbars.</p>"},
+    "optionsInfoMonitorsOnYourSystem": { "message": "Sidewise currently believes you have <b>$1</b> $2 connected to your system." },
     "option_maximizedMonitorOffset": { "message": "Maximized window screen-edge overhang" },
     "option_maximizedMonitorOffset_units": { "message": "pixels" },
     "option_detectMonitorsButton": { "message": "Detect all monitors now" },
