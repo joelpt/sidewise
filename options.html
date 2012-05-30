@@ -200,11 +200,19 @@
         retrieveMonitorMetrics(function(monitors, maxOffset) {
             saveMonitorMetrics(monitors, maxOffset);
             updateStateFromSettings();
-            $('#monitorCount').text(monitors.length);
-            alert(getMessage('prompt_detectMonitors_complete'));
+            setMonitorCountInfo(monitors.length);
             showStatusMessage(getMessage('prompt_detectMonitors_complete'));
-            // window.location.reload(true);
         });
+    }
+
+    function setMonitorCountInfo(count) {
+        $('#infoMonitorsOnYourSystem').html(
+            getMessage('optionsInfoMonitorsOnYourSystem',
+                [count,
+                    (count == 1 ? getMessage('text_monitor') : getMessage('text_monitors'))
+                ]
+            )
+        );
     }
 
     $(document).ready(function() {
@@ -213,7 +221,7 @@
         loadSettings();
 
         $('#version').text(getMessage('text_Version') + ' ' + getVersion());
-        $('#monitorCount').text(loadSetting('monitorMetrics').length);
+        setMonitorCountInfo(loadSetting('monitorMetrics').length);
 
         $(document).on('change', 'input[type=text], select', onSettingModified);
         $(document).on('click', 'input[type=checkbox]', onSettingModified);
@@ -253,11 +261,11 @@
 
             <h2 i18n="optionsHeadingMonitors"></h2>
             <div class="optionsRow">
-                <div class="info" i18n="optionsMonitorDetectionInfo"></div>
+                <div class="info" i18n="optionsInfoMonitorDetection"></div>
             </div>
             <input type="button" id="detectMonitorsButton" name="detectMonitorsButton"/>
             <div class="optionsRow">
-                <span class="info" i18n="text_SidewiseBelievesYouHave"></span> <span id="monitorCount"></span> <span class="info" i18n="text_monitorsOnYourSystem"></span>
+                <span class="info" id="infoMonitorsOnYourSystem"></span>
             </div>
             <h2 i18n="optionsHeadingMisc"></h2>
                 <input type="checkbox" name="loggingEnabled"/>
