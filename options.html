@@ -200,19 +200,24 @@
         retrieveMonitorMetrics(function(monitors, maxOffset) {
             saveMonitorMetrics(monitors, maxOffset);
             updateStateFromSettings();
-            setMonitorCountInfo(monitors.length);
+            setMonitorCountInfo(monitors.length, true);
             showStatusMessage(getMessage('prompt_detectMonitors_complete'));
         });
     }
 
-    function setMonitorCountInfo(count) {
-        $('#infoMonitorsOnYourSystem').html(
+    function setMonitorCountInfo(count, highlight) {
+        var elem = $('#infoMonitorsOnYourSystem');
+        elem.html(
             getMessage('optionsInfoMonitorsOnYourSystem',
                 [count,
                     (count == 1 ? getMessage('text_monitor') : getMessage('text_monitors'))
                 ]
             )
         );
+        if (highlight) {
+            elem.highlight({ start_color: 'yellow', end_color: '#fff', delay: 2000 });
+        }
+
     }
 
     $(document).ready(function() {
@@ -221,7 +226,7 @@
         loadSettings();
 
         $('#version').text(getMessage('text_Version') + ' ' + getVersion());
-        setMonitorCountInfo(loadSetting('monitorMetrics').length);
+        setMonitorCountInfo(loadSetting('monitorMetrics').length, false);
 
         $(document).on('change', 'input[type=text], select', onSettingModified);
         $(document).on('click', 'input[type=checkbox]', onSettingModified);
