@@ -1,6 +1,6 @@
-var SidebarNavManager = function(sidebars, navButtonsContainer, sidebarsContainer, parentContainer, scrollContainer, sidebarElemTag) {
+var SidebarNavManager = function(navButtonsContainer, sidebarsContainer, parentContainer, scrollContainer, sidebarElemTag) {
     // init
-    this.sidebars = sidebars;
+    this.sidebars = [];
     this.navButtonsContainer = navButtonsContainer;
     this.sidebarsContainer = sidebarsContainer;
     this.parentContainer = parentContainer;
@@ -11,60 +11,79 @@ var SidebarNavManager = function(sidebars, navButtonsContainer, sidebarsContaine
 
 SidebarNavManager.prototype = {
 
-    createSidebarButtons: function() {
-        var first = true;
-        for (var s in this.sidebars) {
-            var label = sidebars[s][1];
-            var icon = sidebars[s][2];
-            var elem = $('<li class="sidebarButton" title="' + label + '" id="sidebarButton__' + s + '">'
-                + '<div><img src="' + icon + '"/></div>'
-                + '</li>');
-            elem.tooltip({ position: 'bottom center', predelay: 400, offset: [15, first ? 10 : 0] });
-            elem.mousedown({ manager: manager, sidebarId: s }, function(evt) {
-                $(this).data('tooltip').hide();
-                evt.data.manager.showSidebar(evt.data.sidebarId);
-            });
-            this.navButtonsContainer.append(elem);
-            first = false;
+    addSidebarPanel: function(id, label, icon, url) {
+        this.sidebars.push({ id: id, label: label, icon: icon, url: url });
+        this._createSidebarButton(id, label, icon);
+        this._createSidebarContainer(id);
+    },
+
+    addSidebarPanels: function(sidebars) {
+        for (var i in sidebars) {
+            var details = sidebars[i];
+            this.addSidebarPanel(details.id, details.label, details.icon, details.url);
         }
     },
 
-    createSidebarContainers: function() {
-        var cnt = 0;
-        // var initial;
+    removeSidebarPanel: function(id) {
+        var currentIndex = this.sidebars.indexOf(this.getSidebarDetails(id));
+        this.sidebars.splice(currentIndex, 1);
 
-        for (var s in this.sidebars) {
-            var elem = $('<' + this.sidebarElemTag + ' id="' + s + '"/>');
-            this.sidebarsContainer.append(elem);
-            // if (cnt == 0) {
-            //   var url = sidebars[s];
-            //   var iframe = $('<iframe src="' + url + '"></iframe>');
-            //   elem.append(iframe);
-            //   initial = elem;
-            // }
+        $('#sidebarButton__' + id).remove();
+        $('#sidebarContainer__' + id).remove();
+        this._setSidebarParentContainerWidth();
 
-
-            cnt++;
+        // switch to first sidebar if this one was focused
+        if (this.currentSidebar == id) {
+            this.showSidebarPanel(this.sidebars[0].id);
         }
-        this.parentContainer.width(cnt * 100 + '%');
-        // $('body').scrollTo(initial);
     },
 
-    showSidebar: function(id) {
-        //$('#sidebar').attr('src', url);
-        // $('#' + id).show();
-        var container = $('#' + id);
+    showSidebarPanel: function(id) {
+        var selector = '#sidebarContainer__' + id;
+        var container = $(selector);
 
         if (container.children().length == 0)
         {
-            var url = sidebars[id][0];
-
+            var sidebar = this.getSidebarDetails(id);
+            var url = sidebar.url;
             var iframe = $('<iframe src="' + url + '"></iframe>');
             container.append(iframe);
         }
-        this.scrollContainer.scrollTo('#' + id, 100, { axis: 'x' });
-      // $('#sidebars').children().not('#' + id).hide();
-      this.currentSidebar = id;
-  }
+        this.scrollContainer.scrollTo(selector, 100, { axis: 'x' });
+        this.currentSidebar = id;
+    },
+
+    getSidebarDetails: function(id) {
+        var matches = this.sidebars.filter(function(e) { return e.id == id; });
+        if (matches.length != 1) {
+            throw 'Nonexistent or too many matching sidebars found';
+        }
+        return matches[0];
+    },
+
+    _createSidebarButton: function(id, label, icon) {
+        var elem = $('<li class="sidebarButton" title="' + label + '" id="sidebarButton__' + id + '">'
+            + '<div><img src="' + icon + '"/></div>'
+            + '</li>');
+        elem.tooltip({ position: 'bottom center', predelay: 400,
+            offset: [15, this.sidebars.length == 1 ? 10 : 0] });
+        elem.mousedown({ manager: this, id: id }, this._onClickSidebarNavButton);
+        this.navButtonsContainer.append(elem);
+    },
+
+    _createSidebarContainer: function(id) {
+        var elem = $('<' + this.sidebarElemTag + ' id="sidebarContainer__' + id + '"/>');
+        this.sidebarsContainer.append(elem);
+        this._setSidebarParentContainerWidth();
+    },
+
+    _setSidebarParentContainerWidth: function() {
+        this.parentContainer.width((this.sidebars.length * 100) + '%');
+    },
+
+    _onClickSidebarNavButton: function(evt) {
+        $(this).data('tooltip').hide();
+        evt.data.manager.showSidebarPanel.call(evt.data.manager, evt.data.id);
+    }
 
 };
