@@ -1,30 +1,27 @@
-function SidebarHandler()
+var SidebarHandler = function()
 {
-
     // Initialize state
-    this.init = function() {
-        log('Initialized SidebarHandler');
-        this.windowId = null;
-        this.tabId = null;
-        this.exists = false;
-        this.dockState = 'undocked'; // 'undocked', 'left', 'right'
-        this.dockWindowId = null;
-        this.targetWidth = 400;
-        this.monitorMetrics = null;
-        this.maximizedMonitorOffset = 0;
-        this.dockRememberedWidth = null;
-        this.dockRememberedLeft = null;
-        this.dockRememberedState = null;
-        this.creatingSidebar = false;
-        this.sidebarPanes = {};
-    };
-
-    // Always initialize state when SidebarHandler is instantiated
-    this.init();
+    this.windowId = null;
+    this.tabId = null;
+    this.exists = false;
+    this.dockState = 'undocked'; // 'undocked', 'left', 'right'
+    this.dockWindowId = null;
+    this.targetWidth = 400;
+    this.monitorMetrics = null;
+    this.maximizedMonitorOffset = 0;
+    this.dockRememberedWidth = null;
+    this.dockRememberedLeft = null;
+    this.dockRememberedState = null;
+    this.creatingSidebar = false;
+    this.sidebarPanes = {};
     this.sidebarUrl = chrome.extension.getURL('sidebar.html');
+    log('Initialized SidebarHandler');
+}
+
+SidebarHandler.prototype = {
 
     // Reset sidebar-specific state variables for e.g. when sidebar is destroyed
-    this.reset = function() {
+    reset: function() {
         this.windowId = null;
         this.tabId = null;
         this.exists = false;
@@ -34,18 +31,15 @@ function SidebarHandler()
         this.dockRememberedState = null;
         this.creatingSidebar = false;
         this.sidebarPanes = {};
-    };
+    },
 
-
-    // TODO make into .prototype style
-
-
-    this.registerSidebarPane = function(paneName, paneWindow) {
-        this.sidebarPanes[paneName] = paneWindow;
-    }
+    // Register a DOMWindow for a given pane that has been shown and is ready
+    registerSidebarPane: function(paneName, paneDOMWindow) {
+        this.sidebarPanes[paneName] = paneDOMWindow;
+    },
 
     // create the sidebar window
-    this.create = function() {
+    create: function() {
         if (this.sidebarExists()) {
             throw 'Cannot create() a new sidebar when one currently exists';
         }
@@ -89,14 +83,14 @@ function SidebarHandler()
                 chrome.windows.create(winSpec, function(win) { handler.onCreatedSidebarWindow.call(handler, win); } );
             });
         }
-    };
+    },
 
-    this.createDockedToCurrentWin = function() {
+    createDockedToCurrentWin: function() {
         this.dockWindowId = focusTracker.getFocused();
         this.create();
-    }
+    },
 
-    this.createWithDockState = function(dockState) {
+    createWithDockState: function(dockState) {
         if (this.sidebarExists()) {
             throw 'Cannot createWithDockState() when sidebar already exists';
         }
@@ -108,13 +102,13 @@ function SidebarHandler()
         }
 
         this.createDockedToCurrentWin();
-    }
+    },
 
-    this.sidebarExists = function() {
+    sidebarExists: function() {
         return this.tabId > 0;
-    }
+    },
 
-    this.remove = function(callback) {
+    remove: function(callback) {
         if (!this.sidebarExists()) {
             throw 'Cannot remove sidebar it does not exist';
         }
@@ -123,10 +117,10 @@ function SidebarHandler()
         chrome.tabs.remove(this.tabId, function() {
             handler.onRemoved(callback);
         });
-    }
+    },
 
     // called by .remove() after sidebar has been removed
-    this.onRemoved = function(callback) {
+    onRemoved: function(callback) {
         if (this.dockRememberedLeft != null && this.dockRememberedWidth != null) {
             positionWindow(this.dockWindowId, this.dockRememberedState, this.dockRememberedLeft, null, this.dockRememberedWidth, null);
         }
@@ -134,7 +128,7 @@ function SidebarHandler()
         if (callback) {
             callback();
         }
-    };
+    },
 
     // this.forgetDockWinRememberedMetrics = function() {
     //     this.dockRememberedWidth = null;
@@ -143,7 +137,7 @@ function SidebarHandler()
     // }
 
     // redock the sidebar window to a different window
-    this.redock = function(windowId) {
+    redock: function(windowId) {
         if (!this.sidebarExists()) {
             throw 'Cannot redock a nonexistent sidebar';
         };
@@ -152,11 +146,11 @@ function SidebarHandler()
             handler.dockWindowId = windowId;
             handler.create();
         });
-    };
+    },
 
     // adjust the window metrics of a window which is maximized
     // (has its edges going off the edge of the screen)
-    this.fixMaximizedWinMetrics = function(win)
+    fixMaximizedWinMetrics: function(win)
     {
         if (win.state == 'maximized') {
             // The dock-to window will be unmaximized after this process.
@@ -167,9 +161,9 @@ function SidebarHandler()
             win.height -= 2 * this.maximizedMonitorOffset;
         }
         return win;
-    }
+    },
 
-    this.getDockMetrics = function(win, side, sidebarWidth)
+    getDockMetrics: function(win, side, sidebarWidth)
     {
         var monitors = this.monitorMetrics;
 
@@ -284,15 +278,15 @@ function SidebarHandler()
             dockWinLeft: newLeft + leftSysTaskbarWidth + currentMonitorLeftOffset - primaryLeftOffset,
             dockWinWidth: newWidth
         };
-    };
+    },
 
     // called after creating the sidebar window
-    this.onCreatedSidebarWindow = function(win) {
+    onCreatedSidebarWindow: function(win) {
         log(win);
 
         // Store state info about newly created sidebar
         this.windowId = win.id;
         this.tabId = win.tabs[0].id;
         this.creatingSidebar = false;
-    };
+    }
 }
