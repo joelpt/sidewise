@@ -4,8 +4,7 @@
     <title i18n="sidebarTitle"></title>
 
     <link type="text/css" rel="stylesheet" href="/css/reset.css"/>
-    <!-- <link type="text/css" rel="stylesheet" href="/css/common.css"/> -->
-    <link type="text/css" rel="stylesheet" href="/css/sidebars.css"/>
+    <link type="text/css" rel="stylesheet" href="/css/sidebar.css"/>
     <link rel='shortcut icon' href="images/sidewise_icon_16.png" type="image/x-icon" />
 
     <script type="text/javascript" src="/js/jquery/jquery-1.7.2.min.js"></script>
@@ -13,91 +12,30 @@
     <script type='text/javascript' src='/js/jquery/jquery.scrollTo-min.js'></script>
 
     <script type="text/javascript" src="/js/lib/util/i18n.js"></script>
-
     <script type="text/javascript" src="/js/lib/ui/classes/SidebarNavManager.js"></script>
+    <script type="text/javascript" src="/js/sidebar.js"></script>
 
     <script>
-    function onClickOptionsButton() {
-        chrome.tabs.query({ url: chrome.extension.getURL('/options.html') }, function(tabs) {
-            if (tabs.length == 0) {
-                window.open('options.html');
-                return;
-            }
-            chrome.tabs.update(tabs[0].id, { active: true });
-        });
-    }
-
-    var sidebars = {
-        'pages': ['sidebars/pages.html', 'Pages', 'images/nav/pages.png'],
-        'reddit': ['sidebars/external-site.html#http://i.reddit.com', 'Reddit', 'images/nav/reddit.png'],
-        'tribunal': ['sidebars/external-site.html#https://tribunal.herokuapp.com/', 'Tribunal', 'images/nav/tribunal.png'],
-        'twitter': ['sidebars/external-site.html#http://mobile.twitter.com', 'Twitter', 'http://twitter.com/favicon.ico'],
-        'p404': ['sidebars/404.html', '404&nbsp;test', 'images/nav/pages.png']
-    };
-
-    var initialSidebar = 'pages';
-
-    var manager;
-
-    $(document).ready(function() {
-
-        manager = new SidebarNavManager(sidebars,
-            $('ul#sidebarButtons'), $('tr#sidebars'), $('table#main'), $('body'), 'td');
-        manager.createSidebarButtons();
-        manager.createSidebarContainers();
-        setTimeout(function() { $.scrollTo(0); }, 0);
-        setTimeout(function() { $.scrollTo(0); }, 50);
-        setTimeout(function() { manager.showSidebar(initialSidebar); }, 100);
-
-        // TODO pass keydown events to child iframe
-        // $(document).keydown(function(evt) {
-        //     var iframe = $( $('#pages').children('iframe').get(0).contentWindow.document );
-        //     iframe.trigger('keydown');
-        //     return false;
-        // });
-        $(document).keydown({manager: manager}, function(evt) {
-            if (evt.keyCode == 70 && evt.ctrlKey) {
-                var iframe = $(
-                    $('#' + evt.data.manager.currentSidebar ).children('iframe').get(0).contentWindow.document
-                    );
-                var filterBox = iframe.find('#pageFilter');
-                if (filterBox.length == 0) {
-                    filterBox.focus();
-                }
-                evt.stopPropagation();
-                return false;
-            }
-            return true;
-        });
-
-        $('#optionsButton')
-            .attr('title', getMessage('sidebars_optionsButtonTooltip'))
-            .tooltip({ position: 'bottom center', predelay: 400, offset: [15, -15]})
-            .click(onClickOptionsButton);
-
-        setI18NText();
-    });
-</script>
+        $(document).ready(onReady);
+    </script>
 
 </head>
 
 <body>
-
-    <table id="main">
-        <tr>
-            <td id="header">
-                <div id="headerBox">
-                    <ul id="sidebarButtons"/>
-                    <div id="headerRight">
-                        <div id="optionsButton">
-                            <img id="optionsButtonIcon" src="/images/settings_solid.png"/>
-                        </div>
+<table id="main">
+    <tr>
+        <td id="header">
+            <div id="headerBox">
+                <ul id="sidebarButtons"/>
+                <div id="headerRight">
+                    <div id="optionsButton">
+                        <img id="optionsButtonIcon" src="/images/settings_solid.png"/>
                     </div>
                 </div>
-            </td>
-        </tr>
-        <tr id="sidebars"/>
-    </table>
-
+            </div>
+        </td>
+    </tr>
+    <tr id="sidebars"/>
+</table>
 </body>
 </html>
