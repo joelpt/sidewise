@@ -3,6 +3,7 @@ function registerWindowEvents()
     chrome.windows.onCreated.addListener(onWindowCreated);
     chrome.windows.onRemoved.addListener(onWindowRemoved);
     chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
+    setInterval(onWindowUpdateCheckInterval, 90);
 }
 
 function onWindowCreated(win)
@@ -21,6 +22,10 @@ function onWindowRemoved(windowId)
 {
     if (windowId == sidebarHandler.windowId)
     {
+        if (sidebarHandler.removeInProgress) {
+            // Already handling the window removal elsewhere, don't do it twice
+            return;
+        }
         sidebarHandler.onRemoved();
         return;
     }
@@ -163,4 +168,36 @@ function onWindowFocusChanged(windowId)
     log('Recording focus as the now-focused window tab', windowId);
     focusTracker.setFocused(windowId);
     focusCurrentTabInPageTree();
+}
+
+function onWindowUpdateCheckInterval() {
+    if (!sidebarHandler.sidebarExists() || sidebarHandler.dockState == 'undocked' || sidebarHandler.resizeInProgress) {
+        return;
+    }
+
+    chrome.windows.get(sidebarHandler.dockWindowId, function(dock) {
+        var widthDelta = dock.width - sidebarHandler.currentDockWindowMetrics.width;
+        if (widthDelta != 0) {
+            // dock window width has changed, adjust sidebar accordingly
+            if (sidebarHandler.dockState == 'right') {
+                // dock window common edge with right sidebar was adjusted
+                sidebarHandler.currentSidebarMetrics.left += widthDelta;
+                sidebarHandler.currentSidebarMetrics.width -= widthDelta;
+            }
+            else {
+                // dock window common edge with left sidebar was adjusted
+                sidebarHandler.currentSidebarMetrics.width -= widthDelta;
+            }
+
+            sidebarHandler.currentDockWindowMetrics.width = dock.width;
+            sidebarHandler.targetWidth = sidebarHandler.currentSidebarMetrics.width;
+            saveSetting('sidebarTargetWidth', sidebarHandler.currentSidebarMetrics.width);
+            sidebarHandler.resizeInProgress = true;
+            positionWindow(sidebarHandler.windowId, {
+                left: sidebarHandler.currentSidebarMetrics.left,
+                width: sidebarHandler.currentSidebarMetrics.width
+            });
+            setTimeout(function() { sidebarHandler.resizeInProgress = false }, 100);
+        }
+    });
 }

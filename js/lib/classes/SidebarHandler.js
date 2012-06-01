@@ -1,20 +1,12 @@
 var SidebarHandler = function()
 {
     // Initialize state
-    this.windowId = null;
-    this.tabId = null;
-    this.exists = false;
     this.dockState = 'undocked'; // 'undocked', 'left', 'right'
-    this.dockWindowId = null;
     this.targetWidth = 400;
     this.monitorMetrics = null;
     this.maximizedMonitorOffset = 0;
-    this.dockRememberedWidth = null;
-    this.dockRememberedLeft = null;
-    this.dockRememberedState = null;
-    this.creatingSidebar = false;
-    this.sidebarPanes = {};
     this.sidebarUrl = chrome.extension.getURL('sidebar.html');
+    this.reset();
     log('Initialized SidebarHandler');
 }
 
@@ -24,13 +16,14 @@ SidebarHandler.prototype = {
     reset: function() {
         this.windowId = null;
         this.tabId = null;
-        this.exists = false;
         this.dockWindowId = null;
-        this.dockRememberedWidth = null;
-        this.dockRememberedLeft = null;
-        this.dockRememberedState = null;
         this.creatingSidebar = false;
+        this.resizeInProgress = false;
+        this.removeInProgress = false;
         this.sidebarPanes = {};
+        this.currentSidebarMetrics = {};
+        this.currentDockWindowMetrics = {};
+        this.lastDockWindowMetrics = {};
     },
 
     // Register a DOMWindow for a given pane that has been shown and is ready
@@ -67,18 +60,28 @@ SidebarHandler.prototype = {
             }
             chrome.windows.get(handler.dockWindowId, function(win) {
                 win = handler.fixMaximizedWinMetrics(win);
-                var metrics = handler.getDockMetrics(win, handler.dockState, handler.targetWidth);
+                var metrics = handler.getGoalDockMetrics(win, handler.dockState, handler.targetWidth);
                 log(metrics);
+                handler.lastDockWindowMetrics = {
+                    state: win.state,
+                    left: win.left,
+                    top: win.top,
+                    width: win.width,
+                    height: win.height
+                };
+                handler.currentDockWindowMetrics = {
+                    state: 'normal',
+                    left: metrics.dockWinLeft,
+                    top: win.top,
+                    width: metrics.dockWinWidth,
+                    height: win.height
+                };
+                positionWindow(handler.dockWindowId, handler.currentDockWindowMetrics);
                 var winSpec = { url: 'sidebar.html', type: 'popup',
                     left: metrics.sidebarLeft,
                     top: win.top,
                     width: handler.targetWidth,
                     height: win.height };
-                positionWindow(handler.dockWindowId, 'normal',
-                    metrics.dockWinLeft, win.top, metrics.dockWinWidth, win.height);
-                handler.dockRememberedLeft = win.left;
-                handler.dockRememberedWidth = win.width;
-                handler.dockRememberedState = win.state;
                 log(winSpec);
                 chrome.windows.create(winSpec, function(win) { handler.onCreatedSidebarWindow.call(handler, win); } );
             });
@@ -114,27 +117,78 @@ SidebarHandler.prototype = {
         }
 
         var handler = this;
+
+        handler.removeInProgress = true;
         chrome.tabs.remove(this.tabId, function() {
             handler.onRemoved(callback);
         });
     },
 
-    // called by .remove() after sidebar has been removed
-    onRemoved: function(callback) {
-        if (this.dockRememberedLeft != null && this.dockRememberedWidth != null) {
-            positionWindow(this.dockWindowId, this.dockRememberedState, this.dockRememberedLeft, null, this.dockRememberedWidth, null);
+    onResize: function() {
+        if (this.dockState == 'undocked' || this.resizeInProgress) {
+            return;
         }
-        this.reset();
-        if (callback) {
-            callback();
-        }
+        var handler = this;
+        chrome.windows.get(handler.windowId, function(sidebar) {
+            chrome.windows.get(handler.dockWindowId, function(dock) {
+                if (sidebar.width == handler.currentSidebarMetrics.width) {
+                    return;
+                }
+
+                handler.resizeInProgress = true;
+                var widthDelta = sidebar.width - handler.currentSidebarMetrics.width;
+
+                // shrink dock window
+                if (handler.dockState == 'right' && sidebar.left != handler.currentSidebarMetrics.left) {
+                    handler.currentDockWindowMetrics.width -= widthDelta;
+                }
+                else if (handler.dockState == 'left' && sidebar.left == handler.currentSidebarMetrics.left) {
+                    handler.currentDockWindowMetrics.width -= widthDelta;
+                    handler.currentDockWindowMetrics.left += widthDelta;
+                }
+                handler.currentSidebarMetrics.width = sidebar.width;
+                handler.currentSidebarMetrics.left = sidebar.left;
+                handler.currentSidebarMetrics.top = sidebar.top;
+                handler.currentSidebarMetrics.height = sidebar.height;
+                handler.targetWidth = sidebar.width;
+                positionWindow(handler.dockWindowId, {
+                    left: handler.currentDockWindowMetrics.left,
+                    width: handler.currentDockWindowMetrics.width
+                });
+                saveSetting('sidebarTargetWidth', sidebar.width);
+                setTimeout(function() { handler.resizeInProgress = false; }, 120);
+            });
+        });
     },
 
-    // this.forgetDockWinRememberedMetrics = function() {
-    //     this.dockRememberedWidth = null;
-    //     this.dockRememberedLeft = null;
-    //     this.dockRememberedState = null;
-    // }
+    // called by .remove() after sidebar has been removed
+    onRemoved: function(callback) {
+        if (this.dockState == 'undocked') {
+            this.reset();
+            if (callback) {
+                callback();
+            }
+            return;
+        }
+
+        var last = this.lastDockWindowMetrics;
+        var handler = this;
+
+        // Inhibit dock/sidebar window sizing compensation from occurring until
+        // we call handler.reset() below
+        handler.resizeInProgress = true;
+
+        positionWindow(
+            this.dockWindowId,
+            { state: last.state, left: last.left, width: last.width },
+            function(win) {
+                handler.reset();
+                if (callback) {
+                    callback();
+                }
+            }
+        );
+    },
 
     // redock the sidebar window to a different window
     redock: function(windowId) {
@@ -163,7 +217,7 @@ SidebarHandler.prototype = {
         return win;
     },
 
-    getDockMetrics: function(win, side, sidebarWidth)
+    getGoalDockMetrics: function(win, side, sidebarWidth)
     {
         var monitors = this.monitorMetrics;
 
@@ -287,6 +341,7 @@ SidebarHandler.prototype = {
         // Store state info about newly created sidebar
         this.windowId = win.id;
         this.tabId = win.tabs[0].id;
+        this.currentSidebarMetrics = {left: win.left, top: win.top, width: win.width, height: win.height};
         this.creatingSidebar = false;
     }
 }

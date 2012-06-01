@@ -8,8 +8,10 @@ var sidebars = [
 
 var initialSidebar = 'pages';
 var manager;
+var bg;
 
 function onReady() {
+    bg = chrome.extension.getBackgroundPage();
     manager = new SidebarNavManager($('ul#sidebarButtons'), $('tr#sidebars'),
         $('table#main'), $('body'), 'td');
     // manager.createSidebarButtons();
@@ -36,6 +38,8 @@ function onReady() {
         return true;
     });
 
+    $(window).resize(onResize);
+
     $('#optionsButton')
         .attr('title', getMessage('sidebars_optionsButtonTooltip'))
         .tooltip({ position: 'bottom center', predelay: 400, offset: [15, -15]})
@@ -52,4 +56,18 @@ function onClickOptionsButton() {
         }
         chrome.tabs.update(tabs[0].id, { active: true });
     });
+}
+
+var resizeTimeout = null;
+function onResize() {
+    bg.sidebarHandler.onResize();
+    if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+    }
+    resizeTimeout = setTimeout(onResizeTimeout, 50);
+}
+
+function onResizeTimeout() {
+    bg.sidebarHandler.onResize();
+    resizeTimeout = null;
 }

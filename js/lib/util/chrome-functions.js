@@ -7,21 +7,12 @@ function getVersion() {
 }
 
 // Update window's position and state.
-// Pass null for metrics to leave as-is.
-function positionWindow(winId, state, left, top, width, height)
+function positionWindow(winId, metrics, callback)
 {
-    var metrics = {};
-    if (state != null)
-        metrics.state = state;
-    if (left != null)
-        metrics.left = left;
-    if (top != null)
-        metrics.top = top;
-    if (width != null)
-        metrics.width = width;
-    if (height != null)
-        metrics.height = height;
-
+    if (callback) {
+        chrome.windows.update(winId, metrics, callback);
+        return;
+    }
     chrome.windows.update(winId, metrics);
 }
 

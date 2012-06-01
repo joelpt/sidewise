@@ -1,3 +1,12 @@
+add option 'sidebar follows focused window'
+    we MUST implement a non destructive .redock in this case, so everything about the current sidebar
+    state is retained such as how scrolled it is etc. to do:
+        resize before-undock window to original position/state
+        get metrics of new dock window
+        resize new dock window as needed per metrics
+        move sidebar to new desired position
+        save new dock window's id and remembered position/state
+turn a page's .unread state back on when the page is reloaded; onComplete might be a good spot to do this
 fix the "focused chrome window" functionality:
     turn it into a class
     .windows
@@ -31,13 +40,6 @@ fix detect-monitors.html for macs:
             all their own details (except for mon 1 which details should be 'locked')
             allow ordering of the monitors with up/down arrows to put them in the correct
             order, but keep primary monitor locked and labeled as such
-move 'unread' state over to pagetree, and use PageTree.focusPage() to clear it and transfer it to
-    fancytree; this will preserve the unread state between sidebar refreshes/opens/closes and alleviate
-    the need to hackishly manage unread within the fancytree calling code
-consider discarding onFocusElem because it is the only fancytree event so far that is of the type
-    onVerbElem; these methods will generally be called *by* other code and therefore that calling
-    code ought to be able to do whatever it needs to do without an additional callback;
-    controller vs. controlled
 abuse <img onerror=""> to catch favicons that fail to load
     replace them with chrome://favicon/url - will need to instruct background page to do this,
     best approach may be:
@@ -91,6 +93,8 @@ fancytree
         prompt for name of bookmark group should be a dropdown or option for 'new bookmark group'
     pinned state
         visual representation
+            addRowType should take some prefixButtons array that works like the hideButtons,
+            they appear at the beginning of a row and have onClick handling and tooltips
         toggling via context menu
     search-as-you-type box
     add an event handler per rowType, onFormatTitle, which allows us to override the default
@@ -154,3 +158,4 @@ ability to auto-hide sidebar top nav bar (reveal when mouse gets near)
     want to .hide() #header at end or it messes up page structure
     after this, slide down a few pixel auto-hide-detector bar which un-autohides #headerBox on hover
 smart arrows for navigating sidebar nav buttons when there isn't enough space to show them all
+attribute http://www.iconlet.com/info/87692_light-bulb_16x16, famfamfam.mini
