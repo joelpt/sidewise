@@ -106,4 +106,8 @@ function onGetPageDetailsMessage(tab, msg)
 function onWindowResizedMessage(tab, request)
 {
     log(tab.id, request);
+
+    // if (tab.id == sidebarHandler.tabId) {
+    //     sidebarHandler.onResize();
+    // }
 }

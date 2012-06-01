@@ -24,6 +24,7 @@ function updateStateFromSettings() {
 
     sh.monitorMetrics = loadSetting('monitorMetrics');
     sh.maximizedMonitorOffset = loadSetting('maximizedMonitorOffset');
+    sh.targetWidth = loadSetting('sidebarTargetWidth');
 
     var dockState = loadSetting('dockState');
     if (sh.sidebarExists() && sh.dockState != dockState) {
@@ -46,6 +47,7 @@ function initializeDefaultSettings() {
         dockState: 'right',
         browserActionButtonBehavior: 'toggle',
         loggingEnabled:  false,
+        sidebarTargetWidth: 400,
         settingsInitialized: true
     };
 

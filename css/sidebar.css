@@ -12,6 +12,7 @@ td#header {
     height: 2.25em;
     -webkit-user-select: none;
     user-select: none;
+    width: 1000%;
 }
 
 div#headerBox {

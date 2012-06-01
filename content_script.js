@@ -4,6 +4,7 @@ if (!document.sidewiseContentScriptApplied) {
     document.sidewiseContentScriptApplied = true;
 
     window.addEventListener('resize', function(evt) {
-        chrome.extension.sendRequest({ op: 'windowResized' });
+        chrome.extension.sendRequest({ op: 'windowResized', left: window.screenLeft, top: window.screenTop,
+            width: window.outerWidth, height: window.outerHeight });
     });
 }
