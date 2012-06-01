@@ -7,8 +7,6 @@ function onLoad()
     // this functions like a bit like an onready event for Chrome
     chrome.tabs.getCurrent(function() {
         // Early initialization
-        localStorage.clear();
-
         tree = new PageTree(PageTreeCallbackProxy, savePageTreeToLocalStorage);
         // loadPageTreeFromLocalStorage();
         sidebarHandler = new SidebarHandler();

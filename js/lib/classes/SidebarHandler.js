@@ -19,6 +19,7 @@ SidebarHandler.prototype = {
         this.dockWindowId = null;
         this.creatingSidebar = false;
         this.resizeInProgress = false;
+        this.removeInProgress = false;
         this.sidebarPanes = {};
         this.currentSidebarMetrics = {};
         this.currentDockWindowMetrics = {};
@@ -117,17 +118,13 @@ SidebarHandler.prototype = {
 
         var handler = this;
 
-        // Inhibit dock/sidebar window sizing compensation from occurring until
-        // we call .reset() within handler.onRemoved
-        handler.resizeInProgress = true;
-
+        handler.removeInProgress = true;
         chrome.tabs.remove(this.tabId, function() {
             handler.onRemoved(callback);
         });
     },
 
     onResize: function() {
-        return;
         if (this.dockState == 'undocked' || this.resizeInProgress) {
             return;
         }
@@ -176,6 +173,11 @@ SidebarHandler.prototype = {
 
         var last = this.lastDockWindowMetrics;
         var handler = this;
+
+        // Inhibit dock/sidebar window sizing compensation from occurring until
+        // we call handler.reset() below
+        handler.resizeInProgress = true;
+
         positionWindow(
             this.dockWindowId,
             { state: last.state, left: last.left, width: last.width },

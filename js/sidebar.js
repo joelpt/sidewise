@@ -60,9 +60,7 @@ function onClickOptionsButton() {
 
 var resizeTimeout = null;
 function onResize() {
-    return;
     bg.sidebarHandler.onResize();
-    // return;
     if (resizeTimeout) {
         clearTimeout(resizeTimeout);
     }

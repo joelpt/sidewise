@@ -22,6 +22,10 @@ function onWindowRemoved(windowId)
 {
     if (windowId == sidebarHandler.windowId)
     {
+        if (sidebarHandler.removeInProgress) {
+            // Already handling the window removal elsewhere, don't do it twice
+            return;
+        }
         sidebarHandler.onRemoved();
         return;
     }
