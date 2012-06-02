@@ -170,6 +170,8 @@ function onWindowFocusChanged(windowId)
     focusCurrentTabInPageTree();
 }
 
+var resetResizeFlagTimeout = null;
+
 function onWindowUpdateCheckInterval() {
     if (sidebarHandler.resizeInProgress) {
         return;
@@ -211,7 +213,10 @@ function onWindowUpdateCheckInterval() {
             left: sidebarHandler.currentSidebarMetrics.left,
             width: sidebarHandler.currentSidebarMetrics.width
         }, function() {
-            sidebarHandler.resizingSidebar = false;
+            clearTimeout(resetResizeFlagTimeout);
+            resetResizeFlagTimeout = setTimeout(function() {
+                sidebarHandler.resizingSidebar = false;
+            }, 25);
         });
 
     });
