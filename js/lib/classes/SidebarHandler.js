@@ -20,6 +20,8 @@ SidebarHandler.prototype = {
         this.creatingSidebar = false;
         this.resizeInProgress = false;
         this.removeInProgress = false;
+        this.resizingSidebar = false;
+        this.resizeResetTimeout = null;
         this.sidebarPanes = {};
         this.currentSidebarMetrics = {};
         this.currentDockWindowMetrics = {};
@@ -131,6 +133,10 @@ SidebarHandler.prototype = {
         var handler = this;
         chrome.windows.get(handler.windowId, function(sidebar) {
             chrome.windows.get(handler.dockWindowId, function(dock) {
+                if (handler.resizeInProgress) {
+                    return;
+                }
+
                 if (sidebar.width == handler.currentSidebarMetrics.width) {
                     return;
                 }
@@ -156,7 +162,11 @@ SidebarHandler.prototype = {
                     width: handler.currentDockWindowMetrics.width
                 });
                 saveSetting('sidebarTargetWidth', sidebar.width);
-                setTimeout(function() { handler.resizeInProgress = false; }, 120);
+                if (handler.resizeResetTimeout) {
+                    clearTimeout(handler.resizeResetTimeout);
+                    handler.resizeResetTimeout = null;
+                }
+                handler.resizeResetTimeout = setTimeout(function() { handler.resizeInProgress = false; }, 100);
             });
         });
     },

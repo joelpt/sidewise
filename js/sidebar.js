@@ -26,8 +26,8 @@ function onReady() {
     $(document).keydown({manager: manager}, function(evt) {
         if (evt.keyCode == 70 && evt.ctrlKey) {
             var iframe = $(
-                $('#' + evt.data.manager.currentSidebar ).children('iframe').get(0).contentWindow.document
-                );
+                $('#' + evt.data.manager.currentSidebar).children('iframe').get(0).contentWindow.document
+            );
             var filterBox = iframe.find('#pageFilter');
             if (filterBox.length == 0) {
                 filterBox.focus();
@@ -60,11 +60,11 @@ function onClickOptionsButton() {
 
 var resizeTimeout = null;
 function onResize() {
-    bg.sidebarHandler.onResize();
-    if (resizeTimeout) {
-        clearTimeout(resizeTimeout);
+    if (bg.sidebarHandler.dockState == 'undocked' || bg.sidebarHandler.resizingSidebar) {
+        return;
     }
-    resizeTimeout = setTimeout(onResizeTimeout, 50);
+    bg.sidebarHandler.onResize();
+    resizeTimeout = setTimeout(onResizeTimeout, 200);
 }
 
 function onResizeTimeout() {

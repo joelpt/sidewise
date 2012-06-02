@@ -3,7 +3,7 @@ function registerWindowEvents()
     chrome.windows.onCreated.addListener(onWindowCreated);
     chrome.windows.onRemoved.addListener(onWindowRemoved);
     chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
-    setInterval(onWindowUpdateCheckInterval, 90);
+    setInterval(onWindowUpdateCheckInterval, 150);
 }
 
 function onWindowCreated(win)
@@ -170,6 +170,8 @@ function onWindowFocusChanged(windowId)
     focusCurrentTabInPageTree();
 }
 
+var resetTimeout = null;
+
 function onWindowUpdateCheckInterval() {
     if (!sidebarHandler.sidebarExists() || sidebarHandler.dockState == 'undocked' || sidebarHandler.resizeInProgress) {
         return;
@@ -177,27 +179,44 @@ function onWindowUpdateCheckInterval() {
 
     chrome.windows.get(sidebarHandler.dockWindowId, function(dock) {
         var widthDelta = dock.width - sidebarHandler.currentDockWindowMetrics.width;
-        if (widthDelta != 0) {
-            // dock window width has changed, adjust sidebar accordingly
-            if (sidebarHandler.dockState == 'right') {
-                // dock window common edge with right sidebar was adjusted
-                sidebarHandler.currentSidebarMetrics.left += widthDelta;
-                sidebarHandler.currentSidebarMetrics.width -= widthDelta;
-            }
-            else {
-                // dock window common edge with left sidebar was adjusted
-                sidebarHandler.currentSidebarMetrics.width -= widthDelta;
-            }
-
-            sidebarHandler.currentDockWindowMetrics.width = dock.width;
-            sidebarHandler.targetWidth = sidebarHandler.currentSidebarMetrics.width;
-            saveSetting('sidebarTargetWidth', sidebarHandler.currentSidebarMetrics.width);
-            sidebarHandler.resizeInProgress = true;
-            positionWindow(sidebarHandler.windowId, {
-                left: sidebarHandler.currentSidebarMetrics.left,
-                width: sidebarHandler.currentSidebarMetrics.width
-            });
-            setTimeout(function() { sidebarHandler.resizeInProgress = false }, 100);
+        if (widthDelta == 0) {
+            return;
         }
+
+        if (sidebarHandler.resizeInProgress) {
+            return;
+        }
+
+        // dock window width has changed, adjust sidebar accordingly
+        if (sidebarHandler.dockState == 'right') {
+            // dock window common edge with right sidebar was adjusted
+            sidebarHandler.currentSidebarMetrics.left += widthDelta;
+            sidebarHandler.currentSidebarMetrics.width -= widthDelta;
+        }
+        else {
+            // dock window common edge with left sidebar was adjusted
+            sidebarHandler.currentSidebarMetrics.width -= widthDelta;
+        }
+
+        // Update stored metrics
+        sidebarHandler.currentDockWindowMetrics.width = dock.width;
+        sidebarHandler.targetWidth = sidebarHandler.currentSidebarMetrics.width;
+        saveSetting('sidebarTargetWidth', sidebarHandler.currentSidebarMetrics.width);
+
+        // Resize sidebar
+        sidebarHandler.resizingSidebar = true;
+        positionWindow(sidebarHandler.windowId, {
+            left: sidebarHandler.currentSidebarMetrics.left,
+            width: sidebarHandler.currentSidebarMetrics.width
+        });
+
+        // Set timeout to listen to sidebar's resize events again
+        if (resetTimeout) {
+            clearTimeout(resetTimeout);
+            resetTimeout = null;
+        }
+        resetTimeout = setTimeout(function() {
+            sidebarHandler.resizingSidebar = false;
+        }, 500);
     });
 }
