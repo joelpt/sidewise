@@ -45,7 +45,7 @@ function initializeDefaultSettings() {
         openSidebarOnStartup: true,
         keepSidebarOnTop: false,
         dockState: 'right',
-        browserActionButtonBehavior: 'toggle',
+        browserActionButtonBehavior: 'show',
         loggingEnabled:  false,
         sidebarTargetWidth: 400,
         settingsInitialized: true
