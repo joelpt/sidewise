@@ -3,7 +3,7 @@ function registerWindowEvents()
     chrome.windows.onCreated.addListener(onWindowCreated);
     chrome.windows.onRemoved.addListener(onWindowRemoved);
     chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
-    setInterval(onWindowUpdateCheckInterval, 150);
+    setInterval(onWindowUpdateCheckInterval, 100);
 }
 
 function onWindowCreated(win)
@@ -170,10 +170,12 @@ function onWindowFocusChanged(windowId)
     focusCurrentTabInPageTree();
 }
 
-var resetTimeout = null;
-
 function onWindowUpdateCheckInterval() {
-    if (!sidebarHandler.sidebarExists() || sidebarHandler.dockState == 'undocked' || sidebarHandler.resizeInProgress) {
+    if (sidebarHandler.resizeInProgress) {
+        return;
+    }
+
+    if (!sidebarHandler.sidebarExists() || sidebarHandler.dockState == 'undocked') {
         return;
     }
 
@@ -208,15 +210,9 @@ function onWindowUpdateCheckInterval() {
         positionWindow(sidebarHandler.windowId, {
             left: sidebarHandler.currentSidebarMetrics.left,
             width: sidebarHandler.currentSidebarMetrics.width
+        }, function() {
+            sidebarHandler.resizingSidebar = false;
         });
 
-        // Set timeout to listen to sidebar's resize events again
-        if (resetTimeout) {
-            clearTimeout(resetTimeout);
-            resetTimeout = null;
-        }
-        resetTimeout = setTimeout(function() {
-            sidebarHandler.resizingSidebar = false;
-        }, 500);
     });
 }

@@ -21,7 +21,6 @@ SidebarHandler.prototype = {
         this.resizeInProgress = false;
         this.removeInProgress = false;
         this.resizingSidebar = false;
-        this.resizeResetTimeout = null;
         this.sidebarPanes = {};
         this.currentSidebarMetrics = {};
         this.currentDockWindowMetrics = {};
@@ -110,7 +109,7 @@ SidebarHandler.prototype = {
     },
 
     sidebarExists: function() {
-        return this.tabId > 0;
+        return this.tabId ? true : false;
     },
 
     remove: function(callback) {
@@ -157,16 +156,13 @@ SidebarHandler.prototype = {
                 handler.currentSidebarMetrics.top = sidebar.top;
                 handler.currentSidebarMetrics.height = sidebar.height;
                 handler.targetWidth = sidebar.width;
+                saveSetting('sidebarTargetWidth', sidebar.width);
                 positionWindow(handler.dockWindowId, {
                     left: handler.currentDockWindowMetrics.left,
                     width: handler.currentDockWindowMetrics.width
+                }, function() {
+                    handler.resizeInProgress = false;
                 });
-                saveSetting('sidebarTargetWidth', sidebar.width);
-                if (handler.resizeResetTimeout) {
-                    clearTimeout(handler.resizeResetTimeout);
-                    handler.resizeResetTimeout = null;
-                }
-                handler.resizeResetTimeout = setTimeout(function() { handler.resizeInProgress = false; }, 100);
             });
         });
     },
