@@ -43,7 +43,7 @@
     "option_browserActionButtonBehavior": { "message": "When browser toolbar button is clicked" },
     "option_browserActionButtonBehavior_toggle": { "message": "toggle sidebar on/off" },
     "option_browserActionButtonBehavior_show": { "message": "show/redock sidebar" },
-    "option_browserActionButtonBehavior_hint": { "message": "If 'toggle sidebar on/off' is selected, clicking Sidewise's browser toolbar button will toggle the sidebar on or off.<br/><br/>If 'show/redock sidebar' is selected, the sidebar will be turned on and docked to the current window when the button is clicked. To close the sidebar in this case, use the close button on the sidebar's title bar." },
+    "option_browserActionButtonBehavior_hint": { "message": "If 'show/redock sidebar' is selected, the sidebar will be turned on and docked to the current window when the button is clicked. To close the sidebar in this case, use the close button on the sidebar's title bar.<br/><br/>If 'toggle sidebar on/off' is selected, clicking Sidewise's browser toolbar button will toggle the sidebar on or off." },
     "option_dockState": { "message": "Dock sidebar to this side of the window" },
     "option_dockState_left": { "message": "left" },
     "option_dockState_right": { "message": "right" },
@@ -55,7 +55,8 @@
     "option_maximizedMonitorOffset_units": { "message": "pixels" },
     "option_detectMonitorsButton": { "message": "Detect all monitors now" },
 
-    "option_loggingEnabled": { "message": "Enable debug logging in background page" },
+    "option_loggingEnabled": { "message": "Enable debugging" },
+    "option_loggingEnabled_hint": { "message": "Outputs verbose logging information to Javascript console of background page, sidebar, and options page. For development or bug feedback only." },
 
     "option_saveButton": { "message": "Save settings" },
     "optionsSaveNotNeeded": { "message": "Note: Settings are automatically saved as you change them." }
