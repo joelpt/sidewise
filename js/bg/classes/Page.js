@@ -4,6 +4,8 @@
   */
 var Page = function(tab, overrideStatus)
 {
+    PageTreeElement.call(this);
+
     var url = tab.url ? dropUrlHash(tab.url) : '';
 
     this.elemType = 'page';
@@ -15,8 +17,6 @@ var Page = function(tab, overrideStatus)
     this.placed = false;
     this.favicon = getBestFavIconUrl(tab.favIconUrl, url);
     this.unread = false;
-
-    PageTreeElement.call(this);
 
     log('Page', tab, this);
     console.log(this.status, tab.id);
