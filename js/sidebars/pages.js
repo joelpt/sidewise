@@ -20,6 +20,49 @@ $(document).ready(function() {
 
 });
 
+function initTree(attachToSelector, pageTree) {
+    var rowTypes = {
+        'page': {
+            onClick: onPageRowClicked,
+            onMiddleClick: onCloseButtonPageRow,
+            onIconError: onPageRowIconError,
+            onFormatTooltip: onPageRowFormatTooltip,
+            onResizeTooltip: onResizeTooltip,
+            filterByExtraParams: ['url'],
+            tooltipMaxWidthPercent: 0.9,
+            buttons: [
+                {icon: '/images/reload.png', tooltip: 'Reload', onClick: function() { alert('reload'); } },
+                {icon: '/images/close.png', tooltip: 'Close', onClick: onCloseButtonPageRow }
+            ]
+        },
+        'window': {
+            onClick: onWindowRowClicked,
+            onFormatTooltip: onWindowRowFormatTooltip,
+            onResizeTooltip: onResizeTooltip,
+            tooltipMaxWidthFixed: 150,
+            buttons: [
+                {icon: '/images/close.png', tooltip: 'Close&nbsp;window', onClick: onCloseButtonWindowRow }
+            ]
+        }
+    };
+
+    tree = new FancyTree($(attachToSelector), {
+        permitTooltipHandler: onPermitFancyTreeTooltip,
+        rowTypes: rowTypes
+    });
+
+    populateFancyTreeFromPageTree(tree, pageTree);
+
+    return tree;
+}
+
+function populateFancyTreeFromPageTree(fancyTree, pageTree) {
+    pageTree.forEach(function(e, d, i, p) {
+        var parentId = (p ? p.id : undefined);
+        addPageTreeElemToFancyTree(fancyTree, e, parentId);
+    });
+}
+
 function getBigTooltipContent(header, icon, body) {
     var elem = $('<div class="ftBigTip"/>');
     var table = $('<table/>');
@@ -57,12 +100,6 @@ function onPageRowFormatTooltip(evt) {
     return getBigTooltipContent(title, icon, url);
 }
 
-function onResizeTooltip(evt) {
-    // Manually set a fixed width for the tooltip's text content region; without this
-    // the CSS 'word-wrap: break-word' has no effect
-    evt.data.tooltip.find('td:nth-child(2) > div').width(evt.data.width - 47);
-}
-
 function onWindowRowFormatTooltip(evt) {
     var incognito = (evt.data.row.attr('incognito') == 'true');
     var childCount = evt.data.treeObj.getChildrenCount(evt.data.row);
@@ -71,6 +108,12 @@ function onWindowRowFormatTooltip(evt) {
         + (incognito ? 'incognito' + ' ' : '')
         + (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'));
     return getBigTooltipContent(evt.data.label, img, body);
+}
+
+function onResizeTooltip(evt) {
+    // Manually set a fixed width for the tooltip's text content region; without this
+    // the CSS 'word-wrap: break-word' has no effect
+    evt.data.tooltip.find('td:nth-child(2) > div').width(evt.data.width - 47);
 }
 
 function onCloseButtonPageRow(evt)
@@ -181,47 +224,5 @@ function onPermitFancyTreeTooltip() {
 
 function onPageRowIconError(evt) {
     evt.target.src = getChromeFavIconUrl(evt.data.row.attr('url'));
-}
-
-function initTree(attachToSelector, pageTree) {
-    var rowTypes = {
-        'page': {
-            onClick: onPageRowClicked,
-            onMiddleClick: onCloseButtonPageRow,
-            onIconError: onPageRowIconError,
-            onFormatTooltip: onPageRowFormatTooltip,
-            onResizeTooltip: onResizeTooltip,
-            tooltipMaxWidthPercent: 0.9,
-            buttons: [
-                {icon: '/images/reload.png', tooltip: 'Reload', onClick: function() { alert('reload'); } },
-                {icon: '/images/close.png', tooltip: 'Close', onClick: onCloseButtonPageRow }
-            ]
-        },
-        'window': {
-            onClick: onWindowRowClicked,
-            onFormatTooltip: onWindowRowFormatTooltip,
-            onResizeTooltip: onResizeTooltip,
-            tooltipMaxWidthFixed: 150,
-            buttons: [
-                {icon: '/images/close.png', tooltip: 'Close&nbsp;window', onClick: onCloseButtonWindowRow }
-            ]
-        }
-    };
-
-    tree = new FancyTree($(attachToSelector), {
-        permitTooltipHandler: onPermitFancyTreeTooltip,
-        rowTypes: rowTypes
-    });
-
-    populateFancyTreeFromPageTree(tree, pageTree);
-
-    return tree;
-}
-
-function populateFancyTreeFromPageTree(fancyTree, pageTree) {
-    pageTree.forEach(function(e, d, i, p) {
-        var parentId = (p ? p.id : undefined);
-        addPageTreeElemToFancyTree(fancyTree, e, parentId);
-    });
 }
 
