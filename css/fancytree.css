@@ -215,7 +215,7 @@ div.ftButtons {
 }
 
 .ftFilterControl + .ftRoot {
-    margin-top: 0.25em;
+    margin-top: 0.375em;
 }
 
 .ftFilterInput {
@@ -234,11 +234,6 @@ div.ftButtons {
     display: none;
 }
 
-.ftFiltering {
-    margin-left: 0.25em;
-}
-
-
 .ftFiltering .ftItemRow {
     display: none;
 }
@@ -253,18 +248,11 @@ div.ftButtons {
 }
 
 .ftFiltering .ftChildren {
+    display: block !important;
+}
+
+.ftFiltering .ftChildren {
     margin-left: 0px !important;
     padding-left: 0px !important;
     border-left: none !important;
 }
-
-.ftFiltering:hover .ftItemRowContent {
-    /* TODO this fixes the problem of the tree contents shifting 1px right on hover,
-       but blows the border away in the border-left instance or is an ugly margin hack
-       in the margin-left instance; we need to figure out really WHY this shifting
-       is happening and probably make it so that the non hover version of the element
-       has equivalent stuffs. It's definitely a border-left ADDITION on default hover atm. */
-    /*border-left: none !important;*/
-    margin-left: -1px !important;
-}
-

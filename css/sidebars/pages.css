@@ -1,5 +1,5 @@
 #pageTree {
-    margin: 1em 0em;
+    margin: 0.25em 0em;
 }
 
 body {
@@ -33,12 +33,12 @@ body {
 }
 
 .ftRowNode[rowtype=window] > .ftChildren {
-    margin-left: -3px !important;
+    margin-left: -3px;
 }
 
 .ftRowNode[rowtype=window] > .ftChildren:hover {
-    border-left: none !important;
-    margin-left: -2px !important;
+    border-left: none;
+    margin-left: -2px;
 }
 
 .ftRowNode[rowtype=window]+.ftRowNode[rowtype=window] {
