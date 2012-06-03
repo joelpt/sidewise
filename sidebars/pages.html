@@ -200,29 +200,33 @@
         }
 
         function initTree(attachToSelector, pageTree) {
-            tree = new FancyTree($(attachToSelector), onPermitFancyTreeTooltip);
+            var rowTypes = {
+                'page': {
+                    onClick: onPageRowClicked,
+                    onMiddleClick: onCloseButtonPageRow,
+                    onIconError: onPageRowIconError,
+                    onFormatTooltip: onPageRowFormatTooltip,
+                    onResizeTooltip: onResizeTooltip,
+                    tooltipMaxWidthPercent: 0.9,
+                    buttons: [
+                        {icon: '/images/reload.png', tooltip: 'Reload', onClick: function() { alert('reload'); } },
+                        {icon: '/images/close.png', tooltip: 'Close', onClick: onCloseButtonPageRow }
+                    ]
+                },
+                'window': {
+                    onClick: onWindowRowClicked,
+                    onFormatTooltip: onWindowRowFormatTooltip,
+                    onResizeTooltip: onResizeTooltip,
+                    tooltipMaxWidthFixed: 150,
+                    buttons: [
+                        {icon: '/images/close.png', tooltip: 'Close&nbsp;window', onClick: onCloseButtonWindowRow }
+                    ]
+                }
+            };
 
-            tree.addRowType('page', {
-                onClick: onPageRowClicked,
-                onMiddleClick: onCloseButtonPageRow,
-                onIconError: onPageRowIconError,
-                onFormatTooltip: onPageRowFormatTooltip,
-                onResizeTooltip: onResizeTooltip,
-                tooltipMaxWidthPercent: 0.9,
-                buttons: [
-                    {icon: '/images/reload.png', tooltip: 'Reload', onClick: function() { alert('reload'); } },
-                    {icon: '/images/close.png', tooltip: 'Close', onClick: onCloseButtonPageRow }
-                ]
-            });
-
-            tree.addRowType('window', {
-                onClick: onWindowRowClicked,
-                onFormatTooltip: onWindowRowFormatTooltip,
-                onResizeTooltip: onResizeTooltip,
-                tooltipMaxWidthFixed: 150,
-                buttons: [
-                    {icon: '/images/close.png', tooltip: 'Close&nbsp;window', onClick: onCloseButtonWindowRow }
-                ]
+            tree = new FancyTree($(attachToSelector), {
+                permitTooltipHandler: onPermitFancyTreeTooltip,
+                rowTypes: rowTypes
             });
 
             populateFancyTreeFromPageTree(tree, pageTree);

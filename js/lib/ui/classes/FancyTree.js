@@ -1,29 +1,67 @@
 /**
   * @constructor
-  * @param rootElem The root DOM element to attach the FancyTree to.
+  * @param attachToElem The root DOM element to append the FancyTree under.
+  * @param options A dictionary of options, all optional:
+  *                {
+  *                   permitTooltipHandler: Function(), // if this function returns false, block showing a row tip
+  *                   tooltipTopOffset: integer,        // offset row tip from row by this much pixel spacing
+  *                   rowTypes:
+  *                   {
+  *                       identifier:                   // identifying string for each type of row to support
+  *                       {
+  *                           onClick: Function(evt),         // left click event handler
+  *                           onMiddleClick: Function(evt),   // middle click event handler
+  *                           onIconError: Function(evt),     // row icon onerror event handler
+  *                           onFormatTooltip: Function(evt), // called to obtain the body for a row tip for display
+  *                           onResizeTooltip: Function(evt), // called if a row tip is forcibly resized by FancyTree
+  *                           tooltipMaxWidthFixed: integer,  // max width of row tip, as number of pixels
+  *                           tooltipMaxWidthPercent: float,  // max width or row tip, as % of parent width (0.0-1.0)
+  *                           buttons: [                      // array of show-on-row-hover row action buttons
+  *                               {
+  *                                   icon: url,              // URL string of icon for button
+  *                                   tooltip: string,        // tooltip text of button shown on extended hover
+  *                                   onClick: Function(evt)  // left click event handler for button
+  *                               },
+  *                               ...
+  *                           ]
+  *                       },
+  *                       ...
+  *                   }
+  *               }
+  *
+  *               All rowTypes' event handlers are passed the hosting FancyTree object in evt.data.treeObj and the
+  *               involved row's <li> jQuery element in evt.data.row.
+  *
   */
-var FancyTree = function(rootElem, permitTooltipHandler) {
+var FancyTree = function(attachToElem, options) {
+    // attach new tree <ul> to attachToElem
     var rootNode = $('<li class="ftRoot">');
     var rootUL = $('<ul class="ftChildren">');
     rootNode.append(rootUL);
-    $(rootElem).append(rootNode);
+    $(attachToElem).append(rootNode);
 
+    // configure tree initial state
     this.root = rootNode;
-    this.rowTypes = {};
-    this.focusedRow = null;
-    this.lastFocusedWinId = null; // TODO don't do this here
-    this.permitTooltipHandler = permitTooltipHandler;
-    this.tooltipTopOffset = 12;
-    this.hoveringRowButtons = false;
 
+    this.permitTooltipHandler = options.permitTooltipHandler;
+    this.focusedRow = null;
+    this.hoveringRowButtons = false;
+    this.tooltipTopOffset = options.tooltipTopOffset || 12;
     this.tooltip = null;
     this.simpletip = $('<div id="ftSimpleTip"/>').hide();
     $('body').append(this.simpletip);
     this.tooltipShowTimer = null;
 
+    // configure row types
+    this.rowTypes = {};
+    var rowTypes = options.rowTypes || {'row': {}};
+    for (var rowType in rowTypes) {
+        this.addRowType(rowType, rowTypes[rowType]);
+    }
+
+    // configure tree's event handlers
     var treeObj = this;
     var data = { treeObj: treeObj };
-
     $(document).on('mouseenter', '.ftItemRowContent', data, this.onItemRowContentMouseEnter);
     $(document).on('mouseleave', '.ftItemRowContent', data, this.onItemRowContentMouseLeave);
     $(document).on('mouseover', '#ftTooltip', data, this.handleHideTooltipEvent);
@@ -32,19 +70,7 @@ var FancyTree = function(rootElem, permitTooltipHandler) {
     $(document).on('mouseleave', '.ftButtons', data, this.onMouseLeaveButtons);
     $(document).on('resize', 'window', data, this.onWindowResize);
 
-    // TODO decide whether this should really be here or should instead be
-    // outside of it somehow; to abstract it we might want to pass in a function
-    // named permitTooltipHandler which is called and declines to show the tip
-    // if that function returns false.
-
-    var treeObj = this;
-    chrome.windows.onFocusChanged.addListener(function(winId) {
-        treeObj.lastFocusedWinId = winId;
-    });
-
-    console.log('Initted FancyTree');
-
-    var buttonsHoverTimer;
+    console.log('FancyTree initialized');
 }
 
 FancyTree.prototype = {
