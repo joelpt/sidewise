@@ -176,7 +176,7 @@ input.invalid {
     font-size: 12px;
     font-family: 'segoe ui', 'ms sans serif', sans-serif;
     box-shadow: 2px 2px 11px #666;
-    padding: 0.75em;
+    padding: 0.5em 0.75em 0.75em 0.75em;
     width: 400px;
 }
 
