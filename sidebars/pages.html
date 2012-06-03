@@ -11,6 +11,7 @@
     <script type='text/javascript' src='/js/jquery/jquery.scrollTo-min.js'></script>
     <script type='text/javascript' src='/js/jquery/jquery.contextMenu.js'></script>
     <script type="text/javascript" src="/js/jquery/jquery.tools.min.js"></script>
+    <script type="text/javascript" src="/js/jquery/jquery-helpers.js"></script>
 
     <script type="text/javascript" src="/js/lib/util/settings.js"></script>
     <script type="text/javascript" src="/js/lib/util/logging.js"></script>
@@ -253,7 +254,7 @@
             });
 
             bg = chrome.extension.getBackgroundPage();
-            ft = initTree('#tester', bg.tree);
+            ft = initTree('#pageTree', bg.tree);
 
             bg.sidebarHandler.registerSidebarPane('pages', window);
             bg.focusCurrentTabInPageTree();
@@ -267,11 +268,7 @@
         <a href="javascript:window.parent.location='pages.html'">promote</a> -
         <a href="javascript:alert(document.body.clientWidth)">width</a>
 
-        <div class="topControls">
-            <input type="search" id="pageFilter" placeholder="Enter text to search for" results="5" autosave="unique" />
-            <div id="pageFilterStatus">Matching pages shown, click x or hit Esc to clear</div>
-        </div>
-        <div class="fancyTree" id="tester"/>
+        <div id="pageTree"/>
     </div>
 
     <ul id="pageRowContextMenu" class="ftContextMenu">
