@@ -6,7 +6,6 @@
   *          showFilterBox: Boolean,             // if set to false, hide type-in filtering box above tree
   *          filterPlaceholderText: String,      // text to show in filter box when otherwise empty
   *          filterActiveText: String,           // text to show below filter box when filtering is active
-  *          filterByExtraParams: [String, ...]  // additional parameters to examine when filtering
   *          permitTooltipHandler: Function(),   // if this function returns false, block showing a row tip
   *          tooltipTopOffset: Integer,          // offset row tip from row by this much pixel spacing
   *          rowTypes:
@@ -18,6 +17,7 @@
   *              onIconError: Function(evt),     // row icon onerror event handler
   *              onFormatTooltip: Function(evt), // called to obtain the body for a row tip for display
   *              onResizeTooltip: Function(evt), // called if a row tip is forcibly resized by FancyTree
+  *              filterByExtraParams: [String],  // additional parameter(s) to examine when filtering
   *              tooltipMaxWidthFixed: Integer,  // max width of row tip, as number of pixels
   *              tooltipMaxWidthPercent: Float,  // max width or row tip, as % of parent width (0.0-1.0)
   *              buttons:                        // array of show-on-row-hover row action buttons
@@ -34,7 +34,7 @@
   *          }
   *       }
   *
-  *       All rowTypes' event handlers are passed the hosting FancyTree object in evt.data.treeObj and the
+  *       All rowTypes' event handlers are passed the hosting FancyTree object in evt.data.treeObj, and the
   *       involved row's <li> jQuery element in evt.data.row.
   *
   */
@@ -63,13 +63,13 @@ var FancyTree = function(appendToElem, options) {
         filterElem.append($('<input/>', {
             class: 'ftFilterInput',
             type: 'search',
-            placeholder: options.filterPlaceholderText || 'Type here to filter items below',
+            placeholder: options.filterPlaceholderText || 'Type to search',
             results: 100,
             autosave: autosaveId
         }));
         filterElem.append(
             $('<div/>', { class: 'ftFilterStatus' })
-                .text(options.filterActiveText || 'Matching items shown, click x or hit Esc to clear')
+                .text(options.filterActiveText || 'Matches shown, click x or hit Esc to clear')
         );
 
         // put filter box before tree element
@@ -111,12 +111,22 @@ var FancyTree = function(appendToElem, options) {
         // add event handlers for filter box
         $(document).on('click', this.filterElem, data, this.onFilterBoxModified);
         $(document).on('keyup', this.filterElem, data, this.onFilterBoxModified);
+        $(document).keydown(data, this.onKeypress);
     }
 
     console.log('FancyTree initialized');
 }
 
 FancyTree.prototype = {
+
+    onKeypress: function(evt) {
+        if (evt.keyCode == 70 && evt.ctrlKey) { // Ctrl+F
+            evt.data.treeObj.filterElem.children('.ftFilterInput').focus();
+            evt.stopPropagation();
+            return false;
+        }
+        return true;
+    },
 
     onFilterBoxModified: function(evt) {
         if (evt.keyCode == 27) // Esc key pressed
@@ -143,19 +153,12 @@ FancyTree.prototype = {
         }
         else
         {
-            treeObj.root.addClass('ftFiltering');
-
-            // show filter status message
-            treeObj.filterElem.children('.ftFilterStatus').show();
-
             // filter out non matching entries
             var escapedFilter = filter.replace('"', '\\"'); // escape embedded double quotes
-            var selector = '.ftItemTitle:icontains("' + escapedFilter + '")';
+            var selector = '.ftItemText:icontains("' + escapedFilter + '")';
             var matches = treeObj.root.find(selector).closest('.ftRowNode');
 
-            console.log(matches);
-
-            // build additional parameter search rules
+            // filter by additional per-rowType parameter filters
             for (var rowType in treeObj.rowTypes) {
                 var extraParams = treeObj.rowTypes[rowType].filterByExtraParams;
                 if (extraParams && extraParams.length > 0) {
@@ -166,11 +169,18 @@ FancyTree.prototype = {
                 }
             }
 
-            // apply filtering
+            // apply filtering css classes to matched rows
             matches.each(function(i, e) {
                   $(e).addClass('ftFilteredIn');
                 }
             );
+
+            // apply filtering css styling
+            treeObj.root.addClass('ftFiltering');
+
+            // show filter status message
+            treeObj.filterElem.children('.ftFilterStatus').show();
+
         }
     },
 
@@ -317,25 +327,9 @@ FancyTree.prototype = {
         evt.stopPropagation();
     },
 
-    // onHideUntilHoverMouseEnter: function(evt) {
-    //     $(this).closest('.ftInnerRow').data('tooltip').hide();
-    // },
-
     /**
       * @param name     The name of the row type used for referencing it elsewhere.
-      * @param params   A dictionary consisting of:
-      *                 {
-      *                     onClick: Function(Event),         // called when row is left-clicked
-      *                     onMiddleClick: Function(Event),   // called when row is middle-clicked
-      *                     onFormatTooltip: Function(Event), // called to obtain row's tooltip html content
-      *                     onResizeTooltip: Function(Event), // called when tooltip must be width-resized
-      *                     tooltipMaxWidthPercent: number,   // expects 0.0 - 1.0
-      *                     tooltipMaxWidthFixed: number,     // expects an integer
-      *                     buttons: [
-      *                         { icon: 'url', tooltip: 'tooltip message', onClick: Function(evt) },
-      *                         ...
-      *                     ]
-      *                 }
+      * @param params   The row type's parameters; see FancyTree class header for details
       */
     addRowType: function(name, params) {
         this.rowTypes[name] = params;
