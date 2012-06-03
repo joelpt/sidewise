@@ -2,39 +2,40 @@
   * @constructor
   * @param appendToElem The root DOM element to append the FancyTree under.
   * @param options A dictionary of options, all optional:
+  *        {
+  *          showFilterBox: Boolean,             // if set to false, hide type-in filtering box above tree
+  *          filterPlaceholderText: String,      // text to show in filter box when otherwise empty
+  *          filterActiveText: String,           // text to show below filter box when filtering is active
+  *          filterByExtraParams: [String, ...]  // additional parameters to examine when filtering
+  *          permitTooltipHandler: Function(),   // if this function returns false, block showing a row tip
+  *          tooltipTopOffset: Integer,          // offset row tip from row by this much pixel spacing
+  *          rowTypes:
+  *          {
+  *            identifier:                       // identifying string for each type of row to support
+  *            {
+  *              onClick: Function(evt),         // left click event handler
+  *              onMiddleClick: Function(evt),   // middle click event handler
+  *              onIconError: Function(evt),     // row icon onerror event handler
+  *              onFormatTooltip: Function(evt), // called to obtain the body for a row tip for display
+  *              onResizeTooltip: Function(evt), // called if a row tip is forcibly resized by FancyTree
+  *              tooltipMaxWidthFixed: Integer,  // max width of row tip, as number of pixels
+  *              tooltipMaxWidthPercent: Float,  // max width or row tip, as % of parent width (0.0-1.0)
+  *              buttons:                        // array of show-on-row-hover row action buttons
+  *              [
   *                {
-  *                  showFilterBox: Boolean,             // if true, show type-in filtering box above tree
-  *                  filterPlaceholderText: String,      // text to show in filter box when otherwise empty
-  *                  filterActiveText: String,           // text to show below filter box when filtering is active
-  *                  permitTooltipHandler: Function(),   // if this function returns false, block showing a row tip
-  *                  tooltipTopOffset: Integer,          // offset row tip from row by this much pixel spacing
-  *                  rowTypes:
-  *                  {
-  *                    identifier:                       // identifying string for each type of row to support
-  *                    {
-  *                      onClick: Function(evt),         // left click event handler
-  *                      onMiddleClick: Function(evt),   // middle click event handler
-  *                      onIconError: Function(evt),     // row icon onerror event handler
-  *                      onFormatTooltip: Function(evt), // called to obtain the body for a row tip for display
-  *                      onResizeTooltip: Function(evt), // called if a row tip is forcibly resized by FancyTree
-  *                      tooltipMaxWidthFixed: Integer,  // max width of row tip, as number of pixels
-  *                      tooltipMaxWidthPercent: Float,  // max width or row tip, as % of parent width (0.0-1.0)
-  *                      buttons:                        // array of show-on-row-hover row action buttons
-  *                      [
-  *                        {
-  *                          icon: String,               // URL string of icon for button
-  *                          tooltip: String,            // tooltip text of button shown on extended hover
-  *                          onClick: Function(evt)      // left click event handler for button
-  *                        },
-  *                        ...
-  *                      ]
-  *                    },
-  *                    ...
-  *                  }
-  *               }
+  *                  icon: String,               // URL string of icon for button
+  *                  tooltip: String,            // tooltip text of button shown on extended hover
+  *                  onClick: Function(evt)      // left click event handler for button
+  *                },
+  *                ...
+  *              ]
+  *            },
+  *            ...
+  *          }
+  *       }
   *
-  *               All rowTypes' event handlers are passed the hosting FancyTree object in evt.data.treeObj and the
-  *               involved row's <li> jQuery element in evt.data.row.
+  *       All rowTypes' event handlers are passed the hosting FancyTree object in evt.data.treeObj and the
+  *       involved row's <li> jQuery element in evt.data.row.
   *
   */
 var FancyTree = function(appendToElem, options) {
@@ -120,8 +121,8 @@ FancyTree.prototype = {
     onFilterBoxModified: function(evt) {
         if (evt.keyCode == 27) // Esc key pressed
         {
-          // Clear any existing filter
-          evt.target.value = '';
+            // Clear any existing filter
+            evt.target.value = '';
         }
 
         var filter = evt.target.value || '';
@@ -134,33 +135,42 @@ FancyTree.prototype = {
 
         if (filter.length == 0)
         {
-          // no filter now present
-          treeObj.root.removeClass('ftFiltering');
+            // no filter now present
+            treeObj.root.removeClass('ftFiltering');
 
-          // hide filter status message
-          treeObj.filterElem.children('.ftFilterStatus').hide();
-          //$('#pageFilterStatus').slideUp(200, function() { return; }); //addClass('enabled');
-          // $('#pageFilterStatus').hide();
+            // hide filter status message
+            treeObj.filterElem.children('.ftFilterStatus').hide();
         }
         else
         {
-          // filter is present
-          // $('#sidebarContent').addClass('filtered');
-          // $('.pageRow.filterMatch').removeClass('filterMatch');
-          //$('#pageFilterStatus').slideDown(200, function() { return; }); //addClass('enabled');
+            treeObj.root.addClass('ftFiltering');
 
-          treeObj.root.addClass('ftFiltering');
+            // show filter status message
+            treeObj.filterElem.children('.ftFilterStatus').show();
 
-          // show filter status message
-          treeObj.filterElem.children('.ftFilterStatus').show();
+            // filter out non matching entries
+            var escapedFilter = filter.replace('"', '\\"'); // escape embedded double quotes
+            var selector = '.ftItemTitle:icontains("' + escapedFilter + '")';
+            var matches = treeObj.root.find(selector).closest('.ftRowNode');
 
-          // filter out non matching entries
-          var escapedFilter = filter.replace('"', '\\"'); // escape embedded double quotes
-          debugger;
-          treeObj.root.find('.ftItemTitle:icontains("' + escapedFilter + '")')
-            .each(function(i, e) {
-              $(e).closest('.ftRowNode').addClass('ftFilteredIn');
-            });
+            console.log(matches);
+
+            // build additional parameter search rules
+            for (var rowType in treeObj.rowTypes) {
+                var extraParams = treeObj.rowTypes[rowType].filterByExtraParams;
+                if (extraParams && extraParams.length > 0) {
+                    for (var i in extraParams) {
+                        var selector = '.ftRowNode[' + extraParams[i] + '*="' + escapedFilter + '"]';
+                        matches = matches.add(treeObj.root.find(selector));
+                    }
+                }
+            }
+
+            // apply filtering
+            matches.each(function(i, e) {
+                  $(e).addClass('ftFilteredIn');
+                }
+            );
         }
     },
 
@@ -662,17 +672,3 @@ FancyTree.prototype = {
     }
 
 };
-
-
-                // <li class="selected collapsed">
-                //     <div class="ftItemRow">
-                //         <img class="ftIconButton ftExpander" src="/images/x.gif"/>
-                //         <div class="ftInnerRow">
-                //             <img class="ftIconButton" src="/images/sidewise_icon_16.png"/>
-                //             <div class="ftItemText"><span class="ftItemLabel">Label: </span>this is a little bit this is a little bit this is a little bit this is a little bit</div>
-                //             <div class="hideUntilHover">
-                //                 <img class="ftIconButton" src="/images/reload.png"/><img class="ftIconButton" src="/images/close.png"/>
-                //             </div>
-                //         </div>
-                //     </div>
-                //     <ul class="ftChildren">
