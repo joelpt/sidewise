@@ -527,7 +527,8 @@ FancyTree.prototype = {
             return idOrElem;
         }
 
-        var elem = this.root.find('#' + idOrElem);
+        var elem = $('#' + idOrElem);
+        // var elem = this.root.find('#' + idOrElem); // this method is ~5x slower
 
         if (elem.length == 0) {
             throw 'Could not find element with id ' + idOrElem;
