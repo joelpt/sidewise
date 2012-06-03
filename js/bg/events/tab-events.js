@@ -73,21 +73,18 @@ function onTabRemoved(tabId, removeInfo)
         // identify the next tab we would like to navigate to
         var nextTabId;
         tree.findById('p' + tabId, function(e, i, a, p) {
-            // console.log(e);
-            // console.log(i);
-            // console.log(a);
             if (e.children.length > 0) {
+                // first child
                 nextTabId = e.children[0].id;
                 return;
             }
             if (a.length > i + 1) {
-                // console.log('0000');
-                // console.log(i + 1);
-                // console.log(a[i + 1]);
+                // next sibling
                 nextTabId = a[i + 1].id;
                 return;
             }
             if (i > 0) {
+                // preceding sibling
                 nextTabId = a[i - 1].id;
                 return;
             }
@@ -106,15 +103,17 @@ function onTabRemoved(tabId, removeInfo)
                 }
 
                 if (p && p.elemType == 'page') {
+                    // parent
                     nextTabId = p.id;
-                    // console.log('choosing parent: ' + nextTabId);
+                    return;
                 }
 
-
+                // nothing suitable found; we'll just let Chrome decide
+                return;
             });
-
-            // nothing suitable found; we'll just let Chrome decide
         });
+
+        // if we found a next tab to show per our own logic, switch to it
         if (nextTabId) {
             nextTabId = parseInt(nextTabId.slice(1));
             log('Setting new selected tab to ' + nextTabId);
@@ -123,7 +122,6 @@ function onTabRemoved(tabId, removeInfo)
     }
 
     tree.remove('p' + tabId);
-
 }
 
 function onTabUpdated(tabId, changeInfo, tab)
