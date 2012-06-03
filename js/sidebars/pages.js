@@ -2,22 +2,11 @@ var ft;
 var bg;
 
 $(document).ready(function() {
-
-    $(document).keydown(function(evt) {
-        if (evt.keyCode == 70 && evt.ctrlKey) {
-            $('#pageFilter').focus();
-            evt.stopPropagation();
-            return false;
-        }
-        return true;
-    });
-
     bg = chrome.extension.getBackgroundPage();
     ft = initTree('#pageTree', bg.tree);
 
     bg.sidebarHandler.registerSidebarPane('pages', window);
     bg.focusCurrentTabInPageTree();
-
 });
 
 function initTree(attachToSelector, pageTree) {
@@ -47,8 +36,11 @@ function initTree(attachToSelector, pageTree) {
     };
 
     tree = new FancyTree($(attachToSelector), {
+        rowTypes: rowTypes,
         permitTooltipHandler: onPermitFancyTreeTooltip,
-        rowTypes: rowTypes
+        showFilterBox: true,
+        filterPlaceholderText: getMessage('prompt_filterPlaceholderText'),
+        filterActiveText: getMessage('prompt_filterActiveText')
     });
 
     populateFancyTreeFromPageTree(tree, pageTree);
