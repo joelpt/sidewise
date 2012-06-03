@@ -29,6 +29,9 @@ PageTree.prototype = {
     // retrieve a page from the tree given its tabId
     getPage: function(tabId, hitFn)
     {
+        if (hitFn === undefined) {
+            return this.findElemById('p' + tabId);
+        }
         return this.findElem(this.getPageIdMatcherFn(tabId), this.tree, hitFn);
     },
 
@@ -134,6 +137,9 @@ PageTree.prototype = {
     // retrieve element with given id
     findById: function(id, hitFn)
     {
+        if (hitFn === undefined) {
+            return this.findElemById(id);
+        }
         return this.findElem(this.getIdMatcherFn(id), this.tree, hitFn);
     },
 
