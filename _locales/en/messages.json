@@ -14,6 +14,8 @@
     "text_monitors": { "message": "monitors" },
     "text_Window": { "message": "Window" },
 
+    "prompt_filterPlaceholderText": { "message": "Type to search"},
+    "prompt_filterActiveText": { "message": "Matches shown, click x or hit Esc to clear"},
     "prompt_detectMonitors": { "message": "Sidewise will detect your monitor(s) now." },
     "prompt_detectMonitors_complete": { "message": "Monitor detection complete." },
     "prompt_detectMonitors_mac": { "message": "Sidewise will detect your monitor details now.\n\nUnfortunately, Sidewise currently cannot detect multiple monitors properly on Mac OSX. Sidewise will assume you only have a single monitor." },
