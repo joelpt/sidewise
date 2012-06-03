@@ -7,6 +7,7 @@ var DataTree = function() {
     this.tree = []; // primary internal data structure's top level of children
     this.lastModified = null;
     this.onModified = null;
+    this.idIndex = {};
 };
 
 // TODO give the tree a root node, probably makes traversal functions more logical:
@@ -29,14 +30,16 @@ DataTree.prototype = {
         if (parentMatcherFn === undefined)
         {
             this.tree.push(elem);
+            this.idIndex[elem.id] = elem;
             return elem;
         }
         parent = this.findElem(parentMatcherFn, this.tree);
         if (parent === undefined)
         {
-            throw 'addElem not find parent element matching parentMatcherFn';
+            throw 'addElem did not find parent element matching parentMatcherFn';
         }
         parent.children.push(elem);
+        this.idIndex[elem.id] = elem;
         this.updateLastModified();
         return elem;
     },
@@ -45,32 +48,26 @@ DataTree.prototype = {
 
     // Find an element in our tree starting in inArray for which matcherFn(elem) returns true
     // hitfn: if given as Function(elem, index, containing_array) it is executed against the element matched
-    findElem: function(matcherFn, inArray, hitfn, parentElem, parentIndex, parentArray)
+    findElem: function(matcherFn, inArray, hitFn, parentElem, parentIndex, parentArray)
     {
-        // console.log('len(inArray): ' + inArray.length);
-        // DEBUG
-        if (typeof(matcherFn) != 'function')
-        {
-            console.error(matcherFn);
-        }
-
         for (var i in inArray)
         {
-            // console.log('testing item ' + i +', inArray is len ' + inArray.length);
             var elem = inArray[i];
             if (matcherFn(elem)) {
-                if (hitfn !== undefined) {
-                    //elem = clone(elem);
-                    hitfn(elem, parseInt(i), inArray, parentElem, parseInt(parentIndex), parentArray);
+                if (hitFn !== undefined) {
+                    hitFn(elem, parseInt(i), inArray, parentElem, parseInt(parentIndex), parentArray);
                 }
                 return elem;
             }
-            // console.log('recursing into elem.children of len ' + elem.children.length);
-            var childElem = this.findElem(matcherFn, elem.children, hitfn, elem, i, inArray);
+            var childElem = this.findElem(matcherFn, elem.children, hitFn, elem, i, inArray);
             if (childElem !== undefined)
                 return childElem;
         }
         return undefined;
+    },
+
+    findElemById: function(id) {
+        return this.idIndex[id];
     },
 
     findElemParent: function(matcherFn, root)
@@ -95,6 +92,11 @@ DataTree.prototype = {
         var elem = this.findElem(matcherFn, this.tree);
         if (elem === undefined) {
             throw 'updateElem could not find a matching element to update';
+        }
+        if (details.id && details.id != elem.id) {
+            delete this.idIndex[elem.id];
+            elem.id = details.id;
+            this.idIndex[details.id] = elem;
         }
         for (var key in details)
         {
@@ -145,6 +147,7 @@ DataTree.prototype = {
             throw 'moveElem could not find/remove element matching movingMatcherFn';
         }
         moving.children = []; // remove all of its children
+        // TODO when moving an element we must replace the moved element with its children in-placeS
         parent.children.push(moving); // put moving back into tree as child of desired new parent
         this.updateLastModified();
         return moving;
@@ -173,14 +176,16 @@ DataTree.prototype = {
     // removeChildren: if given as true, also remove all the element's children, otherwise splice them into tree
     removeElem: function(matcherFn, removeChildren)
     {
-        this.updateLastModified();
+        var treeObj = this;
         return this.findElem(matcherFn, this.tree, function(e, i, a) {
+            treeObj.updateLastModified();
             if (removeChildren) {
                 a.splice(i, 1);
             }
             else {
                 Array.prototype.splice.apply(a, [i, 1].concat(e.children));
             }
+            delete treeObj.idIndex[e.id];
         });
     },
 
