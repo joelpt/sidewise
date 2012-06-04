@@ -119,42 +119,21 @@ function onCompleted(details)
     // us a tab.favIconUrl that wasn't available earlier
     chrome.tabs.get(details.tabId, function(tab) {
         var url = tab.url ? dropUrlHash(tab.url) : '';
-
-        // do this after a slight delay to for chrome://favicon/theurl icons
-        // Such urls sometimes don't show the site's favicon immediately; sometimes Chrome
-        // just shows the default globe icon, but if you refresh the sidebar it then
-        // shows the icon properly >:O ... if we wait a moment this usually corrects the issue
-
-        // TODO see what happens if we injected a content script at this point; it should presumably
-        // not execute until the hosting page is ready; maybe have it fire on window.onLoad which
-        // should wait until all the resources of the page are fully loaded; and maybe also try
-        // to sniff the favicon from html/head/link[rel=favicon] here; an even more aggressive solution
-        // would be to readImageData() of a given fetched chrome://favicon/url.com favicon, and IF
-        // it matches the 'globe icon' then try to pull the ico from
-        // http://google.com/s2/favicons?domain=url.com instead
-
-        // if (false && tab.favIconUrl && tab.favIconUrl != '' && tab.favIconUrl.indexOf('chrome://favicon/') == -1) {
-        //     updatePageOnComplete(tree, tab, url, tab.favIconUrl);
-        // }
-        // else {
-        //     console.log('delayed favicon update');
-        //     var favicon = 'chrome://favicon/' + url;
-        //     setTimeout(function() { updatePageOnComplete(tree, tab, url, favicon); }, 250);
-        // }
-
         var favicon = getBestFavIconUrl(tab.favIconUrl, url);
+
         if (tab.favIconUrl && tab.favIconUrl != '' && tab.favIconUrl.indexOf('chrome://favicon/') == -1) {
+            // update favicon and url now
             updatePageOnComplete(tree, tab, url, favicon);
-        }
-        else {
-            // wait a second before trying to fetch chrome://favicon image; chrome takes an
-            // indefinite amount of time to make it available after a page has finished loading
-            // so we give it a moment in hopes we waited long enough; if we didn't the only
-            // fix is to refresh the sidebar displaying said image
-            favicon = getChromeFavIconUrl(url);
-            setTimeout(function() { updatePageOnComplete(tree, tab, url, favicon); }, 1000);
+            return;
         }
 
+        // Wait a second before trying to fetch chrome://favicon icon; Chrome takes an
+        // indefinite amount of time to make the icon available after a page is done loading
+        // so we give it a moment in hopes we waited long enough; if we didn't wait long
+        // enough the only fix is to refresh the sidebar displaying said image
+        favicon = getChromeFavIconUrl(url);
+        setTimeout(function() { updatePageOnComplete(tree, tab, url, favicon); }, 1000);
+        return;
     });
 }
 
