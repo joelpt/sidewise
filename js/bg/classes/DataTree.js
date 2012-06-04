@@ -140,16 +140,9 @@ DataTree.prototype = {
     // This is a shallow move; the moved element's children are spliced in-place into its old location
     moveElem: function(movingMatcherFn, parentMatcherFn)
     {
-        var parent = this.findElem(parentMatcherFn, this.tree);
         var moving = this.removeElem(movingMatcherFn);
-        if (moving === undefined)
-        {
-            throw 'moveElem could not find/remove element matching movingMatcherFn';
-        }
         moving.children = []; // remove all of its children
-        // TODO when moving an element we must replace the moved element with its children in-placeS
-        parent.children.push(moving); // put moving back into tree as child of desired new parent
-        this.updateLastModified();
+        this.addElem(moving, parentMatcherFn);
         return moving;
     },
 
@@ -173,11 +166,11 @@ DataTree.prototype = {
     },
 
     // remove the first element from the tree where matcherFn(element) returns true
-    // removeChildren: if given as true, also remove all the element's children, otherwise splice them into tree
+    // removeChildren: if true, remove element's children; if false, splice them into element's old spot
     removeElem: function(matcherFn, removeChildren)
     {
         var treeObj = this;
-        return this.findElem(matcherFn, this.tree, function(e, i, a) {
+        var removed = this.findElem(matcherFn, this.tree, function(e, i, a) {
             treeObj.updateLastModified();
             if (removeChildren) {
                 a.splice(i, 1);
@@ -187,6 +180,10 @@ DataTree.prototype = {
             }
             delete treeObj.idIndex[e.id];
         });
+        if (!removed) {
+            throw 'Could not find requested element to remove';
+        }
+        return removed;
     },
 
     updateLastModified: function() {
