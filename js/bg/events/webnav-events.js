@@ -147,9 +147,12 @@ function onCompleted(details)
             updatePageOnComplete(tree, tab, url, favicon);
         }
         else {
-            console.log('********** delayed favicon update');
+            // wait a second before trying to fetch chrome://favicon image; chrome takes an
+            // indefinite amount of time to make it available after a page has finished loading
+            // so we give it a moment in hopes we waited long enough; if we didn't the only
+            // fix is to refresh the sidebar displaying said image
             favicon = getChromeFavIconUrl(url);
-            setTimeout(function() { updatePageOnComplete(tree, tab, url, favicon); }, 500);
+            setTimeout(function() { updatePageOnComplete(tree, tab, url, favicon); }, 1000);
         }
 
     });
