@@ -2,7 +2,8 @@ var URL_FAVICON_REPLACEMENTS = {
     'chrome://chrome/extensions': '/images/favicon/extensions.png',  // Chrome 19 and earlier
     'chrome://chrome/extensions/': '/images/favicon/extensions.png', // Chrome 20 early versions
     'chrome://extensions/': '/images/favicon/extensions.png',        // Chrome 20 later versions+
-    'chrome://chrome/settings/': '/images/favicon/settings.png'
+    'chrome://chrome/settings/': '/images/favicon/settings.png',     // Chrome 19 & 20 early versions
+    'chrome://settings/': '/images/favicon/settings.png'             // Chrome 20 later versions
 };
 URL_FAVICON_REPLACEMENTS[chrome.extension.getURL('/options.html')] = '/images/sidewise_icon_16.png';
 
@@ -30,6 +31,19 @@ function getBestFavIconUrl(favIconUrl, url) {
 function getChromeFavIconUrl(url) {
     return 'chrome://favicon/' + dropUrlHash(url);
 }
+
+function isStaticFavIconUrl(favIconUrl) {
+    if (!favIconUrl) {
+        return false;
+    }
+    if (favIconUrl == '') {
+        return false;
+    }
+    if (favIconUrl.indexOf('chrome://favicon') == 0) {
+        return false;
+    }
+    return true;
+};
 
 function getBestPageTitle(title, url) {
     var replacedTitle = URL_TITLE_REPLACEMENTS[url];
