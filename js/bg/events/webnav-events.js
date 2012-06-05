@@ -1,3 +1,10 @@
+// delay before asking Chrome for favicon again in onComplete
+var ONCOMPLETED_LATE_UPDATE_DELAY_MS = 1000;
+
+// additional delay before setting a favicon to chrome://favicon in onCompletedLateUpdateTimeout
+var ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS = 500;
+
+
 function registerWebNavigationEvents()
 {
     chrome.webNavigation.onCreatedNavigationTarget.addListener(onCreatedNavigationTarget);
@@ -106,7 +113,8 @@ function onCompleted(details)
     if (isDetectingMonitors()) {
         return;
     }
-    if (tree.getPage(details.tabId) === undefined)
+    var page = tree.getPage(details.tabId);
+    if (page === undefined)
     {
         // tab doesn't exist in page tree yet
         // this can happen when chrome preloads a page while typing into the address bar
@@ -114,36 +122,51 @@ function onCompleted(details)
     }
     log(details);
 
-    // Now that tab is completely loaded, fetch current details
-    // of this tab and update page tree; often this will retrieve
-    // us a tab.favIconUrl that wasn't available earlier
+    // Mark page status as complete and that its position in the tree can now be considered
+    // fixed/well-known
+    tree.updatePage(details.tabId, {
+        placed: true,
+        status: 'complete'
+    });
+
+    if (isStaticFavIconUrl(page.favicon)) {
+        // Already have a good static favicon
+        return;
+    }
+
+    // Ask for the latest static favicon
     chrome.tabs.get(details.tabId, function(tab) {
         var url = tab.url ? dropUrlHash(tab.url) : '';
-        var favicon = getBestFavIconUrl(tab.favIconUrl, url);
-
-        if (tab.favIconUrl && tab.favIconUrl != '' && tab.favIconUrl.indexOf('chrome://favicon/') == -1) {
-            // update favicon and url now
-            updatePageOnComplete(tree, tab, url, favicon);
+        if (isStaticFavIconUrl(tab.favIconUrl)) {
+            // got a static favicon url, use it now
+            var favicon = getBestFavIconUrl(tab.favIconUrl, url);
+            tree.updatePage(details.tabId, { favicon: favicon });
             return;
         }
 
-        // Wait a second before trying to fetch chrome://favicon icon; Chrome takes an
-        // indefinite amount of time to make the icon available after a page is done loading
-        // so we give it a moment in hopes we waited long enough; if we didn't wait long
-        // enough the only fix is to refresh the sidebar displaying said image
-        favicon = getChromeFavIconUrl(url);
-        setTimeout(function() { updatePageOnComplete(tree, tab, url, favicon); }, 1000);
-        return;
+        // Delay a bit, then ask for the favicon again; if we don't get one we'll try to fall back
+        // on the (sometimes unavailable) chrome://favicon/URL icon cache
+        setTimeout(function() {
+            onCompletedLateUpdateTimeout(details.tabId)
+        }, ONCOMPLETED_LATE_UPDATE_DELAY_MS);
     });
 }
 
-function updatePageOnComplete(tree, tab, url, favicon) {
-    tree.updatePage(tab.id, {
-        placed: true,
-        status: 'complete',
-        url: url,
-        favicon: favicon,
-        title: getBestPageTitle(tab.title, url)
+function onCompletedLateUpdateTimeout(tabId) {
+    chrome.tabs.get(tabId, function(tab) {
+        var url = tab.url ? dropUrlHash(tab.url) : '';
+        var favicon;
+        if (isStaticFavIconUrl(tab.favIconUrl)) {
+            // static favicon url has been provided by site, use that
+            favicon = getBestFavIconUrl(tab.favIconUrl, url);
+            tree.updatePage(tabId, { favicon: favicon });
+            return;
+        }
+
+        // no static favicon url available, fall back on chrome://favicon/URL icon cache
+        favicon = getChromeFavIconUrl(url);
+        setTimeout(function() { tree.updatePage(tabId, { favicon: favicon }); },
+            ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS);
+
     });
-    console.log('favicon updater', tab.id, favicon);
 }
