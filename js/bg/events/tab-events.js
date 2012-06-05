@@ -135,11 +135,13 @@ function onTabUpdated(tabId, changeInfo, tab)
     }
     log(tab);
 
-    var url = tab.url ? dropUrlHash(tab.url) : '';
 
     var page = tree.getPage(tabId);
+    var url = tab.url ? dropUrlHash(tab.url) : '';
+    var title = getBestPageTitle(tab.title, url)
+
     var favicon;
-    if (!page.favicon || page.favicon == '' || page.favicon == 'chrome://favicon/') {
+    if (!isStaticFavIconUrl(page.favicon)) {
         // existing page element doesn't have a "good" favicon, try to replace it
         favicon = getBestFavIconUrl(tab.favIconUrl, url);
     }
@@ -147,31 +149,13 @@ function onTabUpdated(tabId, changeInfo, tab)
         // existing page element already has a "good" favicon, don't mess with it
         favicon = page.favicon;
     }
-    // TODO build 2nd arg below dynamically instead of always passing favicon
     // TODO also don't push status unless it's in changeInfo
     // TODO in fact only change what is in changeInfo, period
-    // TODO cache a list of favicons per domain that we believe will load validly
-    //      and when loading/updating a tab, attempt to use the one in the cache
-    //      if the domain matches
-    //      when caching store both the base domain, and one with the subdomain
-    //      included, then try to lookup the sub.domain.com and only if that fails
-    //      try domain.com secondarily
-    //      this cache should be reliable starting from the loading of the bg page;
-    //      even if sidebar is closed for a while and later reopened those same
-    //      icons SHOULD still be safe to use ... tho we should test to see
-    //      if that holds true if you open a page with a chrome://favicon/someurl
-    //      whilst sidebar is not showing: upon opening the sidebar such favicons
-    //      SHOULD show properly even if the associated page had been closed
-    //      in the meantime, but we don't really know for sure ... might be
-    //      chrome clears out icons out of that cache after some duration
-    //      which would be lame; if that's the case we could just refuse
-    //      to cache chrome://favicon/someurl favicons, only caching those
-    //      that link to a real http://.../favicon.ico
     tree.updatePage(tabId, {
         status: tab.status,
-        url: url,
+        url: tab.url,
         favicon: favicon,
-        title: getBestPageTitle(tab.title, url)
+        title: title
     });
 
     if (tab.openerTabId !== undefined) {
