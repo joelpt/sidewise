@@ -58,14 +58,6 @@ function onClickOptionsButton() {
     });
 }
 
-var resizeTimeout = null;
-
 function onResize() {
-    if (bg.sidebarHandler.dockState == 'undocked' || bg.sidebarHandler.resizingSidebar) {
-        return;
-    }
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(function() {
-        bg.sidebarHandler.onResize();
-    }, 10);
+    bg.sidebarHandler.onResize();
 }
