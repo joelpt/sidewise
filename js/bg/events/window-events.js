@@ -173,7 +173,7 @@ function onWindowFocusChanged(windowId)
 var resetResizeFlagTimeout = null;
 
 function onWindowUpdateCheckInterval() {
-    if (sidebarHandler.resizeInProgress) {
+    if (sidebarHandler.resizingDockWindow) {
         return;
     }
 
@@ -182,41 +182,44 @@ function onWindowUpdateCheckInterval() {
     }
 
     chrome.windows.get(sidebarHandler.dockWindowId, function(dock) {
-        var widthDelta = dock.width - sidebarHandler.currentDockWindowMetrics.width;
+        if (sidebarHandler.resizingDockWindow) {
+            return;
+        }
+
+        var dockDims = sidebarHandler.currentDockWindowMetrics;
+        var widthDelta = dock.width - dockDims.width;
         if (widthDelta == 0) {
             return;
         }
 
-        if (sidebarHandler.resizeInProgress) {
-            return;
-        }
+        var sidebarDims = sidebarHandler.currentSidebarMetrics;
 
         // dock window width has changed, adjust sidebar accordingly
         if (sidebarHandler.dockState == 'right') {
             // dock window common edge with right sidebar was adjusted
-            sidebarHandler.currentSidebarMetrics.left += widthDelta;
-            sidebarHandler.currentSidebarMetrics.width -= widthDelta;
+            sidebarDims.left += widthDelta;
+            sidebarDims.width -= widthDelta;
         }
         else {
             // dock window common edge with left sidebar was adjusted
-            sidebarHandler.currentSidebarMetrics.width -= widthDelta;
+            sidebarDims.width -= widthDelta;
         }
 
         // Update stored metrics
-        sidebarHandler.currentDockWindowMetrics.width = dock.width;
-        sidebarHandler.targetWidth = sidebarHandler.currentSidebarMetrics.width;
-        saveSetting('sidebarTargetWidth', sidebarHandler.currentSidebarMetrics.width);
+        dockDims.width = dock.width;
+        sidebarHandler.targetWidth = sidebarDims.width;
+        saveSetting('sidebarTargetWidth', sidebarDims.width);
 
         // Resize sidebar
         sidebarHandler.resizingSidebar = true;
         positionWindow(sidebarHandler.windowId, {
-            left: sidebarHandler.currentSidebarMetrics.left,
-            width: sidebarHandler.currentSidebarMetrics.width
+            left: sidebarDims.left,
+            width: sidebarDims.width
         }, function() {
             clearTimeout(resetResizeFlagTimeout);
             resetResizeFlagTimeout = setTimeout(function() {
                 sidebarHandler.resizingSidebar = false;
-            }, 25);
+            }, 500);
         });
 
     });

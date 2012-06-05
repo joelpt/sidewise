@@ -18,9 +18,10 @@ SidebarHandler.prototype = {
         this.tabId = null;
         this.dockWindowId = null;
         this.creatingSidebar = false;
-        this.resizeInProgress = false;
+        this.resizingDockWindow = false;
         this.removeInProgress = false;
         this.resizingSidebar = false;
+        this.resetResizingDockWindowTimeout = false;
         this.sidebarPanes = {};
         this.currentSidebarMetrics = {};
         this.currentDockWindowMetrics = {};
@@ -126,43 +127,47 @@ SidebarHandler.prototype = {
     },
 
     onResize: function() {
-        if (this.dockState == 'undocked' || this.resizeInProgress) {
+        if (this.dockState == 'undocked' || this.resizingSidebar) {
             return;
         }
         var handler = this;
         chrome.windows.get(handler.windowId, function(sidebar) {
-            chrome.windows.get(handler.dockWindowId, function(dock) {
-                if (handler.resizeInProgress) {
-                    return;
-                }
+            if (handler.resizingSidebar) {
+                return;
+            }
 
-                if (sidebar.width == handler.currentSidebarMetrics.width) {
-                    return;
-                }
+            var sidebarDims = handler.currentSidebarMetrics;
+            var widthDelta = sidebar.width - sidebarDims.width;
+            if (widthDelta == 0) {
+                return;
+            }
 
-                handler.resizeInProgress = true;
-                var widthDelta = sidebar.width - handler.currentSidebarMetrics.width;
+            var dockDims = handler.currentDockWindowMetrics;
 
-                // shrink dock window
-                if (handler.dockState == 'right' && sidebar.left != handler.currentSidebarMetrics.left) {
-                    handler.currentDockWindowMetrics.width -= widthDelta;
-                }
-                else if (handler.dockState == 'left' && sidebar.left == handler.currentSidebarMetrics.left) {
-                    handler.currentDockWindowMetrics.width -= widthDelta;
-                    handler.currentDockWindowMetrics.left += widthDelta;
-                }
-                handler.currentSidebarMetrics.width = sidebar.width;
-                handler.currentSidebarMetrics.left = sidebar.left;
-                handler.currentSidebarMetrics.top = sidebar.top;
-                handler.currentSidebarMetrics.height = sidebar.height;
-                handler.targetWidth = sidebar.width;
-                saveSetting('sidebarTargetWidth', sidebar.width);
-                positionWindow(handler.dockWindowId, {
-                    left: handler.currentDockWindowMetrics.left,
-                    width: handler.currentDockWindowMetrics.width
-                }, function() {
-                    handler.resizeInProgress = false;
-                });
+            handler.resizingDockWindow = true;
+
+            // shrink dock window
+            if (handler.dockState == 'right' && sidebar.left != sidebarDims.left) {
+                dockDims.width -= widthDelta;
+            }
+            else if (handler.dockState == 'left' && sidebar.left == sidebarDims.left) {
+                dockDims.width -= widthDelta;
+                dockDims.left += widthDelta;
+            }
+            sidebarDims.width = sidebar.width;
+            sidebarDims.left = sidebar.left;
+            sidebarDims.top = sidebar.top;
+            sidebarDims.height = sidebar.height;
+            handler.targetWidth = sidebar.width;
+            saveSetting('sidebarTargetWidth', sidebar.width);
+            positionWindow(handler.dockWindowId, {
+                left: dockDims.left,
+                width: dockDims.width
+            }, function() {
+                clearTimeout(handler.resetResizingDockWindowTimeout);
+                handler.resetResizingDockWindowTimeout = setTimeout(function() {
+                    handler.resizingDockWindow = false;
+                }, 500);
             });
         });
     },
@@ -182,7 +187,7 @@ SidebarHandler.prototype = {
 
         // Inhibit dock/sidebar window sizing compensation from occurring until
         // we call handler.reset() below
-        handler.resizeInProgress = true;
+        handler.resizingDockWindow = true;
 
         positionWindow(
             this.dockWindowId,
