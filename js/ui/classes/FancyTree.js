@@ -385,6 +385,7 @@ FancyTree.prototype = {
             var buttonData = { treeObj: this, onClick: params.buttons[i].onClick };
             $(document).on('click', buttonClass, buttonData, function(evt) {
                 $('#ftSimpleTip').hide();
+                evt.data.treeObj.hoveringRowButtons = false;
                 evt.data.row = $(this).closest('li');
                 evt.data.onClick(evt);
                 evt.stopPropagation();
