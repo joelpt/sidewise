@@ -160,15 +160,18 @@ SidebarHandler.prototype = {
             sidebarDims.height = sidebar.height;
             handler.targetWidth = sidebar.width;
             saveSetting('sidebarTargetWidth', sidebar.width);
-            positionWindow(handler.dockWindowId, {
-                left: dockDims.left,
-                width: dockDims.width
-            }, function() {
-                clearTimeout(handler.resetResizingDockWindowTimeout);
-                handler.resetResizingDockWindowTimeout = setTimeout(function() {
-                    handler.resizingDockWindow = false;
-                }, 500);
-            });
+            positionWindow(
+                handler.dockWindowId,
+                {
+                    left: dockDims.left,
+                    width: dockDims.width
+                },
+                function() {
+                    TimeoutManager.reset('resetResizingDockWindow', function() {
+                        handler.resizingDockWindow = false;
+                    }, 500);
+                }
+            );
         });
     },
 

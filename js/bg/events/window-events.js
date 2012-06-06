@@ -170,8 +170,6 @@ function onWindowFocusChanged(windowId)
     focusCurrentTabInPageTree();
 }
 
-var resetResizeFlagTimeout = null;
-
 function onWindowUpdateCheckInterval() {
     if (sidebarHandler.resizingDockWindow) {
         return;
@@ -216,11 +214,11 @@ function onWindowUpdateCheckInterval() {
             left: sidebarDims.left,
             width: sidebarDims.width
         }, function() {
-            clearTimeout(resetResizeFlagTimeout);
-            resetResizeFlagTimeout = setTimeout(function() {
-                sidebarHandler.resizingSidebar = false;
-            }, 500);
+            TimeoutManager.reset('resetResizingSidebar', onResetResizingSidebar, 500);
         });
-
     });
+}
+
+function onResetResizingSidebar() {
+    sidebarHandler.resizingSidebar = false;
 }

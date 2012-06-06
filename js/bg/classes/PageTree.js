@@ -169,13 +169,7 @@ PageTree.extend(DataTree, {
         if (!this.onModifiedDelayed) {
             return;
         }
-
-        if (this.onModifiedDelayedTimeout) {
-            clearTimeout(this.onModifiedDelayedTimeout);
-        }
-
-        this.onModifiedDelayedTimeout =
-            setTimeout(this.onModifiedDelayed, this.onModifiedDelayedWaitMs);
+        TimeoutManager.reset('onPageTreeModified', this.onModifiedDelayed, this.onModifiedDelayedWaitMs);
     },
 
 
