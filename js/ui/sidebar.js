@@ -10,6 +10,8 @@ var initialSidebar = 'pages';
 var manager;
 var bg;
 
+$(document).ready(onReady);
+
 function onReady() {
     bg = chrome.extension.getBackgroundPage();
     manager = new SidebarNavManager($('ul#sidebarButtons'), $('tr#sidebars'),
