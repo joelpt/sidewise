@@ -209,21 +209,33 @@ function remove(array, from, to) {
     return array.push.apply(array, rest);
 };
 
-// Extend prototype of childObject with the prototype of parentObject non-destructively
-function extend(childObject, parentObject)
-{
-    var child = childObject.prototype;
-    var parent = Object.create(parentObject.prototype);
-    for (var attrname in parent) {
-        if (child[attrname] === undefined) {
-            child[attrname] = parent[attrname];
-        }
-    }
-};
-
 function clamp(value, min, max)
 {
     value = value < min ? min : value;
     value = value > max ? max : value;
     return value;
+}
+
+/**
+ * A function used to extend one class with another
+ *
+ * @param {Object} subClass
+ *      The inheriting class, or subclass, which may have its own prototype methods
+ * @param {Object} baseClass
+ *      The class from which to inherit
+ */
+function extend(subClass, baseClass) {
+   function inheritance() {}
+   inheritance.prototype = baseClass.prototype;
+
+   var subPrototype = Object.create(subClass.prototype);
+
+   subClass.prototype = new inheritance();
+   subClass.prototype.constructor = subClass;
+   subClass._base = baseClass;
+   subClass._super = baseClass.prototype;
+
+   for (var attrname in subPrototype) {
+       subClass.prototype[attrname] = subPrototype[attrname];
+   }
 }

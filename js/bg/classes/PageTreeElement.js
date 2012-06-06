@@ -4,7 +4,7 @@
   */
 var PageTreeElement = function()
 {
-    DataTreeElement.call(this);
+    PageTreeElement._base.call(this);
     this.collapsed = false;
 };
 
