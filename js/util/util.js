@@ -209,21 +209,28 @@ function remove(array, from, to) {
     return array.push.apply(array, rest);
 };
 
-// Extend prototype of childObject with the prototype of parentObject non-destructively
-function extend(childObject, parentObject)
-{
-    var child = childObject.prototype;
-    var parent = Object.create(parentObject.prototype);
-    for (var attrname in parent) {
-        if (child[attrname] === undefined) {
-            child[attrname] = parent[attrname];
-        }
-    }
-};
-
 function clamp(value, min, max)
 {
     value = value < min ? min : value;
     value = value > max ? max : value;
     return value;
 }
+
+Function.prototype.extend = function(baseClass, withPrototype) {
+    function inheritance() {}
+    inheritance.prototype = baseClass.prototype;
+
+    this.prototype = new inheritance();
+    this.prototype.constructor = this;
+    this._base = baseClass;
+    this._super = baseClass.prototype;
+
+    if (withPrototype === undefined) {
+        return;
+    }
+
+    for (var attrname in withPrototype) {
+        this.prototype[attrname] = withPrototype[attrname];
+    }
+}
+

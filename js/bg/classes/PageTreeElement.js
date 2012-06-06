@@ -4,8 +4,8 @@
   */
 var PageTreeElement = function()
 {
-    DataTreeElement.call(this);
+    PageTreeElement._base.call(this);
     this.collapsed = false;
 };
 
-extend(PageTreeElement, DataTreeElement);
+PageTreeElement.extend(DataTreeElement);

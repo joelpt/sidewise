@@ -11,7 +11,7 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     // INITIALIZATION
     /////////////////////////////////////////////////////
 
-    DataTree.call(this);
+    PageTree._base.call(this);
     this.callbackProxyFn = callbackProxyFn; // callback proxy function for page/window functions
     this.focusedTabId = null;
     this.onModified = this._onPageTreeModified;
@@ -20,7 +20,7 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     this.onModifiedDelayedTimeout = null;
 };
 
-PageTree.prototype = {
+PageTree.extend(DataTree, {
 
     /////////////////////////////////////////////////////
     // PAGE MANIPULATION FUNCTIONS
@@ -200,6 +200,4 @@ PageTree.prototype = {
     {
         return this.getKeyMatcherFn('id', id);
     }
-};
-
-extend(PageTree, DataTree);
+});

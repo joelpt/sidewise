@@ -4,7 +4,7 @@
   */
 var Page = function(tab, overrideStatus)
 {
-    PageTreeElement.call(this);
+    Page._base.call(this);
 
     var url = tab.url ? dropUrlHash(tab.url) : '';
 
@@ -22,4 +22,5 @@ var Page = function(tab, overrideStatus)
     console.log(this.status, tab.id);
 };
 
-extend(Page, PageTreeElement);
+Page.extend(PageTreeElement);
+

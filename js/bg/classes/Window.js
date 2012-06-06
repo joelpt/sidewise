@@ -2,9 +2,10 @@
   * @constructor
   * @extends PageTreeElement
   */
+
 var Window = function(win)
 {
-    PageTreeElement.call(this);
+    Window._base.call(this);
     this.elemType = 'window';
     this.id = 'w' + win.id;
     this.incognito = win.incognito;
@@ -12,4 +13,4 @@ var Window = function(win)
     log('Window', win, this);
 };
 
-extend(Window, PageTreeElement);
+Window.extend(PageTreeElement);
