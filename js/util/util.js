@@ -239,3 +239,22 @@ function extend(subClass, baseClass) {
        subClass.prototype[attrname] = subPrototype[attrname];
    }
 }
+
+Function.prototype.extendsClass = function(baseClass, withPrototype) {
+    function inheritance() {}
+    inheritance.prototype = baseClass.prototype;
+
+    this.prototype = new inheritance();
+    this.prototype.constructor = this;
+    this._base = baseClass;
+    this._super = baseClass.prototype;
+
+    if (withPrototype === undefined) {
+        return;
+    }
+
+    for (var attrname in withPrototype) {
+        this.prototype[attrname] = withPrototype[attrname];
+    }
+}
+
