@@ -20,9 +20,7 @@ function onReady() {
     // manager.createSidebarContainers();
     manager.addSidebarPanels(sidebars);
 
-    // Aggressively try to reset the scroll position properly
-    setTimeout(function() { $.scrollTo(0); }, 0);
-    setTimeout(function() { $.scrollTo(0); }, 50);
+    // Set initial sidebar position
     setTimeout(function() { manager.showSidebarPanel(initialSidebar); }, 100);
 
     $(document).keydown({manager: manager}, function(evt) {
@@ -62,4 +60,5 @@ function onClickOptionsButton() {
 
 function onResize() {
     bg.sidebarHandler.onResize();
+    manager.scrollToCurrentSidebarPanel(true);
 }

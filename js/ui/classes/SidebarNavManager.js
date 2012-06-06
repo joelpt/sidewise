@@ -6,7 +6,12 @@ var SidebarNavManager = function(navButtonsContainer, sidebarsContainer, parentC
     this.parentContainer = parentContainer;
     this.scrollContainer = scrollContainer;
     this.sidebarElemTag = sidebarElemTag;
-    this.currentSidebar = undefined;
+    this.currentSidebarId = undefined;
+
+    var elem = $('<' + this.sidebarElemTag + ' id="sidebarPaddingContainer"/>');
+    this.sidebarsContainer.append(elem);
+    this._setSidebarParentContainerWidth();
+
 };
 
 SidebarNavManager.prototype = {
@@ -33,7 +38,7 @@ SidebarNavManager.prototype = {
         this._setSidebarParentContainerWidth();
 
         // switch to first sidebar if this one was focused
-        if (this.currentSidebar == id) {
+        if (this.currentSidebarId == id) {
             this.showSidebarPanel(this.sidebars[0].id);
         }
     },
@@ -49,8 +54,23 @@ SidebarNavManager.prototype = {
             var iframe = $('<iframe src="' + url + '"></iframe>');
             container.append(iframe);
         }
-        this.scrollContainer.scrollTo(selector, 100, { axis: 'x' });
-        this.currentSidebar = id;
+        container.css('visibility', 'visible');
+        var oldSidebarId = this.currentSidebarId;
+        var mgr = this;
+        this.currentSidebarId = id;
+        this.scrollToCurrentSidebarPanel(false, function() {
+            if (oldSidebarId != mgr.currentSidebarId) {
+                $('#sidebarContainer__' + oldSidebarId).css('visibility', 'hidden');
+            }
+        });
+    },
+
+    scrollToCurrentSidebarPanel: function(instant, onAfter) {
+        if (instant) {
+            this.scrollContainer.scrollTo('#sidebarContainer__' + this.currentSidebarId, { onAfter: onAfter });
+            return;
+        }
+        this.scrollContainer.scrollTo('#sidebarContainer__' + this.currentSidebarId, 100, { onAfter: onAfter });
     },
 
     getSidebarDetails: function(id) {
@@ -73,12 +93,12 @@ SidebarNavManager.prototype = {
 
     _createSidebarContainer: function(id) {
         var elem = $('<' + this.sidebarElemTag + ' id="sidebarContainer__' + id + '"/>');
-        this.sidebarsContainer.append(elem);
+        this.sidebarsContainer.children().last().before(elem);
         this._setSidebarParentContainerWidth();
     },
 
     _setSidebarParentContainerWidth: function() {
-        this.parentContainer.width((this.sidebars.length * 100) + '%');
+        this.parentContainer.width(((this.sidebars.length + 1) * 100) + '%');
     },
 
     _onClickSidebarNavButton: function(evt) {
