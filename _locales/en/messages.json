@@ -27,6 +27,10 @@
         }
      },
 
+    "notepad_heading": { "message": "Notepad" },
+    "notepad_hint": { "message": "Enter text below. It will be automatically saved." },
+    "notepad_lastSavedAt": { "message": "Last saved at:" },
+
     "optionsPageTitle": { "message": "Sidewise Options" },
     "optionsPageHeading": { "message": "Sidewise Options" },
 

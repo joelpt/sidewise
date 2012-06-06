@@ -3,7 +3,7 @@ var sidebars = [
     { id: 'reddit', url: 'sidebars/external-site.html#http://i.reddit.com', label: 'Reddit', icon: 'images/nav/reddit.png' },
     { id: 'tribunal', url: 'sidebars/external-site.html#https://tribunal.herokuapp.com/', label: 'Tribunal', icon: 'images/nav/tribunal.png' },
     { id: 'twitter', url: 'sidebars/external-site.html#http://mobile.twitter.com', label: 'Twitter', icon: 'http://twitter.com/favicon.ico' },
-    { id: 'p404', url: 'sidebars/404.html', label: '404&nbsp;test', icon: 'images/nav/pages.png' }
+    { id: 'notepad', url: 'sidebars/notepad.html', label: 'Notepad', icon: 'images/nav/pages.png' }
 ];
 
 var initialSidebar = 'pages';

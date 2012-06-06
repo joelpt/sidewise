@@ -1,0 +1,36 @@
+<html>
+<head>
+    <link type="text/css" rel="stylesheet" href="/css/reset.css"/>
+    <link type="text/css" rel="stylesheet" href="/css/sidebars/notepad.css"/>
+
+    <script type="text/javascript" src="/js/jquery/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="/js/jquery/jquery-helpers.js"></script>
+
+    <script type="text/javascript" src="/js/util/i18n.js"></script>
+    <script type="text/javascript" src="/js/util/settings.js"></script>
+
+    <script type="text/javascript" src="/js/util/classes/TimeoutManager.js"></script>
+
+    <script type="text/javascript" src="/js/ui/sidebars/notepad.js"></script>
+</head>
+<body>
+    <table id="main">
+        <tr>
+            <td id="header">
+                <div id="heading" i18n="notepad_heading"></div>
+                <div id="hint" i18n="notepad_hint"></div>
+            </td>
+        </tr>
+        <tr>
+            <td id="content">
+                <textarea id="notepad"></textarea>
+            </td>
+        </tr>
+        <tr>
+            <td id="footer">
+                <span i18n="notepad_lastSavedAt"></span> <span id="lastSavedAt"></span>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
