@@ -23,7 +23,6 @@ var TimeoutManager = {
         }
         var tmgr = this;
         var timeoutFn = function() {
-            log('TimeoutManager firing', label);
             fn();
             tmgr.del(label);
         }
