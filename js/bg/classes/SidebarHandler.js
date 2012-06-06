@@ -121,6 +121,12 @@ SidebarHandler.prototype = {
         var handler = this;
 
         handler.removeInProgress = true;
+
+        // Inhibit dock/sidebar window sizing compensation from occurring until
+        // we call handler.reset() below
+        handler.resizingDockWindow = true;
+        handler.resizingSidebar = true;
+
         chrome.tabs.remove(this.tabId, function() {
             handler.onRemoved(callback);
         });
@@ -187,10 +193,6 @@ SidebarHandler.prototype = {
 
         var last = this.lastDockWindowMetrics;
         var handler = this;
-
-        // Inhibit dock/sidebar window sizing compensation from occurring until
-        // we call handler.reset() below
-        handler.resizingDockWindow = true;
 
         positionWindow(
             this.dockWindowId,
