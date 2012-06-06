@@ -13,4 +13,4 @@ var Window = function(win)
     log('Window', win, this);
 };
 
-extend(Window, PageTreeElement);
+Window.extend(PageTreeElement);

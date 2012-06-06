@@ -22,4 +22,5 @@ var Page = function(tab, overrideStatus)
     console.log(this.status, tab.id);
 };
 
-extend(Page, PageTreeElement);
+Page.extend(PageTreeElement);
+

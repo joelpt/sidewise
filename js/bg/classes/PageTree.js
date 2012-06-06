@@ -20,7 +20,8 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     this.onModifiedDelayedTimeout = null;
 };
 
-PageTree.extendsClass(DataTree, {
+PageTree.extend(DataTree, {
+
     /////////////////////////////////////////////////////
     // PAGE MANIPULATION FUNCTIONS
     /////////////////////////////////////////////////////

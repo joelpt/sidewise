@@ -216,31 +216,7 @@ function clamp(value, min, max)
     return value;
 }
 
-/**
- * A function used to extend one class with another
- *
- * @param {Object} subClass
- *      The inheriting class, or subclass, which may have its own prototype methods
- * @param {Object} baseClass
- *      The class from which to inherit
- */
-function extend(subClass, baseClass) {
-   function inheritance() {}
-   inheritance.prototype = baseClass.prototype;
-
-   var subPrototype = Object.create(subClass.prototype);
-
-   subClass.prototype = new inheritance();
-   subClass.prototype.constructor = subClass;
-   subClass._base = baseClass;
-   subClass._super = baseClass.prototype;
-
-   for (var attrname in subPrototype) {
-       subClass.prototype[attrname] = subPrototype[attrname];
-   }
-}
-
-Function.prototype.extendsClass = function(baseClass, withPrototype) {
+Function.prototype.extend = function(baseClass, withPrototype) {
     function inheritance() {}
     inheritance.prototype = baseClass.prototype;
 

@@ -8,4 +8,4 @@ var PageTreeElement = function()
     this.collapsed = false;
 };
 
-extend(PageTreeElement, DataTreeElement);
+PageTreeElement.extend(DataTreeElement);
