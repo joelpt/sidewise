@@ -234,3 +234,9 @@ Function.prototype.extend = function(baseClass, withPrototype) {
     }
 }
 
+function onDocumentReady(fn) {
+    if (document.readyState == 'complete') {
+        fn();
+    }
+    window.onload = fn;
+}
