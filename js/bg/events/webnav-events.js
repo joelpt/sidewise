@@ -129,11 +129,6 @@ function onCompleted(details)
         status: 'complete'
     });
 
-    if (isStaticFavIconUrl(page.favicon)) {
-        // Already have a good static favicon
-        return;
-    }
-
     // Ask for the latest static favicon
     chrome.tabs.get(details.tabId, function(tab) {
         var url = tab.url ? dropUrlHash(tab.url) : '';

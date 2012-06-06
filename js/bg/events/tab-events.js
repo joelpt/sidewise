@@ -145,8 +145,12 @@ function onTabUpdated(tabId, changeInfo, tab)
         // existing page element doesn't have a "good" favicon, try to replace it
         favicon = getBestFavIconUrl(tab.favIconUrl, url);
     }
+    else if (isStaticFavIconUrl(tab.favIconUrl)) {
+        // got a potentially new static favicon, use it
+        favicon = getBestFavIconUrl(tab.favIconUrl, url);
+    }
     else {
-        // existing page element already has a "good" favicon, don't mess with it
+        // keep the existing favicon
         favicon = page.favicon;
     }
     // TODO also don't push status unless it's in changeInfo
