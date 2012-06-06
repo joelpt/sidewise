@@ -2,6 +2,8 @@ var tree;
 var sidebarHandler;
 var focusTracker;
 
+window.onload = onLoad;
+
 function onLoad()
 {
     // this functions like a bit like an onready event for Chrome
@@ -136,4 +138,3 @@ function populatePages()
         }
     });
 }
-
