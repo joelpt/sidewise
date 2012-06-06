@@ -1,72 +1,18 @@
 <html>
 <head>
     <link type="text/css" rel="stylesheet" href="/css/reset.css"/>
-    <style>
-        iframe#contentFrame {
-            width: 100%;
-            height: 100%;
-        }
-        #loadingHint {
-            display: none;
-            position: fixed;
-            z-index: -1000;
-            font-family: 'Segoe UI', sans-serif;
-            font-size: 16px;
-            margin-left: 2em;
-            margin-top: 2em;
-            padding-left: 1.5em;
-            background-image: url('/images/throbber-slow.gif');
-            background-repeat: no-repeat;
-            font-style: italic;
-            margin-right: 1em;
-        }
+    <link type="text/css" rel="stylesheet" href="/css/sidebars/external-site.css"/>
 
-        #loadingURL {
-            font-size: 10pt;
-            font-family: monospace;
-            font-style: normal;
-            color: blue;
-            margin-top: 0.5em;
-        }
+    <script type="text/javascript" src="/js/util/classes/TimeoutManager.js"></script>
 
-        #loadingError {
-            font-size: 10pt;
-            font-style: normal;
-            font-weight: bold;
-            color: red;
-            margin-top: 1.5em;
-        }
-    </style>
-    <script>
-    var timeoutTimer;
-
-    function onLoadIframe() {
-        this.document.getElementById('loadingHint').style.display = 'none';
-        clearTimeout(timeoutTimer);
-    }
-
-    function setIframeSrc() {
-        var src = location.hash.slice(1);
-        this.document.getElementById('loadingHint').style.display = 'block';
-        this.document.getElementById('loadingURL').innerText = src;
-        this.document.getElementById('contentFrame').src = src;
-        timeoutTimer = setTimeout(onIframeLoadTimeout, 12000);
-    }
-
-    function onIframeLoadTimeout() {
-        this.document.getElementById('loadingError').innerHTML =
-            'This content is taking a long time to load.<br/><br/>Many sites block being loaded in an IFRAME. ' +
-            'This may be the case here. If the content never loads, you are probably out of luck. Sorry!';
-    }
-
-    </script>
+    <script type="text/javascript" src="/js/ui/sidebars/external-site.js"></script>
 </head>
-<body onLoad="setIframeSrc()">
+<body>
     <div id="loadingHint">
         Loading content from
         <div id="loadingURL"></div>
         <div id="loadingError"></div>
     </div>
-    <iframe id="contentFrame" src="" onLoad="onLoadIframe()" onErrorUpdate="alert(2);"></iframe>
+    <iframe id="contentFrame" src=""></iframe>
 </body>
 </html>
