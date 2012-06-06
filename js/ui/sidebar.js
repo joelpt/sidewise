@@ -21,7 +21,14 @@ function onReady() {
     manager.addSidebarPanels(sidebars);
 
     // Set initial sidebar position
-    setTimeout(function() { manager.showSidebarPanel(initialSidebar); }, 100);
+    manager.showSidebarPanel(initialSidebar);
+
+    // Defeat Chrome's possible attempt to set its own scroll position when sidebar is refreshed
+    $(window).load(function() {
+        setTimeout(function() {
+            manager.scrollToCurrentSidebarPanel(true);
+        }, 0);
+    });
 
     $(document).keydown({manager: manager}, function(evt) {
         if (evt.keyCode == 70 && evt.ctrlKey) {
