@@ -50,6 +50,12 @@ DataTree.prototype = {
     // hitfn: if given as Function(elem, index, containing_array) it is executed against the element matched
     findElem: function(matcherFn, inArray, hitFn, parentElem, parentIndex, parentArray)
     {
+        if (typeof(matcherFn) == 'string' && hitFn === undefined) {
+            return this.findElemById(matcherFn);
+        }
+        if (matcherFn instanceof DataTreeElement && hitFn === undefined)  {
+            return matcherFn;
+        }
         for (var i in inArray)
         {
             var elem = inArray[i];
