@@ -84,7 +84,7 @@ PageTree.extend(DataTree, {
     // this is a shallow move; moving elements's children are spliced in-place into its old location
     move: function(id, newParentId, blockCallback)
     {
-        var r = this.moveElem(this.getIdMatcherFn(id), this.getIdMatcherFn(newParentId));
+        var r = this.moveElem(this.getIdMatcherFn(id), newParentId);
 
         if (r && !blockCallback) {
             this.callbackProxyFn('move', { id: id, newParentId: newParentId });
@@ -102,7 +102,8 @@ PageTree.extend(DataTree, {
     // update an existing page with given details
     updatePage: function(tabId, details, blockCallback)
     {
-        var r = this.updateElem(this.getPageIdMatcherFn(tabId), details);
+        log(tabId, details);
+        var r = this.updateElem('p' + tabId, details);
 
         if (r && !blockCallback) {
             this.callbackProxyFn('updatePage', { tabId: tabId, element: r });
@@ -110,24 +111,6 @@ PageTree.extend(DataTree, {
 
         return r;
     },
-
-
-    /////////////////////////////////////////////////////
-    // WINDOW MANIPULATION FUNCTIONS
-    /////////////////////////////////////////////////////
-
-    // retrieve a window from the tree given its windowId
-    getWindow: function(windowId, hitFn)
-    {
-        return this.findById('w' + windowId, hitFn);
-    },
-
-    // remove the window with windowId, and all its children, from the tree
-    removeWindow: function(windowId)
-    {
-        return this.removeElem(this.getWindowIdMatcherFn(windowId), true);
-    },
-
 
 
     /////////////////////////////////////////////////////
@@ -156,8 +139,10 @@ PageTree.extend(DataTree, {
                 + Array(-4 + 1 + (1 + depth) * 4).join(' ')
                 + e.id + ': '
                 + (e.id[0] == 'p' ? e.title : 'window ' + e.type + (e.incognito ? ' incognito' : ''))
-                + ' [' + e.children.length + ' children]'
-                + (e.placed ? ' P' : ' -');
+                + ' +' + e.children.length + ''
+                + (e.placed ? ' P' : ' -')
+                + ' R:' + e.referrer
+                + '@' + e.historylength;
         }
         return this.reduce(toStringFn, '');
     },
