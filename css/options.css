@@ -14,7 +14,7 @@ body {
 
 body, input, select {
     font-family: 'Verdana', sans-serif;
-    font-size: 10pt;
+    font-size: 12px;
 }
 
 #pageContainer {
@@ -33,14 +33,14 @@ body, input, select {
 
 h1 {
     font-family: 'Lobster', cursive;
-    font-size: 38pt;
+    font-size: 50px;
     border-bottom: 1px solid #999;
     margin-bottom: 0.375em;
 }
 
 h2 {
     font-family: 'Trebuchet MS', 'Liberation Sans', 'DejaVu Sans', sans-serif;
-    font-size: 18pt;
+    font-size: 22px;
     border-bottom: 1px solid #999;
     margin-top: 1em;
 }
@@ -80,7 +80,7 @@ b {
 }
 
 .info {
-    font-size: 9pt;
+    font-size: 12px;
     line-height: 14pt;
 }
 
@@ -161,7 +161,7 @@ input.invalid {
 
 #version {
     float: right;
-    font-size: 7pt;
+    font-size: 10px;
     color: #999;
 }
 
@@ -171,13 +171,12 @@ input.invalid {
     background: -webkit-linear-gradient(top, rgba(242,245,246,1) 0%,rgba(227,234,237,1) 100%);
     border: 1px solid #333;
     border-radius: 3px;
-    font-size: 11px;
     color: #000;
     font-size: 12px;
     font-family: 'segoe ui', 'ms sans serif', sans-serif;
     box-shadow: 2px 2px 11px #666;
     padding: 0.5em 0.75em 0.75em 0.75em;
-    width: 400px;
+    width: 300px;
 }
 
 #clouds {
