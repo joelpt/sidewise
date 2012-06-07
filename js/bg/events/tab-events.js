@@ -163,9 +163,19 @@ function onTabUpdated(tabId, changeInfo, tab)
     });
 
     if (tab.openerTabId !== undefined) {
+        // TODO work out a way where maybe we can obtain page and parent in one go and update/move them more efficiently
         var page = tree.getPage(tabId);
         if (!page.placed) {
+            log('moving page to parent by openerTabId', tab.openerTabId);
             tree.move('p' + tabId, 'p' + tab.openerTabId);
+
+            // TODO doing this below may be problematic in some cases because we aren't setting page.placed to true here;
+            // so when we actually do set page.placed to true we may need to clear page.referrer if we end up moving the
+            // tab under a Window insted of allowing it to be a child of another page
+            if (page.referrer == null || page.referrer == '') {
+                log('record referrer via openerTabId\'s page.url');
+                tree.updateElem(page, { referrer: tree.getPage(tab.openerTabId).url });
+            }
         }
     }
 }
