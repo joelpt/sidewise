@@ -41,8 +41,8 @@ function postLoad() {
 
     registerRequestEvents();
 
-    populatePages();
     injectContentScriptInExistingTabs('content_script.js');
+    populatePages();
 
     registerWindowEvents();
     registerTabEvents();
@@ -133,7 +133,7 @@ function populatePages()
             }
             for (var j = 0; j < numTabs; j++) {
                 // try to guess child/parent tab relationships by asking each page for its referrer
-                getPageDetails(tabs[j]);
+                getPageDetails(tabs[j], 'find_parent');
             }
         }
     });

@@ -1,5 +1,5 @@
 // Constants used by the get*() scripts in this file
-var GET_PAGE_DETAILS_SCRIPT = "chrome.extension.sendRequest( { op: 'getPageDetails', referrer: document.referrer } );";
+var GET_PAGE_DETAILS_SCRIPT = "chrome.extension.sendRequest( { op: 'getPageDetails', referrer: document.referrer, historylength: history.length, action: '<ACTION>' } );";
 var GET_IS_FULL_SCREEN_SCRIPT = "chrome.extension.sendRequest({ op: 'getIsFullScreen', isFullScreen: document.webkitIsFullScreen });";
 
 
@@ -12,9 +12,9 @@ function registerRequestEvents()
 
 /* Functions that inject a script into a tab which in turn fire sendRequest back to us */
 
-function getPageDetails(tab)
+function getPageDetails(tab, action)
 {
-    executeContentScript(tab.url, tab.id, GET_PAGE_DETAILS_SCRIPT);
+    executeContentScript(tab.url, tab.id, GET_PAGE_DETAILS_SCRIPT.replace('<ACTION>', action));
 }
 
 function getIsFullScreen(tab)
@@ -78,29 +78,41 @@ function onGetIsFullScreenMessage(tab, request) {
 
 function onGetPageDetailsMessage(tab, msg)
 {
-    var tabId = tab.id;
-    var windowId = tab.windowId;
-    var page = tree.getPage(tabId);
     log(tabId, msg.referrer, page);
-    if (page === undefined)
-    {
-        // page entry doesn't exist anymore
-        throw 'pagedetails could not find page ' + tab.id + ' in the tree';
+    var tabId = tab.id;
+
+    switch (msg.action) {
+        case 'store':
+            tree.updatePage(tabId, { referrer: msg.referrer, historylength: msg.historylength });
+            break;
+
+        case 'find_parent':
+            var page = tree.getPage(tabId);
+            if (page === undefined)
+            {
+                // page entry doesn't exist anymore
+                throw 'pagedetails could not find page ' + tab.id + ' in the tree';
+            }
+            // look for an existing tab whose url matches our tab's referrer
+            chrome.tabs.query({ 'windowId': tab.windowId, 'url': dropUrlHash(msg.referrer) }, function(tabs) {
+                tree.updatePage(tabId, { placed: true });  // tab's proper tree location is now 'known'
+                // exclude potential parent candidates which are the same tab
+                tabs = tabs.filter(function(t) { return t.id != tabId; });
+                if (tabs.length == 0) {
+                    return;  // no apparent parent tab, so it belongs where it is under a window
+                }
+                // TODO handle these cases:
+                //      parent tab is already a descendant of the tab with tabId
+                log('making ' + tabId + ' a child of ' + tabs[0].id);
+                tree.move('p' + tabId, 'p' + tabs[0].id);
+                tree.updatePage(tabId, { placed: true });
+            });
+            break;
+
+        default:
+            throw 'Unknown msg.action';
     }
-    // look for an existing tab whose url matches our tab's referrer
-    chrome.tabs.query({ 'windowId': windowId, 'url': dropUrlHash(msg.referrer) }, function(tabs) {
-        tree.updatePage(tabId, { placed: true });  // tab's proper tree location is now 'known'
-        // exclude potential parent candidates which are the same tab
-        tabs = tabs.filter(function(t) { return t.id != tabId; });
-        if (tabs.length == 0) {
-            return;  // no apparent parent tab, so it belongs where it is under a window
-        }
-        // TODO handle these cases:
-        //      parent tab is already a descendant of the tab with tabId
-        log('making ' + tabId + ' a child of ' + tabs[0].id);
-        tree.move('p' + tabId, 'p' + tabs[0].id);
-        tree.updatePage(tabId, { placed: true });
-    });
+
 }
 
 function onWindowResizedMessage(tab, request)

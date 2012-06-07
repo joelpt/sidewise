@@ -17,6 +17,8 @@ var Page = function(tab, overrideStatus)
     this.placed = false;
     this.favicon = getBestFavIconUrl(tab.favIconUrl, url);
     this.unread = false;
+    this.referrer = null;
+    this.historylength = null;
 
     log('Page', tab, this);
     console.log(this.status, tab.id);
