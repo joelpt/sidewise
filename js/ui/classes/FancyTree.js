@@ -327,7 +327,7 @@ FancyTree.prototype = {
 
     onExpanderClick: function(evt) {
         var expander = $(this);
-        var parentLI = expander.closest('li');
+        var parentLI = expander.closest('.ftRowNode');
         evt.data.treeObj.toggleExpandElem(parentLI);
         evt.stopPropagation();
     },
