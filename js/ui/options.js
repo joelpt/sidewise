@@ -75,7 +75,7 @@ function transformInputElements() {
                 rep.append(labelElem).append(inputBox);
                 break;
             default:
-                throw 'Unsupported input element type, cannot transform: ' + type;
+                throw new Error('Unsupported input element type, cannot transform: ' + type);
         }
 
         $e.replaceWith(rep);

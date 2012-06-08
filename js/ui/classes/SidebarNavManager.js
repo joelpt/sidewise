@@ -76,7 +76,7 @@ SidebarNavManager.prototype = {
     getSidebarDetails: function(id) {
         var matches = this.sidebars.filter(function(e) { return e.id == id; });
         if (matches.length != 1) {
-            throw 'Nonexistent or too many matching sidebars found';
+            throw new Error('Nonexistent or too many matching sidebars found');
         }
         return matches[0];
     },

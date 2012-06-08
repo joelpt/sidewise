@@ -36,7 +36,7 @@ SidebarHandler.prototype = {
     // create the sidebar window
     create: function() {
         if (this.sidebarExists()) {
-            throw 'Cannot create() a new sidebar when one currently exists';
+            throw new Error('Cannot create() a new sidebar when one currently exists');
         }
         log('Creating sidebar window/tab');
         this.creatingSidebar = true;
@@ -58,7 +58,7 @@ SidebarHandler.prototype = {
         }
         else {
             if (!this.dockWindowId) {
-                throw 'No dockWindowId assigned for docking';
+                throw new Error('No dockWindowId assigned for docking');
             }
             chrome.windows.get(handler.dockWindowId, function(win) {
                 win = handler.fixMaximizedWinMetrics(win);
@@ -97,7 +97,7 @@ SidebarHandler.prototype = {
 
     createWithDockState: function(dockState) {
         if (this.sidebarExists()) {
-            throw 'Cannot createWithDockState() when sidebar already exists';
+            throw new Error('Cannot createWithDockState() when sidebar already exists');
         }
 
         this.dockState = dockState;
@@ -115,7 +115,7 @@ SidebarHandler.prototype = {
 
     remove: function(callback) {
         if (!this.sidebarExists()) {
-            throw 'Cannot remove sidebar it does not exist';
+            throw new Error('Cannot remove sidebar it does not exist');
         }
 
         var handler = this;
@@ -209,7 +209,7 @@ SidebarHandler.prototype = {
     // redock the sidebar window to a different window
     redock: function(windowId) {
         if (!this.sidebarExists()) {
-            throw 'Cannot redock a nonexistent sidebar';
+            throw new Error('Cannot redock a nonexistent sidebar');
         };
         var handler = this;
         this.remove(function() {
@@ -319,7 +319,7 @@ SidebarHandler.prototype = {
             }
         }
         else {
-            throw 'Unrecognized side parameter: ' + side;
+            throw new Error('Unrecognized side parameter: ' + side);
         }
 
         log('newLeft ' + newLeft);

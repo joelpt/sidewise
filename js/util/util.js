@@ -88,7 +88,7 @@ function readFile(url, callback)
                 callback(xhr.responseText);
             }
             else {
-                throw 'No data returned for readFile: ' + url;
+                throw new Error('No data returned for readFile: ' + url);
             }
         }
 

@@ -8,7 +8,7 @@ var TimeoutManager = {
     get: function(label) {
         var timeout = this.timeouts[label];
         if (!timeout) {
-            throw 'A timeout with the given label does not exist';
+            throw new Error('A timeout with the given label does not exist');
         }
         return timeout;
     },
@@ -19,7 +19,7 @@ var TimeoutManager = {
 
     set: function(label, fn, timeoutMs) {
         if (this.exists(label)) {
-            throw 'A timeout with the given label has already been set';
+            throw new Error('A timeout with the given label has already been set');
         }
         var tmgr = this;
         var timeoutFn = function() {
@@ -49,7 +49,7 @@ var TimeoutManager = {
         }
 
         if (!fn || !timeoutMs) {
-            throw 'Tried to reset a timer that does not yet exist, but did not pass fn or timeoutMs';
+            throw new Error('Tried to reset a timer that does not yet exist, but did not pass fn or timeoutMs');
         }
 
         // Called .reset but we haven't .set yet; do that now

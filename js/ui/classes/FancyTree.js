@@ -474,7 +474,7 @@ FancyTree.prototype = {
         if (beforeSiblingId) {
             var sibling = children.children('#' + beforeSiblingId);
             if (sibling.length == 0) {
-                throw 'Could not find sibling with id ' + beforeSiblingId;
+                throw new Error('Could not find sibling with id ' + beforeSiblingId);
             }
             sibling.before(elem);
         }
@@ -567,7 +567,7 @@ FancyTree.prototype = {
         // var elem = this.root.find('#' + idOrElem); // this method is ~5x slower
 
         if (elem.length == 0) {
-            throw 'Could not find element with id ' + idOrElem;
+            throw new Error('Could not find element with id ' + idOrElem);
         }
 
         return elem;
