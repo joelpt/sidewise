@@ -39,11 +39,19 @@ ChromeWindowFocusTracker.prototype = {
 
     initFocused: function(callback) {
         var tracker = this;
-        chrome.windows.getLastFocused(null, function(win) {
-            tracker.setFocused(win.id);
-            if (callback) {
-                callback(win);
+        chrome.windows.getAll(null, function(wins) {
+            // collect all existing windows
+            for (var i in wins) {
+                tracker.windowIds.push(wins[i].id);
             }
+
+            // set currently focused window
+            chrome.windows.getLastFocused(null, function(win) {
+                tracker.setFocused(win.id);
+                if (callback) {
+                    callback(win);
+                }
+            });
         });
     },
 
