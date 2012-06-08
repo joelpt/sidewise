@@ -183,7 +183,7 @@ function onPageRowClick(evt) {
     if (row.attr('hibernated') == 'true') {
         // row is hibernated, don't try to activate its (nonexistent) tab;
         // just show its tooltip quickly
-        treeObj.startTooltipTimer(row, evt, 250);
+        treeObj.startTooltipTimer(row, evt, 500);
         return;
     }
 
