@@ -14,7 +14,7 @@ function initTree(attachToSelector, pageTree) {
         'page': {
             onClick: onPageRowClick,
             onDoubleClick: onPageRowDoubleClick,
-            onMiddleClick: onCloseButtonPageRow,
+            onMiddleClick: onPageRowMiddleClick,
             onIconError: onPageRowIconError,
             onFormatTooltip: onPageRowFormatTooltip,
             onResizeTooltip: onResizeTooltip,
@@ -27,9 +27,11 @@ function initTree(attachToSelector, pageTree) {
         },
         'window': {
             onClick: onWindowRowClick,
+            onDoubleClick: onWindowRowDoubleClick,
+            onMiddleClick: onWindowRowMiddleClick,
             onFormatTooltip: onWindowRowFormatTooltip,
             onResizeTooltip: onResizeTooltip,
-            tooltipMaxWidthFixed: 150,
+            tooltipMaxWidthPercent: 0.9,
             buttons: [
                 {icon: '/images/close.png', tooltip: 'Close&nbsp;window', onClick: onCloseButtonWindowRow }
             ]
@@ -203,7 +205,51 @@ function onPageRowClick(evt) {
 }
 
 function onPageRowDoubleClick(evt) {
-    onHibernateButtonPageRow(evt);
+    var action = loadSetting('pages_doubleClickAction');
+    handlePageRowAction(action, evt);
+}
+
+function onPageRowMiddleClick(evt) {
+    var action = loadSetting('pages_middleClickAction');
+    handlePageRowAction(action, evt);
+}
+
+function handlePageRowAction(action, evt) {
+    switch (action) {
+        case 'close':
+            onCloseButtonPageRow(evt);
+            break;
+        case 'hibernate':
+            onHibernateButtonPageRow(evt);
+            break;
+        case 'expand':
+            evt.data.treeObj.toggleExpandElem(evt.data.row);
+            break;
+    }
+}
+
+function onWindowRowDoubleClick(evt) {
+    var action = loadSetting('pages_doubleClickAction');
+    handleWindowRowAction(action, evt);
+}
+
+function onWindowRowMiddleClick(evt) {
+    var action = loadSetting('pages_middleClickAction');
+    handleWindowRowAction(action, evt);
+}
+
+function handleWindowRowAction(action, evt) {
+    switch (action) {
+        case 'close':
+            onCloseButtonWindowRow(evt);
+            break;
+        // case 'hibernate':
+        //     onHibernateButtonPageRow(evt);
+        //     break;
+        case 'expand':
+            evt.data.treeObj.toggleExpandElem(evt.data.row);
+            break;
+    }
 }
 
 function onWindowRowClick(evt) {

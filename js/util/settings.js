@@ -46,6 +46,8 @@ function initializeDefaultSettings() {
         keepSidebarOnTop: false,
         dockState: 'right',
         browserActionButtonBehavior: 'show',
+        pages_doubleClickAction: 'expand',
+        pages_middleClickAction: 'none',
         loggingEnabled:  false,
         sidebarTargetWidth: 400,
         settingsInitialized: true

@@ -27,7 +27,7 @@
         }
      },
 
-    "pages_hibernatedHint": { "message": "Hibernated, double-click to wake" },
+    "pages_hibernatedHint": { "message": "Hibernated page" },
 
     "notepad_heading": { "message": "Notepad" },
     "notepad_hint": { "message": "Enter text below. It will be automatically saved." },
@@ -56,6 +56,18 @@
     "option_dockState_left": { "message": "left" },
     "option_dockState_right": { "message": "right" },
     "option_dockState_undocked": { "message": "undocked" },
+
+    "optionsHeadingPages": { "message": "Pages sidebar"},
+    "option_pages_doubleClickAction": { "message": "When double-clicking a row"},
+    "option_pages_doubleClickAction_none": { "message": "do nothing"},
+    "option_pages_doubleClickAction_close": { "message": "close page/window"},
+    "option_pages_doubleClickAction_hibernate": { "message": "hibernate/wake"},
+    "option_pages_doubleClickAction_expand": { "message": "expand/collapse"},
+    "option_pages_middleClickAction": { "message": "When middle-clicking a row"},
+    "option_pages_middleClickAction_none": { "message": "do nothing"},
+    "option_pages_middleClickAction_close": { "message": "close page/window"},
+    "option_pages_middleClickAction_hibernate": { "message": "hibernate/wake"},
+    "option_pages_middleClickAction_expand": { "message": "expand/collapse"},
 
     "optionsInfoMonitorDetection": { "message": "<p>Whenever you change your monitor configuration, <b>reload Chrome</b>, then come here and click 'Detect all monitors now' below.</p><p>This should be done whenever you add or remove monitors, change monitor resolutions, reposition monitors in your OS settings, or change the location/size of your system taskbars.</p>"},
     "optionsInfoMonitorsOnYourSystem": { "message": "Sidewise currently believes you have <b>$1</b> $2 connected to your system." },
