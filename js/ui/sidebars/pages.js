@@ -12,7 +12,8 @@ $(document).ready(function() {
 function initTree(attachToSelector, pageTree) {
     var rowTypes = {
         'page': {
-            onClick: onPageRowClicked,
+            onClick: onPageRowClick,
+            onDoubleClick: onPageRowDoubleClick,
             onMiddleClick: onCloseButtonPageRow,
             onIconError: onPageRowIconError,
             onFormatTooltip: onPageRowFormatTooltip,
@@ -20,12 +21,12 @@ function initTree(attachToSelector, pageTree) {
             filterByExtraParams: ['url'],
             tooltipMaxWidthPercent: 0.9,
             buttons: [
-                {icon: '/images/reload.png', tooltip: 'Reload', onClick: function() { alert('reload'); } },
+                {icon: '/images/reload.png', tooltip: 'Hibernate', onClick: onHibernateButtonPageRow },
                 {icon: '/images/close.png', tooltip: 'Close', onClick: onCloseButtonPageRow }
             ]
         },
         'window': {
-            onClick: onWindowRowClicked,
+            onClick: onWindowRowClick,
             onFormatTooltip: onWindowRowFormatTooltip,
             onResizeTooltip: onResizeTooltip,
             tooltipMaxWidthFixed: 150,
@@ -55,6 +56,33 @@ function populateFancyTreeFromPageTree(fancyTree, pageTree) {
     });
 }
 
+function addPageTreeElemToFancyTree(fancyTree, pageTreeElem, parentId)
+{
+    var newRow;
+    if (pageTreeElem.elemType == 'window') {
+        var img = (pageTreeElem.incognito ? '/images/incognito-16.png' : '/images/tab-stack-16.png');
+        newRow = fancyTree.getNewElem('window',
+            pageTreeElem.id,
+            img,
+            getMessage('text_Window') + ' ' + pageTreeElem.id.slice(1),
+            '',
+            { incognito: pageTreeElem.incognito },
+            false,
+            null);
+    }
+    else if (pageTreeElem.elemType == 'page') {
+        newRow = fancyTree.getNewElem('page', pageTreeElem.id, pageTreeElem.favicon,
+            pageTreeElem.id, pageTreeElem.title, {
+                url: pageTreeElem.url,
+                status: pageTreeElem.status,
+                pinned: pageTreeElem.pinned,
+                unread: pageTreeElem.unread,
+                hibernated: pageTreeElem.hibernated
+            }, false, null);
+    }
+    fancyTree.addElem(newRow, parentId);
+}
+
 function getBigTooltipContent(header, icon, body) {
     var elem = $('<div class="ftBigTip"/>');
     var table = $('<table/>');
@@ -68,12 +96,12 @@ function getBigTooltipContent(header, icon, body) {
     tr.append(td);
 
     if (header) {
-        var headerElem = $('<div class="ftBigTipHeader">').text(header);
+        var headerElem = $('<div class="ftBigTipHeader">').html(header);
         td.append(headerElem);
     }
 
     if (body) {
-        var bodyElem = $('<div class="ftBigTipBody">').text(body);
+        var bodyElem = $('<div class="ftBigTipBody">').html(body);
         td.append(bodyElem);
     }
 
@@ -88,6 +116,9 @@ function onPageRowFormatTooltip(evt) {
     var title = evt.data.title;
     if (url == title) {
         title = '';
+    }
+    if (evt.data.row.attr('hibernated') == 'true') {
+        title = '<div class="hibernatedHint">' + getMessage('pages_hibernatedHint') + '</div>' + title;
     }
     return getBigTooltipContent(title, icon, url);
 }
@@ -111,7 +142,20 @@ function onResizeTooltip(evt) {
 function onCloseButtonPageRow(evt)
 {
     evt.data.row.addClass('closing'); // "about to close" styling
-    chrome.tabs.remove(parseInt(evt.data.row.attr('id').slice(1)));
+    chrome.tabs.remove(getRowNumericId(evt.data.row));
+}
+
+function getRowNumericId(pageRow) {
+    return parseInt(pageRow.attr('id').slice(1));
+}
+
+function onHibernateButtonPageRow(evt) {
+    if (evt.data.row.attr('hibernated') == 'true') {
+        bg.tree.awakenPage(getRowNumericId(evt.data.row));
+        return;
+    }
+
+    bg.tree.hibernatePage(getRowNumericId(evt.data.row));
 }
 
 function onCloseButtonWindowRow(evt)
@@ -125,18 +169,27 @@ function onCloseButtonWindowRow(evt)
         return;
     }
 
-    chrome.windows.remove(parseInt(evt.data.row.attr('id').slice(1)));
+    chrome.windows.remove(getRowNumericId(evt.data.row));
 }
 
-function onPageRowClicked(evt) {
-    // set visible focus immediately
-    evt.data.treeObj.focusElem(evt.data.row);
+function onPageRowClick(evt) {
+    log(evt);
+    var treeObj = evt.data.treeObj;
+    var row = evt.data.row;
 
-    // actually set the focused tab; this will trigger a callback to us to visibly focus
-    // the row again as above, but we do it twice so the visual responseness is as fast
-    // as possible
-    chrome.tabs.update(parseInt(evt.data.row.attr('id').slice(1)), { active: true }, function(tab) {
-        // if the tab's hosting window is currently minimzed, un-minimize it
+    // set visible focus immediately; this is just for maximum visible responsiveness
+    treeObj.focusElem(row);
+
+    if (row.attr('hibernated') == 'true') {
+        // row is hibernated, don't try to activate its (nonexistent) tab;
+        // just show its tooltip quickly
+        treeObj.startTooltipTimer(row, evt, 250);
+        return;
+    }
+
+    // actually set Chrome's focused tab
+    chrome.tabs.update(getRowNumericId(row), { active: true }, function(tab) {
+        // if the tab's hosting window is currently minimized, un-minimize it
         chrome.windows.get(tab.windowId, function(win) {
             if (win.state == 'minimized') {
                 chrome.windows.update(win.id, { state: 'normal' });
@@ -145,13 +198,16 @@ function onPageRowClicked(evt) {
     });
 
     // trigger page row tooltip to appear after 2s
-    evt.data.treeObj.startTooltipTimer(evt.data.row, evt, 2000);
+    treeObj.startTooltipTimer(row, evt, 2000);
 
 }
 
-function onWindowRowClicked(evt) {
-    var winId = parseInt(evt.data.row.attr('id').slice(1));
-    chrome.windows.update(winId, { focused: true });
+function onPageRowDoubleClick(evt) {
+    onHibernateButtonPageRow(evt);
+}
+
+function onWindowRowClick(evt) {
+    chrome.windows.update(getRowNumericId(evt.data.row), { focused: true });
 }
 
 function PageTreeCallbackProxyListener(op, args)
@@ -170,42 +226,19 @@ function PageTreeCallbackProxyListener(op, args)
             break;
         case 'updatePage':
             var elem = args.element;
-            ft.updateElem(elem.id, elem.favicon, null, elem.title, {
+            ft.updateElem(args.id, elem.favicon, null, elem.title, {
+                id: elem.id,
                 url: elem.url,
                 status: elem.status,
                 pinned: elem.pinned,
-                unread: elem.unread
+                unread: elem.unread,
+                hibernated: elem.hibernated
             });
             break;
         case 'focusPage':
             ft.focusElem(args.id);
             break;
     }
-}
-
-function addPageTreeElemToFancyTree(fancyTree, pageTreeElem, parentId)
-{
-    var newRow;
-    if (pageTreeElem.elemType == 'window') {
-        var img = (pageTreeElem.incognito ? '/images/incognito-16.png' : '/images/tab-stack-16.png');
-        newRow = fancyTree.getNewElem('window',
-            pageTreeElem.id,
-            img,
-            getMessage('text_Window') + ' ' + pageTreeElem.id.slice(1),
-            '',
-            { incognito: pageTreeElem.incognito },
-            false,
-            null);
-    }
-    else if (pageTreeElem.elemType == 'page') {
-        newRow = fancyTree.getNewElem('page', pageTreeElem.id, pageTreeElem.favicon,
-            pageTreeElem.id, pageTreeElem.title, {
-                url: pageTreeElem.url,
-                status: pageTreeElem.status,
-                pinned: pageTreeElem.pinned
-            }, false, null);
-    }
-    fancyTree.addElem(newRow, parentId);
 }
 
 function onPermitFancyTreeTooltip() {
