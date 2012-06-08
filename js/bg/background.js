@@ -12,10 +12,9 @@ function onLoad()
         tree = new PageTree(PageTreeCallbackProxy, savePageTreeToLocalStorage);
         // loadPageTreeFromLocalStorage();
         sidebarHandler = new SidebarHandler();
-        focusTracker = new ChromeWindowFocusTracker();
 
         // Call postLoad() after focusTracker initializes to do remaining initialization
-        focusTracker.initFocused(postLoad);
+        focusTracker = new ChromeWindowFocusTracker(postLoad);
     });
 }
 

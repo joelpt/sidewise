@@ -1,13 +1,33 @@
 /**
   * @constructor
   */
-var ChromeWindowFocusTracker = function()
+var ChromeWindowFocusTracker = function(onInitialized)
 {
-    this.windowIds = [];
-    this.chromeHasFocus = false;
+    this.init(onInitialized);
 };
 
 ChromeWindowFocusTracker.prototype = {
+
+    init: function(onInitialized) {
+        this.windowIds = [];
+        this.chromeHasFocus = false;
+
+        var tracker = this;
+        chrome.windows.getAll(null, function(wins) {
+            // collect all existing windows
+            for (var i in wins) {
+                tracker.windowIds.push(wins[i].id);
+            }
+
+            // set currently focused window
+            chrome.windows.getLastFocused(null, function(win) {
+                tracker.setFocused(win.id);
+                if (onInitialized) {
+                    onInitialized(win);
+                }
+            });
+        });
+    },
 
     getFocused: function(topIndex) {
         if (this.windowIds.length == 0) {
@@ -35,24 +55,6 @@ ChromeWindowFocusTracker.prototype = {
         this.windowIds.splice(index, 1);
         log('Removed windowId', windowId, this.windowIds);
         return true;
-    },
-
-    initFocused: function(callback) {
-        var tracker = this;
-        chrome.windows.getAll(null, function(wins) {
-            // collect all existing windows
-            for (var i in wins) {
-                tracker.windowIds.push(wins[i].id);
-            }
-
-            // set currently focused window
-            chrome.windows.getLastFocused(null, function(win) {
-                tracker.setFocused(win.id);
-                if (callback) {
-                    callback(win);
-                }
-            });
-        });
     },
 
     getTopFocusableWindow: function(callback, topIndex) {
