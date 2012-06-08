@@ -28,7 +28,7 @@ DataTree.prototype = {
       * Adds a node to the tree as a child of the element matched by parentMatcher.
       *
       * @param node The node to add.
-      * @param parentMatcher The parentMatcher to use for identifying the parent; see findNode().
+      * @param parentMatcher The parentMatcher to use for identifying the parent; see getNode().
       *                      If parentMatcher is omitted, add to the top level of the tree.
       * @returns [node, parent]
       */
@@ -40,7 +40,7 @@ DataTree.prototype = {
             this.idIndex[node.id] = node;
             return [node, undefined];
         }
-        parent = this.findNode(parentMatcher);
+        parent = this.getNode(parentMatcher);
         parent.children.push(node);
         this.idIndex[node.id] = node;
         this.updateLastModified();
@@ -54,7 +54,7 @@ DataTree.prototype = {
       *                String: treated as an id and an id index lookup is performed.
       *                DataTreeNode: matcher is assumed to be the node sought and is just returned.
       */
-    findNode: function(matcher) {
+    getNode: function(matcher) {
         if (typeof(matcher) == 'string') {
             return this.idIndex[matcher];
         }
@@ -64,21 +64,21 @@ DataTree.prototype = {
         }
 
         if (matcher instanceof Function) {
-            return this.findNodeStep(matcher, this.tree);
+            return this.getNodeStep(matcher, this.tree);
         }
 
-        throw 'Unsupported "matcher" argument passed';
+        throw new Error('Unsupported "matcher" argument passed');
     },
 
     // Steps through inArray's nodes and children recursively looking for a node for which matcherFn returns true
-    findNodeStep: function(matcherFn, inArray) {
+    getNodeStep: function(matcherFn, inArray) {
         for (var i in inArray)
         {
             var elem = inArray[i];
             if (matcherFn(elem)) {
                 return elem;
             }
-            var childElem = this.findNodeStep(matcherFn, elem.children);
+            var childElem = this.getNodeStep(matcherFn, elem.children);
             if (childElem !== undefined)
                 return childElem;
         }
@@ -101,7 +101,7 @@ DataTree.prototype = {
       *          parentSiblings: grandparent's children array
       *          ancestors: ancestors; first node is the topmost in the tree, last is immediate parent
       */
-    findNodeEx: function(matcher, inArray) {
+    getNodeEx: function(matcher, inArray) {
         var matcherFn;
         if (typeof(matcher) == 'string') {
             // assume caller is asking for a match on id
@@ -115,18 +115,18 @@ DataTree.prototype = {
             matcherFn = matcher;
         }
         else {
-            throw 'Unsupported "matcher" argument passed';
+            throw new Error('Unsupported "matcher" argument passed');
         }
 
         if (inArray === undefined) {
             inArray = this.tree;
         }
 
-        return this.findNodeExStep(matcherFn, inArray);
+        return this.getNodeExStep(matcherFn, inArray);
     },
 
     // Steps through inArray's nodes and children recursively looking for a node for which matcherFn returns true
-    findNodeExStep: function(matcherFn, inArray, parentElem, parentIndex, parentArray) {
+    getNodeExStep: function(matcherFn, inArray, parentElem, parentIndex, parentArray) {
         for (var i in inArray)
         {
             var elem = inArray[i];
@@ -142,7 +142,7 @@ DataTree.prototype = {
                 };
                 return r;
             }
-            var found = this.findNodeExStep(matcherFn, elem.children, elem, i, inArray);
+            var found = this.getNodeExStep(matcherFn, elem.children, elem, i, inArray);
             if (found !== undefined) {
                 if (parentElem !== undefined) {
                     found.ancestors.splice(0, 0, parentElem);
@@ -156,9 +156,9 @@ DataTree.prototype = {
     // Update the first element that matches matcher
     updateElem: function(matcher, details)
     {
-        var elem = this.findNode(matcher);
+        var elem = this.getNode(matcher);
         if (elem === undefined) {
-            throw 'updateElem could not find a matching element to update';
+            throw new Error('updateElem could not find a matching element to update');
         }
         if (details.id && details.id != elem.id) {
             delete this.idIndex[elem.id];
@@ -193,7 +193,7 @@ DataTree.prototype = {
     //         // don't allow move if parent is currently a child of page (moving would create a cycle)
     //         var test = tree.findElem(function(elem) { return elem == parent; }, e.children);
     //         if (test !== undefined)
-    //             throw 'moveElemDeep would have created a cycle, aborting';
+    //             throw new Error('moveElemDeep would have created a cycle, aborting');
 
     //         a.splice(i, 1); // remove moving page from its current spot
     //         parent.children.push(e); // insert moving page as child of new parent
@@ -206,9 +206,9 @@ DataTree.prototype = {
     // removeChildren: if true, remove element's children; if false, splice them into element's old spot
     removeNode: function(matcher, removeChildren)
     {
-        var found = this.findNodeEx(matcher);
+        var found = this.getNodeEx(matcher);
         if (found === undefined) {
-            throw 'Could not find requested element to remove matching: ' + matcher;
+            throw new Error('Could not find requested element to remove matching: ' + matcher);
         }
 
         this.updateLastModified();
@@ -238,34 +238,77 @@ DataTree.prototype = {
     // Comprehension-style operations
     /////////////////////////////////////////////////////
 
-    // Applies reduceFn(lastValue, elem, tree_depth, containing_array) to each element
-    // and its child-elements in sequential order
-    // initialValue: starting value for lastValue
-    reduce: function(reduceFn, initialValue)
+    /**
+      * Reduces each node and its descendants by calling reduceFn on each one.
+      * @param reduceFn {Function(lastValue, node, containingArray)} Called for each node in sequence.
+      *                 Should return the value which will be assigned as lastValue to the next reduceFn() call.
+      * @param initialValue Starting value for lastValue.
+      * @param inArray If provided, act only on nodes and descendents in given array; acts on whole tree otherwise
+      */
+    reduce: function(reduceFn, initialValue, inArray)
     {
-        return this.reduceElem(reduceFn, initialValue, 0, this.tree);
+        return this.reduceStep(reduceFn, initialValue, 0, inArray || this.tree);
     },
 
-    reduceElem: function(reduceFn, initial, depth, inArray)
+    // Helper for reduce()
+    reduceStep: function(reduceFn, initial, depth, inArray)
     {
         var value = initial;
         for (i in inArray)
         {
-            var elem = inArray[i];
-            value = reduceFn(value, elem, depth);
-            value = this.reduceElem(reduceFn, value, depth + 1, elem.children);
+            var node = inArray[i];
+            value = reduceFn(value, node, depth);
+            value = this.reduceStep(reduceFn, value, depth + 1, node.children);
         }
         return value;
     },
 
-    forEach: function(eachFn, depth, inArray, parent)
+    /**
+      * Find all nodes in the tree for which matcherFn returns true.
+      * @param matcherFn {Function(node)} return true for each node to be included in the result set.
+      * @param inArray If provided, act only on nodes and descendents in given array; acts on whole tree otherwise.
+      * @returns An array of all matching nodes.
+      */
+    filter: function(matcherFn, inArray)
     {
-        inArray = inArray || this.tree;
-        depth = depth || 0;
+        return this.reduce(function(l, e) {
+            if (matcherFn(e)) {
+                return l.concat(e);
+            }
+            return l;
+        }, [], inArray);
+    },
+
+    /**
+      * Map all nodes in the tree from one value to another value, returning a flattened array.
+      * @param mapFn {Function(node)} Receives each node and should return the desired mapped value.
+      * @param inArray If provided, act only on nodes and descendents in given array; acts on whole tree otherwise.
+      * @returns A flattened array of the values returned by mapFn().
+      */
+    map: function(mapFn, inArray)
+    {
+        return this.reduce(function(l, e) {
+            return l.concat(mapFn(e));
+        }, [], inArray);
+    },
+
+    /**
+      * Execute eachFn for each item.
+      * @param eachFn {Function(node, depth, containingArray, parentNode)}
+      *        Called for each node in sequence and should return the desired mapped value.
+      * @param inArray If provided, act only on nodes and descendents in given array; acts on whole tree otherwise.
+      */
+    forEach: function(eachFn, inArray)
+    {
+        this.forEachStep(eachFn, 0, inArray || this.tree, undefined);
+    },
+
+    // Helper for forEach()
+    forEachStep: function(eachFn, depth, inArray, parent) {
         var treeObj = this;
         inArray.forEach(function(e) {
             eachFn(e, depth, inArray, parent);
-            treeObj.forEach(eachFn, depth + 1, e.children, e);
+            treeObj.forEachStep(eachFn, depth + 1, e.children, e);
         });
     },
 
@@ -274,14 +317,30 @@ DataTree.prototype = {
     // Miscellaneous
     /////////////////////////////////////////////////////
 
-    // Returns contents of tree formatted as a string. Used for debugging.
+    // Returns full contents of tree formatted as a string. Useful for debugging.
     toString: function()
     {
-        var toStringFn = function(lastValue, e, depth) {
+        // Quick and dirty cloneObject().
+        var cloneObject = function(obj) {
+            var clone = {};
+            for(var i in obj) {
+                if(typeof(obj[i])=="object")
+                    clone[i] = cloneObject(obj[i]);
+                else
+                    clone[i] = obj[i];
+            }
+            return clone;
+        }
+
+        var toStringFn = function(lastValue, node, depth) {
+            // Clone node and strip its children off before JSON.stringifying.
+            var cloned = cloneObject(node);
+            delete cloned.children;
+
             return lastValue + '\n'
                 + Array(1 + (1 + depth) * 4).join(' ')
-                + e.toString()
-                + ' [' + e.children.length + ' children]';
+                + JSON.stringify(cloned)
+                + ' [' + node.children.length + ' children]';
         }
         return this.reduce(toStringFn, '');
     },
