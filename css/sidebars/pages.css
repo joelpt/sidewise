@@ -8,6 +8,7 @@ body {
     margin: 0.25em 0em 0em 0.25em;
 }
 
+
 /* window tree rows */
 
 .ftRowNode[rowtype=window] > .ftItemRow {
@@ -51,6 +52,7 @@ body {
     border-radius: 0;
 }
 
+
 /* page tree row states */
 
 .ftRowNode[rowtype=page][unread=true] > .ftItemRow {
@@ -68,6 +70,16 @@ body {
 .ftRowNode[rowtype=page][hibernated=true] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
     -webkit-filter: grayscale(100%);
 }
+
+.ftRowNode[rowtype=page][hibernated=true].focused > .ftItemRow > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #eaeaea),color-stop(1, white));
+    border: 1px dotted rgb(150, 150, 150);
+}
+
+.ftRowNode[rowtype=page][hibernated=true].focused > .ftItemRow > .ftItemRowContent:hover {
+    border: 1px dotted rgb(110, 110, 110);
+}
+
 
 /* tooltip styling */
 
@@ -106,6 +118,7 @@ body {
     font-weight: normal;
     margin-bottom: 0.5em;
 }
+
 
 /* page icon status effects */
 
