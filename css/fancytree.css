@@ -177,7 +177,13 @@ div.ftButtons {
 
 
 
-/* standard styling for focused, hovered, and selected rows */
+/* standard styling for focused, hovered, selected rows */
+
+.ftRowNode > .ftItemRow > .ftItemRowContent:hover {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #e1ebff),color-stop(1, white));
+    border: 1px solid #b8d6fb;
+    border-radius: 2px;
+}
 
 .ftRowNode.focused > .ftItemRow > .ftItemRowContent {
     background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #c1dbfc),color-stop(1, white));
@@ -186,14 +192,8 @@ div.ftButtons {
     box-shadow: 0 0 0 1px #dbeafd inset;
 }
 
-.ftRowNode > .ftItemRow > .ftItemRowContent:hover {
-    background: #f2f7fe;
-    border: 1px solid #b8d6fb;
-    border-radius: 2px;
-}
-
 .ftRowNode.focused > .ftItemRow > .ftItemRowContent:hover {
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #c1dbfc),color-stop(1, white));
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #b1cbec),color-stop(1, white));
     border: 1px solid rgb(85, 122, 166);
     border-radius: 2px;
     box-shadow: 0 0 0 1px #dbeafd inset;
