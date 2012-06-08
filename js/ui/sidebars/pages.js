@@ -265,10 +265,10 @@ function PageTreeCallbackProxyListener(op, args)
             addPageTreeElemToFancyTree(ft, args.element, args.parentId);
             break;
         case 'remove':
-            ft.removeElem(args.id);
+            ft.removeElem(args.element.id);
             break;
         case 'move':
-            ft.moveElem(args.id, args.newParentId);
+            ft.moveElem(args.element.id, args.newParentId);
             break;
         case 'updatePage':
             var elem = args.element;
