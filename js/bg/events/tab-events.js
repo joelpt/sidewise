@@ -8,17 +8,25 @@ function registerTabEvents()
 
 function onTabCreated(tab)
 {
+    log(tab);
     if (isDetectingMonitors()) {
         return;
     }
-    log(tab);
     if (sidebarHandler.creatingSidebar && tab.url == sidebarHandler.sidebarUrl)
     {
-        log('ignoring creation of sidebar in onTabCreated');
+        log('ignoring creation of the sidebar');
         return;
     }
 
-    var page = new Page(tab, 'preload');
+    var page = tree.awakeningPages[tab.url];
+    if (page) {
+        log('associating waking tab to existing hibernated page element', tab, page);
+        tree.updatePage(page, { id: 'p' + tab.id, hibernated: false, unread: true, status: 'preload' });
+        delete tree.awakeningPages[tab.url];
+        return;
+    }
+
+    page = new Page(tab, 'preload');
     page.unread = true;
 
     // TODO find any edge cases where chrome doesn't add a child tab to the right of parent tab in tabbar
@@ -102,7 +110,7 @@ function onTabRemoved(tabId, removeInfo)
                     }
                 }
 
-                if (p && p.elemType == 'page') {
+                if (p instanceof Page) {
                     // parent
                     nextTabId = p.id;
                     return;
@@ -121,7 +129,15 @@ function onTabRemoved(tabId, removeInfo)
         }
     }
 
-    tree.remove('p' + tabId);
+    var page = tree.getPage(tabId);
+    if (page.hibernated) {
+        // page is set to be hibernated; since its tab has been closed, that means
+        // we are only removing the tab for purposes of hibernattion
+        return;
+    }
+
+    // remove the page element from the tree
+    tree.remove(page);
 }
 
 function onTabUpdated(tabId, changeInfo, tab)

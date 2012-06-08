@@ -18,6 +18,7 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     this.onModifiedDelayed = onModifiedDelayed;
     this.onModifiedDelayedWaitMs = 5000;
     this.onModifiedDelayedTimeout = null;
+    this.awakeningPages = {};
 };
 
 PageTree.extend(DataTree, {
@@ -35,11 +36,6 @@ PageTree.extend(DataTree, {
         return this.findElem(this.getPageIdMatcherFn(tabId), this.tree, hitFn);
     },
 
-    getPageParent: function(tabId)
-    {
-        return this.findElemParent(this.getPageIdMatcherFn(tabId), this.tree);
-    },
-
     focusPage: function(tabId, blockCallback)
     {
         log(tabId);
@@ -49,7 +45,7 @@ PageTree.extend(DataTree, {
         this.focusedTabId = tabId;
         if (!blockCallback) {
             this.callbackProxyFn('focusPage', { id: 'p' + tabId });
-            this.callbackProxyFn('updatePage', { tabId: tabId, element: page });
+            this.callbackProxyFn('updatePage', { id: 'p' + tabId, element: page });
         }
     },
 
@@ -68,10 +64,17 @@ PageTree.extend(DataTree, {
         }
     },
 
-    // remove the element matching id from the tree
-    remove: function(id, blockCallback)
+    // remove the element matching id or element from the tree
+    remove: function(idOrElem, blockCallback)
     {
-        var r = this.removeElem(this.getIdMatcherFn(id));
+        if (idOrElem instanceof DataTreeElement) {
+            var id = idOrElem.id;
+            var r = this.removeElem(idOrElem);
+        }
+        else {
+            var id = idOrElem;
+            var r = this.removeElem(id);
+        }
 
         if (r && !blockCallback) {
             this.callbackProxyFn('remove', { id: id });
@@ -100,18 +103,57 @@ PageTree.extend(DataTree, {
     },
 
     // update an existing page with given details
-    updatePage: function(tabId, details, blockCallback)
+    updatePage: function(tabIdOrElem, details, blockCallback)
     {
-        log(tabId, details);
-        var r = this.updateElem('p' + tabId, details);
+        log(tabIdOrElem, details);
+
+        if (tabIdOrElem instanceof DataTreeElement) {
+            var id = tabIdOrElem.id;
+            var r = this.updateElem(tabIdOrElem, details);
+        }
+        else {
+            var id = 'p' + tabIdOrElem;
+            var r = this.updateElem(id, details);
+        }
 
         if (r && !blockCallback) {
-            this.callbackProxyFn('updatePage', { tabId: tabId, element: r });
+            this.callbackProxyFn('updatePage', { id: id, element: r });
         }
 
         return r;
     },
 
+    // hibernate a page
+    hibernatePage: function(tabId)
+    {
+        log(tabId);
+        // var page = this.getPage(tabId);
+        this.updatePage(tabId, { hibernated: true });
+        chrome.tabs.remove(tabId);
+    },
+
+    // awaken (unhibernate) a page
+    awakenPage: function(tabId)
+    {
+        log(tabId);
+        var treeObj = this;
+        this.getPage(tabId, function(e, i, a, p, pi, pa, a) {
+            treeObj.awakeningPages[e.url] = e;
+            var topParent = a[0];
+            if (topParent instanceof Window) {
+                var windowId = parseInt(topParent.id.slice(1));
+                log('awakening', e.url, 'windowId', windowId);
+                chrome.tabs.create({ url: e.url, windowId: windowId });
+                return;
+            }
+            log('awakening', e.url, 'no found windowId');
+            chrome.tabs.create({ url: e.url });
+        });
+
+        // chrome.tabs.create the new tab in its old window
+        // to do that we need to be able to recurse up the tree, and we thus need to obtain
+        // an array of all of the parents of a tree element
+    },
 
     /////////////////////////////////////////////////////
     // GENERIC ELEMENT TRAVERSAL/MANIPULATION FUNCTIONS
