@@ -49,6 +49,19 @@ b {
     font-weight: bold;
 }
 
+i {
+    font-style: italic;
+}
+
+ol {
+    list-style: decimal;
+    margin-left: 2em;
+}
+
+blockquote {
+    margin-left: 1.75em;
+}
+
 #statusBar {
     height: 2em;
     padding-top: 0.875em;
@@ -72,6 +85,12 @@ b {
     margin-top: 4em;
     padding-top: 1em;
     border-top: 1px solid #ccc;
+}
+
+#resetButton {
+    float: left;
+    position: relative;
+    left: -1em;
 }
 
 .hint {
@@ -177,6 +196,10 @@ input.invalid {
     box-shadow: 2px 2px 11px #666;
     padding: 0.5em 0.75em 0.75em 0.75em;
     width: 300px;
+}
+
+.tooltip p+p {
+    margin-top: 0.65em;
 }
 
 #clouds {

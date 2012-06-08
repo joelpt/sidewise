@@ -14,7 +14,7 @@
     "text_monitors": { "message": "monitors" },
     "text_Window": { "message": "Window" },
 
-    "prompt_filterPlaceholderText": { "message": "Type to search"},
+    "prompt_filterPlaceholderText": { "message": "Type to search titles and URLs"},
     "prompt_filterActiveText": { "message": "Showing matches, click x or hit Esc to clear"},
     "prompt_detectMonitors": { "message": "Sidewise will detect your monitor(s) now." },
     "prompt_detectMonitors_complete": { "message": "Monitor detection complete." },
@@ -26,6 +26,7 @@
             "pages": { "content": "$2", "example": "pages" }
         }
      },
+    "prompt_confirmResetOptions": { "message": "Are you sure you want to reset all options to the defaults?" },
 
     "pages_hibernatedHint": { "message": "Hibernated page" },
 
@@ -39,15 +40,15 @@
     "optionsErrorSavingSetting": { "message": "Please correct your entry." },
     "optionsSuccessSavingSetting": { "message": "Setting saved." },
     "optionsSavedAllSettings": { "message": "Settings saved." },
-    "optionsDefaultStatus": { "message": "This is Sidewise's options page. Modify your options below." },
-
+    "optionsResetAllSettings": { "message": "All settings restored to defaults." },
+    "optionsDefaultStatus": { "message": "Hello! This is Sidewise's options page. Modify your options below." },
     "optionsHeadingSidebar": { "message": "Sidebar behavior" },
     "optionsHeadingMonitors": { "message": "Monitors" },
     "optionsHeadingMisc": { "message": "Miscellaneous" },
 
     "option_openSidebarOnStartup": { "message": "Open sidebar on startup" },
     "option_keepSidebarOnTop": { "message": "Keep sidebar visible next to dock window" },
-    "option_keepSidebarOnTop_hint": { "message": "!If enabled, when switching to Chrome from another app, Sidewise will bring the sidebar to the front, so other windows don't obscure or hide it.<br/><br/>Unfortunately, this messes with the OS's window-ordering. For example, on Windows, you'll have to Alt-Tab twice to get back to your last non-Chrome window when this option is enabled." },
+    "option_keepSidebarOnTop_hint": { "message": "!<p>If enabled, when switching to Chrome from another app, Sidewise will bring the sidebar to the front, so other windows don't obscure or hide it.</p><p>Unfortunately, this messes with the OS's native window&#8209;ordering. For example, on Windows, you'll have to Alt&#8209;Tab twice to get back to your last non-Chrome window when this option is enabled.</p>" },
     "option_browserActionButtonBehavior": { "message": "When browser toolbar button is clicked" },
     "option_browserActionButtonBehavior_toggle": { "message": "toggle sidebar on/off" },
     "option_browserActionButtonBehavior_show": { "message": "show/redock sidebar" },
@@ -61,13 +62,17 @@
     "option_pages_doubleClickAction": { "message": "When double-clicking a row"},
     "option_pages_doubleClickAction_none": { "message": "do nothing"},
     "option_pages_doubleClickAction_close": { "message": "close page/window"},
-    "option_pages_doubleClickAction_hibernate": { "message": "hibernate/wake"},
-    "option_pages_doubleClickAction_expand": { "message": "expand/collapse"},
+    "option_pages_doubleClickAction_hibernate": { "message": "toggle hibernation"},
+    "option_pages_doubleClickAction_expand": { "message": "expand/collapse branch"},
     "option_pages_middleClickAction": { "message": "When middle-clicking a row"},
     "option_pages_middleClickAction_none": { "message": "do nothing"},
     "option_pages_middleClickAction_close": { "message": "close page/window"},
-    "option_pages_middleClickAction_hibernate": { "message": "hibernate/wake"},
-    "option_pages_middleClickAction_expand": { "message": "expand/collapse"},
+    "option_pages_middleClickAction_hibernate": { "message": "toggle hibernation"},
+    "option_pages_middleClickAction_expand": { "message": "expand/collapse branch"},
+    "option_smartFocusOnClose": { "message": "Use smart focus logic when closing tabs"},
+    "option_smartFocusOnClose_hint": { "message": "<p>When enabled and the sidebar is visible, Sidewise will use its own tree-oriented logic to decide which tab to focus next after a tab is closed.</p><p>Smart focus uses the following order of priority in picking the next tab to focus:</p><p><ol><li>First child of closed tab</li><li>Next sibling of closed tab</li><li>Preceding sibling of closed tab</li><li>Parent of closed tab</li><li>Let Chrome decide</li></ol></p><p>Smart focus starts with the first rule and proceeds down the list until it finds a suitable tab to focus.</p><p>If this option is disabled, Sidewise will always let Chrome decide which tab to focus next.</p>"},
+    "option_smartFocusPrefersCousins": { "message": "Smart focus prefers cousins before parents"},
+    "option_smartFocusPrefersCousins_hint": { "message": "<p>When this option is enabled, smart focus will focus <i>later cousin tabs</i> before it focuses its own <i>parent tab</i>.</p><p>For example, say you open two tabs, one to reddit.com and one to digg.com. You then open several children tabs underneath each of these two tabs. </p><p>If <b>prefer cousins</b> is <i>disabled</i>, once you close the last child tab under reddit.com, the parent reddit.com tab will be focused.</p><p>If <b>prefer cousins</b> is <i>enabled</i>, once you close the last child tab under reddit.com, the first child tab under digg.com will be focused instead.</p><p>This option is desirable if you open lots of child tabs in this manner and prefer to 'browse forward' through all the child tabs before returning to the parents.</p>"},
 
     "optionsInfoMonitorDetection": { "message": "<p>Whenever you change your monitor configuration, <b>reload Chrome</b>, then come here and click 'Detect all monitors now' below.</p><p>This should be done whenever you add or remove monitors, change monitor resolutions, reposition monitors in your OS settings, or change the location/size of your system taskbars.</p>"},
     "optionsInfoMonitorsOnYourSystem": { "message": "Sidewise currently believes you have <b>$1</b> $2 connected to your system." },
@@ -75,9 +80,10 @@
     "option_maximizedMonitorOffset_units": { "message": "pixels" },
     "option_detectMonitorsButton": { "message": "Detect all monitors now" },
 
-    "option_loggingEnabled": { "message": "Enable debugging" },
+    "option_loggingEnabled": { "message": "Enable debug logging" },
     "option_loggingEnabled_hint": { "message": "Outputs verbose logging information to Javascript console of background page, sidebar, and options page. For development or bug feedback only." },
 
     "option_saveButton": { "message": "Save settings" },
+    "option_resetButton": { "message": "Reset to defaults" },
     "optionsSaveNotNeeded": { "message": "Note: Settings are automatically saved as you change them." }
 }

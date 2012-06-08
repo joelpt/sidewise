@@ -9,6 +9,7 @@ $(document).ready(function() {
     $(document).on('change', 'input[type=text], select', onSettingModified);
     $(document).on('click', 'input[type=checkbox]', onSettingModified);
     $(document).on('click', '#saveButton', saveAllSettings);
+    $(document).on('click', '#resetButton', resetAllSettings);
     $(document).on('click', '#detectMonitorsButton', detectMonitors);
     setTimeout(function() {
         // delay to avoid F5 (reload) spuriously triggering this
@@ -174,6 +175,17 @@ function saveAllSettings(evt) {
         saveOneSetting(e);
     });
     showStatusMessage(getMessage('optionsSavedAllSettings'));
+}
+
+function resetAllSettings(evt) {
+    if (!confirm(getMessage('prompt_confirmResetOptions'))) {
+        return;
+    }
+
+    initializeDefaultSettings(true);
+    loadSettings();
+    updateStateFromSettings();
+    showStatusMessage(getMessage('optionsResetAllSettings'));
 }
 
 function showStatusMessage(msg) {

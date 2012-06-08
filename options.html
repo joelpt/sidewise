@@ -60,6 +60,10 @@
                 <option value="close" i18n="option_pages_middleClickAction_close"/>
                 <option value="hibernate" i18n="option_pages_middleClickAction_hibernate"/>
             </select>
+            <input type="checkbox" name="smartFocusOnClose"/>
+            <blockquote>
+                <input type="checkbox" name="smartFocusPrefersCousins"/>
+            </blockquote>
 
             <h2 i18n="optionsHeadingMonitors"></h2>
             <div class="optionsRow">
@@ -74,6 +78,7 @@
 
             <div id="saveBox" align="right">
                 <div class="hint" i18n="optionsSaveNotNeeded"></div>
+                <input type="button" id="resetButton" name="resetButton" />
                 <input type="button" id="saveButton" name="saveButton"/>
             </div>
 

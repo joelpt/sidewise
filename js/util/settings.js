@@ -35,9 +35,10 @@ function updateStateFromSettings() {
     // TODO implement redock/undock type functionality instead of recreating sidebar
 }
 
-// One-time initialization of default settings; if already initialized, does nothing
-function initializeDefaultSettings() {
-    if (loadSetting('settingsInitialized')) {
+// One-time initialization of default settings.
+// If already initialized, does nothing, unless forceReset is true.
+function initializeDefaultSettings(forceReset) {
+    if (loadSetting('settingsInitialized') && !forceReset) {
         return;
     }
 
@@ -48,8 +49,10 @@ function initializeDefaultSettings() {
         browserActionButtonBehavior: 'show',
         pages_doubleClickAction: 'expand',
         pages_middleClickAction: 'none',
+        smartFocusOnClose: true,
+        smartFocusPrefersCousins: false,
         loggingEnabled:  false,
-        sidebarTargetWidth: 400,
+        sidebarTargetWidth: 300,
         settingsInitialized: true
     };
 
