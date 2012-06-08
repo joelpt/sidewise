@@ -44,28 +44,54 @@ DataTree.prototype = {
         return elem;
     },
 
-    // TODO merge functionality of findElemParent into findElem by passing the parentElem recursively
-
     // Find an element in our tree starting in inArray for which matcherFn(elem) returns true
-    // hitfn: if given as Function(elem, index, containing_array) it is executed against the element matched
-    findElem: function(matcherFn, inArray, hitFn, parentElem, parentIndex, parentArray)
+    // hitfn: if given as Function() it is executed against the element matched, passing the following arguments:
+    //        Function(e, i, a, p, pi, pa, a)
+    //            e: matched element
+    //            i: index of matched element within parent's children array
+    //            a: parent's children array
+    //            pi: index of parent within its parent's children array
+    //            pa: parent's parent's children array
+    //            a: ancestry, first element being the topmost in the tree, last element being the immediate parent
+    findElem: function(matcherFn, inArray, hitFn, parentElem, parentIndex, parentArray, ancestry)
     {
-        if (typeof(matcherFn) == 'string' && hitFn === undefined) {
-            return this.findElemById(matcherFn);
+        if (typeof(matcherFn) == 'string') {
+            if (hitFn === undefined) {
+                // utilize fast idIndex lookup
+                return this.findElemById(matcherFn);
+            }
+            // assume caller is asking for a match on id
+            matcherFn = this.getKeyMatcherFn('id', matcherFn);
         }
-        if (matcherFn instanceof DataTreeElement && hitFn === undefined)  {
-            return matcherFn;
+        if (matcherFn instanceof DataTreeElement) {
+            if (hitFn === undefined) {
+                // matcherFn is a DataTreeElement, assume the element is the one asked for and just return it
+                return matcherFn;
+            }
+            // matcherFn is a DataTreeElement, do a lookup by object identity
+            matcherFn = this.getElementMatcherFn(matcherFn);
         }
+
+        if (hitFn !== undefined && parentElem !== undefined) {
+            if (ancestry === undefined) {
+                ancestry = [];
+            }
+            else {
+                ancestry = ancestry.slice(); // use a copy of ancestry
+            }
+            ancestry.push(parentElem);
+        }
+
         for (var i in inArray)
         {
             var elem = inArray[i];
             if (matcherFn(elem)) {
                 if (hitFn !== undefined) {
-                    hitFn(elem, parseInt(i), inArray, parentElem, parseInt(parentIndex), parentArray);
+                    hitFn(elem, parseInt(i), inArray, parentElem, parseInt(parentIndex), parentArray, ancestry);
                 }
                 return elem;
             }
-            var childElem = this.findElem(matcherFn, elem.children, hitFn, elem, i, inArray);
+            var childElem = this.findElem(matcherFn, elem.children, hitFn, elem, i, inArray, ancestry);
             if (childElem !== undefined)
                 return childElem;
         }
@@ -74,22 +100,6 @@ DataTree.prototype = {
 
     findElemById: function(id) {
         return this.idIndex[id];
-    },
-
-    findElemParent: function(matcherFn, root)
-    {
-        var inArray = root instanceof Array ? root : root.children;
-        for (var i in inArray)
-        {
-            var elem = inArray[i];
-            if (matcherFn(elem)) {
-                return root;
-            }
-            var foundElem = this.findElemParent(matcherFn, elem);
-            if (foundElem !== undefined)
-                return foundElem;
-        }
-        return undefined;
     },
 
     // Update the first element for which matcherFn returns true with the given details
@@ -224,5 +234,11 @@ DataTree.prototype = {
     getKeyMatcherFn: function(key, value)
     {
         return function(e) { return e[key] == value; };
+    },
+
+    // returns generic matcherFn for matching an element by object identity
+    getElementMatcherFn: function(element)
+    {
+        return function(e) { return e === element; };
     }
 }
