@@ -1,3 +1,5 @@
+var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
+
 /**
   * @constructor
   * @param appendToElem The root DOM element to append the FancyTree under.
@@ -12,7 +14,8 @@
   *          {
   *            identifier:                       // identifying string for each type of row to support
   *            {
-  *              onClick: Function(evt),         // left click event handler
+  *              onClick: Function(evt),         // left single click event handler
+  *              onDoubleClick: Function(evt),   // left double click event handler
   *              onMiddleClick: Function(evt),   // middle click event handler
   *              onIconError: Function(evt),     // row icon onerror event handler
   *              onFormatTooltip: Function(evt), // called to obtain the body for a row tip for display
@@ -82,6 +85,7 @@ var FancyTree = function(appendToElem, options) {
 
     this.permitTooltipHandler = options.permitTooltipHandler;
     this.focusedRow = null;
+    this.hoveredRow = null;
     this.hoveringRowButtons = false;
     this.tooltipTopOffset = options.tooltipTopOffset || 12;
     this.tooltip = null;
@@ -113,8 +117,6 @@ var FancyTree = function(appendToElem, options) {
         $(document).on('keyup', this.filterElem, data, this.onFilterBoxModified);
         $(document).keydown(data, this.onKeypress);
     }
-
-    console.log('FancyTree initialized');
 }
 
 FancyTree.prototype = {
@@ -136,8 +138,6 @@ FancyTree.prototype = {
         }
 
         var filter = evt.target.value || '';
-        console.log('onFilterBoxModified to: ' + filter);
-
         var treeObj = evt.data.treeObj;
 
         // reset which rows are filtered in before applying new filter rule
@@ -193,29 +193,34 @@ FancyTree.prototype = {
     },
 
     onMouseEnterButtons: function(evt) {
-        evt.data.treeObj.hoveringRowButtons = true;
-        evt.data.treeObj.handleHideTooltipEvent(evt);
+        var treeObj = evt.data.treeObj;
+        treeObj.hoveringRowButtons = true;
+        treeObj.handleHideTooltipEvent(evt);
     },
 
     onMouseLeaveButtons: function(evt) {
+        var treeObj = evt.data.treeObj;
         var row = evt.data.treeObj.getParentRowNode($(this));
-        evt.data.treeObj.hoveringRowButtons = false;
-        evt.data.treeObj.startTooltipTimer(row, evt);
+        treeObj.hoveringRowButtons = false;
+        treeObj.startTooltipTimer(row, evt);
     },
 
     onItemRowContentMouseEnter: function(evt) {
-        var $this = $(this);
         var treeObj = evt.data.treeObj;
+        var row = treeObj.getParentRowNode($(this));
 
-        $this.closest('.ftItemRowContent').find(".ftButtons").show();
-
-        var row = evt.data.treeObj.getParentRowNode($this);
-        treeObj.startTooltipTimer.call(treeObj, row, evt);
+        treeObj.getButtons(row).parent().show();
+        treeObj.hoveredRow = row;
+        treeObj.startTooltipTimer(row, evt);
     },
 
     onItemRowContentMouseLeave: function(evt) {
-        $(this).closest('.ftItemRowContent').find(".ftButtons").hide();
-        evt.data.treeObj.handleHideTooltipEvent(evt);
+        var treeObj = evt.data.treeObj;
+        var row = treeObj.getParentRowNode($(this));
+
+        treeObj.getButtons(row).parent().hide();
+        treeObj.hoveredRow = null;
+        treeObj.handleHideTooltipEvent(evt);
     },
 
     startTooltipTimer: function(row, evt, afterDelay) {
@@ -231,7 +236,7 @@ FancyTree.prototype = {
             // the FancyTree object was created, even if window has since been resized
             var bodyWidth = document.body.clientWidth;
             treeObj.showTooltip.call(treeObj, row, bodyWidth, evt);
-        }, (afterDelay || 1000));
+        }, (afterDelay >= 0 ? afterDelay : ROW_TOOLTIP_SHOW_DELAY_MS));
     },
 
     handleHideTooltipEvent: function(evt) {
@@ -334,7 +339,9 @@ FancyTree.prototype = {
     addRowType: function(name, params) {
         this.rowTypes[name] = params;
 
-        var data = { treeObj: this, onClick: params.onClick, onMiddleClick: params.onMiddleClick };
+        var data = params;
+        data.treeObj = this;
+
         var mouseDownHandler = function(evt) {
             if (evt.data.onMiddleClick && evt.which == 2) {
                 // middle click
@@ -346,7 +353,6 @@ FancyTree.prototype = {
             var $this = $(this);
             var treeObj = evt.data.treeObj;
             var row = treeObj.getParentRowNode($this);
-
             if (treeObj.hoveringRowButtons) {
                 // we manage this state and manually check it here because jquery
                 // doesn't really give us a way to only trigger a child-element's event handlers
@@ -372,12 +378,35 @@ FancyTree.prototype = {
             }
         };
 
+        var doubleClickHandler = function(evt) {
+            var $this = $(this);
+            var treeObj = evt.data.treeObj;
+            var row = treeObj.getParentRowNode($this);
+
+            if (treeObj.hoveringRowButtons) {
+                // we manage this state and manually check it here because jquery
+                // doesn't really give us a way to only trigger a child-element's event handlers
+                // without also triggering all container-element's handlers first
+                return;
+            }
+
+            $('#ftSimpleTip').hide();
+            treeObj.hideTooltip();
+
+            evt.data.row = row;
+
+            evt.data.onDoubleClick(evt);
+        };
+
         $(document).on('mousedown',
             '.ftRowNode[rowtype=' + name + '] > .ftItemRow > .ftItemRowContent',
             data, mouseDownHandler);
         $(document).on('mouseup',
             '.ftRowNode[rowtype=' + name + '] > .ftItemRow > .ftItemRowContent',
             data, mouseUpHandler);
+        $(document).on('dblclick',
+            '.ftRowNode[rowtype=' + name + '] > .ftItemRow > .ftItemRowContent',
+            data, doubleClickHandler);
 
         for (var i in params.buttons)
         {
@@ -385,10 +414,10 @@ FancyTree.prototype = {
             var buttonData = { treeObj: this, onClick: params.buttons[i].onClick };
             $(document).on('click', buttonClass, buttonData, function(evt) {
                 $('#ftSimpleTip').hide();
-                evt.data.treeObj.hoveringRowButtons = false;
                 evt.data.row = $(this).closest('li');
                 evt.data.onClick(evt);
                 evt.stopPropagation();
+                return false;
             });
         }
     },
@@ -411,6 +440,12 @@ FancyTree.prototype = {
         // ensure button tooltips don't popup after the row is removed, after the tips' predelay
         this.getButtons(elem)
             .each(function(i, e) { $(e).data('tooltip').onShow(function() { this.hide(); } ); })
+
+        // if the element being removed is the currently hovered element, clear hoveringRowButtons state boolean
+        if (this.hoveredRow === elem) {
+            this.hoveringRowButtons = false;
+            this.hoveredRow = null;
+        }
 
         elem.replaceWith(elem.children('.ftChildren').children());
         this.updateRowExpander(parent);
