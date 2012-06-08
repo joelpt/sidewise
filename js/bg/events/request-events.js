@@ -47,7 +47,7 @@ function onRequest(request, sender, sendResponse)
             onGetIsFullScreenMessage(sender.tab, request);
             break;
         default:
-            throw 'Unrecognized onRequest op ' + request.op;
+            throw new Error('Unrecognized onRequest op ' + request.op);
     }
 }
 
@@ -78,24 +78,24 @@ function onGetIsFullScreenMessage(tab, request) {
 
 function onGetPageDetailsMessage(tab, msg)
 {
-    log(tabId, msg.referrer, page);
+    log(tab, msg);
     var tabId = tab.id;
+    var page = tree.getPage(tabId);
+
+    if (page === undefined) {
+        log('Page not in tree, probably because Chrome is just preloading it');
+        return;
+    }
 
     switch (msg.action) {
         case 'store':
-            tree.updatePage(tabId, { referrer: msg.referrer, historylength: msg.historylength });
+            tree.updatePage(page, { referrer: msg.referrer, historylength: msg.historylength });
             break;
 
         case 'find_parent':
-            var page = tree.getPage(tabId);
-            if (page === undefined)
-            {
-                // page entry doesn't exist anymore
-                throw 'pagedetails could not find page ' + tab.id + ' in the tree';
-            }
             // look for an existing tab whose url matches our tab's referrer
             chrome.tabs.query({ 'windowId': tab.windowId, 'url': dropUrlHash(msg.referrer) }, function(tabs) {
-                tree.updatePage(tabId, { placed: true });  // tab's proper tree location is now 'known'
+                tree.updatePage(page, { placed: true });  // tab's proper tree location is now 'known'
                 // exclude potential parent candidates which are the same tab
                 tabs = tabs.filter(function(t) { return t.id != tabId; });
                 if (tabs.length == 0) {
@@ -104,13 +104,13 @@ function onGetPageDetailsMessage(tab, msg)
                 // TODO handle these cases:
                 //      parent tab is already a descendant of the tab with tabId
                 log('making ' + tabId + ' a child of ' + tabs[0].id);
-                tree.moveNode('p' + tabId, 'p' + tabs[0].id);
-                tree.updatePage(tabId, { placed: true });
+                tree.moveNode(page, 'p' + tabs[0].id);
+                tree.updatePage(page, { placed: true });
             });
             break;
 
         default:
-            throw 'Unknown msg.action';
+            throw new Error('Unknown msg.action');
     }
 
 }
