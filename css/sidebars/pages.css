@@ -51,16 +51,23 @@ body {
     border-radius: 0;
 }
 
-/* page tree rows */
+/* page tree row states */
 
-.ftRowNode[rowtype=page][unread=true] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText {
+.ftRowNode[rowtype=page][unread=true] > .ftItemRow {
     color: blue;
 }
 
-.ftRowNode[rowtype=page].closing > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText {
+.ftRowNode[rowtype=page].closing > .ftItemRow {
     color: gray;
 }
 
+.ftRowNode[rowtype=page][hibernated=true] > .ftItemRow > .ftItemRowContent {
+    color: gray;
+}
+
+.ftRowNode[rowtype=page][hibernated=true] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
+    -webkit-filter: grayscale(100%);
+}
 
 /* tooltip styling */
 
@@ -94,6 +101,11 @@ body {
     vertical-align: middle;
 }
 
+.hibernatedHint {
+    font-style: italic;
+    font-weight: normal;
+    margin-bottom: 0.5em;
+}
 
 /* page icon status effects */
 
