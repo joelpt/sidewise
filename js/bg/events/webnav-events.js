@@ -24,7 +24,7 @@ function onCreatedNavigationTarget(details)
         return;
     }
     log(details);
-    tree.move('p' + details.tabId, 'p' + details.sourceTabId);
+    tree.moveNode('p' + details.tabId, 'p' + details.sourceTabId);
     tree.updatePage(details.tabId, { placed: true });
 }
 
@@ -57,7 +57,7 @@ function onCreatedNavigationTarget(details)
 //          - transition type is reload
 //        a nice thing to do would probably be to add the duplicated page as the next sibling to
 //        the openerTabId (duplicate source tab), this would likely require adding something like
-//        an 'afterId' and/or 'insertAtIndex' arg to tree.add()
+//        an 'afterId' and/or 'insertAtIndex' arg to tree.addNode()
 //      a tab was reopened with Ctrl-Shift-T and will report no openerTabId even though
 //          it may have had a parent tab in its previous life
 //          > Induce a call to getPageDetails possibly passing some "ignore placed flag" boolean
@@ -91,7 +91,7 @@ function onCommitted(details)
         var page = tree.getPage(details.tabId);
         if (!page.placed) {
             chrome.tabs.get(details.tabId, function(tab) {
-                tree.move('p' + details.tabId, 'w' + tab.windowId);
+                tree.moveNode('p' + details.tabId, 'w' + tab.windowId);
                 tree.updatePage(details.tabId, { placed: true });
             });
         }

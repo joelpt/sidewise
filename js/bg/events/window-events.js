@@ -14,8 +14,8 @@ function onWindowCreated(win)
     }
     log(win);
 
-    winElem = new Window(win);
-    tree.add(winElem);
+    winElem = new WindowNode(win);
+    tree.addNode(winElem);
 }
 
 function onWindowRemoved(windowId)
@@ -33,7 +33,7 @@ function onWindowRemoved(windowId)
         return;
     }
     log(windowId);
-    tree.remove('w' + windowId);
+    tree.removeNode('w' + windowId);
     focusTracker.remove(windowId);
     if (sidebarHandler.sidebarExists())
     {

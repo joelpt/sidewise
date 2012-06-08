@@ -119,7 +119,7 @@ function populatePages()
                 continue; // only want actual tab-windows
             }
 
-            tree.add(new Window(win));
+            tree.addNode(new WindowNode(win));
 
             // log(tabs);
             // tabs = win.tabs.sort(function(a, b) { return (a.id > b.id) - (a.id < b.id); });
@@ -127,8 +127,8 @@ function populatePages()
 
             for (var j = 0; j < numTabs; j++) {
                 var tab = tabs[j];
-                var page = new Page(tab);
-                tree.add(page, 'w' + win.id, 'complete');
+                var page = new PageNode(tab);
+                tree.addNode(page, 'w' + win.id, 'complete');
             }
             for (var j = 0; j < numTabs; j++) {
                 // try to guess child/parent tab relationships by asking each page for its referrer

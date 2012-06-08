@@ -8,7 +8,7 @@
 var PageTree = function(callbackProxyFn, onModifiedDelayed)
 {
     /////////////////////////////////////////////////////
-    // INITIALIZATION
+    // Initialization
     /////////////////////////////////////////////////////
 
     PageTree._base.call(this);
@@ -24,75 +24,53 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
 PageTree.extend(DataTree, {
 
     /////////////////////////////////////////////////////
-    // PAGE MANIPULATION FUNCTIONS
+    // Page manipulation
     /////////////////////////////////////////////////////
 
     // retrieve a page from the tree given its tabId
-    getPage: function(tabId, hitFn)
+    getPage: function(tabId)
     {
-        if (hitFn === undefined) {
-            return this.findElemById('p' + tabId);
-        }
-        return this.findElem(this.getPageIdMatcherFn(tabId), this.tree, hitFn);
+        return this.findNode('p' + tabId);
     },
 
-    focusPage: function(tabId, blockCallback)
+    // retrieve a page from the tree given its tabId, and return additional details
+    getPageEx: function(tabId) {
+        return this.findNodeEx('p' + tabId);
+    },
+
+    focusPage: function(tabId)
     {
         log(tabId);
         var page = this.getPage(tabId);
-        page.unread = false;
-
         this.focusedTabId = tabId;
-        if (!blockCallback) {
-            this.callbackProxyFn('focusPage', { id: 'p' + tabId });
-            this.callbackProxyFn('updatePage', { id: 'p' + tabId, element: page });
+        this.callbackProxyFn('focusPage', { id: 'p' + tabId });
+
+        if (page.unread) {
+            this.updatePage(page, { unread: false });
         }
     },
 
-    // add given element as a child of the element with the given id
-    add: function(element, parentId, blockCallback)
+    // add given node as a child of the node matching parentMatcher
+    addNode: function(node, parentMatcher)
     {
-        if (parentId === undefined) {
-            this.addElem(element);
-        }
-        else {
-            this.addElem(element, this.getIdMatcherFn(parentId));
-        }
-
-        if (!blockCallback) {
-            this.callbackProxyFn('add', { element: element, parentId: parentId });
-        }
+        var r = PageTree._super.addNode.call(this, node, parentMatcher);
+        this.callbackProxyFn('add', { element: node, parentId: r[1] ? r[1].id : undefined });
     },
 
-    // remove the element matching id or element from the tree
-    remove: function(idOrElem, blockCallback)
+    // remove the element matching matcher
+    removeNode: function(matcher)
     {
-        if (idOrElem instanceof DataTreeElement) {
-            var id = idOrElem.id;
-            var r = this.removeElem(idOrElem);
-        }
-        else {
-            var id = idOrElem;
-            var r = this.removeElem(id);
-        }
-
-        if (r && !blockCallback) {
-            this.callbackProxyFn('remove', { id: id });
-        }
-
+        var r = PageTree._super.removeNode.call(this, matcher);
+        this.callbackProxyFn('remove', { id: r.id });
         return r;
     },
 
     // move the element with id to reside under newParentId
     // this is a shallow move; moving elements's children are spliced in-place into its old location
-    move: function(id, newParentId, blockCallback)
+    moveNode: function(id, newParentId)
     {
-        var r = this.moveElem(this.getIdMatcherFn(id), newParentId);
-
-        if (r && !blockCallback) {
-            this.callbackProxyFn('move', { id: id, newParentId: newParentId });
-        }
-
+        var r = PageTree._super.moveNode.call(this, id, newParentId);
+        this.callbackProxyFn('move', { id: id, newParentId: newParentId });
         return r;
     },
 
@@ -107,7 +85,7 @@ PageTree.extend(DataTree, {
     {
         log(tabIdOrElem, details);
 
-        if (tabIdOrElem instanceof DataTreeElement) {
+        if (tabIdOrElem instanceof DataTreeNode) {
             var id = tabIdOrElem.id;
             var r = this.updateElem(tabIdOrElem, details);
         }
@@ -136,36 +114,18 @@ PageTree.extend(DataTree, {
     awakenPage: function(tabId)
     {
         log(tabId);
-        var treeObj = this;
-        this.getPage(tabId, function(e, i, a, p, pi, pa, a) {
-            treeObj.awakeningPages[e.url] = e;
-            var topParent = a[0];
-            if (topParent instanceof Window) {
-                var windowId = parseInt(topParent.id.slice(1));
-                log('awakening', e.url, 'windowId', windowId);
-                chrome.tabs.create({ url: e.url, windowId: windowId });
-                return;
-            }
-            log('awakening', e.url, 'no found windowId');
-            chrome.tabs.create({ url: e.url });
-        });
+        var found = this.getPageEx(tabId);
 
-        // chrome.tabs.create the new tab in its old window
-        // to do that we need to be able to recurse up the tree, and we thus need to obtain
-        // an array of all of the parents of a tree element
-    },
-
-    /////////////////////////////////////////////////////
-    // GENERIC ELEMENT TRAVERSAL/MANIPULATION FUNCTIONS
-    /////////////////////////////////////////////////////
-
-    // retrieve element with given id
-    findById: function(id, hitFn)
-    {
-        if (hitFn === undefined) {
-            return this.findElemById(id);
+        this.awakeningPages[found.node.url] = found.node;
+        var topParent = found.ancestors[0];
+        if (topParent instanceof WindowNode) {
+            var windowId = parseInt(topParent.id.slice(1));
+            log('awakening', found.node.url, 'windowId', windowId);
+            chrome.tabs.create({ url: found.node.url, windowId: windowId });
+            return;
         }
-        return this.findElem(this.getIdMatcherFn(id), this.tree, hitFn);
+        log('awakening', found.node.url, 'no found windowId');
+        chrome.tabs.create({ url: found.node.url });
     },
 
 

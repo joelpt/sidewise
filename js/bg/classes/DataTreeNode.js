@@ -1,7 +1,7 @@
 /**
   * @constructor
   */
-var DataTreeElement = function()
+var DataTreeNode = function()
 {
     this.id = null;
     this.children = [];

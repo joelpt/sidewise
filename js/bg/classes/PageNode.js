@@ -1,10 +1,10 @@
 /**
   * @constructor
-  * @extends PageTreeElement
+  * @extends PageTreeNode
   */
-var Page = function(tab, overrideStatus)
+var PageNode = function(tab, overrideStatus)
 {
-    Page._base.call(this);
+    PageNode._base.call(this);
 
     var url = tab.url ? dropUrlHash(tab.url) : '';
 
@@ -25,5 +25,5 @@ var Page = function(tab, overrideStatus)
     console.log(this.status, tab.id);
 };
 
-Page.extend(PageTreeElement);
+PageNode.extend(PageTreeNode);
 

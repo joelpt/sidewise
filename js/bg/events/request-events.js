@@ -104,7 +104,7 @@ function onGetPageDetailsMessage(tab, msg)
                 // TODO handle these cases:
                 //      parent tab is already a descendant of the tab with tabId
                 log('making ' + tabId + ' a child of ' + tabs[0].id);
-                tree.move('p' + tabId, 'p' + tabs[0].id);
+                tree.moveNode('p' + tabId, 'p' + tabs[0].id);
                 tree.updatePage(tabId, { placed: true });
             });
             break;

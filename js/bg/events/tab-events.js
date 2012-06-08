@@ -26,7 +26,7 @@ function onTabCreated(tab)
         return;
     }
 
-    page = new Page(tab, 'preload');
+    page = new PageNode(tab, 'preload');
     page.unread = true;
 
     // TODO find any edge cases where chrome doesn't add a child tab to the right of parent tab in tabbar
@@ -56,10 +56,10 @@ function onTabCreated(tab)
 
 
     if (tab.openerTabId) {
-        tree.add(page, 'p' + tab.openerTabId);
+        tree.addNode(page, 'p' + tab.openerTabId);
         return;
     }
-    tree.add(page, 'w' + tab.windowId);
+    tree.addNode(page, 'w' + tab.windowId);
 }
 
 function onTabRemoved(tabId, removeInfo)
@@ -74,52 +74,9 @@ function onTabRemoved(tabId, removeInfo)
     }
     log(tabId, removeInfo);
 
-    // this will remain disabled until we can guarantee proper tab ordering on
-    // mass moves, then we may add it as a user option
-    var useSmartNextTabAfterClose = false;
-    if (useSmartNextTabAfterClose) {
-        // identify the next tab we would like to navigate to
-        var nextTabId;
-        tree.findById('p' + tabId, function(e, i, a, p) {
-            if (e.children.length > 0) {
-                // first child
-                nextTabId = e.children[0].id;
-                return;
-            }
-            if (a.length > i + 1) {
-                // next sibling
-                nextTabId = a[i + 1].id;
-                return;
-            }
-            if (i > 0) {
-                // preceding sibling
-                nextTabId = a[i - 1].id;
-                return;
-            }
-
-            // access parent
-            tree.getPage(tabId, function(e, i, a, p, pi, pa) {
-                var preferCousins = true;
-                if (preferCousins) {
-                    // look for a later cousin before going to e's parent
-                    for (var j = pi + 1; j < pa.length; j++) {
-                        if (pa[j].children.length > 0) {
-                            nextTabId = pa[j].children[0].id;
-                            return;
-                        }
-                    }
-                }
-
-                if (p instanceof Page) {
-                    // parent
-                    nextTabId = p.id;
-                    return;
-                }
-
-                // nothing suitable found; we'll just let Chrome decide
-                return;
-            });
-        });
+    // if smart focus on close
+    if (loadSetting('smartFocusOnClose') && sidebarHandler.sidebarExists()) {
+        var nextTabId = findNextTabToFocus(tabId, loadSetting('smartFocusPrefersCousins'));
 
         // if we found a next tab to show per our own logic, switch to it
         if (nextTabId) {
@@ -127,6 +84,7 @@ function onTabRemoved(tabId, removeInfo)
             log('Setting new selected tab to ' + nextTabId);
             chrome.tabs.update(nextTabId, { active: true });
         }
+        // else, nothing suitable was found; we'll just let Chrome decide
     }
 
     var page = tree.getPage(tabId);
@@ -137,7 +95,37 @@ function onTabRemoved(tabId, removeInfo)
     }
 
     // remove the page element from the tree
-    tree.remove(page);
+    tree.removeNode(page);
+}
+
+function findNextTabToFocus(tabId, preferCousins) {
+        // identify the next tab we would like to navigate to
+        var found = tree.getPageEx(tabId);
+
+        if (found.node.children.length > 0) {
+            // first child
+            return found.node.children[0].id;
+        }
+        if (found.siblings.length > found.index + 1) {
+            // next sibling
+            return found.siblings[found.index + 1].id;
+        }
+        if (found.index > 0) {
+            // preceding sibling
+            return found.siblings[found.index - 1].id;
+        }
+        if (preferCousins) {
+            // look for a later cousin before going to found.node's parent
+            for (var i = found.parentIndex + 1; i < found.parentSiblings.length; i++) {
+                if (found.parentSiblings[i].children.length > 0) {
+                    return found.parentSiblings[i].children[0].id;
+                }
+            }
+        }
+        if (found.parent instanceof PageNode) {
+            // use direct parent
+            return found.parent.id;
+        }
 }
 
 function onTabUpdated(tabId, changeInfo, tab)
@@ -183,7 +171,7 @@ function onTabUpdated(tabId, changeInfo, tab)
         var page = tree.getPage(tabId);
         if (!page.placed) {
             log('moving page to parent by openerTabId', tab.openerTabId);
-            tree.move('p' + tabId, 'p' + tab.openerTabId);
+            tree.moveNode('p' + tabId, 'p' + tab.openerTabId);
 
             // TODO doing this below may be problematic in some cases because we aren't setting page.placed to true here;
             // so when we actually do set page.placed to true we may need to clear page.referrer if we end up moving the
