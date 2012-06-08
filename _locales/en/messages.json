@@ -27,6 +27,8 @@
         }
      },
 
+    "pages_hibernatedHint": { "message": "Hibernated, double-click to wake" },
+
     "notepad_heading": { "message": "Notepad" },
     "notepad_hint": { "message": "Enter text below. It will be automatically saved." },
     "notepad_lastSavedAt": { "message": "Last saved at:" },
