@@ -24,31 +24,8 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
 PageTree.extend(DataTree, {
 
     /////////////////////////////////////////////////////
-    // Page manipulation
+    // General node manipulation
     /////////////////////////////////////////////////////
-
-    // retrieve a page from the tree given its tabId
-    getPage: function(tabId)
-    {
-        return this.findNode('p' + tabId);
-    },
-
-    // retrieve a page from the tree given its tabId, and return additional details
-    getPageEx: function(tabId) {
-        return this.findNodeEx('p' + tabId);
-    },
-
-    focusPage: function(tabId)
-    {
-        log(tabId);
-        var page = this.getPage(tabId);
-        this.focusedTabId = tabId;
-        this.callbackProxyFn('focusPage', { id: 'p' + tabId });
-
-        if (page.unread) {
-            this.updatePage(page, { unread: false });
-        }
-    },
 
     // add given node as a child of the node matching parentMatcher
     addNode: function(node, parentMatcher)
@@ -61,7 +38,7 @@ PageTree.extend(DataTree, {
     removeNode: function(matcher)
     {
         var r = PageTree._super.removeNode.call(this, matcher);
-        this.callbackProxyFn('remove', { id: r.id });
+        this.callbackProxyFn('remove', { element: r });
         return r;
     },
 
@@ -70,8 +47,36 @@ PageTree.extend(DataTree, {
     moveNode: function(id, newParentId)
     {
         var r = PageTree._super.moveNode.call(this, id, newParentId);
-        this.callbackProxyFn('move', { id: id, newParentId: newParentId });
+        this.callbackProxyFn('move', { element: r, newParentId: newParentId });
         return r;
+    },
+
+
+    /////////////////////////////////////////////////////
+    // Page-node manipulation
+    /////////////////////////////////////////////////////
+
+    // retrieve a page from the tree given its tabId
+    getPage: function(tabId)
+    {
+        return this.getNode('p' + tabId);
+    },
+
+    // retrieve a page from the tree given its tabId, and return additional details
+    getPageEx: function(tabId) {
+        return this.getNodeEx('p' + tabId);
+    },
+
+    focusPage: function(tabId)
+    {
+        log(tabId);
+        var page = this.getPage(tabId);
+        this.focusedTabId = tabId;
+        this.callbackProxyFn('focusPage', { id: 'p' + tabId });
+
+        if (page.unread) {
+            this.updatePage(page, { unread: false });
+        }
     },
 
     // move the page with tabId to reside under newParentTabId, bringing children along
@@ -121,7 +126,7 @@ PageTree.extend(DataTree, {
         if (topParent instanceof WindowNode) {
             var windowId = parseInt(topParent.id.slice(1));
             log('awakening', found.node.url, 'windowId', windowId);
-            chrome.tabs.create({ url: found.node.url, windowId: windowId });
+            chrome.tabs.create({ url: found.node.url, windowId: windowId, active: false });
             return;
         }
         log('awakening', found.node.url, 'no found windowId');
@@ -130,7 +135,7 @@ PageTree.extend(DataTree, {
 
 
     /////////////////////////////////////////////////////
-    // MISCELLANEOUS FUNCTIONS
+    // Miscellaneous
     /////////////////////////////////////////////////////
 
     // Returns contents of tree formatted as a string. Used for debugging.
@@ -161,7 +166,7 @@ PageTree.extend(DataTree, {
 
 
     /////////////////////////////////////////////////////
-    // MATCHERS
+    // Matchers
     /////////////////////////////////////////////////////
 
     // returns a matcherFn for finding a page with a given id
