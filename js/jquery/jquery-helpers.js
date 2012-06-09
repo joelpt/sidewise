@@ -1,6 +1,14 @@
 // Adds an :icontains jQuery selector, which does a case-insensitive match of elements' contained text
 $.expr[':'].icontains = function(obj, index, meta, stack){
-    return (obj.textContent || obj.innerText || jQuery(obj).text() || '').toLowerCase().indexOf(meta[3].toLowerCase()) >= 0;
+    return (obj.textContent || obj.innerText || jQuery(obj).text() || '')
+        .toLowerCase()
+        .indexOf(meta[3].toLowerCase()) >= 0;
+};
+
+// Adds a :regexicontains jQuery selector, which does a case-insensitive regex match of elements' contained text
+$.expr[':'].regexicontains = function(obj, index, meta, stack) {
+    var re = new RegExp(meta[3], 'i');
+    return re.test(obj.textContent || obj.innerText || jQuery(obj).text() || '');
 };
 
 jQuery.fn.extend({
