@@ -1,4 +1,7 @@
 /**
+  * @class
+  * Barebones node object for use as a node in DataTree.
+  * @see DataTree
   * @constructor
   */
 var DataTreeNode = function()

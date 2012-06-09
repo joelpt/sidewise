@@ -1,4 +1,6 @@
 /**
+  * @static
+  * @class
   * Used to manage timeouts easily.
   * Use as a singleton: do not instatiate, just call TimeoutManager.set(), et al. directly.
   */

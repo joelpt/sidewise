@@ -1,6 +1,8 @@
 /**
+  * @class
   * Hierarchical data structure with traversal and manipulation funcions.
   *
+  * @requires DataTreeNode
   * @constructor
   */
 var DataTree = function() {
@@ -70,7 +72,10 @@ DataTree.prototype = {
         throw new Error('Unsupported "matcher" argument passed');
     },
 
-    // Steps through inArray's nodes and children recursively looking for a node for which matcherFn returns true
+    /**
+      * @private
+      * Steps through inArray's nodes and children recursively looking for a node for which matcherFn returns true
+      */
     getNodeStep: function(matcherFn, inArray) {
         for (var i in inArray)
         {
@@ -125,7 +130,10 @@ DataTree.prototype = {
         return this.getNodeExStep(matcherFn, inArray);
     },
 
-    // Steps through inArray's nodes and children recursively looking for a node for which matcherFn returns true
+    /**
+      * @private
+      * Steps through inArray's nodes and children recursively looking for a node for which matcherFn returns true
+      */
     getNodeExStep: function(matcherFn, inArray, parentElem, parentIndex, parentArray) {
         for (var i in inArray)
         {
@@ -226,6 +234,9 @@ DataTree.prototype = {
         return found.node;
     },
 
+    /**
+      * Updates this.lastModified and calls this.onModified, if set.
+      */
     updateLastModified: function() {
         this.lastModified = Date.now();
         if (this.onModified) {
@@ -239,18 +250,29 @@ DataTree.prototype = {
     /////////////////////////////////////////////////////
 
     /**
-      * Reduces each node and its descendants by calling reduceFn on each one.
-      * @param reduceFn {Function(lastValue, node, containingArray)} Called for each node in sequence.
-      *                 Should return the value which will be assigned as lastValue to the next reduceFn() call.
+      * Reduces each node and its descendants to a single value by accumulating the results of
+      * successive calls to reduceFn.
+      * @param {Function} reduceFn
+      *        Called for each node in sequence.
+      *        Takes parameters (lastValue, node, containingArray).
+      *        Should return the value which will be assigned as lastValue to the next reduceFn() call.
       * @param initialValue Starting value for lastValue.
-      * @param inArray If provided, act only on nodes and descendents in given array; acts on whole tree otherwise
+      * @param {Array} [inArray=the entire tree] Act on nodes in given array and their descendants.
+      * @returns The accumulated results (last return value) of the calls to reduceFn().
+      * @example
+      * tree.reduce(function(lastValue, node, containingArray) {
+      *     return lastValue + node.id + ',';
+      * }, '');
       */
+
     reduce: function(reduceFn, initialValue, inArray)
     {
         return this.reduceStep(reduceFn, initialValue, 0, inArray || this.tree);
     },
 
-    // Helper for reduce()
+    /**
+      * @private
+      */
     reduceStep: function(reduceFn, initial, depth, inArray)
     {
         var value = initial;
@@ -265,9 +287,10 @@ DataTree.prototype = {
 
     /**
       * Find all nodes in the tree for which matcherFn returns true.
-      * @param matcherFn {Function(node)} return true for each node to be included in the result set.
+      * @param matcherFn Function(node): return true for each node to be included in the result set.
       * @param inArray If provided, act only on nodes and descendents in given array; acts on whole tree otherwise.
       * @returns An array of all matching nodes.
+      * @example tree.filter(function(node) { return node.id[0] == 'f'; });
       */
     filter: function(matcherFn, inArray)
     {
@@ -281,9 +304,10 @@ DataTree.prototype = {
 
     /**
       * Map all nodes in the tree from one value to another value, returning a flattened array.
-      * @param mapFn {Function(node)} Receives each node and should return the desired mapped value.
+      * @param mapFn Function(node): Receives each node and should return the desired mapped value.
       * @param inArray If provided, act only on nodes and descendents in given array; acts on whole tree otherwise.
       * @returns A flattened array of the values returned by mapFn().
+      * @example tree.map(function(node) { return node.id; });
       */
     map: function(mapFn, inArray)
     {
@@ -294,16 +318,22 @@ DataTree.prototype = {
 
     /**
       * Execute eachFn for each item.
-      * @param eachFn {Function(node, depth, containingArray, parentNode)}
+      * @param eachFn Function(node, depth, containingArray, parentNode):
       *        Called for each node in sequence and should return the desired mapped value.
       * @param inArray If provided, act only on nodes and descendents in given array; acts on whole tree otherwise.
+      * @example
+      * tree.forEach(function(node, depth, containingArray, parentNode) {
+      *     console.log(node.id, depth);
+      * });
       */
     forEach: function(eachFn, inArray)
     {
         this.forEachStep(eachFn, 0, inArray || this.tree, undefined);
     },
 
-    // Helper for forEach()
+    /**
+      * @private
+      */
     forEachStep: function(eachFn, depth, inArray, parent) {
         var treeObj = this;
         inArray.forEach(function(e) {
