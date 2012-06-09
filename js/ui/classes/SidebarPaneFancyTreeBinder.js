@@ -13,8 +13,9 @@ SidebarPaneFancyTreeBinder.prototype = {
         };
 
         chrome.windows.onFocusChanged.addListener(function(windowId) {
+            console.log('I DID ME');
             binderObj.onChromeWindowFocusChanged(windowId);
-        };
+        });
     },
 
     // Bound to fancyTree.permitTooltipHandler
@@ -25,6 +26,7 @@ SidebarPaneFancyTreeBinder.prototype = {
     },
 
     onChromeWindowFocusChanged: function(windowId) {
+        console.log('I DID THIS');
         // Hide the FancyTree row tooltip whenever Chrome switches window focus
         this.fancyTree.hideTooltip();
     }
