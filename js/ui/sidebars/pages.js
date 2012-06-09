@@ -56,35 +56,39 @@ function initTree(attachToSelector, pageTree) {
 function populateFancyTreeFromPageTree(fancyTree, pageTree) {
     pageTree.forEach(function(e, d, i, p) {
         var parentId = (p ? p.id : undefined);
-        addPageTreeElemToFancyTree(fancyTree, e, parentId);
+        addPageTreeNodeToFancyTree(fancyTree, e, parentId);
     });
 }
 
-function addPageTreeElemToFancyTree(fancyTree, pageTreeElem, parentId)
+function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
 {
-    var newRow;
-    if (pageTreeElem.elemType == 'window') {
-        var img = (pageTreeElem.incognito ? '/images/incognito-16.png' : '/images/tab-stack-16.png');
-        newRow = fancyTree.getNewElem('window',
-            pageTreeElem.id,
+    var row;
+    if (node.elemType == 'window') {
+        var img = (node.incognito ? '/images/incognito-16.png' : '/images/tab-stack-16.png');
+        row = fancyTree.getNewElem('window',
+            node.id,
             img,
-            getMessage('text_Window') + ' ' + pageTreeElem.id.slice(1),
+            getMessage('text_Window') + ' ' + node.id.slice(1),
             '',
-            { incognito: pageTreeElem.incognito },
+            { incognito: node.incognito },
             false,
             null);
     }
-    else if (pageTreeElem.elemType == 'page') {
-        newRow = fancyTree.getNewElem('page', pageTreeElem.id, pageTreeElem.favicon,
-            pageTreeElem.id, pageTreeElem.title, {
-                url: pageTreeElem.url,
-                status: pageTreeElem.status,
-                pinned: pageTreeElem.pinned,
-                unread: pageTreeElem.unread,
-                hibernated: pageTreeElem.hibernated
+    else if (node.elemType == 'page') {
+        row = fancyTree.getNewElem('page', node.id, node.favicon,
+            node.id, node.title, {
+                url: node.url,
+                status: node.status,
+                pinned: node.pinned,
+                unread: node.unread,
+                hibernated: node.hibernated
             }, false, null);
     }
-    fancyTree.addElem(newRow, parentId);
+    else {
+        throw new Error('Unknown node type');
+    }
+
+    fancyTree.addElem(row, parentId);
 }
 
 function getBigTooltipContent(header, icon, body) {
@@ -145,6 +149,13 @@ function onResizeTooltip(evt) {
 
 function onCloseButtonPageRow(evt)
 {
+    if (evt.data.row.attr('hibernated') == 'true') {
+        // page is hibernated so just remove it; don't actually try to close its
+        // (nonexistent) tab
+        bg.tree.removeNode(evt.data.row.attr('id'));
+        return;
+    }
+
     evt.data.row.addClass('closing'); // "about to close" styling
     chrome.tabs.remove(getRowNumericId(evt.data.row));
 }
@@ -264,7 +275,7 @@ function PageTreeCallbackProxyListener(op, args)
     switch (op)
     {
         case 'add':
-            addPageTreeElemToFancyTree(ft, args.element, args.parentId);
+            addPageTreeNodeToFancyTree(ft, args.element, args.parentId);
             break;
         case 'remove':
             ft.removeElem(args.element.id);
