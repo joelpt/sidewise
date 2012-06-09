@@ -5,6 +5,9 @@ $(document).ready(function() {
     bg = chrome.extension.getBackgroundPage();
     ft = initTree('#pageTree', bg.tree);
 
+    var binder = new SidebarPaneFancyTreeBinder(ft, bg);
+    binder.bind();
+
     bg.sidebarHandler.registerSidebarPane('pages', window);
     bg.focusCurrentTabInPageTree();
 });
@@ -40,7 +43,6 @@ function initTree(attachToSelector, pageTree) {
 
     tree = new FancyTree($(attachToSelector), {
         rowTypes: rowTypes,
-        permitTooltipHandler: onPermitFancyTreeTooltip,
         showFilterBox: true,
         filterPlaceholderText: getMessage('prompt_filterPlaceholderText'),
         filterActiveText: getMessage('prompt_filterActiveText')
@@ -285,12 +287,6 @@ function PageTreeCallbackProxyListener(op, args)
             ft.focusElem(args.id);
             break;
     }
-}
-
-function onPermitFancyTreeTooltip() {
-    // Return false if a Chrome window isn't currently focused
-    // to block the tooltips from showing
-    return bg.focusTracker.chromeHasFocus;
 }
 
 function onPageRowIconError(evt) {

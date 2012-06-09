@@ -13,7 +13,6 @@ SidebarPaneFancyTreeBinder.prototype = {
         };
 
         chrome.windows.onFocusChanged.addListener(function(windowId) {
-            console.log('I DID ME');
             binderObj.onChromeWindowFocusChanged(windowId);
         });
     },
@@ -22,11 +21,10 @@ SidebarPaneFancyTreeBinder.prototype = {
     permitTooltipHandler: function() {
         // Return false if a Chrome window isn't currently focused
         // to block the tooltips from showing
-        return this.backgroundPage.focusTracker.isChromeFocused();
+        return this.backgroundPage.focusTracker.chromeHasFocus;
     },
 
     onChromeWindowFocusChanged: function(windowId) {
-        console.log('I DID THIS');
         // Hide the FancyTree row tooltip whenever Chrome switches window focus
         this.fancyTree.hideTooltip();
     }
