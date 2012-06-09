@@ -22,8 +22,7 @@ var PageNode = function(tab, overrideStatus)
     this.hibernated = false;
     this.smartFocusParentTabId = null;
 
-    log('Page', tab, this);
-    console.log(this.status, tab.id);
+    log('PageNode', tab, this);
 };
 
 PageNode.extend(PageTreeNode);
