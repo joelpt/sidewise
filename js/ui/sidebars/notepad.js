@@ -5,8 +5,6 @@ $(document).ready(onReady);
 
 function onReady() {
     setI18NText();
-    $(document).mousedown(onMouseDown);
-    $(document).mouseup(onMouseUp);
 
     $('#heading').attr('title', getMessage('notepad_hint'))
 
@@ -52,18 +50,4 @@ function saveNotepad() {
 function setLastSavedText(dateVal) {
     var dateText = new Date(dateVal).toString().replace(/ GMT.+/, '');
     $('#lastSavedAt').text(dateText);
-}
-
-var lockScrollInterval;
-
-function onMouseDown() {
-    // inhibit mouse-dragging from scrolling the sidebar panels container
-    lockScrollInterval = setInterval(function() {
-        parent.manager.scrollToCurrentSidebarPanel(true);
-    }, 0);
-}
-
-function onMouseUp() {
-    // inhibit mouse-dragging from scrolling the sidebar panels container
-    clearInterval(lockScrollInterval);
 }
