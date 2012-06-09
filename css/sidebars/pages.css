@@ -46,6 +46,11 @@ body {
     margin-top: 0.75em;
 }
 
+.ftFiltering .ftRowNode[rowtype=window]+.ftRowNode[rowtype=window] {
+    margin-top: 0em;
+}
+
+
 .ftRowNode[rowtype=window] > .ftItemRow > .ftItemRowContent:hover {
     background: inherit;
     border: none;
