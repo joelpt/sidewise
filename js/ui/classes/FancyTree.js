@@ -4,6 +4,7 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   * @constructor
   * @param appendToElem The root DOM element to append the FancyTree under.
   * @param options A dictionary of options, all optional:
+  *        <pre>
   *        {
   *          showFilterBox: Boolean,             // if set to false, hide type-in filtering box above tree
   *          filterPlaceholderText: String,      // text to show in filter box when otherwise empty
@@ -36,6 +37,7 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   *            ...
   *          }
   *       }
+  *       </pre>
   *
   *       All rowTypes' event handlers are passed the hosting FancyTree object in evt.data.treeObj, and the
   *       involved row's <li> jQuery element in evt.data.row.
