@@ -258,3 +258,9 @@ div.ftButtons {
     padding-left: 0px !important;
     border-left: none !important;
 }
+
+.ftHighlightChar {
+    background: yellow;
+    text-decoration: underline;
+    font-weight: bold;
+}

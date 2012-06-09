@@ -116,22 +116,30 @@ var FancyTree = function(appendToElem, options) {
         // add event handlers for filter box
         $(document).on('click', this.filterElem, data, this.onFilterBoxModified);
         $(document).on('keyup', this.filterElem, data, this.onFilterBoxModified);
-        $(document).keydown(data, this.onKeypress);
+        $(document).keydown(data, this.onDocumentKeyDown);
     }
 }
 
 FancyTree.prototype = {
 
-    onKeypress: function(evt) {
+    onDocumentKeyDown: function(evt) {
         if (evt.keyCode == 70 && evt.ctrlKey) { // Ctrl+F
+            // focus filter box
             evt.data.treeObj.filterElem.children('.ftFilterInput').focus();
-            evt.stopPropagation();
+            return false;
+        }
+        if (evt.keyCode == 27) { // Esc
+            // clear filter box
+            evt.data.treeObj.filterElem.children('.ftFilterInput')
+                .val('')
+                .trigger('keyup');
             return false;
         }
         return true;
     },
 
     onFilterBoxModified: function(evt) {
+
         if (evt.keyCode == 27) // Esc key pressed
         {
             // Clear any existing filter
@@ -140,13 +148,21 @@ FancyTree.prototype = {
 
         var filter = evt.target.value || '';
         var treeObj = evt.data.treeObj;
+        treeObj.handleHideTooltipEvent(evt);
 
-        // reset which rows are filtered in before applying new filter rule
-        treeObj.root.find('.ftRowNode.ftFilteredIn').removeClass('ftFilteredIn');
+        // remove char highlighting effects
+        treeObj.root.find('.ftFilteredIn > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText')
+            .children().each(function(i, e) {
+                var $e = $(e);
+                $e.text($e.text());
+            });
+
+        // reset which rows are filtered
+        treeObj.root.find('.ftFilteredIn').removeClass('ftFilteredIn');
 
         if (filter.length == 0)
         {
-            // no filter now present
+            // remove filtering class
             treeObj.root.removeClass('ftFiltering');
 
             // hide filter status message
@@ -155,9 +171,57 @@ FancyTree.prototype = {
         else
         {
             // filter out non matching entries
+            var advancedFilter = loadSetting('useAdvancedTreeFiltering');
             var escapedFilter = filter.replace('"', '\\"'); // escape embedded double quotes
-            var selector = '.ftItemText:icontains("' + escapedFilter + '")';
+            if (advancedFilter) {
+                var regexFilter = filter.split('').join('.*').replace('"', '\\"');
+                var selector = '.ftItemText:regexicontains("' + regexFilter + '")';
+            }
+            else {
+                var selector = '.ftItemText:icontains("' + escapedFilter + '")';
+            }
+
             var matches = treeObj.root.find(selector).closest('.ftRowNode');
+
+            if (advancedFilter) {
+                // highlight matched letters in row's visible text
+                matches.each(function(i, e) {
+                    var $e = $(e);
+                    var $textElem = $e.find('.ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText');
+                    var lastCharIndex = 0;
+                    $textElem.children().each(function(i, f) {
+                        var $f = $(f);
+                        var text = $f.text();
+                        var newHtml = '';
+                        if (lastCharIndex == filter.length) {
+                            // already all matched up
+                            newHtml = text;
+                        }
+                        else {
+                            // match individual chars
+                            for (var charIndex in text) {
+                                if (filter[lastCharIndex].toLowerCase() == text[charIndex].toLowerCase()) {
+                                    // this character was part of the search
+                                    newHtml += '<span class="ftHighlightChar">' + text[charIndex] + '</span>';
+                                    lastCharIndex++;
+                                }
+                                else {
+                                    // this character was not part of the search
+                                    newHtml += text[charIndex];
+                                }
+                                if (lastCharIndex == filter.length) {
+                                    // filter chars have all been matched up, so just output
+                                    // the remainder of the text as is
+                                    newHtml += (text.slice(parseInt(charIndex) + 1));
+                                    break;
+                                }
+                            }
+                        }
+
+                        $f.html(newHtml);
+                    });
+                });
+            }
 
             // filter by additional per-rowType parameter filters
             for (var rowType in treeObj.rowTypes) {
@@ -170,13 +234,12 @@ FancyTree.prototype = {
                 }
             }
 
-            // apply filtering css classes to matched rows
+            // apply ftFilteredIn css class to matched rows
             matches.each(function(i, e) {
-                  $(e).addClass('ftFilteredIn');
-                }
-            );
+                $(e).addClass('ftFilteredIn');
+            });
 
-            // apply filtering css styling
+            // apply filtering css styling which will filter out unmatched rows
             treeObj.root.addClass('ftFiltering');
 
             // show filter status message
