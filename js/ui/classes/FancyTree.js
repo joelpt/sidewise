@@ -111,7 +111,6 @@ var FancyTree = function(appendToElem, options) {
     $(document).on('click', '.ftExpander', data, this.onExpanderClick);
     $(document).on('mouseenter', '.ftButtons', data, this.onMouseEnterButtons);
     $(document).on('mouseleave', '.ftButtons', data, this.onMouseLeaveButtons);
-    $(document).on('resize', 'window', data, this.onWindowResize);
 
     if (options.showFilterBox != false) {
         // add event handlers for filter box
@@ -184,10 +183,6 @@ FancyTree.prototype = {
             treeObj.filterElem.children('.ftFilterStatus').show();
 
         }
-    },
-
-    onWindowResize: function(evt) {
-        evt.data.treeObj.handleHideTooltipEvent();
     },
 
     onTooltipMouseOver: function(evt) {
