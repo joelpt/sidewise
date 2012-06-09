@@ -47,6 +47,7 @@ function initializeDefaultSettings(forceReset) {
         keepSidebarOnTop: false,
         dockState: 'right',
         browserActionButtonBehavior: 'show',
+        useAdvancedTreeFiltering: false,
         pages_doubleClickAction: 'expand',
         pages_middleClickAction: 'none',
         smartFocusOnClose: true,
