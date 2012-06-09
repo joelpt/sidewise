@@ -44,6 +44,11 @@ SidebarNavManager.prototype = {
     },
 
     showSidebarPanel: function(id) {
+        // set selected state of correct nav button
+        $('#sidebarButtons').children().removeClass('selected');
+        $('#sidebarButton__' + id).addClass('selected');
+
+        // load container if needed, then show (scroll to) it
         var selector = '#sidebarContainer__' + id;
         var container = $(selector);
 
