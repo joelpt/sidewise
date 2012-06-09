@@ -12,9 +12,8 @@ SidebarPaneFancyTreeBinder.prototype = {
             return binderObj.permitTooltipHandler();
         };
 
-        // Pass to backgroundPage.sidebarHandler.registerSidebarPane as the onChromeFocusChanged parameter
-        this.chromeWindowFocusChangeHandler = function(chromeIsFocused, focusedWindowId) {
-            binderObj.chromeWindowFocusChangeHandlerBody(chromeIsFocused, focusedWindowId);
+        chrome.windows.onFocusChanged.addListener(function(windowId) {
+            binderObj.onChromeWindowFocusChanged(windowId);
         };
     },
 
@@ -25,15 +24,8 @@ SidebarPaneFancyTreeBinder.prototype = {
         return this.backgroundPage.focusTracker.isChromeFocused();
     },
 
-    chromeWindowFocusChangeHandlerBody: function(chromeIsFocused, focusedWindowId) {
+    onChromeWindowFocusChanged: function(windowId) {
         // Hide the FancyTree row tooltip whenever Chrome switches window focus
-        // TODO consider ripping all this out and just listening to chrome.window.onWindowFocusChanged directly..LOLsocks
-        // BENEFIT would simplify the code significantly
-        // DOWNSIDE we would not have access to CWFT's chromeIsFocused, focusedWindowId vars
-        //   which incorporate more logic than .onWindowFocusChanged; focusedWIndowId is actually
-        //   last focused window id which conceibably to some sidebar pane might be valuable to utilize
-        //   that being said it would definitely be a fuckton simpler to just trigger the event right here
-        //   directly, which for the foreseeable future would be entirely adequate for our needs
         this.fancyTree.hideTooltip();
     }
 
