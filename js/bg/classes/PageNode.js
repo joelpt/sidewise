@@ -20,6 +20,7 @@ var PageNode = function(tab, overrideStatus)
     this.placed = false;
     this.unread = false;
     this.hibernated = false;
+    this.smartFocusParentTabId = null;
 
     log('Page', tab, this);
     console.log(this.status, tab.id);

@@ -54,11 +54,38 @@ function onTabCreated(tab)
     //          [x] use smart navigation when closing tabs (navigate to children, siblings, and parent in that order)
     //              [x] navigate to cousins first: navigate to children of parent pages later in the tree before parent
 
+    // Special handling for extension pages
+    if (isExtensionUrl(tab.url)) {
+        if (tab.url.match(/options|prefs|settings/)) {
+            // Appears to be an extension options page.
+            // Tell smart focus to refocus the currently focused tab when the
+            // options page is closed.
+            log('Setting smart focus parent for an extension options page');
+            page.smartFocusParentTabId = tree.focusedTabId;
+            page.placed = true; // prevent tab from being moved by a later webnav/tabupdated event
+            tree.addNode(page, 'w' + tab.windowId);
+            return;
+        }
+        // Appears to be a non-options extension page, make it a child of focused tab
+        // as long as they're in the same window
+        if (tab.windowId == focusTracker.getFocused()) {
+            // It's often logical for an extension page to appear as a child of
+            // the currently focused page, e.g. LastPass's Generate Password dialog.
+            log('Setting non-options extension page as child of focused tab');
+            tree.addNode(page, 'p' + tree.focusedTabId);
+            return;
+        }
+    }
 
     if (tab.openerTabId) {
+        // Make page a child of its opener tab; this may be overriden later in webnav-events.js
+        log('Tentatively setting page as child of its opener tab');
         tree.addNode(page, 'p' + tab.openerTabId);
         return;
     }
+
+    // Make page a child of its hosting window
+    log('Setting page as child of its hosting window');
     tree.addNode(page, 'w' + tab.windowId);
 }
 
@@ -74,20 +101,30 @@ function onTabRemoved(tabId, removeInfo)
     }
     log(tabId, removeInfo);
 
-    // if smart focus on close
-    if (loadSetting('smartFocusOnClose') && sidebarHandler.sidebarExists()) {
-        var nextTabId = findNextTabToFocus(tabId, loadSetting('smartFocusPrefersCousins'));
+    var page = tree.getPage(tabId);
+
+    // smart focus on close
+    if (loadSetting('smartFocusOnClose') && sidebarHandler.sidebarExists())
+    {
+        var nextTabId;
+        if (page.smartFocusParentTabId) {
+            nextTabId = page.smartFocusParentTabId;
+        }
+        else {
+            nextTabId = findNextTabToFocus(tabId, loadSetting('smartFocusPrefersCousins'));
+            if (nextTabId) {
+                nextTabId = parseInt(nextTabId.slice(1));
+            }
+        }
 
         // if we found a next tab to show per our own logic, switch to it
         if (nextTabId) {
-            nextTabId = parseInt(nextTabId.slice(1));
-            log('Setting new selected tab to ' + nextTabId);
+            log('Smart focus setting selected tab to ' + nextTabId);
             chrome.tabs.update(nextTabId, { active: true });
         }
         // else, nothing suitable was found; we'll just let Chrome decide
     }
 
-    var page = tree.getPage(tabId);
     if (page.hibernated) {
         // page is set to be hibernated; since its tab has been closed, that means
         // we are only removing the tab for purposes of hibernattion
