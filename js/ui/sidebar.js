@@ -66,6 +66,9 @@ function onDocumentKeyDown(evt) {
 }
 
 function onDocumentScroll() {
+    if (manager.scrolling) {
+        return;
+    }
     // prevent user scrolling of sidebar panes through e.g. drag-selecting some text
     // and moving the mouse off the edge of the sidebar window
     manager.scrollToCurrentSidebarPanel(true);
@@ -73,7 +76,7 @@ function onDocumentScroll() {
 
 function onWindowResize() {
     // perform resize work, e.g. resizing an attached dock window
-    bg.sidebarHandler.onWindowResize();
+    bg.sidebarHandler.onResize();
 
     // prevent width-resizing of sidebar from showing part of another sidebar pane
     manager.scrollToCurrentSidebarPanel(true);

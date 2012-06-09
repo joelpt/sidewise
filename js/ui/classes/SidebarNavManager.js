@@ -7,6 +7,7 @@ var SidebarNavManager = function(navButtonsContainer, sidebarsContainer, parentC
     this.scrollContainer = scrollContainer;
     this.sidebarElemTag = sidebarElemTag;
     this.currentSidebarId = undefined;
+    this.scrolling = false;
 
     var elem = $('<' + this.sidebarElemTag + ' id="sidebarPaddingContainer"/>');
     this.sidebarsContainer.append(elem);
@@ -71,11 +72,23 @@ SidebarNavManager.prototype = {
     },
 
     scrollToCurrentSidebarPanel: function(instant, onAfter) {
+        this.scrolling = true;
+        var mgr = this;
+        var onAfterWrapped = function() {
+            if (onAfter) {
+                onAfter();
+            }
+            // Using a 0ms timeout to clear scrolling flag prevents a scrolling 'vibration'
+            // glitch on even-numbered panes when user has manually increased sidebar
+            // zoom level. Glitch can still be seen by drag-selecting text in Notepad pane
+            // off the side of the window when zoom level and sidebar width are 'just right'.
+            setTimeout(function() { mgr.scrolling = false; }, 0);
+        }
         if (instant) {
-            this.scrollContainer.scrollTo('#sidebarContainer__' + this.currentSidebarId, { onAfter: onAfter });
+            this.scrollContainer.scrollTo('#sidebarContainer__' + this.currentSidebarId, { onAfter: onAfterWrapped });
             return;
         }
-        this.scrollContainer.scrollTo('#sidebarContainer__' + this.currentSidebarId, 100, { onAfter: onAfter });
+        this.scrollContainer.scrollTo('#sidebarContainer__' + this.currentSidebarId, 100, { onAfter: onAfterWrapped });
     },
 
     getSidebarDetails: function(id) {
