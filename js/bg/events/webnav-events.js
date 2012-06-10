@@ -100,6 +100,9 @@ function onCommitted(details)
 
 function onBeforeNavigate(details)
 {
+    if (details.frameId > 0) {
+        return;
+    }
     log(details);
 }
 
