@@ -22,8 +22,6 @@ function updateStateFromSettings() {
 
     bg.loggingEnabled = loadSetting("loggingEnabled");
 
-    sh.monitorMetrics = loadSetting('monitorMetrics');
-    sh.maximizedMonitorOffset = loadSetting('maximizedMonitorOffset');
     sh.targetWidth = loadSetting('sidebarTargetWidth');
 
     var dockState = loadSetting('dockState');
@@ -53,6 +51,7 @@ function initializeDefaultSettings(forceReset) {
         smartFocusOnClose: true,
         smartFocusPrefersCousins: false,
         loggingEnabled:  false,
+        alwaysShowAdvancedOptions: false,
         sidebarTargetWidth: 300,
         settingsInitialized: true
     };

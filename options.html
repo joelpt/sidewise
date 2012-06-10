@@ -16,7 +16,6 @@
     <script type="text/javascript" src="/js/util/settings.js"></script>
     <script type="text/javascript" src="/js/util/logging.js"></script>
     <script type="text/javascript" src="/js/util/i18n.js"></script>
-    <script type="text/javascript" src="/js/util/detect-monitors.js"></script>
     <script type="text/javascript" src="/js/util/chrome-functions.js"></script>
 
     <script type="text/javascript" src="/js/ui/options.js"></script>
@@ -74,9 +73,16 @@
                 <span class="info" id="infoMonitorsOnYourSystem"></span>
             </div>
 
-            <h2 i18n="optionsHeadingMisc"></h2>
-            <input type="checkbox" name="useAdvancedTreeFiltering"/>
-            <input type="checkbox" name="loggingEnabled"/>
+            <div class="optionsRow">
+                <a href="#" id="advancedOptionsExpander" i18n="optionsShowAdvanced"></a>
+            </div>
+            <div id="advancedOptions">
+                <h2 i18n="optionsHeadingMisc"></h2>
+                <input type="checkbox" name="useAdvancedTreeFiltering"/>
+                <input type="checkbox" name="loggingEnabled"/>
+                <input type="text" name="sidebarTargetWidth" datatype="int" />
+                <input type="checkbox" name="alwaysShowAdvancedOptions"/>
+            </div>
 
             <div id="saveBox" align="right">
                 <div class="hint" i18n="optionsSaveNotNeeded"></div>

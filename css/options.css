@@ -126,6 +126,17 @@ blockquote {
     display: inline-block;
 }
 
+#advancedOptionsExpander {
+    display: block;
+    margin-top: 2.5em;
+    padding-top: 1em;
+    border-top: 1px solid #999;
+}
+
+#advancedOptions {
+    display: none;
+}
+
 .hintIcon, .warningIcon {
     display: inline-block;
     position: relative;

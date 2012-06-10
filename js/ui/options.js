@@ -1,4 +1,8 @@
+var bg;
+
 $(document).ready(function() {
+    bg = chrome.extension.getBackgroundPage();
+
     setI18NText();
     transformInputElements();
     loadSettings();
@@ -11,6 +15,14 @@ $(document).ready(function() {
     $(document).on('click', '#saveButton', saveAllSettings);
     $(document).on('click', '#resetButton', resetAllSettings);
     $(document).on('click', '#detectMonitorsButton', detectMonitors);
+
+    if (loadSetting('alwaysShowAdvancedOptions')) {
+        showAdvancedOptions();
+    }
+    else {
+        $(document).on('click', '#advancedOptionsExpander', showAdvancedOptions);
+    }
+
     setTimeout(function() {
         // delay to avoid F5 (reload) spuriously triggering this
         $(document).on('keyup', 'input[type=text]', onSettingModified);
@@ -205,8 +217,8 @@ function showErrorMessage(msg) {
 }
 
 function detectMonitors() {
-    retrieveMonitorMetrics(function(monitors, maxOffset) {
-        saveMonitorMetrics(monitors, maxOffset);
+    bg.monitorInfo.retrieveMonitorMetrics(function(monitors, maxOffset) {
+        bg.monitorInfo.saveToSettings();
         updateStateFromSettings();
         setMonitorCountInfo(monitors.length, true);
         showStatusMessage(getMessage('prompt_detectMonitors_complete'));
@@ -225,6 +237,9 @@ function setMonitorCountInfo(count, highlight) {
     if (highlight) {
         elem.highlight({ start_color: 'yellow', end_color: '#fff', delay: 2000 });
     }
-
 }
 
+function showAdvancedOptions() {
+    $('#advancedOptionsExpander').hide();
+    $('#advancedOptions').show();
+};
