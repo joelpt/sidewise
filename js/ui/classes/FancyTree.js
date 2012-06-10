@@ -178,21 +178,24 @@ FancyTree.prototype = {
                 var selector = '.ftItemText:regexicontains("' + regexFilter + '")';
             }
             else {
-                var selector = '.ftItemText:icontains("' + escapedFilter + '")';
+                var words = filter.split(' ');
+                var regexFilter = words.join('.*').replace('"', '\\"');
+                var selector = '.ftItemText:regexicontains("' + regexFilter + '")';
             }
 
             var matches = treeObj.root.find(selector).closest('.ftRowNode');
 
-            if (advancedFilter) {
-                // highlight matched letters in row's visible text
-                matches.each(function(i, e) {
-                    var $e = $(e);
-                    var $textElem = $e.find('.ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText');
-                    var lastCharIndex = 0;
-                    $textElem.children().each(function(i, f) {
-                        var $f = $(f);
-                        var text = $f.text();
-                        var newHtml = '';
+            // highlight matched letters in row's visible text
+            matches.each(function(i, e) {
+                var $e = $(e);
+                var $textElem = $e.find('.ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText');
+                var lastCharIndex = 0;
+                var lastWordIndex = 0;
+                $textElem.children().each(function(i, f) {
+                    var $f = $(f);
+                    var text = $f.text();
+                    var newHtml = '';
+                    if (advancedFilter) {
                         if (lastCharIndex == filter.length) {
                             // already all matched up
                             newHtml = text;
@@ -217,11 +220,33 @@ FancyTree.prototype = {
                                 }
                             }
                         }
+                    }
+                    else {
+                        // match word-chunks
+                        for (var wordIndex = lastWordIndex; wordIndex < words.length; wordIndex++) {
+                            var word = words[wordIndex];
+                            var pos = text.toLowerCase().indexOf(word);
+                            if (pos > -1) {
+                                // word found, add preceding text as plain and word as highlighted
+                                newHtml += text.slice(0, pos)
+                                    + '<span class="ftHighlightChar">'
+                                    + text.slice(pos, pos + word.length)
+                                    + '</span>';
+                                text = text.slice(pos + word.length); // remainder
+                                lastWordIndex++;
+                            }
+                            else {
+                                // word not found
+                                break;
+                            }
+                        }
+                        // add any remaining text
+                        newHtml += text;
+                    }
 
-                        $f.html(newHtml);
-                    });
+                    $f.html(newHtml);
                 });
-            }
+            });
 
             // filter by additional per-rowType parameter filters
             for (var rowType in treeObj.rowTypes) {
