@@ -44,7 +44,7 @@
     "optionsDefaultStatus": { "message": "Hello! This is Sidewise's options page. Modify your options below." },
     "optionsHeadingSidebar": { "message": "Sidebar behavior" },
     "optionsHeadingMonitors": { "message": "Monitors" },
-    "optionsHeadingMisc": { "message": "Miscellaneous" },
+    "optionsHeadingMisc": { "message": "Advanced" },
 
     "option_openSidebarOnStartup": { "message": "Open sidebar on startup" },
     "option_keepSidebarOnTop": { "message": "Keep sidebar visible next to dock window" },
@@ -57,8 +57,6 @@
     "option_dockState_left": { "message": "left" },
     "option_dockState_right": { "message": "right" },
     "option_dockState_undocked": { "message": "undocked" },
-    "option_useAdvancedTreeFiltering": { "message": "Use nerd-mode tree filtering" },
-    "option_useAdvancedTreeFiltering_hint": { "message": "<p>When <i>disabled</i>, searching from a sidebar tree's filter box will match all rows containing your search term(s).</p><p>When <i>enabled</i>, for a row to match, all the characters of your search text must be present in the order you entered them, but not necessarily next to each other.</p><p>For example, suppose we have a row containing the text \"Sidewise is great\". When this option is disabled, a search for \"wise\" would match the row, but a search for \"swgreat\" would not. When this option is enabled, both searches would match the row.</p><p>Even when this option is disabled, a multiple-term search like \"side great\" would still match the row.</p>" },
 
     "optionsHeadingPages": { "message": "Pages sidebar"},
     "option_pages_doubleClickAction": { "message": "When double-clicking a row"},
@@ -82,6 +80,8 @@
     "option_maximizedMonitorOffset_units": { "message": "pixels" },
     "option_detectMonitorsButton": { "message": "Detect all monitors now" },
 
+    "option_useAdvancedTreeFiltering": { "message": "Use nerd-mode tree filtering" },
+    "option_useAdvancedTreeFiltering_hint": { "message": "<p>Normally, searching from a sidebar tree's filter box will match all rows containing your search term(s).</p><p>When this option is enabled, for a row to match, all non-space characters in your search text must be present in the order you entered them, but not necessarily next to each other.</p><p>For example, suppose we have a row containing the text \"Sidewise is great\". When this option is disabled, a search for \"wise\" would match the row, but a search for \"swgreat\" would not. When this option is enabled, both searches would match the row.</p><p>Even when this option is disabled, a multiple-term search like \"side great\" would still match the row.</p>" },
     "option_loggingEnabled": { "message": "Enable debug logging" },
     "option_loggingEnabled_hint": { "message": "Outputs verbose logging information to Javascript console of background page, sidebar, and options page. For development or bug feedback only." },
 
