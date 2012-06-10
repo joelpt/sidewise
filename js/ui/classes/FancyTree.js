@@ -174,6 +174,7 @@ FancyTree.prototype = {
             var advancedFilter = loadSetting('useAdvancedTreeFiltering');
             var escapedFilter = filter.replace('"', '\\"'); // escape embedded double quotes
             if (advancedFilter) {
+                filter = filter.replace(/ /g, '');
                 var regexFilter = filter.split('').join('.*').replace('"', '\\"');
                 var selector = '.ftItemText:regexicontains("' + regexFilter + '")';
             }
@@ -196,12 +197,12 @@ FancyTree.prototype = {
                     var text = $f.text();
                     var newHtml = '';
                     if (advancedFilter) {
+                        // match individual chars
                         if (lastCharIndex == filter.length) {
                             // already all matched up
                             newHtml = text;
                         }
                         else {
-                            // match individual chars
                             for (var charIndex in text) {
                                 if (filter[lastCharIndex].toLowerCase() == text[charIndex].toLowerCase()) {
                                     // this character was part of the search
