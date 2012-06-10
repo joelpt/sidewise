@@ -114,7 +114,7 @@ function isScriptableUrl(url)
 
 function isExtensionUrl(url)
 {
-    return url.indexOf(chrome.extension.getURL('/')) == 0;
+    return url.indexOf('chrome-extension://') == 0;
 }
 
 function executeContentScript(url, tabId, scriptBody)
