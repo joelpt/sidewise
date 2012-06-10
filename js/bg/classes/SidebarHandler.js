@@ -3,8 +3,6 @@ var SidebarHandler = function()
     // Initialize state
     this.dockState = 'undocked'; // 'undocked', 'left', 'right'
     this.targetWidth = 400;
-    this.monitorMetrics = null;
-    this.maximizedMonitorOffset = 0;
     this.sidebarUrl = chrome.extension.getURL('sidebar.html');
     this.reset();
     log('Initialized SidebarHandler');
@@ -225,17 +223,17 @@ SidebarHandler.prototype = {
         if (win.state == 'maximized') {
             // The dock-to window will be unmaximized after this process.
             // Therefore adjust its dimensions here for what we expect them to be unmaxed.
-            win.left += this.maximizedMonitorOffset;
-            win.top += this.maximizedMonitorOffset;
-            win.width -= 2 * this.maximizedMonitorOffset;
-            win.height -= 2 * this.maximizedMonitorOffset;
+            win.left += monitorInfo.maximizedOffset;
+            win.top += monitorInfo.maximizedOffset;
+            win.width -= 2 * monitorInfo.maximizedOffset;
+            win.height -= 2 * monitorInfo.maximizedOffset;
         }
         return win;
     },
 
     getGoalDockMetrics: function(win, side, sidebarWidth)
     {
-        var monitors = this.monitorMetrics;
+        var monitors = monitorInfo.monitors;
 
         // Monitors to the left of the primary monitor will have negative left values
         // for screen.availLeft and win.left. Determine how much that offset is.

@@ -1,6 +1,7 @@
 var tree;
 var sidebarHandler;
 var focusTracker;
+var monitorInfo;
 
 window.onload = onLoad;
 
@@ -48,25 +49,27 @@ function postLoad() {
     registerWebNavigationEvents();
     registerBrowserActionEvents();
 
-    // If we already know monitor metrics, create sidebar on startup
-    if (loadSetting('monitorMetrics')) {
-        createSidebarOnStartup();
-        return;
-    }
+    monitorInfo = new MonitorInfo();
 
-    // We don't know monitor metrics, so obtain them, save them, then create sidebar on startup
-    retrieveMonitorMetrics(function(monitors, maxOffset) {
-        saveMonitorMetrics(monitors, maxOffset);
+    if (monitorInfo.isKnown()) {
         createSidebarOnStartup();
-    });
+    }
+    else {
+        // We don't know monitor metrics, so obtain them, save them, then create sidebar on startup
+        monitorInfo.retrieveMonitorMetrics(function(monitors, maxOffset) {
+            monitorInfo.saveToSettings();
+            createSidebarOnStartup();
+        });
+    }
 }
 
 function createSidebarOnStartup() {
-    if (loadSetting('openSidebarOnStartup', true)) {
-        sidebarHandler.monitorMetrics = loadSetting('monitorMetrics');
-        sidebarHandler.maximizedMonitorOffset = loadSetting('maximizedMonitorOffset');
-        sidebarHandler.createWithDockState(loadSetting('dockState', 'right'));
+    if (!loadSetting('openSidebarOnStartup')) {
+        return;
     }
+    sidebarHandler.monitorMetrics = monitorInfo.detectedMonitors;
+    sidebarHandler.maximizedOffset = monitorInfo.detectedMaxMonitorOffset;
+    sidebarHandler.createWithDockState(loadSetting('dockState', 'right'));
 }
 
 function savePageTreeToLocalStorage() {

@@ -20,7 +20,7 @@ function onCreatedNavigationTarget(details)
         // we don't care about activity occurring within a subframe of a tab
         return;
     }
-    if (isDetectingMonitors()) {
+    if (monitorInfo.isDetecting()) {
         return;
     }
     log(details);
@@ -80,7 +80,7 @@ function onCommitted(details)
     {
         return;  // don't care about subframe activity
     }
-    if (isDetectingMonitors()) {
+    if (monitorInfo.isDetecting()) {
         return;
     }
     log(details);
@@ -113,7 +113,7 @@ function onCompleted(details)
         // we don't care about activity occurring within a subframe of a tab
         return;
     }
-    if (isDetectingMonitors()) {
+    if (monitorInfo.isDetecting()) {
         return;
     }
     var page = tree.getPage(details.tabId);

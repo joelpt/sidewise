@@ -8,7 +8,7 @@ function registerWindowEvents()
 
 function onWindowCreated(win)
 {
-    if ((win.type == 'popup' && sidebarHandler.creatingSidebar) || isDetectingMonitors())
+    if ((win.type == 'popup' && sidebarHandler.creatingSidebar) || monitorInfo.isDetecting())
     {
         return;
     }
@@ -29,7 +29,7 @@ function onWindowRemoved(windowId)
         sidebarHandler.onRemoved();
         return;
     }
-    if (windowId == lastDetectionWindowId) {
+    if (windowId == monitorInfo.lastDetectionWindowId) {
         return;
     }
     log(windowId);
@@ -74,7 +74,7 @@ function onWindowRemoved(windowId)
 
 function onWindowFocusChanged(windowId)
 {
-    if (isDetectingMonitors()) {
+    if (monitorInfo.isDetecting()) {
         return;
     }
 

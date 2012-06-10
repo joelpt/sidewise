@@ -9,7 +9,7 @@ function registerTabEvents()
 function onTabCreated(tab)
 {
     log(tab);
-    if (isDetectingMonitors()) {
+    if (monitorInfo.isDetecting()) {
         return;
     }
     if (sidebarHandler.creatingSidebar && tab.url == sidebarHandler.sidebarUrl)
@@ -91,7 +91,7 @@ function onTabCreated(tab)
 
 function onTabRemoved(tabId, removeInfo)
 {
-    if (isDetectingMonitors()) {
+    if (monitorInfo.isDetecting()) {
         return;
     }
     if (tabId == sidebarHandler.tabId)
@@ -171,7 +171,7 @@ function onTabUpdated(tabId, changeInfo, tab)
         // we ignore the sidebar tab
         return;
     }
-    if (isDetectingMonitors()) {
+    if (monitorInfo.isDetecting()) {
         return;
     }
     log(tab);
@@ -223,7 +223,7 @@ function onTabUpdated(tabId, changeInfo, tab)
 
 
 function onTabActivated(activeInfo) {
-    if (isDetectingMonitors()) {
+    if (monitorInfo.isDetecting()) {
         return;
     }
     if (sidebarHandler.creatingSidebar) {
