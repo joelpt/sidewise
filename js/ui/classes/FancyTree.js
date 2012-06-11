@@ -18,6 +18,7 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   *              onClick: Function(evt),         // left single click event handler
   *              onDoubleClick: Function(evt),   // left double click event handler
   *              onMiddleClick: Function(evt),   // middle click event handler
+  *              onExpanderClick: function(evt), // called when a row's branch expander arrow is clicked
   *              onIconError: Function(evt),     // row icon onerror event handler
   *              onFormatTooltip: Function(evt), // called to obtain the body for a row tip for display
   *              onResizeTooltip: Function(evt), // called if a row tip is forcibly resized by FancyTree
@@ -615,33 +616,33 @@ FancyTree.prototype = {
         }
     },
 
-    expandElem: function(id) {
-        var elem = this.getElem(id);
-        if (elem.hasClass('collapsed')) {
-            var children = this.getChildrenContainer(elem);
-            children.slideToggle(100, function() { elem.removeClass('collapsed'); });
-        }
-    },
-
-    collapseElem: function(id) {
-        var elem = this.getElem(id);
-        if (!elem.hasClass('collapsed')) {
-            var children = this.getChildrenContainer(elem);
-            children.slideToggle(100, function() { elem.addClass('collapsed'); });
-        }
-    },
-
     /**
+      * Toggles expanded/collapsed state of an element.
+      * Calls the row's rowtype's onExpanderClick function, if defined.
       * @returns true if element is now expanded, false if now collapsed
       */
     toggleExpandElem: function(id) {
         var elem = this.getElem(id);
+        var children = this.getChildrenContainer(elem);
+        var onExpanderClick = this.rowTypes[elem.attr('rowtype')].onExpanderClick;
+        var expanded;
+
         if (elem.hasClass('collapsed')) {
-            this.expandElem(id);
-            return true;
+            // expand
+            children.slideToggle(100, function() { elem.removeClass('collapsed'); });
+            expanded = true;
         }
-        this.collapseElem(id);
-        return false;
+        else {
+            // collapse
+            children.slideToggle(100, function() { elem.addClass('collapsed'); });
+            expanded = false;
+        }
+
+        if (onExpanderClick) {
+            var evt = { data: { treeObj: this, row: elem, expanded: expanded } };
+            onExpanderClick(evt);
+        }
+        return expanded;
     },
 
     getElem: function(idOrElem) {
