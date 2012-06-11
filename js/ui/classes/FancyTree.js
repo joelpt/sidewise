@@ -73,10 +73,12 @@ var FancyTree = function(appendToElem, options) {
             results: 100,
             autosave: autosaveId
         }));
-        filterElem.append(
-            $('<div/>', { class: 'ftFilterStatus' })
-                .text(options.filterActiveText || 'Matches shown, click x or hit Esc to clear')
-        );
+
+        // filter status element
+        var filterStatusElem = $('<div/>', { class: 'ftFilterStatus' })
+            .text(options.filterActiveText || 'Matches shown, click here or hit Esc to clear')
+            .hide();
+        filterElem.append(filterStatusElem);
 
         // put filter box before tree element
         rootNode.before(filterElem);
@@ -118,6 +120,7 @@ var FancyTree = function(appendToElem, options) {
         $(document).on('click', this.filterElem, data, this.onFilterBoxModified);
         $(document).on('keyup', this.filterElem, data, this.onFilterBoxModified);
         $(document).keydown(data, this.onDocumentKeyDown);
+        $(document).on('click', '.ftFilterStatus', data, this.onFilterStatusClick);
     }
 }
 
@@ -131,16 +134,19 @@ FancyTree.prototype = {
         }
         if (evt.keyCode == 27) { // Esc
             // clear filter box
-            evt.data.treeObj.filterElem.children('.ftFilterInput')
-                .val('')
-                .trigger('keyup');
+            evt.data.treeObj.filterElem.children('.ftFilterInput').val('').trigger('keyup');
             return false;
         }
         return true;
     },
 
-    onFilterBoxModified: function(evt) {
+    onFilterStatusClick: function(evt) {
+        evt.data.treeObj.filterElem.children('.ftFilterInput').val('').trigger('keyup');
+        return false;
 
+    },
+
+    onFilterBoxModified: function(evt) {
         if (evt.keyCode == 27) // Esc key pressed
         {
             // Clear any existing filter
