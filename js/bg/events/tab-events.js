@@ -215,7 +215,7 @@ function onTabUpdated(tabId, changeInfo, tab)
             // tab under a Window insted of allowing it to be a child of another page
             if (page.referrer == null || page.referrer == '') {
                 log('record referrer via openerTabId\'s page.url');
-                tree.updateElem(page, { referrer: tree.getPage(tab.openerTabId).url });
+                tree.updateNode(page, { referrer: tree.getPage(tab.openerTabId).url });
             }
         }
     }

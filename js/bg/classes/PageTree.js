@@ -92,11 +92,11 @@ PageTree.extend(DataTree, {
 
         if (tabIdOrElem instanceof DataTreeNode) {
             var id = tabIdOrElem.id;
-            var r = this.updateElem(tabIdOrElem, details);
+            var r = this.updateNode(tabIdOrElem, details);
         }
         else {
             var id = 'p' + tabIdOrElem;
-            var r = this.updateElem(id, details);
+            var r = this.updateNode(id, details);
         }
 
         if (r && !blockCallback) {

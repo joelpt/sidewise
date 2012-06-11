@@ -162,11 +162,11 @@ DataTree.prototype = {
     },
 
     // Update the first element that matches matcher
-    updateElem: function(matcher, details)
+    updateNode: function(matcher, details)
     {
         var elem = this.getNode(matcher);
         if (elem === undefined) {
-            throw new Error('updateElem could not find a matching element to update');
+            throw new Error('updateNode could not find a matching element to update');
         }
         if (details.id && details.id != elem.id) {
             delete this.idIndex[elem.id];
