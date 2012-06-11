@@ -472,6 +472,11 @@ FancyTree.prototype = {
         };
 
         var doubleClickHandler = function(evt) {
+            if (evt.which != 1) {
+                // not the left mouse button
+                return;
+            }
+
             var $this = $(this);
             var treeObj = evt.data.treeObj;
             var row = treeObj.getParentRowNode($this);
