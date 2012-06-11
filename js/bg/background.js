@@ -49,6 +49,7 @@ function postLoad() {
     registerWebNavigationEvents();
     registerBrowserActionEvents();
     registerSnapInEvents();
+    registerOmniboxEvents();
 
     monitorInfo = new MonitorInfo();
 

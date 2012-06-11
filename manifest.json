@@ -3,7 +3,8 @@
 	"version": "2012.6.8.0",
 	"description": "__MSG_extDescription__",
 	"icons": {
-		"48": "images/panty-pull-48.png",
+        "16": "images/sidewise_icon_16.png",
+        "48": "images/panty-pull-48.png",
 		"128": "images/panty-pull-128.png"
 	},
 	"background_page": "background.html",
@@ -19,6 +20,7 @@
 		}
 	],
 	"default_locale": "en",
+    "omnibox": { "keyword": "sw" },
 	"options_page": "options.html",
 	"permissions": ["tabs", "webNavigation", "*://*/*", "chrome://favicon/", "history", "bookmarks"]
 }
