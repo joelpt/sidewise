@@ -59,6 +59,8 @@ function initTree(attachToSelector, pageTree) {
         filterActiveText: getMessage('prompt_filterActiveText')
     });
 
+    $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));
+
     populateFancyTreeFromPageTree(tree, pageTree);
 
     return tree;
