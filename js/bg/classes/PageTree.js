@@ -116,7 +116,7 @@ PageTree.extend(DataTree, {
     },
 
     // awaken (unhibernate) a page
-    awakenPage: function(tabId)
+    awakenPage: function(tabId, activateAfter)
     {
         log(tabId);
         var found = this.getPageEx(tabId);
@@ -126,7 +126,7 @@ PageTree.extend(DataTree, {
         if (topParent instanceof WindowNode) {
             var windowId = parseInt(topParent.id.slice(1));
             log('awakening', found.node.url, 'windowId', windowId);
-            chrome.tabs.create({ url: found.node.url, windowId: windowId, active: false });
+            chrome.tabs.create({ url: found.node.url, windowId: windowId, active: activateAfter || false });
             return;
         }
         log('awakening', found.node.url, 'no found windowId');
