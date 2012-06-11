@@ -6,8 +6,6 @@ $(document).ready(onReady);
 function onReady() {
     setI18NText();
 
-    $('#heading').attr('title', getMessage('notepad_hint'))
-
     $('#notepad')
         .keyup(onNotepadKeyUp)
         .keydown(onNotepadKeyDown)

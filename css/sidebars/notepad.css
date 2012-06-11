@@ -16,6 +16,12 @@ body {
     padding-bottom: 6px;
 }
 
+#hint {
+    font-size: 11px;
+    margin-top: 0.5em;
+    color: #999;
+}
+
 #notepad {
     width: 100%;
     height: 100%;
