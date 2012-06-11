@@ -3,9 +3,9 @@
 //////////////////////////////////////////
 
 var sidebars = [
-    { id: 'pages', url: 'sidebars/pages.html', label: 'Pages', icon: 'images/nav/pages.png' },
-    { id: 'notepad', url: 'sidebars/notepad.html', label: 'Notepad', icon: 'images/nav/notepad.png' },
-    { id: 'reddit', url: 'sidebars/external-site.html#http://i.reddit.com', label: 'Reddit', icon: 'images/nav/reddit.png' }//,
+    { id: 'pages', url: 'sidebars/pages.html', label: getMessage('sidebarLabel_Pages'), icon: 'images/nav/pages.png' },
+    { id: 'notepad', url: 'sidebars/notepad.html', label: getMessage('sidebarLabel_Notepad'), icon: 'images/nav/notepad.png' },
+    { id: 'reddit', url: 'sidebars/external-site.html#http://i.reddit.com', label: getMessage('sidebarLabel_Reddit'), icon: 'images/nav/reddit.png' }//,
     // { id: 'tribunal', url: 'sidebars/external-site.html#https://tribunal.herokuapp.com/', label: 'Tribunal', icon: 'images/nav/tribunal.png' },
     // { id: 'twitter', url: 'sidebars/external-site.html#http://mobile.twitter.com', label: 'Twitter', icon: 'http://twitter.com/favicon.ico' },
 ];

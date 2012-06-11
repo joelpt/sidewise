@@ -1,11 +1,15 @@
 {
-    "extName": { "message": "Sidewise Tree Style Tabs BETA" },
-    "extDescription": { "message": "A persistent sidebar for Chrome, with tree-style tabs, branching tab histories, bookmarks bar, and more." },
+    // Extension details
+    "extName": { "message": "Sidewise Tree Style Tabs" },
+    "extDescription": { "message": "A persistent sidebar for Chrome with tree style tabs and much more." },
 
+
+    // Sidebar container
     "sidebarTitle": { "message": "Sidewise" },
-
     "sidebars_optionsButtonTooltip": { "message": "Options" },
 
+
+    // General text snippets
     "text_page": { "message": "page" },
     "text_pages": { "message": "pages" },
     "text_Extensions": { "message": "Extensions" },
@@ -13,9 +17,15 @@
     "text_monitor": { "message": "monitor" },
     "text_monitors": { "message": "monitors" },
     "text_Window": { "message": "Window" },
+    "text_hibernated": { "message": "hibernated" },
 
+    // Omnibox
+    "omniboxDefaultSuggestion": { "message": "Enter text to search page titles and labels" },
+    "omniboxSuggestionPrefix": { "message": "Page:" },
+
+    // Prompts
     "prompt_filterPlaceholderText": { "message": "Type to search titles and URLs"},
-    "prompt_filterActiveText": { "message": "Showing matches, click x or hit Esc to clear"},
+    "prompt_filterActiveText": { "message": "Showing matches, click here or press Esc to clear search"},
     "prompt_detectMonitors": { "message": "Sidewise will detect your monitor(s) now." },
     "prompt_detectMonitors_complete": { "message": "Monitor detection complete." },
     "prompt_detectMonitors_mac": { "message": "Sidewise will detect your monitor details now.\n\nUnfortunately, Sidewise currently cannot detect multiple monitors properly on Mac OSX. Sidewise will assume you only have a single monitor." },
@@ -28,12 +38,49 @@
      },
     "prompt_confirmResetOptions": { "message": "Are you sure you want to reset all options to the defaults?" },
 
-    "pages_hibernatedHint": { "message": "Hibernated page" },
 
+    // Sidebar button labels
+    "sidebarLabel_Pages": { "message": "Pages" },
+    "sidebarLabel_Notepad": { "message": "Notepad" },
+    "sidebarLabel_Bookmarks": { "message": "Bookmarks" },
+    "sidebarLabel_GlobalHistory": { "message": "Browser history" },
+    "sidebarLabel_TabHistory": { "message": "Tab history" },
+    "sidebarLabel_ClosedPages": { "message": "Closed pages" },
+    "sidebarLabel_Reddit": { "message": "Reddit" },
+
+
+    // Pages sidebar
+    "pages_hibernatedHint": { "message": "Hibernated page" },
+    "pages_omniboxTip": { "message": "Tip: You can type \"sw sometext\" into Chrome's address bar to find pages in Sidewise." },
+
+
+    // Notepad sidebar
     "notepad_heading": { "message": "Notepad" },
     "notepad_hint": { "message": "Enter text below. It will be automatically saved." },
     "notepad_lastSavedAt": { "message": "Last saved at:" },
 
+
+    // Notepad sidebar
+    "notepad_heading": { "message": "Notepad" },
+
+
+    // Bookmarks sidebar
+    "bookmarks_heading": { "message": "Bookmarks" },
+
+
+    // Global History sidebar
+    "globalHistory_heading": { "message": "Browser History" },
+
+
+    // Tab History sidebar
+    "tabHistory_heading": { "message": "Tab History" },
+
+
+    // Closed Pages sidebar
+    "closedPages_heading": { "message": "Closed Pages" },
+
+
+    // Options page
     "optionsPageTitle": { "message": "Sidewise Options" },
     "optionsPageHeading": { "message": "Sidewise Options" },
 

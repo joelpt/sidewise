@@ -1,7 +1,7 @@
 function registerOmniboxEvents() {
     chrome.omnibox.onInputChanged.addListener(onOmniboxInputChanged);
     chrome.omnibox.onInputEntered.addListener(onOmniboxInputEntered);
-    chrome.omnibox.setDefaultSuggestion({ description: 'Search pages in Sidewise' });
+    chrome.omnibox.setDefaultSuggestion({ description: getMessage('omniboxDefaultSuggestion') });
 }
 
 function onOmniboxInputChanged(text, suggest) {
@@ -36,7 +36,7 @@ function onOmniboxInputChanged(text, suggest) {
 
     var suggestions = matches.map(function(e) {
         if (e.label) {
-            var label = '<url>' + escapeOmniboxText(e.label) + ':</url> ';
+            var label = escapeOmniboxText(e.label) + ': ';
         }
         else {
             var label = '';
@@ -48,8 +48,9 @@ function onOmniboxInputChanged(text, suggest) {
         title = title.replace(re, '<match>$1</match>');
 
         var description =
-            label
-            + (e.hibernated ? ' <dim>(hibernated)</dim> ' : '')
+            '<url>' + getMessage('omniboxSuggestionPrefix') + '</url> '
+            + label
+            + (e.hibernated ? '<dim>(' + getMessage('text_hibernated') + ')</dim> ' : '')
             + title
             + ' <dim> - ' + url + '</dim>';
 
