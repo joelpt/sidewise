@@ -117,6 +117,11 @@ function isExtensionUrl(url)
     return url.indexOf('chrome-extension://') == 0;
 }
 
+function getNumericId(id)
+{
+    return parseInt(id.slice(1));
+}
+
 function executeContentScript(url, tabId, scriptBody)
 {
     if (isScriptableUrl(url))
