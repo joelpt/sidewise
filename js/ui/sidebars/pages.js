@@ -219,24 +219,32 @@ function handlePageRowAction(action, evt) {
 }
 
 function onCloseButtonPageRow(evt) {
-    if (evt.data.row.attr('hibernated') == 'true') {
+    var row = evt.data.row;
+
+    if (row.attr('hibernated') == 'true') {
         // page is hibernated so just remove it; don't actually try to close its
         // (nonexistent) tab
-        bg.tree.removeNode(evt.data.row.attr('id'));
+        bg.tree.removeNode(row.attr('id'));
         return;
     }
 
-    evt.data.row.addClass('closing'); // "about to close" styling
-    chrome.tabs.remove(getRowNumericId(evt.data.row));
+    if (row.hasClass('closing')) {
+        // already trying to close this page
+        return;
+    }
+    row.addClass('closing'); // "about to close" styling
+    chrome.tabs.remove(getRowNumericId(row));
 }
 
 function onHibernateButtonPageRow(evt) {
-    if (evt.data.row.attr('hibernated') == 'true') {
-        bg.tree.awakenPage(getRowNumericId(evt.data.row), true);
+    var row = evt.data.row;
+
+    if (row.attr('hibernated') == 'true') {
+        bg.tree.awakenPage(getRowNumericId(row), true);
         return;
     }
 
-    bg.tree.hibernatePage(getRowNumericId(evt.data.row));
+    bg.tree.hibernatePage(getRowNumericId(row));
 }
 
 function onPageRowFormatTooltip(evt) {
