@@ -75,16 +75,17 @@ body {
     box-shadow: -1px -1px 2px 1px rgba(0, 0, 0, 0.15) inset, 1px 1px 2px 1px rgba(255, 255, 255, 0.15) inset;
 }
 
-#sidebarButtons > li > div:hover, #sidebarButtons > li.selected > div, #optionsButton:hover {
+#sidebarButtons > li > div:hover, #optionsButton:hover {
     background: -webkit-linear-gradient(top, rgba(207,212,219,1) 0%,rgba(174,180,186,1) 73%);
 }
 
 #sidebarButtons > li.selected > div {
+    background: -webkit-linear-gradient(top, rgba(217,222,229,1) 0%,rgba(184,190,196,1) 73%);
     border: 1px solid black;
 }
 
 #sidebarButtons > li.selected > div:hover {
-    background: -webkit-linear-gradient(top, rgba(217,222,229,1) 0%,rgba(184,190,196,1) 73%);
+    background: -webkit-linear-gradient(top, rgba(227,232,239,1) 0%,rgba(194,200,206,1) 73%);
 }
 
 #sidebarButtons > li.mousedown > div, #optionsButton.mousedown {
