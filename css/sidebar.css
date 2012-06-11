@@ -41,9 +41,10 @@ body {
     margin-bottom: 1em;
 }
 
-#sidebarButtons > li > div > img {
+#sidebarButtons > li > div > img, #optionsButton > img {
     width: 16px;
     height: 16px;
+    margin: 3px 5px;
 }
 
 /*#sidebarButtons > li.selected > div {
@@ -63,24 +64,31 @@ body {
     display: block;
     background: -webkit-linear-gradient(top, rgba(196,203,212,1) 0%,rgba(155,164,171,1) 73%);
     border-radius: 5px;
-    border: 1px solid #555;
-    padding-top: 0.25em;
-    padding-left: 0.375em;
-    padding-right: 0.375em;
-    height: 1.375em;
+    border: 1px solid #666;
+    height: 22px;
+    width: 26px;
     text-decoration: none;
     color: black;
     font-family: sans-serif;
     font-size: 14px;
     margin: 1px;
+    box-shadow: -1px -1px 2px 1px rgba(0, 0, 0, 0.15) inset, 1px 1px 2px 1px rgba(255, 255, 255, 0.15) inset;
 }
 
 #sidebarButtons > li > div:hover, #sidebarButtons > li.selected > div, #optionsButton:hover {
     background: -webkit-linear-gradient(top, rgba(207,212,219,1) 0%,rgba(174,180,186,1) 73%);
 }
 
+#sidebarButtons > li.selected > div {
+    border: 1px solid black;
+}
+
 #sidebarButtons > li.selected > div:hover {
     background: -webkit-linear-gradient(top, rgba(217,222,229,1) 0%,rgba(184,190,196,1) 73%);
+}
+
+#sidebarButtons > li.mousedown > div, #optionsButton.mousedown {
+    box-shadow: 1px 1px 2px 1px rgba(0, 0, 0, 0.15) inset, -1px -1px 2px 1px rgba(255, 255, 255, 0.15) inset;
 }
 
 #optionsButtonIcon {

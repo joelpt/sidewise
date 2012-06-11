@@ -20,15 +20,15 @@ function onReady() {
     bg = chrome.extension.getBackgroundPage();
     manager = new SidebarNavManager($('ul#sidebarButtons'), $('tr#sidebars'),
         $('table#main'), $('body'), 'td');
-    manager.addSidebarPanels(sidebars);
+    manager.addSidebarPanes(sidebars);
 
     // Set initial sidebar position
-    manager.showSidebarPanel(initialSidebar);
+    manager.showSidebarPane(initialSidebar);
 
     // Defeat Chrome's possible attempt to set its own scroll position when sidebar is refreshed
     $(window).load(function() {
         setTimeout(function() {
-            manager.scrollToCurrentSidebarPanel(true);
+            manager.scrollToCurrentSidebarPane(true);
         }, 0);
     });
 
@@ -39,9 +39,16 @@ function onReady() {
     $('#optionsButton')
         .attr('title', getMessage('sidebars_optionsButtonTooltip'))
         .tooltip({ position: 'bottom center', predelay: 400, offset: [15, -15]})
-        .click(onClickOptionsButton);
+        .click(onClickOptionsButton)
+        .mousedown(onMouseDownOptionsButton)
+        .mouseup(onMouseUpOptionsButton)
+        .mouseover(onMouseOverOptionsButton)
+        .mouseout(onMouseUpOptionsButton);
 
     setI18NText();
+
+    bg.sidebarHandler.registerSidebarPane('sidebarHost', window);
+
 }
 
 
@@ -71,7 +78,7 @@ function onDocumentScroll() {
     }
     // prevent user scrolling of sidebar panes through e.g. drag-selecting some text
     // and moving the mouse off the edge of the sidebar window
-    manager.scrollToCurrentSidebarPanel(true);
+    manager.scrollToCurrentSidebarPane(true);
 }
 
 function onWindowResize() {
@@ -79,7 +86,7 @@ function onWindowResize() {
     bg.sidebarHandler.onResize();
 
     // prevent width-resizing of sidebar from showing part of another sidebar pane
-    manager.scrollToCurrentSidebarPanel(true);
+    manager.scrollToCurrentSidebarPane(true);
 }
 
 function onClickOptionsButton() {
@@ -93,3 +100,21 @@ function onClickOptionsButton() {
     });
 }
 
+function onMouseDownOptionsButton(evt) {
+    var $target = $(evt.target.id == 'optionsButtonIcon' ? evt.target.parentElement : evt.target);
+    $target.addClass('mousedown');
+    evt.stopPropagation();
+}
+
+function onMouseUpOptionsButton(evt) {
+    var $target = $(evt.target.id == 'optionsButtonIcon' ? evt.target.parentElement : evt.target);
+    $target.removeClass('mousedown');
+    evt.stopPropagation();
+}
+
+function onMouseOverOptionsButton(evt) {
+    if (evt.which == 1) {
+        onMouseDownOptionsButton(evt);
+    }
+    evt.stopPropagation();
+}

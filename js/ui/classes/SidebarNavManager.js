@@ -13,41 +13,54 @@ var SidebarNavManager = function(navButtonsContainer, sidebarsContainer, parentC
     this.sidebarsContainer.append(elem);
     this._setSidebarParentContainerWidth();
 
+    var data = { manager: this };
+
+    $(document)
+        .on('mousedown', '.sidebarButton', data, this._onMouseDownSidebarButton)
+        .on('mouseup', '.sidebarButton', data, this._onMouseUpSidebarButton)
+        .on('mouseover', '.sidebarButton', data, this._onMouseOverSidebarButton)
+        .on('mouseout', '.sidebarButton', data, this._onMouseOutSidebarButton);
 };
 
 SidebarNavManager.prototype = {
 
-    addSidebarPanel: function(id, label, icon, url) {
+    addSidebarPane: function(id, label, icon, url) {
+        for (var i in this.sidebars) {
+            if (this.sidebars[i].id == id) {
+                return;
+            }
+        }
+
         this.sidebars.push({ id: id, label: label, icon: icon, url: url });
         this._createSidebarButton(id, label, icon);
         this._createSidebarContainer(id);
     },
 
-    addSidebarPanels: function(sidebars) {
+    addSidebarPanes: function(sidebars) {
         for (var i in sidebars) {
             var details = sidebars[i];
-            this.addSidebarPanel(details.id, details.label, details.icon, details.url);
+            this.addSidebarPane(details.id, details.label, details.icon, details.url);
         }
     },
 
-    removeSidebarPanel: function(id) {
+    removeSidebarPane: function(id) {
         var currentIndex = this.sidebars.indexOf(this.getSidebarDetails(id));
         this.sidebars.splice(currentIndex, 1);
 
-        $('#sidebarButton__' + id).remove();
+        $('.sidebarButton[buttonid="' + id + '"]').remove();
         $('#sidebarContainer__' + id).remove();
         this._setSidebarParentContainerWidth();
 
         // switch to first sidebar if this one was focused
         if (this.currentSidebarId == id) {
-            this.showSidebarPanel(this.sidebars[0].id);
+            this.showSidebarPane(this.sidebars[0].id);
         }
     },
 
-    showSidebarPanel: function(id) {
+    showSidebarPane: function(id) {
         // set selected state of correct nav button
         $('#sidebarButtons').children().removeClass('selected');
-        $('#sidebarButton__' + id).addClass('selected');
+        $('.sidebarButton[buttonid="' + id + '"]').addClass('selected');
 
         // load container if needed, then show (scroll to) it
         var selector = '#sidebarContainer__' + id;
@@ -64,14 +77,14 @@ SidebarNavManager.prototype = {
         var oldSidebarId = this.currentSidebarId;
         var mgr = this;
         this.currentSidebarId = id;
-        this.scrollToCurrentSidebarPanel(false, function() {
+        this.scrollToCurrentSidebarPane(false, function() {
             if (oldSidebarId != mgr.currentSidebarId) {
                 $('#sidebarContainer__' + oldSidebarId).css('visibility', 'hidden');
             }
         });
     },
 
-    scrollToCurrentSidebarPanel: function(instant, onAfter) {
+    scrollToCurrentSidebarPane: function(instant, onAfter) {
         this.scrolling = true;
         var mgr = this;
         var onAfterWrapped = function() {
@@ -100,12 +113,15 @@ SidebarNavManager.prototype = {
     },
 
     _createSidebarButton: function(id, label, icon) {
-        var elem = $('<li class="sidebarButton" title="' + label + '" id="sidebarButton__' + id + '">'
-            + '<div><img src="' + icon + '"/></div>'
-            + '</li>');
+        var elem = $('<li/>', { class: 'sidebarButton', title: label, buttonid: id })
+            .append(
+                $('<div/>').append(
+                    $('<img/>', { src: icon, draggable: false })
+                )
+            );
+
         elem.tooltip({ position: 'bottom center', predelay: 400,
             offset: [15, this.sidebars.length == 1 ? 10 : 0] });
-        elem.mousedown({ manager: this, id: id }, this._onClickSidebarNavButton);
         this.navButtonsContainer.append(elem);
     },
 
@@ -119,9 +135,48 @@ SidebarNavManager.prototype = {
         this.parentContainer.width(((this.sidebars.length + 1) * 100) + '%');
     },
 
-    _onClickSidebarNavButton: function(evt) {
-        $(this).data('tooltip').hide();
-        evt.data.manager.showSidebarPanel.call(evt.data.manager, evt.data.id);
+    _onMouseDownSidebarButton: function(evt) {
+        var $target = $(evt.target);
+        if (!$target.hasClass('sidebarButton')) {
+            $target = $target.closest('.sidebarButton');
+        }
+        $target.addClass('mousedown');
+        $target.data('tooltip').hide();
+        evt.stopPropagation();
+    },
+
+    _onMouseUpSidebarButton: function(evt) {
+        var $target = $(evt.target);
+        if (!$target.hasClass('sidebarButton')) {
+            $target = $target.closest('.sidebarButton');
+        }
+        $target.removeClass('mousedown');
+        $target.data('tooltip').hide();
+        evt.data.manager.showSidebarPane.call(evt.data.manager, $target.attr('buttonid'));
+        evt.stopPropagation();
+    },
+
+    _onMouseOverSidebarButton: function(evt) {
+        if (evt.which != 1) {
+            return;
+        }
+
+        var $target = $(evt.target);
+        if (!$target.hasClass('sidebarButton')) {
+            $target = $target.closest('.sidebarButton');
+        }
+        $target.addClass('mousedown');
+        evt.stopPropagation();
+    },
+
+    _onMouseOutSidebarButton: function(evt) {
+        var $target = $(evt.target);
+        if (!$target.hasClass('sidebarButton')) {
+            $target = $target.closest('.sidebarButton');
+        }
+        $target.removeClass('mousedown');
+        $target.data('tooltip').hide();
+        evt.stopPropagation();
     }
 
 };
