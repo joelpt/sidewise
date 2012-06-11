@@ -166,7 +166,7 @@ function getRowNumericId(pageRow) {
 
 function onHibernateButtonPageRow(evt) {
     if (evt.data.row.attr('hibernated') == 'true') {
-        bg.tree.awakenPage(getRowNumericId(evt.data.row));
+        bg.tree.awakenPage(getRowNumericId(evt.data.row), true);
         return;
     }
 
