@@ -185,10 +185,18 @@ DataTree.prototype = {
     // This is a shallow move; the moved element's children are spliced in-place into its old location
     moveNode: function(movingMatcher, parentMatcher)
     {
-        var moving = this.removeNode(movingMatcher);
-        moving.children = []; // remove all of its children
-        this.addNode(moving, parentMatcher);
-        return moving;
+        var moving = this.getNodeEx(movingMatcher);
+        var parent = this.getNode(parentMatcher);
+
+        if (moving.parent == parent) {
+            // already under this parent
+            return moving.node;
+        }
+
+        this.removeNode(moving.node);
+        moving.node.children = []; // remove all of its children
+        this.addNode(moving.node, parent);
+        return moving.node;
     },
 
     // Move the first element matching movingMatcherFn, and all of its children, to reside under the first element
