@@ -50,11 +50,15 @@ body {
     margin-top: 0em;
 }
 
-
 .ftRowNode[rowtype=window] > .ftItemRow > .ftItemRowContent:hover {
     background: inherit;
     border: none;
     border-radius: 0;
+}
+
+.ftRowNode[rowtype=window] > .ftItemRow > .ftExpander {
+    position: relative;
+    top: -1px;
 }
 
 

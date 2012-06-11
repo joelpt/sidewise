@@ -161,6 +161,8 @@ div.ftButtons {
 .ftExpander {
     background-image: url('../images/toggle_arrow_expanded.png');
     cursor: pointer;
+    position: relative;
+    top: 1px;
 }
 
 .ftExpander:hover {
