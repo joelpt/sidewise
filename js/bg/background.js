@@ -48,6 +48,7 @@ function postLoad() {
     registerTabEvents();
     registerWebNavigationEvents();
     registerBrowserActionEvents();
+    registerSnapInEvents();
 
     monitorInfo = new MonitorInfo();
 
