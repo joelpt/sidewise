@@ -118,19 +118,22 @@ FancyTree.prototype = {
         // configure tree's event handlers
         var treeObj = this;
         var data = { treeObj: treeObj };
-        $(document).on('mouseenter', '.ftItemRowContent', data, this.onItemRowContentMouseEnter);
-        $(document).on('mouseleave', '.ftItemRowContent', data, this.onItemRowContentMouseLeave);
-        $(document).on('mouseover', '#ftTooltip', data, this.handleHideTooltipEvent);
-        $(document).on('click', '.ftExpander', data, this.onExpanderClick);
-        $(document).on('mouseenter', '.ftButtons', data, this.onMouseEnterButtons);
-        $(document).on('mouseleave', '.ftButtons', data, this.onMouseLeaveButtons);
+
+        $(document)
+            .on('mouseenter', '.ftItemRowContent', data, this.onItemRowContentMouseEnter)
+            .on('mouseleave', '.ftItemRowContent', data, this.onItemRowContentMouseLeave)
+            .on('mouseover', '#ftTooltip', data, this.handleHideTooltipEvent)
+            .on('click', '.ftExpander', data, this.onExpanderClick)
+            .on('mouseenter', '.ftButtons', data, this.onMouseEnterButtons)
+            .on('mouseleave', '.ftButtons', data, this.onMouseLeaveButtons);
 
         if (options.showFilterBox != false) {
             // add event handlers for filter box
-            $(document).on('click', this.filterElem, data, this.onFilterBoxModified);
-            $(document).on('keyup', this.filterElem, data, this.onFilterBoxModified);
-            $(document).keydown(data, this.onDocumentKeyDown);
-            $(document).on('click', '.ftFilterStatus', data, this.onFilterStatusClick);
+            $(document)
+                .on('click', this.filterElem, data, this.onFilterBoxModified)
+                .on('keyup', this.filterElem, data, this.onFilterBoxModified)
+                .on('click', '.ftFilterStatus', data, this.onFilterStatusClick)
+                .on('keydown', 'document', data, this.onDocumentKeyDown);
         }
     },
 
