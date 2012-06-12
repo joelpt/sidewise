@@ -45,86 +45,285 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   *
   */
 var FancyTree = function(appendToElem, options) {
-    // prepare new tree <ul> to appendToElem
-    var rootNode = $('<div class="ftRoot">');
-    var rootUL = $('<ul class="ftChildren">');
-    rootNode.append(rootUL);
-
-    // append new element to appendToElem as child
-    var parentElem = $(appendToElem);
-    parentElem.append(rootNode);
-
-    // prepare type-in filter box to put above tree
-    if (options.showFilterBox != false) {
-        // prepare a unique identifier for the search box's history
-        var idElem = $(appendToElem).get(0);
-        var autosaveId = parentElem.parents().toArray().reverse()
-            .reduce(function(prev, curr) {
-                return prev + '/' + curr.tagName + '.' + curr.className + '#' + curr.id
-            }, ''
-        ) + '/' + idElem.tagName + '.' + idElem.className + '#' + idElem.id;
-
-        // prepare filter box element
-        var filterElem = $('<div/>', { class: 'ftFilterControl' });
-        filterElem.append($('<input/>', {
-            class: 'ftFilterInput',
-            type: 'search',
-            placeholder: options.filterPlaceholderText || 'Type to search',
-            results: 100,
-            autosave: autosaveId
-        }));
-
-        // filter status element
-        var filterStatusElem = $('<div/>', { class: 'ftFilterStatus' })
-            .text(options.filterActiveText || 'Matches shown, click here or hit Esc to clear')
-            .hide();
-        filterElem.append(filterStatusElem);
-
-        // put filter box before tree element
-        rootNode.before(filterElem);
-        this.filterElem = filterElem;
-    }
-
-    // configure tree initial state
-    this.root = rootNode;
-
-    this.permitTooltipHandler = options.permitTooltipHandler;
-    this.focusedRow = null;
-    this.hoveredRow = null;
-    this.hoveringRowButtons = false;
-    this.tooltipTopOffset = options.tooltipTopOffset || 12;
-    this.tooltip = null;
-    this.simpletip = $('<div id="ftSimpleTip"/>').hide();
-    $('body').append(this.simpletip);
-    this.tooltipShowTimer = null;
-
-    // configure row types
-    this.rowTypes = {};
-    var rowTypes = options.rowTypes || {'row': {}};
-    for (var rowType in rowTypes) {
-        this.addRowType(rowType, rowTypes[rowType]);
-    }
-
-    // configure tree's event handlers
-    var treeObj = this;
-    var data = { treeObj: treeObj };
-    $(document).on('mouseenter', '.ftItemRowContent', data, this.onItemRowContentMouseEnter);
-    $(document).on('mouseleave', '.ftItemRowContent', data, this.onItemRowContentMouseLeave);
-    $(document).on('mouseover', '#ftTooltip', data, this.handleHideTooltipEvent);
-    $(document).on('click', '.ftExpander', data, this.onExpanderClick);
-    $(document).on('mouseenter', '.ftButtons', data, this.onMouseEnterButtons);
-    $(document).on('mouseleave', '.ftButtons', data, this.onMouseLeaveButtons);
-
-    if (options.showFilterBox != false) {
-        // add event handlers for filter box
-        $(document).on('click', this.filterElem, data, this.onFilterBoxModified);
-        $(document).on('keyup', this.filterElem, data, this.onFilterBoxModified);
-        $(document).keydown(data, this.onDocumentKeyDown);
-        $(document).on('click', '.ftFilterStatus', data, this.onFilterStatusClick);
-    }
+    this.init(appendToElem, options);
 }
 
 FancyTree.prototype = {
+
+    ///////////////////////////////////////////////////////////
+    // Initialization
+    ///////////////////////////////////////////////////////////
+
+    init: function(appendToElem, options) {
+        // prepare new tree <ul> to appendToElem
+        var rootNode = $('<div class="ftRoot">');
+        var rootUL = $('<ul class="ftChildren">');
+        rootNode.append(rootUL);
+
+        // append new element to appendToElem as child
+        var parentElem = $(appendToElem);
+        parentElem.append(rootNode);
+
+        // prepare type-in filter box to put above tree
+        if (options.showFilterBox != false) {
+            // prepare a unique identifier for the search box's history
+            var idElem = $(appendToElem).get(0);
+            var autosaveId = parentElem.parents().toArray().reverse()
+                .reduce(function(prev, curr) {
+                    return prev + '/' + curr.tagName + '.' + curr.className + '#' + curr.id
+                }, ''
+            ) + '/' + idElem.tagName + '.' + idElem.className + '#' + idElem.id;
+
+            // prepare filter box element
+            var filterElem = $('<div/>', { class: 'ftFilterControl' });
+            filterElem.append($('<input/>', {
+                class: 'ftFilterInput',
+                type: 'search',
+                placeholder: options.filterPlaceholderText || 'Type to search',
+                results: 100,
+                autosave: autosaveId
+            }));
+
+            // filter status element
+            var filterStatusElem = $('<div/>', { class: 'ftFilterStatus' })
+                .text(options.filterActiveText || 'Matches shown, click here or hit Esc to clear')
+                .hide();
+            filterElem.append(filterStatusElem);
+
+            // put filter box before tree element
+            rootNode.before(filterElem);
+            this.filterElem = filterElem;
+        }
+
+        // configure tree initial state
+        this.root = rootNode;
+
+        this.permitTooltipHandler = options.permitTooltipHandler;
+        this.focusedRow = null;
+        this.hoveredRow = null;
+        this.hoveringRowButtons = false;
+        this.tooltipTopOffset = options.tooltipTopOffset || 12;
+        this.tooltip = null;
+        this.simpletip = $('<div id="ftSimpleTip"/>').hide();
+        $('body').append(this.simpletip);
+        this.tooltipShowTimer = null;
+
+        // configure row types
+        this.rowTypes = {};
+        var rowTypes = options.rowTypes || {'row': {}};
+        for (var rowType in rowTypes) {
+            this.addRowType(rowType, rowTypes[rowType]);
+        }
+
+        // configure tree's event handlers
+        var treeObj = this;
+        var data = { treeObj: treeObj };
+        $(document).on('mouseenter', '.ftItemRowContent', data, this.onItemRowContentMouseEnter);
+        $(document).on('mouseleave', '.ftItemRowContent', data, this.onItemRowContentMouseLeave);
+        $(document).on('mouseover', '#ftTooltip', data, this.handleHideTooltipEvent);
+        $(document).on('click', '.ftExpander', data, this.onExpanderClick);
+        $(document).on('mouseenter', '.ftButtons', data, this.onMouseEnterButtons);
+        $(document).on('mouseleave', '.ftButtons', data, this.onMouseLeaveButtons);
+
+        if (options.showFilterBox != false) {
+            // add event handlers for filter box
+            $(document).on('click', this.filterElem, data, this.onFilterBoxModified);
+            $(document).on('keyup', this.filterElem, data, this.onFilterBoxModified);
+            $(document).keydown(data, this.onDocumentKeyDown);
+            $(document).on('click', '.ftFilterStatus', data, this.onFilterStatusClick);
+        }
+    },
+
+    /**
+      * Adds a new rowtype.
+      * @param name     The name of the row type used for referencing it elsewhere.
+      * @param params   The row type's parameters; see FancyTree class header for details
+      */
+    addRowType: function(name, params) {
+        this.rowTypes[name] = params;
+
+        var data = params;
+        data.treeObj = this;
+
+        // configure event handling
+        var selector = '.ftRowNode[rowtype=' + name + '] > .ftItemRow > .ftItemRowContent';
+        $(document)
+            .on('mousedown', selector, data, this._rowMouseDownHandler)
+            .on('mouseup', selector, data, this._rowMouseUpHandler)
+            .on('dblclick', selector, data, this._rowDoubleClickHandler);
+
+        // configure row button event handling
+        for (var i in params.buttons)
+        {
+            var buttonClass = '.ftButton__' + name + '_' + i;
+            var buttonData = { treeObj: this, onClick: params.buttons[i].onClick };
+            $(document).on('click', buttonClass, buttonData, this._rowButtonClickHandler);
+        }
+
+        // construct empty HTML element for this rowtype
+        params.baseElement = this.buildRowTypeElem(name);
+    },
+
+
+    ///////////////////////////////////////////////////////////
+    // Element manipulation
+    ///////////////////////////////////////////////////////////
+
+    getElem: function(idOrElem) {
+        if (idOrElem instanceof jQuery) {
+            return idOrElem;
+        }
+
+        var elem = $('#' + idOrElem);
+        // var elem = this.root.find('#' + idOrElem); // this method is ~5x slower
+
+        if (elem.length == 0) {
+            throw new Error('Could not find element with id ' + idOrElem);
+        }
+
+        return elem;
+    },
+
+    addElem: function(elem, parentId) {
+        if (!parentId) {
+            // When parentId is missing just add elem to the root level children
+            this.root.children('.ftChildren').append(elem);
+            return;
+        }
+        var parent = this.getElem(parentId);
+        parent.children('.ftChildren').append(elem);
+        this.updateRowExpander(parent);
+    },
+
+    removeElem: function(id) {
+        var elem = this.getElem(id);
+        var parent = elem.parent().parent();
+
+        // ensure button tooltips don't popup after the row is removed, after the tips' predelay
+        this.getButtons(elem)
+            .each(function(i, e) { $(e).data('tooltip').onShow(function() { this.hide(); } ); })
+
+        // if the element being removed is the currently hovered element, clear hoveringRowButtons state boolean
+        if (this.hoveredRow === elem) {
+            this.hoveringRowButtons = false;
+            this.hoveredRow = null;
+        }
+
+        elem.replaceWith(elem.children('.ftChildren').children());
+        this.updateRowExpander(parent);
+        this.hideTooltip();
+    },
+
+    moveElem: function(id, newParentId, beforeSiblingId) {
+        var elem = this.getElem(id);
+        var oldParent = elem.parent().parent();
+
+        var newParent;
+        if (!newParentId) {
+            newParent = this.root;
+        }
+        else {
+            newParent = this.getElem(newParentId);
+        }
+
+        if (!beforeSiblingId && oldParent.get(0).id == newParent.get(0).id) {
+            return;
+        }
+
+        this.removeElem(id); // prevents possible DOM_HIERARCHY exceptions
+
+        var children = this.getChildrenContainer(newParent);
+        if (beforeSiblingId) {
+            var sibling = children.children('#' + beforeSiblingId);
+            if (sibling.length == 0) {
+                throw new Error('Could not find sibling with id ' + beforeSiblingId);
+            }
+            sibling.before(elem);
+        }
+        else {
+            children.append(elem);
+        }
+        this.setRowButtonTooltips(elem);
+        this.updateRowExpander(oldParent);
+        this.updateRowExpander(newParent);
+        this.updateRowExpander(elem);
+    },
+
+    updateElem: function(id, icon, label, text, extraAttributes) {
+        var elem = this.getElem(id);
+        var innerRow = this.getInnerRow(elem);
+
+        if (icon != null && icon !== undefined) {
+            innerRow.children('.ftRowIcon').attr('src', icon);
+        }
+
+        if (label != null && label !== undefined) {
+            if (label == '') {
+                innerRow.children('.ftItemText').children('.ftItemLabel').text('');
+            }
+            else {
+                innerRow.children('.ftItemText').children('.ftItemLabel').text(label + (text ? ': ' : ''));
+            }
+        }
+
+        if (text != null && text !== undefined) {
+            innerRow.children('.ftItemText').children('.ftItemTitle').text(text);
+        }
+
+        if (extraAttributes) {
+            elem.attr(extraAttributes);
+        }
+
+    },
+
+    focusElem: function(id) {
+        var elem = this.getElem(id);
+
+        if (this.focusedRow) {
+            this.focusedRow.removeClass('focused');
+        }
+
+        this.focusedRow = elem;
+        elem.addClass('focused');
+
+        if (!isScrolledIntoView(elem)) {
+            $.scrollTo(elem, 150);
+        }
+    },
+
+    /**
+      * Toggles expanded/collapsed state of an element.
+      * Calls the row's rowtype's onExpanderClick function, if defined.
+      * @returns true if element is now expanded, false if now collapsed
+      */
+    toggleExpandElem: function(id) {
+        var elem = this.getElem(id);
+        var children = this.getChildrenContainer(elem);
+        var onExpanderClick = this.rowTypes[elem.attr('rowtype')].onExpanderClick;
+        var expanded;
+
+        if (elem.hasClass('collapsed')) {
+            // expand
+            children.slideToggle(100, function() { elem.removeClass('collapsed'); });
+            expanded = true;
+        }
+        else {
+            // collapse
+            children.slideToggle(100, function() { elem.addClass('collapsed'); });
+            expanded = false;
+        }
+
+        if (onExpanderClick) {
+            var evt = { data: { treeObj: this, row: elem, expanded: expanded } };
+            onExpanderClick(evt);
+        }
+        return expanded;
+    },
+
+
+    ///////////////////////////////////////////////////////////
+    // Event handlers
+    ///////////////////////////////////////////////////////////
 
     onDocumentKeyDown: function(evt) {
         if (evt.keyCode == 70 && evt.ctrlKey) { // Ctrl+F
@@ -285,6 +484,13 @@ FancyTree.prototype = {
         $(this).hide();
     },
 
+    onExpanderClick: function(evt) {
+        var expander = $(this);
+        var parentLI = expander.closest('.ftRowNode');
+        evt.data.treeObj.toggleExpandElem(parentLI);
+        evt.stopPropagation();
+    },
+
     onMouseEnterButtons: function(evt) {
         var treeObj = evt.data.treeObj;
         treeObj.hoveringRowButtons = true;
@@ -316,6 +522,11 @@ FancyTree.prototype = {
         treeObj.handleHideTooltipEvent(evt);
     },
 
+
+    ///////////////////////////////////////////////////////////
+    // Tooltip control
+    ///////////////////////////////////////////////////////////
+
     startTooltipTimer: function(row, evt, afterDelay) {
         // block tooltip from showing if permitTooltipHandler says so
         if (this.permitTooltipHandler && !this.permitTooltipHandler()) {
@@ -338,6 +549,8 @@ FancyTree.prototype = {
     },
 
     hideTooltip: function() {
+        $('#ftSimpleTip').hide();
+
         if (this.tooltip) {
             this.tooltip.remove();
             this.tooltip = null;
@@ -418,270 +631,81 @@ FancyTree.prototype = {
         }
     },
 
-    onExpanderClick: function(evt) {
-        var expander = $(this);
-        var parentLI = expander.closest('.ftRowNode');
-        evt.data.treeObj.toggleExpandElem(parentLI);
+
+    ///////////////////////////////////////////////////////////
+    // Row click event handlers
+    ///////////////////////////////////////////////////////////
+
+    _rowMouseDownHandler: function(evt) {
+        if (evt.data.onMiddleClick && evt.which == 2) {
+            // middle click
+            return false; // eat middle click event to avoid the autoscroll cursor
+        }
+    },
+
+    _rowMouseUpHandler: function(evt) {
+        var $this = $(this);
+        var treeObj = evt.data.treeObj;
+        var row = treeObj.getParentRowNode($this);
+        if (treeObj.hoveringRowButtons) {
+            // we manage this state and manually check it here because jquery
+            // doesn't really give us a way to only trigger a child-element's event handlers
+            // without also triggering all container-element's handlers first
+            return;
+        }
+
+        treeObj.hideTooltip();
+
+        evt.data.row = row;
+
+        if (evt.which == 1 && evt.data.onClick) {
+            // handle left click
+            evt.data.onClick(evt);
+            return;
+        }
+
+        if (evt.which == 2 && evt.data.onMiddleClick) {
+            // handle middle click
+            evt.data.onMiddleClick(evt);
+            return;
+        }
+    },
+
+    _rowDoubleClickHandler: function(evt) {
+        if (evt.which != 1) {
+            // not the left mouse button
+            return;
+        }
+
+        var $this = $(this);
+        var treeObj = evt.data.treeObj;
+        var row = treeObj.getParentRowNode($this);
+
+        if (treeObj.hoveringRowButtons) {
+            // we manage this state and manually check it here because jquery
+            // doesn't really give us a way to only trigger a child-element's event handlers
+            // without also triggering all container-element's handlers first
+            return;
+        }
+
+        treeObj.hideTooltip();
+
+        evt.data.row = row;
+        evt.data.onDoubleClick(evt);
+    },
+
+    _rowButtonClickHandler: function(evt) {
+        $('#ftSimpleTip').hide();
+        evt.data.row = $(this).closest('li');
+        evt.data.onClick(evt);
         evt.stopPropagation();
+        return false;
     },
 
-    /**
-      * @param name     The name of the row type used for referencing it elsewhere.
-      * @param params   The row type's parameters; see FancyTree class header for details
-      */
-    addRowType: function(name, params) {
-        this.rowTypes[name] = params;
 
-        var data = params;
-        data.treeObj = this;
-
-        var mouseDownHandler = function(evt) {
-            if (evt.data.onMiddleClick && evt.which == 2) {
-                // middle click
-                return false; // eat middle click event to avoid the autoscroll cursor
-            }
-        };
-
-        var mouseUpHandler = function(evt) {
-            var $this = $(this);
-            var treeObj = evt.data.treeObj;
-            var row = treeObj.getParentRowNode($this);
-            if (treeObj.hoveringRowButtons) {
-                // we manage this state and manually check it here because jquery
-                // doesn't really give us a way to only trigger a child-element's event handlers
-                // without also triggering all container-element's handlers first
-                return;
-            }
-
-            $('#ftSimpleTip').hide();
-            treeObj.hideTooltip();
-
-            evt.data.row = row;
-
-            if (evt.which == 1 && evt.data.onClick) {
-                // handle left click
-                evt.data.onClick(evt);
-                return;
-            }
-
-            if (evt.which == 2 && evt.data.onMiddleClick) {
-                // handle middle click
-                evt.data.onMiddleClick(evt);
-                return;
-            }
-        };
-
-        var doubleClickHandler = function(evt) {
-            if (evt.which != 1) {
-                // not the left mouse button
-                return;
-            }
-
-            var $this = $(this);
-            var treeObj = evt.data.treeObj;
-            var row = treeObj.getParentRowNode($this);
-
-            if (treeObj.hoveringRowButtons) {
-                // we manage this state and manually check it here because jquery
-                // doesn't really give us a way to only trigger a child-element's event handlers
-                // without also triggering all container-element's handlers first
-                return;
-            }
-
-            $('#ftSimpleTip').hide();
-            treeObj.hideTooltip();
-
-            evt.data.row = row;
-
-            evt.data.onDoubleClick(evt);
-        };
-
-        $(document).on('mousedown',
-            '.ftRowNode[rowtype=' + name + '] > .ftItemRow > .ftItemRowContent',
-            data, mouseDownHandler);
-        $(document).on('mouseup',
-            '.ftRowNode[rowtype=' + name + '] > .ftItemRow > .ftItemRowContent',
-            data, mouseUpHandler);
-        $(document).on('dblclick',
-            '.ftRowNode[rowtype=' + name + '] > .ftItemRow > .ftItemRowContent',
-            data, doubleClickHandler);
-
-        for (var i in params.buttons)
-        {
-            var buttonClass = '.ftButton__' + name + '_' + i;
-            var buttonData = { treeObj: this, onClick: params.buttons[i].onClick };
-            $(document).on('click', buttonClass, buttonData, function(evt) {
-                $('#ftSimpleTip').hide();
-                evt.data.row = $(this).closest('li');
-                evt.data.onClick(evt);
-                evt.stopPropagation();
-                return false;
-            });
-        }
-    },
-
-    addElem: function(elem, parentId) {
-        if (!parentId) {
-            // When parentId is missing just add elem to the root level children
-            this.root.children('.ftChildren').append(elem);
-            return;
-        }
-        var parent = this.getElem(parentId);
-        parent.children('.ftChildren').append(elem);
-        this.updateRowExpander(parent);
-    },
-
-    removeElem: function(id) {
-        var elem = this.getElem(id);
-        var parent = elem.parent().parent();
-
-        // ensure button tooltips don't popup after the row is removed, after the tips' predelay
-        this.getButtons(elem)
-            .each(function(i, e) { $(e).data('tooltip').onShow(function() { this.hide(); } ); })
-
-        // if the element being removed is the currently hovered element, clear hoveringRowButtons state boolean
-        if (this.hoveredRow === elem) {
-            this.hoveringRowButtons = false;
-            this.hoveredRow = null;
-        }
-
-        elem.replaceWith(elem.children('.ftChildren').children());
-        this.updateRowExpander(parent);
-        this.hideTooltip();
-    },
-
-    moveElem: function(id, newParentId, beforeSiblingId) {
-        var elem = this.getElem(id);
-        var oldParent = elem.parent().parent();
-
-        var newParent;
-        if (!newParentId) {
-            newParent = this.root;
-        }
-        else {
-            newParent = this.getElem(newParentId);
-        }
-
-        if (!beforeSiblingId && oldParent.get(0).id == newParent.get(0).id) {
-            return;
-        }
-
-        this.removeElem(id); // prevents possible DOM_HIERARCHY exceptions
-
-        var children = this.getChildrenContainer(newParent);
-        if (beforeSiblingId) {
-            var sibling = children.children('#' + beforeSiblingId);
-            if (sibling.length == 0) {
-                throw new Error('Could not find sibling with id ' + beforeSiblingId);
-            }
-            sibling.before(elem);
-        }
-        else {
-            children.append(elem);
-        }
-        this.setRowButtonTooltips(elem);
-        this.updateRowExpander(oldParent);
-        this.updateRowExpander(newParent);
-        this.updateRowExpander(elem);
-    },
-
-    updateElem: function(id, icon, label, text, extraAttributes) {
-        var elem = this.getElem(id);
-        var innerRow = this.getInnerRow(elem);
-
-        if (icon != null && icon !== undefined) {
-            innerRow.children('.ftRowIcon').attr('src', icon);
-        }
-
-        if (label != null && label !== undefined) {
-            if (label == '') {
-                innerRow.children('.ftItemText').children('.ftItemLabel').text('');
-            }
-            else {
-                innerRow.children('.ftItemText').children('.ftItemLabel').text(label + (text ? ': ' : ''));
-            }
-        }
-
-        if (text != null && text !== undefined) {
-            innerRow.children('.ftItemText').children('.ftItemTitle').text(text);
-        }
-
-        if (extraAttributes) {
-            elem.attr(extraAttributes);
-        }
-
-    },
-
-    focusElem: function(id) {
-        var elem = this.getElem(id);
-
-        if (this.focusedRow) {
-            this.focusedRow.removeClass('focused');
-        }
-
-        this.focusedRow = elem;
-        elem.addClass('focused');
-
-        if (!isScrolledIntoView(elem)) {
-            $.scrollTo(elem, 150);
-        }
-    },
-
-    /**
-      * Toggles expanded/collapsed state of an element.
-      * Calls the row's rowtype's onExpanderClick function, if defined.
-      * @returns true if element is now expanded, false if now collapsed
-      */
-    toggleExpandElem: function(id) {
-        var elem = this.getElem(id);
-        var children = this.getChildrenContainer(elem);
-        var onExpanderClick = this.rowTypes[elem.attr('rowtype')].onExpanderClick;
-        var expanded;
-
-        if (elem.hasClass('collapsed')) {
-            // expand
-            children.slideToggle(100, function() { elem.removeClass('collapsed'); });
-            expanded = true;
-        }
-        else {
-            // collapse
-            children.slideToggle(100, function() { elem.addClass('collapsed'); });
-            expanded = false;
-        }
-
-        if (onExpanderClick) {
-            var evt = { data: { treeObj: this, row: elem, expanded: expanded } };
-            onExpanderClick(evt);
-        }
-        return expanded;
-    },
-
-    getElem: function(idOrElem) {
-        if (idOrElem instanceof jQuery) {
-            return idOrElem;
-        }
-
-        var elem = $('#' + idOrElem);
-        // var elem = this.root.find('#' + idOrElem); // this method is ~5x slower
-
-        if (elem.length == 0) {
-            throw new Error('Could not find element with id ' + idOrElem);
-        }
-
-        return elem;
-    },
-
-    updateRowExpander: function(elem) {
-        var cnt = elem.find('.ftChildren').children().length;
-        var expander = elem.children('.ftItemRow').children('.ftTreeControl');
-
-        if (cnt == 0) {
-            expander.removeClass('ftExpander').addClass('ftNode');
-            return;
-        }
-
-        expander.removeClass('ftNode').addClass('ftExpander');
-    },
+    ///////////////////////////////////////////////////////////
+    // Row-part retrieval functions
+    ///////////////////////////////////////////////////////////
 
     getParentRowNode: function(elem) {
         return elem.closest('.ftRowNode');
@@ -707,6 +731,108 @@ FancyTree.prototype = {
         return this.getChildrenContainer(elem).find('.ftRowNode').length;
     },
 
+
+    ///////////////////////////////////////////////////////////
+    // Row HTML element construction
+    ///////////////////////////////////////////////////////////
+
+    // construct an empty HTML element for a given rowType
+    buildRowTypeElem: function(rowType) {
+        var params = this.rowTypes[rowType];
+
+        // create elements
+        var rowContainer = $('<li/>', { rowtype: rowType, class: 'ftRowNode' });
+        var itemRow = $('<div/>', { class: 'ftItemRow' });
+        var expander = $('<img/>', { class: 'ftIconButton ftTreeControl ftNode', src: '/images/x.gif' });
+        var itemRowContent = $('<div/>', { class: 'ftItemRowContent' });
+        var innerRow = $('<div/>', { class: 'ftInnerRow' });
+        var icon = $('<img/>', { class: 'ftIconButton ftRowIcon', src: icon });
+        var itemTitle = $('<div/>', { class: 'ftItemText' });
+        var itemLabel = $('<span/>', { class: 'ftItemLabel' });
+        var itemInnerTitle = $('<span/>', { class: 'ftItemTitle' });
+        var buttons = $('<div/>', { class: 'ftButtons' });
+        var children = $('<ul/>', { class: 'ftChildren' });
+
+        // set iconerror handler
+        if (params.onIconError) {
+            icon.error({ treeObj: this, row: rowContainer }, params.onIconError);
+        }
+
+        // build buttons
+        for (var i in params.buttons) {
+            var buttonSpec = params.buttons[i];
+            var button = $('<img>', {
+                class: 'ftIconButton ftButton__' + rowType + '_' + i,
+                src: buttonSpec.icon,
+                tooltip: buttonSpec.tooltip
+            });
+            buttons.append(button);
+        }
+
+        // construction
+        itemTitle
+            .append(itemLabel)
+            .append(itemInnerTitle);
+
+        innerRow
+            .append(icon)
+            .append(itemTitle);
+
+        itemRowContent
+            .append(innerRow)
+            .append(buttons);
+
+        itemRow
+            .append(expander)
+            .append(itemRowContent);
+
+        rowContainer
+            .append(itemRow)
+            .append(children);
+
+        // configure row button tooltips
+        this.setRowButtonTooltips(rowContainer);
+
+        return rowContainer;
+    },
+
+    // clone a new rowType's baseElement and populate it with the provided arguments
+    getNewElem: function(rowType, id, icon, label, text, extraAttributes, collapsed, cssClasses) {
+        var base = this.rowTypes[rowType].baseElement.clone(true, true);
+
+        base
+            .attr('id', id)
+            .addClass(cssClasses);
+
+        base.find('.ftItemTitle').text(text);
+        base.find('.ftRowIcon').attr('src', icon);
+
+        // set collapsed state
+        if (collapsed) {
+            base.addClass('collapsed');
+        }
+
+        // add extra attribs
+        if (extraAttributes) {
+            base.attr(extraAttributes);
+        }
+
+        // set label text
+        if (label) {
+            base.find('.ftItemLabel').text(label + (text ? ': ' : ''));
+        }
+
+        // configure row button tooltips
+        this.setRowButtonTooltips(base);
+
+        return base;
+    },
+
+
+    ///////////////////////////////////////////////////////////
+    // Helper functions
+    ///////////////////////////////////////////////////////////
+
     setRowButtonTooltips: function(elem) {
         var rowType = elem.attr('rowtype');
         var buttons = this.getButtons(elem);
@@ -730,74 +856,15 @@ FancyTree.prototype = {
         });
     },
 
-    getNewElem: function(rowType, id, icon, label, text, extraAttributes, collapsed, cssClasses) {
-        var params = this.rowTypes[rowType];
-        var li = $('<li>', { id: id, rowtype: rowType })
-            .addClass(cssClasses)
-            .addClass('ftRowNode');
+    updateRowExpander: function(elem) {
+        var cnt = elem.find('.ftChildren').children().length;
+        var expander = elem.children('.ftItemRow').children('.ftTreeControl');
 
-        if (collapsed) {
-            li.addClass('collapsed');
+        if (cnt == 0) {
+            expander.removeClass('ftExpander').addClass('ftNode');
+            return;
         }
 
-        if (extraAttributes) {
-            li.attr(extraAttributes);
-        }
-
-        var itemRow = $('<div class="ftItemRow">');
-
-        var expander = $('<img/>', { class: 'ftIconButton ftTreeControl ftNode', src: '/images/x.gif' });
-
-        var itemRowContent = $('<div class="ftItemRowContent">');
-        itemRow.append(itemRowContent);
-
-        var innerRow = $('<div class="ftInnerRow">');
-
-        var icon = $('<img/>', { class: 'ftIconButton ftRowIcon', src: icon });
-        if (params.onIconError) {
-            icon.error({ treeObj: this, row: li }, params.onIconError);
-        }
-
-        var itemTitle = $('<div class="ftItemText">');
-
-        var itemLabel = $('<span class="ftItemLabel">');
-        if (label) {
-            itemLabel.text(label + (text ? ': ' : ''));
-        }
-
-        var itemInnerTitle = $('<span class="ftItemTitle">').text(text);
-        itemTitle.append(itemLabel);
-        itemTitle.append(itemInnerTitle);
-
-        var buttons = $('<div class="ftButtons">');
-
-        for (var i in params.buttons) {
-            var buttonSpec = params.buttons[i];
-            var button = $('<img>', {
-                class: 'ftIconButton ftButton__' + rowType + '_' + i,
-                src: buttonSpec.icon,
-                tooltip: buttonSpec.tooltip
-            });
-            buttons.append(button);
-        }
-
-        innerRow
-            .append(icon)
-            .append(itemTitle);
-
-        itemRowContent
-            .append(innerRow)
-            .append(buttons);
-
-        itemRow.append(expander)
-            .append(itemRowContent);
-
-        li.append(itemRow);
-
-        var children = $('<ul class="ftChildren">');
-        li.append(children);
-        this.setRowButtonTooltips(li);
-        return li;
+        expander.removeClass('ftNode').addClass('ftExpander');
     }
-
 };
