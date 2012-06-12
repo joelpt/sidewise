@@ -393,67 +393,7 @@ FancyTree.prototype = {
             var matches = treeObj.root.find(selector).closest('.ftRowNode');
 
             // highlight matched letters in row's visible text
-            matches.each(function(i, e) {
-                var $e = $(e);
-                var $textElem = $e.find('.ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText');
-                var lastCharIndex = 0;
-                var lastWordIndex = 0;
-                $textElem.children().each(function(i, f) {
-                    var $f = $(f);
-                    var text = $f.text();
-                    var newHtml = '';
-                    if (advancedFilter) {
-                        // match individual chars
-                        if (lastCharIndex == filter.length) {
-                            // already all matched up
-                            newHtml = text;
-                        }
-                        else {
-                            for (var charIndex in text) {
-                                if (filter[lastCharIndex].toLowerCase() == text[charIndex].toLowerCase()) {
-                                    // this character was part of the search
-                                    newHtml += '<span class="ftHighlightChar">' + text[charIndex] + '</span>';
-                                    lastCharIndex++;
-                                }
-                                else {
-                                    // this character was not part of the search
-                                    newHtml += text[charIndex];
-                                }
-                                if (lastCharIndex == filter.length) {
-                                    // filter chars have all been matched up, so just output
-                                    // the remainder of the text as is
-                                    newHtml += (text.slice(parseInt(charIndex) + 1));
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        // match word-chunks
-                        for (var wordIndex = lastWordIndex; wordIndex < words.length; wordIndex++) {
-                            var word = words[wordIndex];
-                            var pos = text.toLowerCase().indexOf(word);
-                            if (pos > -1) {
-                                // word found, add preceding text as plain and word as highlighted
-                                newHtml += text.slice(0, pos)
-                                    + '<span class="ftHighlightChar">'
-                                    + text.slice(pos, pos + word.length)
-                                    + '</span>';
-                                text = text.slice(pos + word.length); // remainder
-                                lastWordIndex++;
-                            }
-                            else {
-                                // word not found
-                                break;
-                            }
-                        }
-                        // add any remaining text
-                        newHtml += text;
-                    }
-
-                    $f.html(newHtml);
-                });
-            });
+            treeObj.highlightMatches.call(treeObj, matches, filter, words, advancedFilter);
 
             // filter by additional per-rowType parameter filters
             for (var rowType in treeObj.rowTypes) {
@@ -467,9 +407,7 @@ FancyTree.prototype = {
             }
 
             // apply ftFilteredIn css class to matched rows
-            matches.each(function(i, e) {
-                $(e).addClass('ftFilteredIn');
-            });
+            matches.each(function(i, e) { $(e).addClass('ftFilteredIn'); });
 
             // apply filtering css styling which will filter out unmatched rows
             treeObj.root.addClass('ftFiltering');
@@ -830,7 +768,7 @@ FancyTree.prototype = {
 
 
     ///////////////////////////////////////////////////////////
-    // Helper functions
+    // Row helper functions
     ///////////////////////////////////////////////////////////
 
     setRowButtonTooltips: function(elem) {
@@ -866,5 +804,98 @@ FancyTree.prototype = {
         }
 
         expander.removeClass('ftNode').addClass('ftExpander');
+    },
+
+
+    ///////////////////////////////////////////////////////////
+    // Filter substring/subchar highlighting
+    ///////////////////////////////////////////////////////////
+
+    highlightMatches: function(elements, filter, words, advancedFilterUsed) {
+        var thisObj = this;
+
+        elements.each(function(i, e) {
+            var $e = $(e);
+            var $textElem = $e.find('.ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText');
+
+            if (advancedFilterUsed) {
+                thisObj.highlightMatchChars.call(this, $textElem, filter);
+            }
+            else {
+                thisObj.highlightMatchWords.call(this, $textElem, words);
+            }
+
+        });
+    },
+
+    highlightMatchChars: function(elem, filter) {
+        var lastCharIndex = 0;
+
+        elem.children().each(function(i, f) {
+            var $f = $(f);
+            var text = $f.text();
+            var newHtml = '';
+
+            // match individual chars
+            if (lastCharIndex == filter.length) {
+                // already all matched up
+                newHtml = text;
+            }
+            else {
+                for (var charIndex in text) {
+                    if (filter[lastCharIndex].toLowerCase() == text[charIndex].toLowerCase()) {
+                        // this character was part of the search
+                        newHtml += '<span class="ftHighlightChar">' + text[charIndex] + '</span>';
+                        lastCharIndex++;
+                    }
+                    else {
+                        // this character was not part of the search
+                        newHtml += text[charIndex];
+                    }
+                    if (lastCharIndex == filter.length) {
+                        // filter chars have all been matched up, so just output
+                        // the remainder of the text as is
+                        newHtml += (text.slice(parseInt(charIndex) + 1));
+                        break;
+                    }
+                }
+            }
+            $f.html(newHtml);
+        });
+    },
+
+    highlightMatchWords: function(elem, words) {
+        var lastWordIndex = 0;
+
+        elem.children().each(function(i, f) {
+            var $f = $(f);
+            var text = $f.text();
+            var newHtml = '';
+
+            // match word-chunks
+            for (var wordIndex = lastWordIndex; wordIndex < words.length; wordIndex++) {
+                var word = words[wordIndex];
+                var pos = text.toLowerCase().indexOf(word);
+                if (pos > -1) {
+                    // word found, add preceding text as plain and word as highlighted
+                    newHtml += text.slice(0, pos)
+                        + '<span class="ftHighlightChar">'
+                        + text.slice(pos, pos + word.length)
+                        + '</span>';
+                    text = text.slice(pos + word.length); // remainder
+                    lastWordIndex++;
+                }
+                else {
+                    // word not found
+                    break;
+                }
+            }
+
+            // add any remaining text
+            newHtml += text;
+
+            $f.html(newHtml);
+        });
     }
+
 };
