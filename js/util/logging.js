@@ -1,5 +1,5 @@
 var loggingEnabled = loadSetting('loggingEnabled', false);
-var logObjectsAsJSON = false;
+var logObjectsAsJSON = true;
 // loggingEnabled = false;
 
 // Logs all passed arguments to console if loggingEnabled is true.
@@ -20,7 +20,12 @@ function log() {
             continue;
         }
         if (logObjectsAsJSON) {
-            messages.push(JSON.stringify(arg));
+            try {
+                messages.push(JSON.stringify(arg));
+            }
+            catch(ex) {
+                messages.push(arg);
+            }
             continue;
         }
         messages.push(arg);
