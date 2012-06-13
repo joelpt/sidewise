@@ -20,7 +20,8 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   *              onMiddleClick: Function(evt),   // middle click event handler
   *              onExpanderClick: function(evt), // called when a row's branch expander arrow is clicked
   *              onIconError: Function(evt),     // row icon onerror event handler
-  *              onFormatTooltip: Function(evt), // called to obtain the body for a row tip for display
+  *              titleBodyHandler: Function(row),  // called whenever row title might need updating
+  *              onFormatTooltip: Function(evt), // called to obtain HTML for a row's tip before showing it
   *              onResizeTooltip: Function(evt), // called if a row tip is forcibly resized by FancyTree
   *              filterByExtraParams: [String],  // additional parameter(s) to examine when filtering
   *              tooltipMaxWidthFixed: Integer,  // max width of row tip, as number of pixels
@@ -49,6 +50,22 @@ var FancyTree = function(appendToElem, options) {
 }
 
 FancyTree.prototype = {
+
+    defaultTitleBodyHandler: function(row) {
+        var label = row.attr('label');
+        var title = row.attr('title');
+
+        console.log('BEFOREFORMAT', row.get(0).outerHTML);
+        console.log('FORMAT TITLE', row.attr('id'), 'LABEL IS', label, ' //// ', title);
+        row.find('.ftItemTitle').text(title);
+
+        if (label) {
+            console.log('LABEL IS HERE');
+            row.find('.ftItemLabel').text(label + (title ? ': ' : ''));
+        }
+        console.log('AFTERFORMAT', row.get(0).outerHTML);
+
+    },
 
     ///////////////////////////////////////////////////////////
     // Initialization
@@ -143,6 +160,10 @@ FancyTree.prototype = {
       * @param params   The row type's parameters; see FancyTree class header for details
       */
     addRowType: function(name, params) {
+        if (!params.titleBodyHandler) {
+            params.titleBodyHandler = this.defaultTitleBodyHandler;
+        }
+
         this.rowTypes[name] = params;
 
         var data = params;
@@ -172,7 +193,7 @@ FancyTree.prototype = {
     // Element manipulation
     ///////////////////////////////////////////////////////////
 
-    getElem: function(idOrElem) {
+    getRow: function(idOrElem) {
         if (idOrElem instanceof jQuery) {
             return idOrElem;
         }
@@ -187,19 +208,19 @@ FancyTree.prototype = {
         return elem;
     },
 
-    addElem: function(elem, parentId) {
+    addRow: function(elem, parentId) {
         if (!parentId) {
             // When parentId is missing just add elem to the root level children
             this.root.children('.ftChildren').append(elem);
             return;
         }
-        var parent = this.getElem(parentId);
+        var parent = this.getRow(parentId);
         parent.children('.ftChildren').append(elem);
         this.updateRowExpander(parent);
     },
 
-    removeElem: function(id) {
-        var elem = this.getElem(id);
+    removeRow: function(id) {
+        var elem = this.getRow(id);
         var parent = elem.parent().parent();
 
         // ensure button tooltips don't popup after the row is removed, after the tips' predelay
@@ -217,8 +238,8 @@ FancyTree.prototype = {
         this.hideTooltip();
     },
 
-    moveElem: function(id, newParentId, beforeSiblingId) {
-        var elem = this.getElem(id);
+    moveRow: function(id, newParentId, beforeSiblingId) {
+        var elem = this.getRow(id);
         var oldParent = elem.parent().parent();
 
         var newParent;
@@ -226,14 +247,14 @@ FancyTree.prototype = {
             newParent = this.root;
         }
         else {
-            newParent = this.getElem(newParentId);
+            newParent = this.getRow(newParentId);
         }
 
         if (!beforeSiblingId && oldParent.get(0).id == newParent.get(0).id) {
             return;
         }
 
-        this.removeElem(id); // prevents possible DOM_HIERARCHY exceptions
+        this.removeRow(id); // prevents possible DOM_HIERARCHY exceptions
 
         var children = this.getChildrenContainer(newParent);
         if (beforeSiblingId) {
@@ -252,35 +273,22 @@ FancyTree.prototype = {
         this.updateRowExpander(elem);
     },
 
-    updateElem: function(id, icon, label, text, extraAttributes) {
-        var elem = this.getElem(id);
-        var innerRow = this.getInnerRow(elem);
+    updateRow: function(id, details) {
+        var row = this.getRow(id);
+        var innerRow = this.getInnerRow(row);
 
-        if (icon != null && icon !== undefined) {
-            innerRow.children('.ftRowIcon').attr('src', icon);
+        row.attr(details);
+
+        if (details.icon) {
+            innerRow.children('.ftRowIcon').attr('src', details.icon);
         }
 
-        if (label != null && label !== undefined) {
-            if (label == '') {
-                innerRow.children('.ftItemText').children('.ftItemLabel').text('');
-            }
-            else {
-                innerRow.children('.ftItemText').children('.ftItemLabel').text(label + (text ? ': ' : ''));
-            }
-        }
-
-        if (text != null && text !== undefined) {
-            innerRow.children('.ftItemText').children('.ftItemTitle').text(text);
-        }
-
-        if (extraAttributes) {
-            elem.attr(extraAttributes);
-        }
-
+        var titleBodyHandler = this.rowTypes[row.attr('rowtype')].titleBodyHandler;
+        titleBodyHandler(row);
     },
 
-    focusElem: function(id) {
-        var elem = this.getElem(id);
+    focusRow: function(id) {
+        var elem = this.getRow(id);
 
         if (this.focusedRow) {
             this.focusedRow.removeClass('focused');
@@ -299,8 +307,8 @@ FancyTree.prototype = {
       * Calls the row's rowtype's onExpanderClick function, if defined.
       * @returns true if element is now expanded, false if now collapsed
       */
-    toggleExpandElem: function(id) {
-        var elem = this.getElem(id);
+    toggleExpandRow: function(id) {
+        var elem = this.getRow(id);
         var children = this.getChildrenContainer(elem);
         var onExpanderClick = this.rowTypes[elem.attr('rowtype')].onExpanderClick;
         var expanded;
@@ -428,7 +436,7 @@ FancyTree.prototype = {
     onExpanderClick: function(evt) {
         var expander = $(this);
         var parentLI = expander.closest('.ftRowNode');
-        evt.data.treeObj.toggleExpandElem(parentLI);
+        evt.data.treeObj.toggleExpandRow(parentLI);
         evt.stopPropagation();
     },
 
@@ -738,35 +746,35 @@ FancyTree.prototype = {
     },
 
     // clone a new rowType's baseElement and populate it with the provided arguments
-    getNewElem: function(rowType, id, icon, label, text, extraAttributes, collapsed, cssClasses) {
-        var base = this.rowTypes[rowType].baseElement.clone(true, true);
+    getNewRowElem: function(rowType, id, icon, label, title, extraAttributes, collapsed, cssClasses) {
+        var rowTypeParams = this.rowTypes[rowType];
+        var row = rowTypeParams.baseElement.clone(true, true);
 
-        base
+        row
             .attr('id', id)
+            .attr('label', label)
+            .attr('title', title)
             .addClass(cssClasses);
 
-        base.find('.ftItemTitle').text(text);
-        base.find('.ftRowIcon').attr('src', icon);
+        row.find('.ftRowIcon').attr('src', icon);
 
         // set collapsed state
         if (collapsed) {
-            base.addClass('collapsed');
+            row.addClass('collapsed');
         }
 
         // add extra attribs
         if (extraAttributes) {
-            base.attr(extraAttributes);
+            row.attr(extraAttributes);
         }
 
-        // set label text
-        if (label) {
-            base.find('.ftItemLabel').text(label + (text ? ': ' : ''));
-        }
+        // format title
+        rowTypeParams.titleBodyHandler(row);
 
         // configure row button tooltips
-        this.setRowButtonTooltips(base);
+        this.setRowButtonTooltips(row);
 
-        return base;
+        return row;
     },
 
 
