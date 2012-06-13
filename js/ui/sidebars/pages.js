@@ -1,4 +1,21 @@
 ///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
+var PAGETREENODE_FANCYTREEROW_DETAILS_MAP = {
+    id: 'id',
+    url: 'url',
+    favicon: 'icon',
+    label: 'label',
+    title: 'title',
+    status: 'status',
+    pinned: 'pinned',
+    unread: 'unread',
+    hibernated: 'hibernated'
+};
+
+
+///////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////
 
@@ -78,7 +95,7 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
     var row;
     if (node.elemType == 'window') {
         var img = (node.incognito ? '/images/incognito-16.png' : '/images/tab-stack-16.png');
-        row = fancyTree.getNewElem('window',
+        row = fancyTree.getNewRowElem('window',
             node.id,
             img,
             getMessage('text_Window') + ' ' + node.id.slice(1),
@@ -88,20 +105,21 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
             null);
     }
     else if (node.elemType == 'page') {
-        row = fancyTree.getNewElem('page', node.id, node.favicon,
-            node.id, node.title, {
+        row = fancyTree.getNewRowElem('page', node.id, node.favicon, node.label, node.title,
+            {
                 url: node.url,
                 status: node.status,
                 pinned: node.pinned,
                 unread: node.unread,
                 hibernated: node.hibernated
-            }, node.collapsed, null);
+            },
+            node.collapsed, null);
     }
     else {
         throw new Error('Unknown node type');
     }
 
-    fancyTree.addElem(row, parentId);
+    fancyTree.addRow(row, parentId);
 }
 
 
@@ -118,24 +136,26 @@ function PageTreeCallbackProxyListener(op, args)
             addPageTreeNodeToFancyTree(ft, args.element, args.parentId);
             break;
         case 'remove':
-            ft.removeElem(args.element.id);
+            ft.removeRow(args.element.id);
             break;
         case 'move':
-            ft.moveElem(args.element.id, args.newParentId);
+            ft.moveRow(args.element.id, args.newParentId);
             break;
         case 'updatePage':
             var elem = args.element;
-            ft.updateElem(args.id, elem.favicon, null, elem.title, {
-                id: elem.id,
-                url: elem.url,
-                status: elem.status,
-                pinned: elem.pinned,
-                unread: elem.unread,
-                hibernated: elem.hibernated
-            });
+            var details = {};
+
+            for (var key in elem) {
+                if (key in PAGETREENODE_FANCYTREEROW_DETAILS_MAP) {
+                    details[PAGETREENODE_FANCYTREEROW_DETAILS_MAP[key]] = elem[key];
+                }
+            }
+
+            console.log('@@@@@@@@@@@@@@@@@@', args.id, JSON.stringify(details));
+            ft.updateRow(args.id, details);
             break;
         case 'focusPage':
-            ft.focusElem(args.id);
+            ft.focusRow(args.id);
             break;
     }
 }
@@ -170,7 +190,7 @@ function onPageRowClick(evt) {
     var row = evt.data.row;
 
     // set visible focus immediately; this is just for maximum visible responsiveness
-    treeObj.focusElem(row);
+    treeObj.focusRow(row);
 
     if (row.attr('hibernated') == 'true') {
         // row is hibernated, don't try to activate its (nonexistent) tab;
@@ -213,7 +233,7 @@ function handlePageRowAction(action, evt) {
             onHibernateButtonPageRow(evt);
             break;
         case 'expand':
-            evt.data.treeObj.toggleExpandElem(evt.data.row);
+            evt.data.treeObj.toggleExpandRow(evt.data.row);
             break;
     }
 }
@@ -292,7 +312,7 @@ function handleWindowRowAction(action, evt) {
         //     onHibernateButtonPageRow(evt);
         //     break;
         case 'expand':
-            evt.data.treeObj.toggleExpandElem(evt.data.row);
+            evt.data.treeObj.toggleExpandRow(evt.data.row);
             break;
     }
 }
