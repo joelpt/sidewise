@@ -31,7 +31,8 @@
         <div id="pageTree"/>
     </div>
 
-    <a href="javascript:window.parent.location='pages.html'">promote</a>
+    <a href="javascript:window.parent.location='pages.html'">promote iframe</a> |
+    <a href="javascript:bg.tree.tree = []; bg.injectContentScriptInExistingTabs('content_script.js'); bg.populatePages(); setTimeout(function() { location.reload() }, 500); ">reset tree</a>
 
     <ul id="pageRowContextMenu" class="ftContextMenu">
         <li class="reload">
