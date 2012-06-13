@@ -10,17 +10,18 @@ var PageNode = function(tab, overrideStatus)
 
     this.elemType = 'page';
     this.id = 'p' + tab.id;
-    this.url = url;
+    this.url = tab.url;
     this.favicon = getBestFavIconUrl(tab.favIconUrl, url);
-    this.referrer = null;
-    this.historylength = null;
-    this.title = getBestPageTitle(tab.title, url);
+    this.referrer = '';
+    this.historylength = 1;
+    this.title = getBestPageTitle(tab.title, tab.url);
     this.status = overrideStatus || tab.status;
     this.pinned = tab.pinned;
     this.placed = false;
     this.unread = false;
     this.hibernated = false;
     this.smartFocusParentTabId = null;
+    this.label = (loggingEnabled ? 'p' + tab.id : '');
 
     log('PageNode', tab, this);
 };
