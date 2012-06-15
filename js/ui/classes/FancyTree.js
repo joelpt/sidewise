@@ -51,17 +51,19 @@ var FancyTree = function(appendToElem, options) {
 
 FancyTree.prototype = {
 
-    defaultTitleBodyHandler: function(row) {
+    defaultTitleBodyHandler: function(row, itemTextElem) {
         var label = row.attr('label');
-        var title = row.attr('title');
+        var text = row.attr('text');
 
         console.log('BEFOREFORMAT', row.get(0).outerHTML);
-        console.log('FORMAT TITLE', row.attr('id'), 'LABEL IS', label, ' //// ', title);
-        row.find('.ftItemTitle').text(title);
+        console.log('BEFOREFORMAT', itemTextElem);
+        console.log('FORMAT TITLE', row.attr('id'), 'LABEL IS', label, ' //// ', text);
+        console.log(this);
+        itemTextElem.children('.ftItemTitle').text(text);
 
         if (label) {
             console.log('LABEL IS HERE');
-            row.find('.ftItemLabel').text(label + (title ? ': ' : ''));
+            itemTextElem.children('.ftItemLabel').text(label + (text ? ': ' : ''));
         }
         console.log('AFTERFORMAT', row.get(0).outerHTML);
 
@@ -160,17 +162,22 @@ FancyTree.prototype = {
       * @param params   The row type's parameters; see FancyTree class header for details
       */
     addRowType: function(name, params) {
-        if (!params.titleBodyHandler) {
-            params.titleBodyHandler = this.defaultTitleBodyHandler;
-        }
-
+        var thisObj = this;
         this.rowTypes[name] = params;
 
-        var data = params;
-        data.treeObj = this;
+
+        if (!params.titleBodyHandler) {
+            var titleBodyHandler = this.defaultTitleBodyHandler;
+        }
+
+        params.titleBodyHandler = function(row, itemTextElem) {
+            titleBodyHandler.call(thisObj, row, itemTextElem);
+        }
 
         // configure event handling
         var selector = '.ftRowNode[rowtype=' + name + '] > .ftItemRow > .ftItemRowContent';
+        var data = params;
+        data.treeObj = this;
         $(document)
             .on('mousedown', selector, data, this._rowMouseDownHandler)
             .on('mouseup', selector, data, this._rowMouseUpHandler)
@@ -284,7 +291,7 @@ FancyTree.prototype = {
         }
 
         var titleBodyHandler = this.rowTypes[row.attr('rowtype')].titleBodyHandler;
-        titleBodyHandler(row);
+        titleBodyHandler(row, innerRow.children('.ftItemText'));
     },
 
     focusRow: function(id) {
@@ -538,10 +545,11 @@ FancyTree.prototype = {
             tooltip: tooltip,
             row: row,
             content: content,
-            label: content.find('.ftItemLabel').text(),
-            title: content.find('.ftItemTitle').text(),
-            icon: content.find('.ftRowIcon').attr('src'),
-            treeObj: this
+            label: row.attr('label'),
+            text: row.attr('text'),
+            icon: row.attr('icon'),
+            treeObj: this,
+            rowTypeParams: typeParams
         };
 
         // append tooltip content
@@ -696,7 +704,7 @@ FancyTree.prototype = {
         var itemRowContent = $('<div/>', { class: 'ftItemRowContent' });
         var innerRow = $('<div/>', { class: 'ftInnerRow' });
         var icon = $('<img/>', { class: 'ftIconButton ftRowIcon', src: icon });
-        var itemTitle = $('<div/>', { class: 'ftItemText' });
+        var itemText = $('<div/>', { class: 'ftItemText' });
         var itemLabel = $('<span/>', { class: 'ftItemLabel' });
         var itemInnerTitle = $('<span/>', { class: 'ftItemTitle' });
         var buttons = $('<div/>', { class: 'ftButtons' });
@@ -704,7 +712,10 @@ FancyTree.prototype = {
 
         // set iconerror handler
         if (params.onIconError) {
-            icon.error({ treeObj: this, row: rowContainer }, params.onIconError);
+            icon.error({ treeObj: this }, function(evt) {
+                evt.data.row = evt.data.treeObj.getParentRowNode($(this));
+                params.onIconError(evt);
+            });
         }
 
         // build buttons
@@ -719,13 +730,13 @@ FancyTree.prototype = {
         }
 
         // construction
-        itemTitle
+        itemText
             .append(itemLabel)
             .append(itemInnerTitle);
 
         innerRow
             .append(icon)
-            .append(itemTitle);
+            .append(itemText);
 
         itemRowContent
             .append(innerRow)
@@ -746,17 +757,20 @@ FancyTree.prototype = {
     },
 
     // clone a new rowType's baseElement and populate it with the provided arguments
-    getNewRowElem: function(rowType, id, icon, label, title, extraAttributes, collapsed, cssClasses) {
+    getNewRowElem: function(rowType, id, icon, label, text, extraAttributes, collapsed) {
         var rowTypeParams = this.rowTypes[rowType];
         var row = rowTypeParams.baseElement.clone(true, true);
+        var innerRow = this.getInnerRow(row);
+        var iconElem = innerRow.find('.ftRowIcon');
 
         row
             .attr('id', id)
             .attr('label', label)
-            .attr('title', title)
-            .addClass(cssClasses);
+            .attr('text', text)
+            .attr('icon', icon);
 
-        row.find('.ftRowIcon').attr('src', icon);
+        // set row's icon
+        iconElem.attr('src', icon);
 
         // set collapsed state
         if (collapsed) {
@@ -769,7 +783,7 @@ FancyTree.prototype = {
         }
 
         // format title
-        rowTypeParams.titleBodyHandler(row);
+        rowTypeParams.titleBodyHandler(row, innerRow.children('.ftItemText'));
 
         // configure row button tooltips
         this.setRowButtonTooltips(row);

@@ -2,12 +2,12 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-var PAGETREENODE_FANCYTREEROW_DETAILS_MAP = {
+var PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP = {
     id: 'id',
     url: 'url',
     favicon: 'icon',
     label: 'label',
-    title: 'title',
+    title: 'text',
     status: 'status',
     pinned: 'pinned',
     unread: 'unread',
@@ -93,7 +93,7 @@ function populateFancyTreeFromPageTree(fancyTree, pageTree) {
 function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
 {
     var row;
-    if (node.elemType == 'window') {
+    if (node instanceof bg.WindowNode) {
         var img = (node.incognito ? '/images/incognito-16.png' : '/images/tab-stack-16.png');
         row = fancyTree.getNewRowElem('window',
             node.id,
@@ -104,7 +104,7 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
             node.collapsed,
             null);
     }
-    else if (node.elemType == 'page') {
+    else if (node instanceof bg.PageNode) {
         row = fancyTree.getNewRowElem('page', node.id, node.favicon, node.label, node.title,
             {
                 url: node.url,
@@ -141,13 +141,12 @@ function PageTreeCallbackProxyListener(op, args)
         case 'move':
             ft.moveRow(args.element.id, args.newParentId);
             break;
-        case 'updatePage':
+        case 'update':
             var elem = args.element;
             var details = {};
-
             for (var key in elem) {
-                if (key in PAGETREENODE_FANCYTREEROW_DETAILS_MAP) {
-                    details[PAGETREENODE_FANCYTREEROW_DETAILS_MAP[key]] = elem[key];
+                if (key in PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP) {
+                    details[PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP[key]] = elem[key];
                 }
             }
 
@@ -270,14 +269,24 @@ function onHibernateButtonPageRow(evt) {
 function onPageRowFormatTooltip(evt) {
     var icon = evt.data.icon;
     var url = evt.data.row.attr('url');
-    var title = evt.data.title;
-    if (url == title) {
-        title = '';
+    var text = evt.data.text;
+
+    if (url == text) {
+        text = '';
     }
     if (evt.data.row.attr('hibernated') == 'true') {
-        title = '<div class="hibernatedHint">' + getMessage('pages_hibernatedHint') + '</div>' + title;
+        text = '<div class="hibernatedHint">' + getMessage('pages_hibernatedHint') + '</div>' + text;
     }
-    return getBigTooltipContent(title, icon, url);
+
+    var elem = getBigTooltipContent(text, icon, url);
+
+    var onIconError = evt.data.rowTypeParams.onIconError;
+    if (onIconError) {
+        elem.find('.ftBigTipImage').error(evt.data, onIconError);
+    }
+
+    return elem;
+
 }
 
 function onPageRowIconError(evt) {
