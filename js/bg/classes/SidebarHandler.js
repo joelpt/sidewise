@@ -16,9 +16,9 @@ SidebarHandler.prototype = {
         this.tabId = null;
         this.dockWindowId = null;
         this.creatingSidebar = false;
-        this.resizingDockWindow = false;
+        this.resizingDockWindow = true; // DEBUGGING
         this.removeInProgress = false;
-        this.resizingSidebar = false;
+        this.resizingSidebar = true; // DEBUGGING
         this.resetResizingDockWindowTimeout = false;
         this.sidebarPanes = {};
         this.currentSidebarMetrics = {};
@@ -36,7 +36,7 @@ SidebarHandler.prototype = {
         if (this.sidebarExists()) {
             throw new Error('Cannot create() a new sidebar when one currently exists');
         }
-        log('Creating sidebar window/tab');
+        log('Creating sidebar window/tab with target width ' + this.targetWidth);
         this.creatingSidebar = true;
         var handler = this;
         if (this.dockState == 'undocked') {

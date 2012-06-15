@@ -79,14 +79,22 @@ function onTabCreated(tab)
 
     if (tab.openerTabId) {
         // Make page a child of its opener tab; this may be overriden later in webnav-events.js
-        log('Tentatively setting page as child of its opener tab');
+        log('Tentatively setting page as child of its opener tab', page.id, tab.openerTabId);
         tree.addNode(page, 'p' + tab.openerTabId);
         return;
     }
 
     // Make page a child of its hosting window
-    log('Setting page as child of its hosting window');
-    tree.addNode(page, 'w' + tab.windowId);
+    log('Setting page as child of its hosting window', page, tab.windowId);
+    var winNode = tree.getNode('w' + tab.windowId);
+    if (!winNode) {
+        chrome.windows.get(tab.windowId, function(win) {
+            var winNode = new WindowNode(win);
+            tree.addNode(winNode);
+        });
+        return;
+    }
+    tree.addNode(page, winNode);
 }
 
 function onTabRemoved(tabId, removeInfo)
@@ -159,7 +167,7 @@ function findNextTabToFocus(tabId, preferCousins) {
                 }
             }
         }
-        if (found.parent instanceof PageNode) {
+        if (found.parent.elemType == 'page') {
             // use direct parent
             return found.parent.id;
         }
@@ -213,10 +221,13 @@ function onTabUpdated(tabId, changeInfo, tab)
             // TODO doing this below may be problematic in some cases because we aren't setting page.placed to true here;
             // so when we actually do set page.placed to true we may need to clear page.referrer if we end up moving the
             // tab under a Window insted of allowing it to be a child of another page
-            if (page.referrer == null || page.referrer == '') {
-                log('record referrer via openerTabId\'s page.url');
-                tree.updateNode(page, { referrer: tree.getPage(tab.openerTabId).url });
-            }
+            // // -- was breaking session restoring because chrome will still report a referrer of ''
+            // //    leaving this disabled for now to see if there are actually cases where it is useful to do this
+            // //    .. if needed we could have a fake_referrer or something
+            // if (page.referrer == null || page.referrer == '') {
+            //     log('record referrer via openerTabId\'s page.url');
+            //     tree.updateNode(page, { referrer: tree.getPage(tab.openerTabId).url });
+            // }
         }
     }
 }

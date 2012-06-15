@@ -1,3 +1,14 @@
+///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
+var PAGETREE_ONMODIFIED_DELAY_MS = 1500;
+
+
+///////////////////////////////////////////////////////////
+// PageTree class
+///////////////////////////////////////////////////////////
+
 /**
   * Hierarchical data model used by Sidewise in the background page to keep track of page opener/opened structure.
   *
@@ -7,54 +18,91 @@
   */
 var PageTree = function(callbackProxyFn, onModifiedDelayed)
 {
-    /////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
     // Initialization
-    /////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
 
-    PageTree._base.call(this);
+    this.base().call(this);
     this.callbackProxyFn = callbackProxyFn; // callback proxy function for page/window functions
     this.focusedTabId = null;
     this.onModified = this._onPageTreeModified;
     this.onModifiedDelayed = onModifiedDelayed;
-    this.onModifiedDelayedWaitMs = 5000;
+    this.onModifiedDelayedWaitMs = PAGETREE_ONMODIFIED_DELAY_MS;
     this.onModifiedDelayedTimeout = null;
     this.awakeningPages = {};
 };
 
-PageTree.extend(DataTree, {
+extendClass(PageTree, DataTree, {
 
-    /////////////////////////////////////////////////////
-    // General node manipulation
-    /////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+    // Node manipulation
+    ///////////////////////////////////////////////////////////
 
     // add given node as a child of the node matching parentMatcher
     addNode: function(node, parentMatcher)
     {
-        var r = PageTree._super.addNode.call(this, node, parentMatcher);
+        var r = this.super().addNode.call(this, node, parentMatcher);
         this.callbackProxyFn('add', { element: node, parentId: r[1] ? r[1].id : undefined });
+        return r;
+    },
+
+    // update an existing node matching matcher with given details
+    updateNode: function(matcher, details)
+    {
+        log(matcher, details);
+
+        var page = this.getNode(matcher);
+
+        if (!page) {
+            throw new Error('Could not find node to update');
+        }
+
+        var existingId = page.id;
+
+        if (loggingEnabled) {
+            details.label = details.id || page.id;
+        }
+
+        this.super().updateNode.call(this, page, details);
+        this.callbackProxyFn('update', { id: existingId, element: details });
+
+        return page;
     },
 
     // remove the element matching matcher
     removeNode: function(matcher)
     {
-        var r = PageTree._super.removeNode.call(this, matcher);
+        var r = this.super().removeNode.call(this, matcher);
         this.callbackProxyFn('remove', { element: r });
         return r;
     },
 
-    // move the element with id to reside under newParentId
+    // move the element matching movingMatcher to reside under parent matching parentMatcher
     // this is a shallow move; moving elements's children are spliced in-place into its old location
-    moveNode: function(id, newParentId)
+    moveNode: function(movingMatcher, parentMatcher)
     {
-        var r = PageTree._super.moveNode.call(this, id, newParentId);
-        this.callbackProxyFn('move', { element: r, newParentId: newParentId });
+        var moving = tree.getNode(movingMatcher);
+        var parent = tree.getNode(parentMatcher);
+        var r = this.super().moveNode.call(this, moving, parent);
+
+        if (r !== undefined) {
+            this.callbackProxyFn('move', { element: r, newParentId: parent.id });
+        }
         return r;
     },
 
+    // Merge the node matching fromNodeMatcher and all its children into the node matching toNodeMatcher.
+    // The fromNode is removed from the tree after the merge.
+    // If retainFromNodeDetails is true, then the fromNode node itself will be replaced by toNode.
+    mergeNodes: function(fromNodeMatcher, toNodeMatcher, retainFromNodeDetails)
+    {
+        var r = this.super().mergeNodes.call(this, fromNodeMatcher, toNodeMatcher, retainFromNodeDetails);
+        return r;
+    },
 
-    /////////////////////////////////////////////////////
-    // Page-node manipulation
-    /////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+    // PageNode-specific manipulation
+    ///////////////////////////////////////////////////////////
 
     // retrieve a page from the tree given its tabId
     getPage: function(tabId)
@@ -86,24 +134,19 @@ PageTree.extend(DataTree, {
     },
 
     // update an existing page with given details
-    updatePage: function(tabIdOrElem, details, blockCallback)
+    updatePage: function(tabIdOrElem, details)
     {
         log(tabIdOrElem, details);
 
-        if (tabIdOrElem instanceof DataTreeNode) {
-            var id = tabIdOrElem.id;
-            var r = this.updateNode(tabIdOrElem, details);
+        if (typeof(tabIdOrElem) == 'number') {
+            var page = this.getNode('p' + tabIdOrElem);
         }
         else {
-            var id = 'p' + tabIdOrElem;
-            var r = this.updateNode(id, details);
+            var page = this.getNode(tabIdOrElem);
         }
 
-        if (r && !blockCallback) {
-            this.callbackProxyFn('updatePage', { id: id, element: r });
-        }
-
-        return r;
+        this.updateNode(page, details);
+        return page;
     },
 
     // hibernate a page
@@ -113,6 +156,7 @@ PageTree.extend(DataTree, {
         // var page = this.getPage(tabId);
         this.updatePage(tabId, { hibernated: true });
         chrome.tabs.remove(tabId);
+        this.updateLastModified();
     },
 
     // awaken (unhibernate) a page
@@ -123,7 +167,7 @@ PageTree.extend(DataTree, {
 
         this.awakeningPages[found.node.url] = found.node;
         var topParent = found.ancestors[0];
-        if (topParent instanceof WindowNode) {
+        if (topParent.elemType == 'window') {
             var windowId = parseInt(topParent.id.slice(1));
             log('awakening', found.node.url, 'windowId', windowId);
             chrome.tabs.create({ url: found.node.url, windowId: windowId, active: activateAfter || false });
@@ -131,17 +175,48 @@ PageTree.extend(DataTree, {
         }
         log('awakening', found.node.url, 'no found windowId');
         chrome.tabs.create({ url: found.node.url });
+        this.updateLastModified();
     },
 
 
-    /////////////////////////////////////////////////////
-    // Miscellaneous
-    /////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+    // Chrome tab convenience functions
+    ///////////////////////////////////////////////////////////
+
+    addTabToWindow: function(tab, onAdded) {
+        var pageNode = new PageNode(tab);
+        var winNode = this.getNode('w' + tab.windowId);
+
+        if (winNode) {
+            // window node exists, add page to it
+            this.addNode(pageNode, winNode);
+            if (onAdded) {
+                onAdded(pageNode, winNode);
+            }
+            return;
+        }
+
+        // window node doesn't exist; create it, then add page to it
+        var thisObj = this;
+        chrome.windows.get(tab.windowId, function(win) {
+            var winNode = new WindowNode(win);
+            thisObj.addNode(winNode);
+            thisObj.addNode(pageNode, winNode);
+            if (onAdded) {
+                onAdded(pageNode, winNode);
+            }
+        });
+    },
+
+
+    ///////////////////////////////////////////////////////////
+    // Miscellaneous functions
+    ///////////////////////////////////////////////////////////
 
     // Returns contents of tree formatted as a string. Used for debugging.
-    toString: function()
+    dump: function()
     {
-        var toStringFn = function(lastValue, e, depth) {
+        var dumpFn = function(lastValue, e, depth) {
             return lastValue + '\n'
                 + Array(-4 + 1 + (1 + depth) * 4).join(' ')
                 + e.id + ': '
@@ -151,7 +226,7 @@ PageTree.extend(DataTree, {
                 + ' R:' + e.referrer
                 + '@' + e.historylength;
         }
-        return this.reduce(toStringFn, '');
+        return this.reduce(dumpFn, '');
     },
 
     // Handles onModified event for DataTree, updating a timer and calling
@@ -165,9 +240,9 @@ PageTree.extend(DataTree, {
     },
 
 
-    /////////////////////////////////////////////////////
-    // Matchers
-    /////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+    // Matchers, to be passed into .getNode(), et al.
+    ///////////////////////////////////////////////////////////
 
     // returns a matcherFn for finding a page with a given id
     getPageIdMatcherFn: function(id)

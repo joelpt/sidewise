@@ -85,13 +85,25 @@ function onCommitted(details)
     }
     log(details);
     if (details.frameId == 0
-        && (details.transitionType == 'typed' || details.transitionType == 'generated')
+        && (details.transitionType == 'typed'
+            || details.transitionType == 'generated'
+            || details.transitionType == 'link')
         && details.transitionQualifiers.indexOf('from_address_bar') != -1) {
 
         var page = tree.getPage(details.tabId);
         if (!page.placed) {
             chrome.tabs.get(details.tabId, function(tab) {
-                tree.moveNode('p' + details.tabId, 'w' + tab.windowId);
+                var winNode = tree.getNode('w' + tab.windowId);
+                if (!winNode) {
+                    chrome.windows.get(tab.windowId, function(win) {
+                        var winNode = new WindowNode(win);
+                        tree.addNode(winNode);
+                        tree.moveNode('p' + details.tabId, 'w' + tab.windowId);
+                        tree.updatePage(details.tabId, { placed: true });
+                    });
+                    return;
+                }
+                tree.moveNode('p' + details.tabId, winNode);
                 tree.updatePage(details.tabId, { placed: true });
             });
         }
@@ -132,13 +144,13 @@ function onCompleted(details)
         status: 'complete'
     });
 
-    // Ask for the latest static favicon
+    // Ask for the latest static favicon and page title
     chrome.tabs.get(details.tabId, function(tab) {
         var url = tab.url ? dropUrlHash(tab.url) : '';
         if (isStaticFavIconUrl(tab.favIconUrl)) {
             // got a static favicon url, use it now
             var favicon = getBestFavIconUrl(tab.favIconUrl, url);
-            tree.updatePage(details.tabId, { favicon: favicon });
+            tree.updatePage(details.tabId, { favicon: favicon, title: getBestPageTitle(tab.title, tab.url) });
             return;
         }
 
@@ -152,18 +164,19 @@ function onCompleted(details)
 
 function onCompletedLateUpdateTimeout(tabId) {
     chrome.tabs.get(tabId, function(tab) {
+        var title = getBestPageTitle(tab.title, tab.url);
         var url = tab.url ? dropUrlHash(tab.url) : '';
         var favicon;
         if (isStaticFavIconUrl(tab.favIconUrl)) {
             // static favicon url has been provided by site, use that
             favicon = getBestFavIconUrl(tab.favIconUrl, url);
-            tree.updatePage(tabId, { favicon: favicon });
+            tree.updatePage(tabId, { favicon: favicon, title: title });
             return;
         }
 
         // no static favicon url available, fall back on chrome://favicon/URL icon cache
         favicon = getChromeFavIconUrl(url);
-        setTimeout(function() { tree.updatePage(tabId, { favicon: favicon }); },
+        setTimeout(function() { tree.updatePage(tabId, { favicon: favicon, title: title }); },
             ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS);
 
     });

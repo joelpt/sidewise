@@ -1,7 +1,18 @@
+var DEBUGIT = true;
+
+///////////////////////////////////////////////////////////
+// Globals
+///////////////////////////////////////////////////////////
+
 var tree;
 var sidebarHandler;
 var focusTracker;
 var monitorInfo;
+
+
+///////////////////////////////////////////////////////////
+// Initialization
+///////////////////////////////////////////////////////////
 
 window.onload = onLoad;
 
@@ -11,7 +22,6 @@ function onLoad()
     chrome.tabs.getCurrent(function() {
         // Early initialization
         tree = new PageTree(PageTreeCallbackProxy, savePageTreeToLocalStorage);
-        // loadPageTreeFromLocalStorage();
         sidebarHandler = new SidebarHandler();
 
         // Call postLoad() after focusTracker initializes to do remaining initialization
@@ -19,37 +29,53 @@ function onLoad()
     });
 }
 
+// IDEA for warmup executescript association fails:
+// - use c.ext.onConnect to establish a port first?
+//   - keep retrying on chrome.ext.lastError, esp. if lastError is something meaningful that can distinguish this case?
+
+var connectedTabs = {};
+
 function postLoad() {
     initializeDefaultSettings();
     updateStateFromSettings();
 
-    // load page tree from settings
-    // hibernate all pages and windows
-    // correlate existing pages:
-    //      existence == url && referrer && historylength matchup
-    //      if page exists in tree:
-    //          awaken its hibernated entry, set new tabId
-    //          if tab's windowId exists in tree as non hibernated window:
-    //              transfer tab to the existing windowId
-    //          else:
-    //              wake hibernated window, set new windowId
-    //          if parent hibernated window has no children left remove it
-    //      if page does not exist in tree:
-    //          add an entry for it
-    //          put in existing window if found matching windowId, else create new windowId for it
-    //          utilize the existing logic for guessing parent/child relations
+    chrome.extension.onConnect.addListener(function(port) {
+        console.log('onConnect', port);
+        connectedTabs[port.tab.id] = port;
+        port.onMessage.addListener(function(msg) {
+            console.log('onMessage', msg, port);
+            port.postMessage({ action: 'wassup' });
+        });
+
+        port.onDisconnect.addListener(function() {
+            console.log('onDisconnect', port);
+            if (connectedTabs[port.tab.id]) {
+                delete connectedTabs[port.tab.id];
+            }
+        });
+    });
 
     registerRequestEvents();
-
-    injectContentScriptInExistingTabs('content_script.js');
-    populatePages();
-
     registerWindowEvents();
     registerTabEvents();
     registerWebNavigationEvents();
     registerBrowserActionEvents();
     registerSnapInEvents();
     registerOmniboxEvents();
+
+    var storedPageTree = loadSetting('pageTree', []);
+    if (storedPageTree.length == 0) {
+        // first time population of page tree
+        populatePages();
+        injectContentScriptInExistingTabs('content_script.js');
+    }
+    else {
+        // load stored page tree and associate tabs to existing page nodes
+        loadPageTreeFromLocalStorage(storedPageTree);
+        injectContentScriptInExistingTabs('content_script.js');
+        associatePages();
+    }
+
 
     monitorInfo = new MonitorInfo();
 
@@ -61,6 +87,14 @@ function postLoad() {
         monitorInfo.retrieveMonitorMetrics(function(monitors, maxOffset) {
             monitorInfo.saveToSettings();
             createSidebarOnStartup();
+
+            // if (DEBUGIT) {
+            //     setTimeout(function() {
+            //         loadPageTreeFromLocalStorage();
+            //         associatePages();
+            //     }, 1000);
+            // }
+
         });
     }
 }
@@ -74,15 +108,47 @@ function createSidebarOnStartup() {
     sidebarHandler.createWithDockState(loadSetting('dockState', 'right'));
 }
 
+
+///////////////////////////////////////////////////////////
+// PageTree related
+///////////////////////////////////////////////////////////
+
 function savePageTreeToLocalStorage() {
+    // if (DEBUGIT) {
+    //     return;
+    // }
+
     if (tree.lastModified != tree.lastSaved) {
         saveSetting('pageTree', tree.tree);
         tree.lastSaved = tree.lastModified;
     }
 }
 
-function loadPageTreeFromLocalStorage() {
-    tree.tree = loadSetting('pageTree', []);
+function loadPageTreeFromLocalStorage(storedPageTree) {
+    // load the tree data
+    var casts = {
+        'window': WindowNode,
+        'page': PageNode
+    };
+
+    tree.loadTree(storedPageTree, casts);
+
+    // set hibernated+restorable flags on all non-hibernated nodes
+    tree.forEach(function(node, depth, containingArray, parentNode) {
+        if (!node.hibernated) {
+            node.hibernated = true;
+            node.restorable = true;
+            node.id = node.id[0] + 'R' + generateGuid();
+            if (loggingEnabled) {
+                node.label = 'R';
+            }
+        }
+        tree.callbackProxyFn('add', { element: node, parentId: parentNode ? parentNode.id : undefined });
+    });
+
+    // rebuild the id index
+    tree.rebuildIdIndex();
+
 }
 
 function PageTreeCallbackProxy(methodName, args) {
@@ -119,6 +185,7 @@ function populatePages()
             var win = windows[i];
             var tabs = win.tabs;
             var numTabs = tabs.length;
+            console.log('### maxtabs', numTabs);
 
             if (win.type != 'normal') {
                 continue; // only want actual tab-windows
@@ -132,8 +199,9 @@ function populatePages()
 
             for (var j = 0; j < numTabs; j++) {
                 var tab = tabs[j];
+                log('Populating', tab.id, tab.title, tab.url, tab);
                 var page = new PageNode(tab);
-                tree.addNode(page, 'w' + win.id, 'complete');
+                tree.addNode(page, 'w' + win.id);
             }
             for (var j = 0; j < numTabs; j++) {
                 // try to guess child/parent tab relationships by asking each page for its referrer

@@ -54,7 +54,7 @@ DataTree.prototype = {
       * @param matcher Used to identify the sought node; may be one of:
       *                Function: it is passed the node to test; return true to indicate a match.
       *                String: treated as an id and an id index lookup is performed.
-      *                DataTreeNode: matcher is assumed to be the node sought and is just returned.
+      *                Object: matcher is assumed to be the node sought and is just returned.
       */
     getNode: function(matcher) {
         if (typeof(matcher) == 'string') {
@@ -68,6 +68,7 @@ DataTree.prototype = {
         if (matcher instanceof Function) {
             return this.getNodeStep(matcher, this.tree);
         }
+
 
         throw new Error('Unsupported "matcher" argument passed');
     },
@@ -95,7 +96,7 @@ DataTree.prototype = {
       * @param matcher Used to identify the sought node; may be one of:
       *                Function: it is passed the node to test; return true to indicate a match.
       *                String: treated as an id and an id index lookup is performed.
-      *                DataTreenode: matcher is assumed to be the node sought.
+      *                Object: matcher is assumed to be the node sought.
       * @param inArray If matcher is Function, search starting in this array; if omitted, search whole tree.
       * @returns A dictionary containing:
       *          node: the matched node
@@ -114,7 +115,7 @@ DataTree.prototype = {
         }
         else if (matcher instanceof DataTreeNode) {
             // matcher is a DataTreeNode, do a lookup by object identity
-            matcherFn = this.getElementMatcherFn(matcher);
+            matcherFn = this.getObjectIdentityMatcher(matcher);
         }
         else if (matcher instanceof Function) {
             matcherFn = matcher;
@@ -181,8 +182,9 @@ DataTree.prototype = {
         return elem;
     },
 
-    // Move the element matching movingMatcher to reside under the element matching parentMatcher.
-    // This is a shallow move; the moved element's children are spliced in-place into its old location
+    // Move the node matching movingMatcher to reside under the node matching parentMatcher.
+    // This is a shallow move; the moved node's children are spliced in-place into its old location
+    // Returns the moved node if a move was actually performed.
     moveNode: function(movingMatcher, parentMatcher)
     {
         var moving = this.getNodeEx(movingMatcher);
@@ -190,13 +192,47 @@ DataTree.prototype = {
 
         if (moving.parent == parent) {
             // already under this parent
-            return moving.node;
+            return undefined;
         }
 
         this.removeNode(moving.node);
         moving.node.children = []; // remove all of its children
         this.addNode(moving.node, parent);
         return moving.node;
+    },
+
+    // Merge the node matching fromNodeMatcher and all its children into the node matching toNodeMatcher.
+    // The fromNode is removed from the tree after the merge.
+    // If retainFromNodeDetails is true, then the fromNode node's properties will be replaced by those of toNode.
+    mergeNodes: function(fromNodeMatcher, toNodeMatcher, retainFromNodeDetails)
+    {
+        var fromNodeEx = this.getNodeEx(fromNodeMatcher);
+        if (!fromNodeEx) {
+            throw new Error('Could not find fromNode');
+        }
+
+        var toNode = this.getNode(toNodeMatcher);
+        if (!toNode) {
+            throw new Error('Could not find toNode');
+        }
+
+        // Merge children
+        toNode.children = toNode.children.concat(fromNodeEx.node.children);
+
+        if (retainFromNodeDetails) {
+            // Retain fromNode's details
+            for (var key in fromNodeEx.node) {
+                if (key == 'children') {
+                    continue;
+                }
+                toNode[key] = fromNodeEx.node[key];
+            }
+        }
+
+        // Remove fromNode from tree
+        fromNodeEx.siblings.splice(fromNodeEx.index, 1);
+
+        return toNode;
     },
 
     // Move the first element matching movingMatcherFn, and all of its children, to reside under the first element
@@ -242,20 +278,42 @@ DataTree.prototype = {
         return found.node;
     },
 
-    /**
-      * Updates this.lastModified and calls this.onModified, if set.
-      */
-    updateLastModified: function() {
-        this.lastModified = Date.now();
-        if (this.onModified) {
-            this.onModified();
-        }
+
+    ///////////////////////////////////////////////////////////
+    // Bulk load operations
+    ///////////////////////////////////////////////////////////
+
+    // Load contents of tree in bulk.
+    // Make sure to call rebuildIdIndex() and updateLastModified() afterwards.
+    loadTree: function(treeData, casts) {
+        if (!casts) {
+            // Default cast
+            casts = { 'node': DataTreeNode }
+        };
+
+        this.tree = this.mapTree(function(e) {
+            var castTo = casts[e.elemType];
+            if (castTo) {
+                // pseudocast: doesn't actually change the object's type, but
+                // will cause instanceof to report correct prototype inheritance
+                e.__proto__ = castTo.prototype;
+            }
+            return e;
+        }, treeData);
+    },
+
+    // rebuild the id index
+    rebuildIdIndex: function() {
+        this.idIndex = this.reduce(function(last, e) {
+            last[e.id] = e;
+            return last;
+        }, {});
     },
 
 
-    /////////////////////////////////////////////////////
-    // Comprehension-style operations
-    /////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+    // Comprehension style operations
+    ///////////////////////////////////////////////////////////
 
     /**
       * Reduces each node and its descendants to a single value by accumulating the results of
@@ -272,7 +330,6 @@ DataTree.prototype = {
       *     return lastValue + node.id + ',';
       * }, '');
       */
-
     reduce: function(reduceFn, initialValue, inArray)
     {
         return this.reduceStep(reduceFn, initialValue, 0, inArray || this.tree);
@@ -324,6 +381,21 @@ DataTree.prototype = {
         }, [], inArray);
     },
 
+    // Like map(), but preserves the tree structure of the nodes by setting the .children property on each node.
+    // Note that this alters the original objects of inArray or the tree; clone the tree and its nodes to leave
+    // the original nodes unaltered.
+    mapTree: function(mapFn, inArray)
+    {
+        var thisObj = this;
+        var ary = inArray || this.tree;
+        return ary.map(function(e) {
+            var children = e.children;
+            e = mapFn(e);
+            e.children = thisObj.mapTree(mapFn, children);
+            return e;
+        });
+    },
+
     /**
       * Execute eachFn for each item.
       * @param eachFn Function(node, depth, containingArray, parentNode):
@@ -356,7 +428,7 @@ DataTree.prototype = {
     /////////////////////////////////////////////////////
 
     // Returns full contents of tree formatted as a string. Useful for debugging.
-    toString: function()
+    dump: function()
     {
         // Quick and dirty cloneObject().
         var cloneObject = function(obj) {
@@ -370,7 +442,7 @@ DataTree.prototype = {
             return clone;
         }
 
-        var toStringFn = function(lastValue, node, depth) {
+        var dumpFn = function(lastValue, node, depth) {
             // Clone node and strip its children off before JSON.stringifying.
             var cloned = cloneObject(node);
             delete cloned.children;
@@ -380,7 +452,21 @@ DataTree.prototype = {
                 + JSON.stringify(cloned)
                 + ' [' + node.children.length + ' children]';
         }
-        return this.reduce(toStringFn, '');
+        return this.reduce(dumpFn, '');
+    },
+
+    toString: function() {
+        var s = '[Tree with ' + this.tree.length + ' top level elements, '
+            + tree.reduce(function(l, e) { return l + 1; }, 0) + ' total elements]';
+        return s;
+    },
+
+    // Updates this.lastModified and calls this.onModified, if set.
+    updateLastModified: function() {
+        this.lastModified = Date.now();
+        if (this.onModified) {
+            this.onModified();
+        }
     },
 
 
@@ -394,9 +480,9 @@ DataTree.prototype = {
         return function(e) { return e[key] == value; };
     },
 
-    // returns generic matcherFn for matching an element by object identity
-    getElementMatcherFn: function(element)
+    // returns generic matcherFn for matching an object by object identity
+    getObjectIdentityMatcher: function(object)
     {
-        return function(e) { return e === element; };
+        return function(e) { return e === object; };
     }
 }
