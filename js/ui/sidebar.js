@@ -32,8 +32,9 @@ function onReady() {
         }, 0);
     });
 
-    $(document).keydown(onDocumentKeyDown);
-    $(document).scroll(onDocumentScroll);
+    $(document)
+        .keydown(onDocumentKeyDown)
+        .scroll(onDocumentScroll);
     $(window).resize(onWindowResize);
 
     $('#optionsButton')
