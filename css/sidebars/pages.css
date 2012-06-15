@@ -1,13 +1,22 @@
-#pageTree {
-    margin: 0.25em 0em;
-}
-
 body {
     -webkit-user-select: none;
     user-select: none;
-    margin: 0.25em 0em 0em 0.25em;
 }
 
+#pageTree {
+    margin: 0em 0em 0em 4px;
+}
+
+#debugLinks {
+    font-size: 12px;
+    font-family: Verdana, sans-serif;
+    margin: 1em;
+}
+
+#debugLinks a {
+    display: block;
+    margin-bottom: 0.5em;
+}
 
 /* window tree rows */
 
@@ -43,7 +52,7 @@ body {
 }
 
 .ftRowNode[rowtype=window]+.ftRowNode[rowtype=window] {
-    margin-top: 0.75em;
+    margin-top: 12px;
 }
 
 .ftFiltering .ftRowNode[rowtype=window]+.ftRowNode[rowtype=window] {
@@ -93,7 +102,7 @@ body {
 /* tooltip styling */
 
 #ftTooltip[rowtype=page] .ftBigTip {
-    margin: 0.675em 0.5em 0.675em 0.5em;
+    margin: 10px 8px 10px 8px;
 }
 
 #ftTooltip[rowtype=page] .ftBigTipBody {
