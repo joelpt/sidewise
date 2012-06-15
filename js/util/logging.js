@@ -1,5 +1,5 @@
 var loggingEnabled = loadSetting('loggingEnabled', false);
-var logObjectsAsJSON = true;
+var logObjectsAsJSON = false;
 // loggingEnabled = false;
 
 // Logs all passed arguments to console if loggingEnabled is true.
