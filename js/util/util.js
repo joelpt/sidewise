@@ -212,7 +212,15 @@ function remove(array, from, to) {
     var rest = array.slice((to || from) + 1 || array.length);
     array.length = from < 0 ? array.length + from : from;
     return array.push.apply(array, rest);
-};
+}
+
+function first(array, matchFn) {
+    for (var i = 0; i < array.length; i++) {
+        if (matchFn(array[i])) {
+            return array[i];
+        }
+    }
+}
 
 function clamp(value, min, max)
 {
@@ -237,6 +245,41 @@ Function.prototype.extend = function(baseClass, withPrototype) {
     for (var attrname in withPrototype) {
         this.prototype[attrname] = withPrototype[attrname];
     }
+}
+
+function extendClass(subClass, superClass, withPrototype) {
+    function inheritance() {
+        this.base = getExtendBase;
+        this.super = getExtendSuper;
+    }
+    inheritance.prototype = superClass.prototype;
+
+    subClass.prototype = new inheritance();
+    subClass.prototype.constructor = subClass;
+    subClass._base = superClass;
+    subClass._super = superClass.prototype;
+
+    if (withPrototype === undefined) {
+        return;
+    }
+
+    for (var attrname in withPrototype) {
+        subClass.prototype[attrname] = withPrototype[attrname];
+    }
+}
+
+function getExtendBase() {
+    return this.constructor._base;
+}
+
+function getExtendSuper() {
+    return this.constructor._super;
+}
+
+function castObject(object, toClass) {
+    // pseudocast: doesn't actually change the object's type, but
+    // will cause instanceof to report correct prototype inheritance
+    object.__proto__ = toClass.prototype;
 }
 
 function onDocumentReady(fn) {
