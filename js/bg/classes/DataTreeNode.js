@@ -7,5 +7,6 @@
 var DataTreeNode = function()
 {
     this.id = null;
+    this.elemType = 'node';
     this.children = [];
 };
