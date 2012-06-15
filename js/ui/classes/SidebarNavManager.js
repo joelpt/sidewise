@@ -142,6 +142,7 @@ SidebarNavManager.prototype = {
         }
         $target.addClass('mousedown');
         $target.data('tooltip').hide();
+        evt.data.manager.showSidebarPane.call(evt.data.manager, $target.attr('buttonid'));
         evt.stopPropagation();
     },
 
@@ -166,6 +167,7 @@ SidebarNavManager.prototype = {
             $target = $target.closest('.sidebarButton');
         }
         $target.addClass('mousedown');
+        evt.data.manager.showSidebarPane.call(evt.data.manager, $target.attr('buttonid'));
         evt.stopPropagation();
     },
 
