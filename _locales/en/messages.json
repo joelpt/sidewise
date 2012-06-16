@@ -56,7 +56,7 @@
 
     // Notepad sidebar
     "notepad_heading": { "message": "Notepad" },
-    "notepad_hint": { "message": "Text entered below is auto-saved." },
+    "notepad_hint": { "message": "Just start typing. Text is auto-saved." },
     "notepad_lastSavedAt": { "message": "Last saved at:" },
 
 
