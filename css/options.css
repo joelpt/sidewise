@@ -32,9 +32,9 @@ body, input, select {
 }
 
 h1 {
-    font-family: 'Overlock', sans-serif;
-    font-style: italic;
-    font-size: 52px;
+    font-family: 'Cagliostro', sans-serif;
+    /*font-style: italic;*/
+    font-size: 50px;
     border-bottom: 1px solid #999;
     margin-bottom: 0.375em;
     text-shadow: 3px 3px 3px #ccc;
