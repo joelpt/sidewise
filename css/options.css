@@ -32,10 +32,12 @@ body, input, select {
 }
 
 h1 {
-    font-family: 'Lobster', cursive;
-    font-size: 50px;
+    font-family: 'Overlock', sans-serif;
+    font-style: italic;
+    font-size: 52px;
     border-bottom: 1px solid #999;
     margin-bottom: 0.375em;
+    text-shadow: 3px 3px 3px #ccc;
 }
 
 h2 {
