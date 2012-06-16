@@ -179,6 +179,17 @@ function onTabUpdated(tabId, changeInfo, tab)
         // we ignore the sidebar tab
         return;
     }
+    // TODO obtain the detection tab's tabId and check against it here and in other spots,
+    // since we really don't want to miss all tab events while monitor detection is going on
+    // should be able to obtain by creating the detection window/tab, then immediately asking
+    // chrome for the tabId of the (only) tab in the detection window and storing that in
+    // monitorInfo
+    // One case where this could be an issue is if Chrome is shut down, then on another synced
+    // machine the user adds Sidewise, then starts up Chrome on the original computer --
+    // Sidewise will have to do monitor detection near the time of browser startup, but
+    // Chrome could also be in the midst of session restore and we do not want to miss
+    // anything whilst detecting too; going off the literal tabId of the detection tab
+    // would cure this
     if (monitorInfo.isDetecting()) {
         return;
     }

@@ -7,12 +7,57 @@ var GET_IS_FULL_SCREEN_SCRIPT = "chrome.extension.sendRequest({ op: 'getIsFullSc
 
 
 ///////////////////////////////////////////////////////////
+// Global
+///////////////////////////////////////////////////////////
+
+var connectedTabs = {};
+
+///////////////////////////////////////////////////////////
 // Initialization
 ///////////////////////////////////////////////////////////
 
 // Registers request event handlers
 function registerRequestEvents() {
     chrome.extension.onRequest.addListener(onRequest);
+    chrome.extension.onConnect.addListener(onConnectPort);
+}
+
+
+function onConnectPort(port) {
+    console.log('onConnect', port);
+    // add port to list of known tab ports
+    connectedTabs[port.tab.id] = port;
+
+    // wire up port event listeners
+    port.onMessage.addListener(function(msg) { onPortMessage(port, msg); });
+    port.onDisconnect.addListener(function() { onPortDisconnect(port); });
+}
+
+function onPortMessage(port, msg) {
+    console.log('onPortMessage', msg, port);
+    // port.postMessage({ action: 'wassup' });
+    switch (msg.op) {
+        case 'getPageDetails':
+            console.log('gotPageDetails', msg.action);
+            onGetPageDetailsMessage(port.tab, msg);
+            break;
+    }
+}
+
+function onPortDisconnect() {
+    console.log('onPortDisconnect', port);
+    // delete entry from known tab ports list
+    if (connectedTabs[port.tab.id]) {
+        delete connectedTabs[port.tab.id];
+    }
+}
+
+function getPort(tabId) {
+    var port = connectedTabs[tabId];
+    if (!port) {
+        throw new Error('Port not found');
+    }
+    return port;
 }
 
 
@@ -25,9 +70,9 @@ function onRequest(request, sender, sendResponse) {
 
     switch (request.op)
     {
-        case 'getPageDetails':
-            onGetPageDetailsMessage(sender.tab, request);
-            break;
+        // case 'getPageDetails':
+        //     onGetPageDetailsMessage(sender.tab, request);
+        //     break;
         case 'getIsFullScreen':
             onGetIsFullScreenMessage(sender.tab, request);
             break;
@@ -74,13 +119,18 @@ function onGetIsFullScreenMessage(tab, request) {
 // getPageDetails and tab-association routines
 ///////////////////////////////////////////////////////////
 
-function getPageDetails(tab, action) {
-    log_brief(tab.id);
-    var scriptBody = GET_PAGE_DETAILS_SCRIPT.replace('<ACTION>', action);
-    chrome.tabs.executeScript(tab.id, { code: scriptBody }, function() {
-        onGetPageDetailsScriptExecuted(tab, action);
-    });
+function getPageDetails(tabId, params) {
+    params.op = 'getPageDetails';
+    getPort(tabId).postMessage(params);
 }
+
+// function getPageDetails(tab, action) {
+//     log_brief(tab.id);
+//     var scriptBody = GET_PAGE_DETAILS_SCRIPT.replace('<ACTION>', action);
+//     chrome.tabs.executeScript(tab.id, { code: scriptBody }, function() {
+//         onGetPageDetailsScriptExecuted(tab, action);
+//     });
+// }
 
 function onGetPageDetailsMessage(tab, msg) {
     log(tab, msg);
@@ -104,7 +154,7 @@ function onGetPageDetailsMessage(tab, msg) {
         case 'associate':
             // look for an existing restorable page with a matching url+referrer+historylength
             // TODO add incognito match
-            associateTabToPageNode(tab, msg.referrer, msg.historylength);
+            associateTabToPageNode(msg.runId, tab, msg.referrer, msg.historylength);
             break;
 
         case 'find_parent':
@@ -151,29 +201,29 @@ function onGetPageDetailsMessage(tab, msg) {
     return true;
 }
 
-function onGetPageDetailsScriptExecuted(tab, action) {
-    log(':::::: CALLED', action);
-    if (action != 'associate') {
-        return;
-    }
+// function onGetPageDetailsScriptExecuted(tab, action) {
+//     log(':::::: CALLED', action);
+//     if (action != 'associate') {
+//         return;
+//     }
 
-    log('>>>>>> ADD 1 TO', associatingTabCount, associatingTabTotal);
-    associatingTabCount++;
+//     log('>>>>>> ADD 1 TO', associatingTabCount, associatingTabTotal);
+//     associatingTabCount++;
 
-    if (chrome.extension.lastError) {
-        // an error means the target tab was unscriptable, so just do
-        // association without the benefit of referrer and historylength
-        log('Associating without getPageDetails values', 'Error was:', chrome.extension.lastError.message);
-        associateTabToPageNode(tab);
-    }
+//     if (chrome.extension.lastError) {
+//         // an error means the target tab was unscriptable, so just do
+//         // association without the benefit of referrer and historylength
+//         log('Associating without getPageDetails values', 'Error was:', chrome.extension.lastError.message);
+//         associateTabToPageNode(tab);
+//     }
 
-    if (!associatingTabs) {
-        return;
-    }
+//     if (!associatingTabs) {
+//         return;
+//     }
 
-    if (associatingTabCount == associatingTabTotal) {
-        log('All tabs associated, deducing window associations next');
-        associatingTabs = false;
-        associateWindowstoWindowNodes();
-    }
-}
+//     if (associatingTabCount == associatingTabTotal) {
+//         log('All tabs associated, deducing window associations next');
+//         associatingTabs = false;
+//         associateWindowstoWindowNodes();
+//     }
+// }

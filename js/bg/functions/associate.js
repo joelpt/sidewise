@@ -4,10 +4,19 @@
 // Used to map session-restored tabs to existing rows.
 // ========================================================
 
+///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
+var ASSOCIATE_PAGES_CHECK_INTERVAL_MS = 1000;
+var ASSOCIATE_PAGES_CHECK_INTERVAL_MS_SLOW = 10000;
+
 
 ///////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////
+
+var associationRuns = {};
 
 var associatingTabs = false;
 var associatingTabCount = 0;
@@ -15,33 +24,105 @@ var associatingTabTotal = 0;
 
 
 ///////////////////////////////////////////////////////////
-// Main function to start assocation run on existing tabs.
+// Association functions
 ///////////////////////////////////////////////////////////
 
+// TODO deal with pages that are theoretically scriptable, yet fail to connect via ch.ext.connect
+// Most common type is a page that 404'd on load.
+// Solution: Accumulate a list of tabs that we have tried to do association for, and as we succeed
+// in doing so remove them from the list.
+// Each time we succeed in doing an association, record an lastAssociationSuccessTimestamp.
+// In associatePagesCheck(), if the delta between now and lastAssociationSuccessTimestamp is more
+// than N seconds, go through the list of tabs that we have not been able to associate yet and
+// treat them in the way we treat nonscriptable tabs.
+// If N=30 that means we won't try that tactic until 30 seconds pass between successfully associating
+// any tab. 30 should be a sufficient amount of time for browser startup with 100 tabs, because
+// the getPageDetails responses should be trickling in during this timeframe. However 30 seconds
+// is a very long time to wait for a response for a given tab before finally doing fallback association.
+// If we don't start checking this lastAssociationSuccessTimestamp delta until we get at least ONE
+// association completed, then we should be able to make it more like N=10; thereafter, as long as
+// we get one tab associated every 10 seconds, we won't mistakenly go and do the nonscriptable fallback
+// technique on anybody erroneously.
+//
+// A more complex solution is to take the average of the time delta between the last N association-successes
+// and use that to project into the future when we expect another association may still happen, with some
+// amount of extra padding to compensate for variances when e.g. reddit is loading.
+//
+// Another possible approach is to do more of this work in onCommitted, e.g. whenever we see a 'reload'
+// transitionType we should be trying to associate to a restorable (if no sessionGUID) or hibernated/recently-closed
+// (if has sessionGUID) page.
+//
+// We might also be able to catch 404 type errors in webRequest event stream and act more quickly on those pages
+// (treating them like nonscriptables) to associate them faster.
+//
+// This would then leave "uncommunicative" pages, like a 10-hour old isohunt.com page we saw, that refused
+// to respond to executeContentScript(). But possibly we could treat that case as a fluke OR possibly using
+// onConnect method will avoid the problem because port is already established and perhaps will still
+// work when executeContentScript() no longer will.
+//
+// TODO keep running assocationRuns for some time, say 120 seconds, even after associatePagesCheck() finds
+// nothing left to do, just in case we have a run that just happened to return nothing, but there could still
+// be more that are slow to come up; this should probably be considered separate from a user doing a manual
+// "reopen 15 closed tabs" from Chrome's deafult New Tab page since those will not happen upon session restore
+// and should be adequately dealt with inside of onCommitted[transitionType=reload]->associateTabToPageNode()
+// logic. However, during that 120 seconds, we should still expect that we will capture those tabs in a run
+// of associatePages() and thus we should make sure that having both onCommitted and associatePages() firing
+// associateTabToPageNode() doesn't fritz things out. A nice approach might be, when onCommitted sees
+// a 'reload', if we think it might be an "associate to a restorable" case (sessionGUID not found in closed-tabs list
+// or hibernated-tabs-in-tree), then just fire up an associatePages() run and let it do all that work for us;
+// this is probably a better solution because we can reuse more of the association code and logics; we will
+// just need to take care to set the 120-second timer separately from onCommitted's firing of associatePages().
+
+// Main entry point for starting the association process.
+// Tries to associate all existing tabs to a page row, and will
+// repeatedly restart the process after a delay until all
+// tabs have been associated with something.
 function associatePages() {
     chrome.tabs.query({ }, function(tabs) {
-        associatingTabs = true;
-        associatingTabCount = 0;
-        associatingTabTotal = 0;
+        var runId = generateGuid();
+        var runInfo = { total: 0, count: 0 };
+        associationRuns[runId] = runInfo;
+
         for (var i in tabs) {
             var tab = tabs[i];
             if (sidebarHandler.tabId == tab.id) {
+                // this tab is the sidebar
                 continue;
             }
-            if (!tree.getNode('p' + tab.id)) {
-                associatingTabTotal++;
-                log('trying association', tab.id, associatingTabTotal);
-                getPageDetails(tab, 'associate');
+            if (tree.getNode('p' + tab.id)) {
+                // this tab is already in the tree as a normal tab
+                continue;
+            }
+            runInfo.total++;
+            log('trying association', 'runId', runId, 'tabId', tab.id, 'total', associationRuns[runId].total, 'count', associationRuns[runId].count);
+            if (!isScriptableUrl(tab.url)) {
+                // this tab will never be able to return details to us from content_script.js,
+                // so just associate it without the benefit of those extra details
+                associateTabToPageNode(runId, tab);
+                continue;
+            }
+
+            // ask the tab for more details via its content_script.js connected port
+            try {
+                getPageDetails(tab.id, { action: 'associate', runId: runId });
+            }
+            catch(ex) {
+                if (ex.message == 'Port not found') {
+                    log('Port does not exist for association yet', 'tabId', tab.id, 'runId', runId);
+                    continue;
+                }
+                throw ex;
             }
         }
-        if (associatingTabTotal == 0) {
-            log('Nothing further found to associate');
+        if (runInfo.total == 0) {
+            log('No unassociated tabs left to associate; ending association run and doing parent window guessing');
+            endAssociationRun(runId);
             associateWindowstoWindowNodes();
             return;
         }
-        log('Started association process, tabs in queue: ' + associatingTabTotal);
+        log('Started association process, tabs in queue: ' + runInfo.total);
         // setTimeout(associatePagesCheck, 5000);
-        TimeoutManager.set('associateCheck', associatePagesCheck, 5000);
+        TimeoutManager.reset(runId, function() { associatePagesCheck(runId); }, ASSOCIATE_PAGES_CHECK_INTERVAL_MS);
     });
 }
 
@@ -50,26 +131,51 @@ function associatePages() {
 // Helper functions used during assocation runs.
 ///////////////////////////////////////////////////////////
 
-function associatePagesCheck() {
-    log('associatePagesCheck', associatingTabs, 'total', associatingTabTotal, 'count', associatingTabCount);
-    if (!associatingTabs) {
-        log('Associating page check thinks we are done');
+function associatePagesCheck(runId) {
+    var runInfo = associationRuns[runId];
+
+    if (!runInfo) {
+        log('Associating page check thinks we are done', runId);
         associateWindowstoWindowNodes();
+        log('Starting a slow tick loop of associatePages');
+        setInterval(associatePages, ASSOCIATE_PAGES_CHECK_INTERVAL_MS_SLOW);
         return;
     }
-    // if (associatingTabCount < associatingTabTotal) {
-        // restart associatePages routine, the previous run missed some
-        log('Restarting associate run');
-        // associatingTabs = false;
-        associatePages();
-        // TimeoutManager.reset('associateCheck');
-    // }
-    // throw new Error('This should never happen');
+    // TimeoutManager.reset(runId, function() { associatePagesCheck(runId) }, ASSOCIATE_PAGES_CHECK_INTERVAL_MS);
+
+    log('associatePagesCheck', 'total', runInfo.total, 'count', runInfo.count);
+
+    log('Ending old run', runId);
+    endAssociationRun(runId);
+
+    log('Starting a new associate run');
+    associatePages();
 }
 
-function associateTabToPageNode(tab, referrer, historylength) {
-    log('Associating tab', tab.id, 'url', tab.url, 'referrer', referrer, 'historylength', historylength);
-    TimeoutManager.reset('associateCheck', associatePagesCheck, 5000);
+function endAssociationRun(runId) {
+    delete associationRuns[runId];
+    try {
+        TimeoutManager.clear(runId);
+    }
+    catch(ex) {
+        if (ex.message == 'A timeout with the given label does not exist') {
+            return;
+        }
+        throw ex;
+    }
+}
+
+function associateTabToPageNode(runId, tab, referrer, historylength) {
+    log('Associating tab', 'runId', runId, 'tabId', tab.id, 'url', tab.url, 'referrer', referrer, 'historylength', historylength, 'associationRuns', associationRuns);
+
+    var runInfo = associationRuns[runId];
+
+    if (runInfo) {
+        // Run that started us is still happening
+        TimeoutManager.reset(runId, function() { associatePagesCheck(runId) }, ASSOCIATE_PAGES_CHECK_INTERVAL_MS);
+        runInfo.count++;
+    }
+
     if (tree.getNode('p' + tab.id)) {
         // tab is already properly present as a pagenode in the tree; don't associate/add again
         return;
