@@ -31,13 +31,24 @@ body, input, select {
     margin-top: 2em;
 }
 
-h1 {
-    font-family: 'Cagliostro', sans-serif;
-    /*font-style: italic;*/
-    font-size: 50px;
+header {
+    margin-bottom: 1.375em;
     border-bottom: 1px solid #999;
-    margin-bottom: 0.375em;
-    text-shadow: 3px 3px 3px #ccc;
+}
+
+@font-face {
+  font-family: 'Fredericka the Great';
+  font-style: normal;
+  font-weight: normal;
+  src: url('/fonts/FrederickatheGreat-Regular.ttf') format('woff');
+}
+
+h1 {
+    display: inline-block;
+    font-family: 'Fredericka the Great', sans-serif;
+    font-size: 52px;
+    margin-left: 6px;
+    text-shadow: 3px 3px 3px #aaa;
 }
 
 h2 {
@@ -191,10 +202,19 @@ input.invalid {
     font-weight: bold;
 }
 
-#version {
+#version, #icon {
     float: right;
+}
+
+#version {
     font-size: 10px;
     color: #999;
+}
+
+#icon {
+    position: relative;
+    top: -3px;
+    left: -5px;
 }
 
 .tooltip {
