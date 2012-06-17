@@ -32,23 +32,24 @@ body, input, select {
 }
 
 header {
-    margin-bottom: 1.375em;
+    margin-bottom: 16px;
     border-bottom: 1px solid #999;
 }
 
 @font-face {
-  font-family: 'Fredericka the Great';
+  font-family: 'Berkshire Swash';
   font-style: normal;
-  font-weight: normal;
-  src: url('/fonts/FrederickatheGreat-Regular.ttf') format('woff');
+  font-weight: 400;
+  src: url('/fonts/Berkshire_Swash.woff') format('woff');
 }
+
 
 h1 {
     display: inline-block;
-    font-family: 'Fredericka the Great', sans-serif;
-    font-size: 52px;
+    font-family: 'Berkshire Swash', 'Trebuchet MS', sans-serif;
+    font-size: 49px;
     margin-left: 6px;
-    text-shadow: 3px 3px 3px #aaa;
+    text-shadow: 3px 3px 3px rgba(0, 0, 0, 0.25);
 }
 
 h2 {
