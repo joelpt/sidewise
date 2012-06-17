@@ -26,6 +26,7 @@ function onWindowRemoved(windowId)
             // Already handling the window removal elsewhere, don't do it twice
             return;
         }
+        savePageTreeToLocalStorage();
         sidebarHandler.onRemoved();
         return;
     }
@@ -34,6 +35,7 @@ function onWindowRemoved(windowId)
     }
     log(windowId);
     tree.removeNode('w' + windowId);
+    savePageTreeToLocalStorage();
     focusTracker.remove(windowId);
     if (sidebarHandler.sidebarExists())
     {

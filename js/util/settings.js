@@ -50,7 +50,7 @@ function initializeDefaultSettings(forceReset) {
         pages_middleClickAction: 'none',
         smartFocusOnClose: true,
         smartFocusPrefersCousins: false,
-        loggingEnabled:  false,
+        loggingEnabled:  true,
         alwaysShowAdvancedOptions: false,
         sidebarTargetWidth: 300,
         settingsInitialized: true

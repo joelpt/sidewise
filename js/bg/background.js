@@ -1,7 +1,16 @@
+///////////////////////////////////////////////////////////
+// Globals
+///////////////////////////////////////////////////////////
+
 var tree;
 var sidebarHandler;
 var focusTracker;
 var monitorInfo;
+
+
+///////////////////////////////////////////////////////////
+// Initialization
+///////////////////////////////////////////////////////////
 
 window.onload = onLoad;
 
@@ -11,7 +20,6 @@ function onLoad()
     chrome.tabs.getCurrent(function() {
         // Early initialization
         tree = new PageTree(PageTreeCallbackProxy, savePageTreeToLocalStorage);
-        // loadPageTreeFromLocalStorage();
         sidebarHandler = new SidebarHandler();
 
         // Call postLoad() after focusTracker initializes to do remaining initialization
@@ -19,37 +27,36 @@ function onLoad()
     });
 }
 
+// IDEA for warmup executescript association fails:
+// - use c.ext.onConnect to establish a port first?
+//   - keep retrying on chrome.ext.lastError, esp. if lastError is something meaningful that can distinguish this case?
+
 function postLoad() {
     initializeDefaultSettings();
     updateStateFromSettings();
 
-    // load page tree from settings
-    // hibernate all pages and windows
-    // correlate existing pages:
-    //      existence == url && referrer && historylength matchup
-    //      if page exists in tree:
-    //          awaken its hibernated entry, set new tabId
-    //          if tab's windowId exists in tree as non hibernated window:
-    //              transfer tab to the existing windowId
-    //          else:
-    //              wake hibernated window, set new windowId
-    //          if parent hibernated window has no children left remove it
-    //      if page does not exist in tree:
-    //          add an entry for it
-    //          put in existing window if found matching windowId, else create new windowId for it
-    //          utilize the existing logic for guessing parent/child relations
-
     registerRequestEvents();
-
-    injectContentScriptInExistingTabs('content_script.js');
-    populatePages();
-
     registerWindowEvents();
     registerTabEvents();
     registerWebNavigationEvents();
     registerBrowserActionEvents();
     registerSnapInEvents();
     registerOmniboxEvents();
+
+    var storedPageTree = loadSetting('pageTree', []);
+    // storedPageTree = [];
+    if (storedPageTree.length == 0) {
+        // first time population of page tree
+        injectContentScriptInExistingTabs('content_script.js');
+        populatePages();
+    }
+    else {
+        // load stored page tree and associate tabs to existing page nodes
+        loadPageTreeFromLocalStorage(storedPageTree);
+        injectContentScriptInExistingTabs('content_script.js');
+        setTimeout(associatePages, 2000);  // wait a few moments for content scripts to get going first
+    }
+
 
     monitorInfo = new MonitorInfo();
 
@@ -61,6 +68,14 @@ function postLoad() {
         monitorInfo.retrieveMonitorMetrics(function(monitors, maxOffset) {
             monitorInfo.saveToSettings();
             createSidebarOnStartup();
+
+            // if (DEBUGIT) {
+            //     setTimeout(function() {
+            //         loadPageTreeFromLocalStorage();
+            //         associatePages();
+            //     }, 1000);
+            // }
+
         });
     }
 }
@@ -74,6 +89,11 @@ function createSidebarOnStartup() {
     sidebarHandler.createWithDockState(loadSetting('dockState', 'right'));
 }
 
+
+///////////////////////////////////////////////////////////
+// PageTree related
+///////////////////////////////////////////////////////////
+
 function savePageTreeToLocalStorage() {
     if (tree.lastModified != tree.lastSaved) {
         saveSetting('pageTree', tree.tree);
@@ -81,8 +101,34 @@ function savePageTreeToLocalStorage() {
     }
 }
 
-function loadPageTreeFromLocalStorage() {
-    tree.tree = loadSetting('pageTree', []);
+function loadPageTreeFromLocalStorage(storedPageTree) {
+    // load the tree data
+    var casts = {
+        'window': WindowNode,
+        'page': PageNode
+    };
+
+    tree.loadTree(storedPageTree, casts);
+
+    // set hibernated+restorable flags on all non-hibernated nodes
+    tree.forEach(function(node, depth, containingArray, parentNode) {
+        if (!node.hibernated) {
+            node.hibernated = true;
+            node.restorable = true;
+            node.id = node.id[0] + 'R' + generateGuid();
+            if (loggingEnabled) {
+                node.label = 'R';
+            }
+        }
+        tree.callbackProxyFn('add', { element: node, parentId: parentNode ? parentNode.id : undefined });
+    });
+
+    // rebuild the id index
+    tree.rebuildIdIndex();
+
+    // set modified state
+    tree.updateLastModified();
+
 }
 
 function PageTreeCallbackProxy(methodName, args) {
@@ -113,14 +159,17 @@ function populatePages()
 {
     chrome.windows.getAll({ populate: true }, function(windows) {
         var numWindows = windows.length;
-        s = '';
+        var s = '';
+        var tabsToQuery = [];
 
         for (var i = 0; i < numWindows; i++) {
             var win = windows[i];
             var tabs = win.tabs;
             var numTabs = tabs.length;
+            log('Populating tabs from window', 'windowId', win.id, 'number of tabs', numTabs);
 
             if (win.type != 'normal') {
+                log('Skipping non-normal window type', 'window type', win.type);
                 continue; // only want actual tab-windows
             }
 
@@ -132,13 +181,90 @@ function populatePages()
 
             for (var j = 0; j < numTabs; j++) {
                 var tab = tabs[j];
+                log('Populating', tab.id, tab.title, tab.url, tab);
                 var page = new PageNode(tab);
-                tree.addNode(page, 'w' + win.id, 'complete');
+                tree.addNode(page, 'w' + win.id);
+                tabsToQuery.push(tab);
             }
-            for (var j = 0; j < numTabs; j++) {
-                // try to guess child/parent tab relationships by asking each page for its referrer
-                getPageDetails(tabs[j], 'find_parent');
-            }
+
         }
+        setTimeout(function() { findTabParents(tabsToQuery); }, 1500); // give content scripts a moment to get going
+
     });
+}
+
+function findTabParents(tabs) {
+    console.log('entering findTabParents', tabs.length);
+    var tabsToRequery = [];
+    for (var i in tabs) {
+        var tab = tabs[i];
+
+        if (tab.id == sidebarHandler.tabId) {
+            // ignore the sidebar
+            continue;
+        }
+
+        if (!tab.url) {
+            // can't do anything useful for tabs lacking a url
+            continue;
+        }
+
+        if (!isScriptableUrl(tab.url)) {
+            // will never be able to obtain details from this page so just call it done
+            var page = tree.getNode('p' + tab.id);
+            if (page) {
+                log('Populating non scriptable page without asking for page details', page.id, page);
+                tree.updateNode(page, { placed: true });
+            }
+            continue;
+        }
+        // try to guess child/parent tab relationships by getting details from page
+        try {
+            log('Asking for page details to find best-matching parent page', 'tabId', tab.id, 'tab', tab);
+            getPageDetails(tab.id, { action: 'find_parent' });
+        }
+        catch(ex) {
+            if (ex.message == 'Port not found') {
+                // Port isn't available yet; try again in a bit
+                // TODO implement intervals in TimeoutManager and let an interval-called function
+                // clear its own hosting interval when it wants to; might be nice if we can
+                // wrap the interval-function such that it gets passed an argument 'hostingIntervalLabel'
+                // which it can optionally use to do so without having to know anything more about
+                // who set what interval
+                // TODO make this here an interval which tries several times before giving up, right now
+                // we are just hoping that it's "enough" of a delay to not miss the port twice
+                log('Port not found, will try calling getPageDetails again later', 'tabId', tab.id);
+                tabsToRequery.push(tab);
+                continue;
+            }
+            throw ex;
+        }
+    }
+
+    if (tabsToRequery.length > 0) {
+
+        var laterFn = function() {
+            log('will requery these tabs', tabsToRequery);
+            for (var i in tabsToRequery) {
+                var tab = tabsToRequery[i];
+                var page = tree.getPage(tab.id);
+                if (page && page.placed) {
+                    // page has already been placed
+                    log('Skipping already-placed page', 'tabId', tab.id);
+                    continue;
+                }
+                log('late getPageDetails running', 'tabId', tab.id, 'tab', tab);
+                getPageDetails(tab.id, { action: 'find_parent' });
+            }
+        };
+
+        // this is usually overkill, but some browsers will be quite slow; since this only happens
+        // when the extension is first initializing it is acceptable overkill
+        setTimeout(laterFn, 2000);
+        setTimeout(laterFn, 4000);
+        setTimeout(laterFn, 8000);
+        setTimeout(laterFn, 12000);
+        setTimeout(laterFn, 16000);
+    }
+
 }
