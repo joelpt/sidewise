@@ -51,24 +51,6 @@ var FancyTree = function(appendToElem, options) {
 
 FancyTree.prototype = {
 
-    defaultTitleBodyHandler: function(row, itemTextElem) {
-        var label = row.attr('label');
-        var text = row.attr('text');
-
-        console.log('BEFOREFORMAT', row.get(0).outerHTML);
-        console.log('BEFOREFORMAT', itemTextElem);
-        console.log('FORMAT TITLE', row.attr('id'), 'LABEL IS', label, ' //// ', text);
-        console.log(this);
-        itemTextElem.children('.ftItemTitle').text(text);
-
-        if (label) {
-            console.log('LABEL IS HERE');
-            itemTextElem.children('.ftItemLabel').text(label + (text ? ': ' : ''));
-        }
-        console.log('AFTERFORMAT', row.get(0).outerHTML);
-
-    },
-
     ///////////////////////////////////////////////////////////
     // Initialization
     ///////////////////////////////////////////////////////////
@@ -116,11 +98,14 @@ FancyTree.prototype = {
 
         // configure tree initial state
         this.root = rootNode;
-
         this.permitTooltipHandler = options.permitTooltipHandler;
         this.focusedRow = null;
         this.hoveredRow = null;
         this.hoveringRowButtons = false;
+        this.filtering = false;
+        this.multiSelection = [];
+        this.lastMultiSelectedFromId = null;
+        this.lastMultiSelectedToId = null;
         this.tooltipTopOffset = options.tooltipTopOffset || 12;
         this.tooltip = null;
         this.simpletip = $('<div id="ftSimpleTip"/>').hide();
@@ -298,11 +283,11 @@ FancyTree.prototype = {
         var elem = this.getRow(id);
 
         if (this.focusedRow) {
-            this.focusedRow.removeClass('focused');
+            this.focusedRow.removeClass('ftFocused');
         }
 
         this.focusedRow = elem;
-        elem.addClass('focused');
+        elem.addClass('ftFocused');
 
         if (!isScrolledIntoView(elem)) {
             $.scrollTo(elem, 150);
@@ -320,14 +305,14 @@ FancyTree.prototype = {
         var onExpanderClick = this.rowTypes[elem.attr('rowtype')].onExpanderClick;
         var expanded;
 
-        if (elem.hasClass('collapsed')) {
+        if (elem.hasClass('ftCollapsed')) {
             // expand
-            children.slideToggle(100, function() { elem.removeClass('collapsed'); });
+            children.slideToggle(100, function() { elem.removeClass('ftCollapsed'); });
             expanded = true;
         }
         else {
             // collapse
-            children.slideToggle(100, function() { elem.addClass('collapsed'); });
+            children.slideToggle(100, function() { elem.addClass('ftCollapsed'); });
             expanded = false;
         }
 
@@ -344,21 +329,26 @@ FancyTree.prototype = {
     ///////////////////////////////////////////////////////////
 
     onDocumentKeyDown: function(evt) {
+        var treeObj = evt.data.treeObj;
+
         if (evt.keyCode == 70 && evt.ctrlKey) { // Ctrl+F
             // focus filter box
-            evt.data.treeObj.filterElem.children('.ftFilterInput').focus();
+            treeObj.filterElem.children('.ftFilterInput').focus();
             return false;
         }
         if (evt.keyCode == 27) { // Esc
             // clear filter box
-            evt.data.treeObj.filterElem.children('.ftFilterInput').val('').trigger('keyup');
+            treeObj.filterElem.children('.ftFilterInput').val('').trigger('keyup');
+            treeObj.filtering = false;
             return false;
         }
         return true;
     },
 
     onFilterStatusClick: function(evt) {
-        evt.data.treeObj.filterElem.children('.ftFilterInput').val('').trigger('keyup');
+        var treeObj = evt.data.treeObj;
+        treeObj.filterElem.children('.ftFilterInput').val('').trigger('keyup');
+        treeObj.filtering = false;
         return false;
 
     },
@@ -386,6 +376,8 @@ FancyTree.prototype = {
 
         if (filter.length == 0)
         {
+            treeObj.filtering = false;
+
             // remove filtering class
             treeObj.root.removeClass('ftFiltering');
 
@@ -394,6 +386,8 @@ FancyTree.prototype = {
         }
         else
         {
+            treeObj.filtering = true;
+
             // filter out non matching entries
             var advancedFilter = loadSetting('useAdvancedTreeFiltering');
             var escapedFilter = filter.replace('"', '\\"'); // escape embedded double quotes
@@ -476,6 +470,255 @@ FancyTree.prototype = {
         treeObj.getButtons(row).parent().hide();
         treeObj.hoveredRow = null;
         treeObj.handleHideTooltipEvent(evt);
+    },
+
+    defaultTitleBodyHandler: function(row, itemTextElem) {
+        var label = row.attr('label');
+        var text = row.attr('text');
+
+        // console.log('BEFOREFORMAT', row.get(0).outerHTML);
+        // console.log('BEFOREFORMAT', itemTextElem);
+        // console.log('FORMAT TITLE', row.attr('id'), 'LABEL IS', label, ' //// ', text);
+        // console.log(this);
+        itemTextElem.children('.ftItemTitle').text(text);
+
+        if (label) {
+            // console.log('LABEL IS HERE');
+            itemTextElem.children('.ftItemLabel').text(label + (text ? ': ' : ''));
+        }
+        // console.log('AFTERFORMAT', row.get(0).outerHTML);
+
+    },
+
+
+    ///////////////////////////////////////////////////////////
+    // Row click event handlers
+    ///////////////////////////////////////////////////////////
+
+    _rowMouseDownHandler: function(evt) {
+        if (evt.data.onMiddleClick && evt.which == 2) {
+            // middle click
+            return false; // eat middle click event to avoid the autoscroll cursor
+        }
+    },
+
+    _rowMouseUpHandler: function(evt) {
+        var $this = $(this);
+        var treeObj = evt.data.treeObj;
+        var row = treeObj.getParentRowNode($this);
+        if (treeObj.hoveringRowButtons) {
+            // we manage this state and manually check it here because jquery
+            // doesn't really give us a way to only trigger a child-element's event handlers
+            // without also triggering all container-element's handlers first
+            return;
+        }
+
+        treeObj.hideTooltip();
+
+        // left click
+        if (evt.which == 1) {
+            var focusedId = treeObj.focusedRow.attr('id');
+            var fromId = treeObj.lastMultiSelectedToId || focusedId;
+            var id = row.attr('id');
+
+            if (evt.ctrlKey) {
+                treeObj.lastMultiSelectedFromTabId = null; // prevent shift+selection from expanding selection chain
+                if (evt.shiftKey) {
+                    // Ctrl+Shift: Incrementally add spanned range of rows to current multiselection
+                    treeObj.addMultiSelectionBetween(fromId, id);
+                    console.log('add range to selection between', fromId, 'and', id);
+                } else {
+                    // Ctrl: Un/select a single row
+                    // Do we have any multiselection yet? If not, add the current focused tabId
+                    // in addition to the clicked row
+                    if (treeObj.multiSelection.length == 0) {
+                        treeObj.toggleMultiSelectionSingle(focusedId);
+                        console.log('add focused row to selection');
+                    }
+                    treeObj.toggleMultiSelectionSingle(id);
+                    console.log('add new row to selection ' + id);
+                }
+                treeObj.lastMultiSelectedToId = id;
+                return;
+            }
+
+            if (evt.shiftKey && fromId) {
+                if (!treeObj.lastMultiSelectedFromId) {
+                    // if this isn't a continuation of a previous shift+select,
+                    // clear selection first
+                    treeObj.clearMultiSelection();
+                }
+
+                treeObj.addMultiSelectionBetween(fromId, id);
+                treeObj.lastMultiSelectedFromId = fromId;
+                treeObj.lastMultiSelectedToId = id;
+
+                console.log('set range to selection between', fromId, 'and', id);
+                return;
+            }
+
+            if (evt.data.onClick) {
+                // clear existing multiselection if any
+                treeObj.clearMultiSelection();
+                treeObj.lastMultiSelectedFromId = id;
+                treeObj.lastMultiSelectedToId = id;
+
+                // handle left click
+                evt.data.row = row;
+                evt.data.onClick(evt);
+            }
+            return;
+        }
+
+        if (evt.which == 2 && evt.data.onMiddleClick) {
+            // handle middle click
+            evt.data.row = row;
+            evt.data.onMiddleClick(evt);
+            return;
+        }
+    },
+
+    _rowDoubleClickHandler: function(evt) {
+        if (evt.which != 1) {
+            // not the left mouse button
+            return;
+        }
+
+        var $this = $(this);
+        var treeObj = evt.data.treeObj;
+        var row = treeObj.getParentRowNode($this);
+
+        if (treeObj.hoveringRowButtons) {
+            // we manage this state and manually check it here because jquery
+            // doesn't really give us a way to only trigger a child-element's event handlers
+            // without also triggering all container-element's handlers first
+            return;
+        }
+
+        treeObj.hideTooltip();
+
+        evt.data.row = row;
+        evt.data.onDoubleClick(evt);
+    },
+
+    _rowButtonClickHandler: function(evt) {
+        $('#ftSimpleTip').hide();
+        evt.data.row = $(this).closest('li');
+        evt.data.onClick(evt);
+        evt.stopPropagation();
+        return false;
+    },
+
+
+    ///////////////////////////////////////////////////////////
+    // Multiselection
+    ///////////////////////////////////////////////////////////
+
+    toggleMultiSelectionSingle: function(id) {
+        var row = ft.getRow(id);
+        var index = this.multiSelection.indexOf(id);
+        if (index > -1) {
+            // already in selection so remove it
+            this.multiSelection.splice(index, 1);
+            this.removeSelectionEffect(row);
+
+            if (this.multiSelection.length == 0) {
+                this.clearMultiSelection();
+            }
+
+            return;
+        }
+
+        // add to selection
+        this.multiSelection.push(id);
+        this.addSelectionEffect(row);
+        this.root.addClass('ftMultiselecting');
+    },
+
+    addMultiSelectionBetween: function(fromId, toId) {
+        // if fromId and toId are the same, just do a single selection
+        if (fromId == toId) {
+            this.toggleMultiSelectionSingle(fromId);
+            return;
+        }
+
+        var rows;
+        if (this.filtering) {
+            // when tree is filtered, only select pages which match the filter
+            rows = this.root.find('.ftFilteredIn');
+        }
+        else {
+            // select from all pages
+            // TODO handle pages that are not visible due to
+            // parent branch being collapsed
+            rows = this.root.find('.ftRowNode');
+        }
+
+        // flatten the tree to get the ids in the visible page order disregarding nesting
+        var flattened = rows.map(function(i, e) { return e.id; }).toArray();
+
+        // find index of start and end tabs
+        var start = flattened.indexOf(fromId);
+        var end = flattened.indexOf(toId);
+
+        if (start == -1 || end == -1) {
+            throw new Error('Could not find both start and end indices');
+        }
+
+        // switch start and end around if start doesn't precede end
+        if (start > end) {
+            var swap = start;
+            start = end;
+            end = swap;
+        }
+
+        // get the list of ids between start and end inclusive
+        var range = flattened.slice(start, end + 1);
+
+        if (range.length == 0) {
+            return;
+        }
+
+        // add these to multiSelection
+        var thisObj = this;
+        range.forEach(function(e) {
+            if (thisObj.multiSelection.indexOf(e) == -1) {
+                thisObj.multiSelection.push(e);
+                thisObj.addSelectionEffect(thisObj.getRow(e));
+            }
+        });
+
+        this.root.addClass('ftMultiselecting');
+
+        return;
+    },
+
+    clearMultiSelection: function() {
+        if (this.multiSelection.length == 0) {
+            return;
+        }
+
+        // remove visual selection effects
+        var thisObj = this;
+        this.multiSelection.forEach(function(e) {
+            thisObj.removeSelectionEffect(thisObj.getRow(e));
+        });
+        this.root.removeClass('ftMultiselecting');
+
+        // reset multiSelection variables
+        this.multiSelection = [];
+        this.lastMultiSelectedFromId = null;
+        this.lastMultiSelectedToId = null;
+    },
+
+    addSelectionEffect: function(row)
+    {
+      row.addClass('ftSelected');
+    },
+
+    removeSelectionEffect: function(row)
+    {
+      row.removeClass('ftSelected');
     },
 
 
@@ -586,77 +829,6 @@ FancyTree.prototype = {
             newpos.top = pos.top + this.tooltipTopOffset + content.height();
             tooltip.offset(newpos);
         }
-    },
-
-
-    ///////////////////////////////////////////////////////////
-    // Row click event handlers
-    ///////////////////////////////////////////////////////////
-
-    _rowMouseDownHandler: function(evt) {
-        if (evt.data.onMiddleClick && evt.which == 2) {
-            // middle click
-            return false; // eat middle click event to avoid the autoscroll cursor
-        }
-    },
-
-    _rowMouseUpHandler: function(evt) {
-        var $this = $(this);
-        var treeObj = evt.data.treeObj;
-        var row = treeObj.getParentRowNode($this);
-        if (treeObj.hoveringRowButtons) {
-            // we manage this state and manually check it here because jquery
-            // doesn't really give us a way to only trigger a child-element's event handlers
-            // without also triggering all container-element's handlers first
-            return;
-        }
-
-        treeObj.hideTooltip();
-
-        evt.data.row = row;
-
-        if (evt.which == 1 && evt.data.onClick) {
-            // handle left click
-            evt.data.onClick(evt);
-            return;
-        }
-
-        if (evt.which == 2 && evt.data.onMiddleClick) {
-            // handle middle click
-            evt.data.onMiddleClick(evt);
-            return;
-        }
-    },
-
-    _rowDoubleClickHandler: function(evt) {
-        if (evt.which != 1) {
-            // not the left mouse button
-            return;
-        }
-
-        var $this = $(this);
-        var treeObj = evt.data.treeObj;
-        var row = treeObj.getParentRowNode($this);
-
-        if (treeObj.hoveringRowButtons) {
-            // we manage this state and manually check it here because jquery
-            // doesn't really give us a way to only trigger a child-element's event handlers
-            // without also triggering all container-element's handlers first
-            return;
-        }
-
-        treeObj.hideTooltip();
-
-        evt.data.row = row;
-        evt.data.onDoubleClick(evt);
-    },
-
-    _rowButtonClickHandler: function(evt) {
-        $('#ftSimpleTip').hide();
-        evt.data.row = $(this).closest('li');
-        evt.data.onClick(evt);
-        evt.stopPropagation();
-        return false;
     },
 
 

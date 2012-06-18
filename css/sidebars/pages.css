@@ -89,13 +89,14 @@ body {
     -webkit-filter: grayscale(100%);
 }
 
-.ftRowNode[rowtype=page][hibernated=true].focused > .ftItemRow > .ftItemRowContent {
-    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #eaeaea),color-stop(1, white));
-    border: 1px dotted rgb(150, 150, 150);
+.ftRoot:not(.ftMultiselecting) .ftRowNode[rowtype=page][hibernated=true].ftFocused > .ftItemRow > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #dadada),color-stop(1, white));
+    border: 1px dotted rgb(40, 40, 40);
 }
 
-.ftRowNode[rowtype=page][hibernated=true].focused > .ftItemRow > .ftItemRowContent:hover {
-    border: 1px dotted rgb(110, 110, 110);
+.ftRoot:not(.ftMultiselecting) .ftRowNode[rowtype=page][hibernated=true].ftFocused > .ftItemRow > .ftItemRowContent:hover {
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #cacaca),color-stop(1, white));
+    border: 1px dotted rgb(0, 0, 0);
 }
 
 
