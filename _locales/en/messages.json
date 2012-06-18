@@ -70,10 +70,6 @@
     "notepad_lastSavedAt": { "message": "Last saved at:" },
 
 
-    // Notepad sidebar
-    "notepad_heading": { "message": "Notepad" },
-
-
     // Bookmarks sidebar
     "bookmarks_heading": { "message": "Bookmarks" },
 
