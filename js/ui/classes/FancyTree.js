@@ -15,6 +15,8 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   *          {
   *            identifier:                       // identifying string for each type of row to support
   *            {
+  *              autofocusOnClick: Boolean,      // if true (default), set focus to row when clicked
+  *              multiselectable: Boolean,       // if true (default), row can be in ctrl/shift selections
   *              onClick: Function(evt),         // left single click event handler
   *              onDoubleClick: Function(evt),   // left double click event handler
   *              onMiddleClick: Function(evt),   // middle click event handler
@@ -279,12 +281,15 @@ FancyTree.prototype = {
         titleBodyHandler(row, innerRow.children('.ftItemText'));
     },
 
-    focusRow: function(id) {
-        var elem = this.getRow(id);
-
+    focusRow: function(idOrElem) {
+        var elem = this.getRow(idOrElem);
+        var id = elem.attr('id');
         if (this.focusedRow) {
             this.focusedRow.removeClass('ftFocused');
         }
+
+        this.lastMultiSelectedToId = id;
+        this.lastMultiSelectedFromId = id;
 
         this.focusedRow = elem;
         elem.addClass('ftFocused');
@@ -506,78 +511,102 @@ FancyTree.prototype = {
         var $this = $(this);
         var treeObj = evt.data.treeObj;
         var row = treeObj.getParentRowNode($this);
+        evt.data.row = row;
+
         if (treeObj.hoveringRowButtons) {
             // we manage this state and manually check it here because jquery
             // doesn't really give us a way to only trigger a child-element's event handlers
-            // without also triggering all container-element's handlers first
+            // without also triggering all container-element's handlers first;
+            // this is basically the inverse of evt.stopPropagation()
             return;
         }
 
+        // hide any visible tooltips
         treeObj.hideTooltip();
+
+        // middle click
+        if (evt.which == 2) {
+            if (evt.data.onMiddleClick) {
+                // handle middle click
+                evt.data.onMiddleClick(evt);
+            }
+            return;
+        }
 
         // left click
         if (evt.which == 1) {
-            var focusedId = treeObj.focusedRow.attr('id');
-            var fromId = treeObj.lastMultiSelectedToId || focusedId;
-            var id = row.attr('id');
-
-            if (evt.ctrlKey) {
-                treeObj.lastMultiSelectedFromId = null; // prevent shift+selection from expanding selection chain
-                if (evt.shiftKey) {
-                    // Ctrl+Shift: Incrementally add spanned range of rows to current multiselection
-                    treeObj.addMultiSelectionBetween(fromId, id);
-                }
-                else {
-                    // Ctrl: Un/select a single row
-
-                    // Do we have any multiselection yet? If not, add the current focused id
-                    // in addition to the ctrl+clicked row
-                    if (treeObj.multiSelection.length == 0) {
-                        // Don't support ctrl+clicking the currently focused row if nothing
-                        // else is selected
-                        if (focusedId == id) {
-                            return;
-                        }
-                        // turn on selection of focused row
-                        treeObj.toggleMultiSelectionSingle(focusedId);
-                    }
-                    // toggle selection ctrl+clicked row
-                    treeObj.toggleMultiSelectionSingle(id);
-                }
-                treeObj.lastMultiSelectedToId = id;
+            if (evt.ctrlKey || evt.shiftKey) {
+                // we got a left click and ctrl or shift was held down
+                treeObj._rowMultiSelectionClickHandler(evt);
                 return;
             }
 
-            if (evt.shiftKey && fromId) {
-                if (!treeObj.lastMultiSelectedFromId) {
-                    // if this isn't a continuation of a previous shift+select,
-                    // clear selection first
-                    treeObj.clearMultiSelection();
-                }
-                // select range of rows
-                treeObj.addMultiSelectionBetween(fromId, id);
-                treeObj.lastMultiSelectedFromId = fromId;
-                treeObj.lastMultiSelectedToId = id;
-                return;
-            }
-
+            // regular left click (no modifier keys)
             if (evt.data.onClick) {
                 // clear existing multiselection if any
                 treeObj.clearMultiSelection();
-                treeObj.lastMultiSelectedFromId = id;
-                treeObj.lastMultiSelectedToId = id;
+
+                if (evt.data.autofocusOnClick !== false) {
+                    // automatically set focus to clicked row
+                    treeObj.focusRow(row);
+                }
 
                 // handle left click
-                evt.data.row = row;
                 evt.data.onClick(evt);
             }
             return;
         }
+    },
 
-        if (evt.which == 2 && evt.data.onMiddleClick) {
-            // handle middle click
-            evt.data.row = row;
-            evt.data.onMiddleClick(evt);
+    _rowMultiSelectionClickHandler: function(evt) {
+        if (evt.data.multiselectable === false) {
+            // cannot multiselect this type of row
+            return;
+        }
+
+        var row = evt.data.row;
+        var treeObj = evt.data.treeObj;
+        var focusedId = treeObj.focusedRow.attr('id');
+        var fromId = treeObj.lastMultiSelectedToId || focusedId;
+        var id = row.attr('id');
+
+        if (evt.ctrlKey) {
+            treeObj.lastMultiSelectedFromId = null; // prevent shift+selection from expanding selection chain
+            if (evt.shiftKey) {
+                // Ctrl+Shift: Incrementally add spanned range of rows to current multiselection
+                treeObj.addMultiSelectionBetween(fromId, id);
+            }
+            else {
+                // Ctrl: Un/select a single row
+
+                // Do we have any multiselection yet? If not, add the current focused id
+                // in addition to the ctrl+clicked row
+                if (treeObj.multiSelection.length == 0) {
+                    // Don't support ctrl+clicking the currently focused row if nothing
+                    // else is selected
+                    if (focusedId == id) {
+                        return;
+                    }
+                    // turn on selection of focused row
+                    treeObj.toggleMultiSelectionSingle(focusedId);
+                }
+                // toggle selection ctrl+clicked row
+                treeObj.toggleMultiSelectionSingle(id);
+            }
+            treeObj.lastMultiSelectedToId = id;
+            return;
+        }
+
+        if (evt.shiftKey && fromId) {
+            if (!treeObj.lastMultiSelectedFromId) {
+                // if this isn't a continuation of a previous shift+select,
+                // clear selection first
+                treeObj.clearMultiSelection();
+            }
+            // select range of rows
+            treeObj.addMultiSelectionBetween(fromId, id);
+            treeObj.lastMultiSelectedFromId = fromId;
+            treeObj.lastMultiSelectedToId = id;
             return;
         }
     },
@@ -650,6 +679,7 @@ FancyTree.prototype = {
             return;
         }
 
+
         var rows;
         if (this.filtering) {
             // when tree is filtered, only select pages which match the filter
@@ -662,6 +692,16 @@ FancyTree.prototype = {
             rows = this.root.find('.ftRowNode');
         }
 
+        // build a list of rowtypes which may be multiselected
+        var multiselectableRowTypes = mapObjectProps(this.rowTypes, function(k, v) {
+            return (v.multiselectable === false ? undefined : k);
+        });
+
+        // filter out non-multiselectable rows
+        rows = rows.filter(function(i, e) {
+            return (multiselectableRowTypes.indexOf(e.attributes.rowtype.value) >= 0);
+        });
+
         // flatten the tree to get the ids in the visible page order disregarding nesting
         var flattened = rows.map(function(i, e) { return e.id; }).toArray();
 
@@ -670,7 +710,7 @@ FancyTree.prototype = {
         var end = flattened.indexOf(toId);
 
         if (start == -1 || end == -1) {
-            throw new Error('Could not find both start and end indices');
+            throw new Error('Could not find both start and end indices ' + fromId + ', ' + toId);
         }
 
         // switch start and end around if start doesn't precede end
