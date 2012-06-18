@@ -81,7 +81,7 @@
 
 /* .ftButtons */
 
-div.ftButtons {
+.ftButtons {
     display: none;
     padding-right: 0.25em;
     -webkit-box-flex: 0.0;
@@ -212,7 +212,7 @@ div.ftButtons {
 }
 
 .ftMultiselecting .ftFocused:not(.ftSelected) > .ftItemRow > .ftItemRowContent {
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #e1ebff),color-stop(1, white)) !important;
+    background: #fff;
     border: 1px dashed rgb(0, 0, 0);
 }
 
