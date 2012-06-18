@@ -59,17 +59,19 @@ h2 {
     margin-top: 1em;
 }
 
-b {
+b, strong {
     font-weight: bold;
 }
 
-i {
+i, em {
     font-style: italic;
 }
 
 ol {
     list-style: decimal;
     margin-left: 2em;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
 }
 
 blockquote {
