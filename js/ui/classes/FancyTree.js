@@ -529,9 +529,16 @@ FancyTree.prototype = {
                 }
                 else {
                     // Ctrl: Un/select a single row
+
                     // Do we have any multiselection yet? If not, add the current focused id
                     // in addition to the ctrl+clicked row
                     if (treeObj.multiSelection.length == 0) {
+                        // Don't support ctrl+clicking the currently focused row if nothing
+                        // else is selected
+                        if (focusedId == id) {
+                            return;
+                        }
+                        // turn on selection of focused row
                         treeObj.toggleMultiSelectionSingle(focusedId);
                     }
                     // toggle selection ctrl+clicked row
@@ -581,6 +588,11 @@ FancyTree.prototype = {
             return;
         }
 
+        if (evt.ctrlKey || evt.shiftKey) {
+            // don't perform double click actions when ctrl/shift selecting
+            return;
+        }
+
         var $this = $(this);
         var treeObj = evt.data.treeObj;
         var row = treeObj.getParentRowNode($this);
@@ -622,7 +634,6 @@ FancyTree.prototype = {
             if (this.multiSelection.length == 0) {
                 this.clearMultiSelection();
             }
-
             return;
         }
 
@@ -691,10 +702,6 @@ FancyTree.prototype = {
     },
 
     clearMultiSelection: function() {
-        if (this.multiSelection.length == 0) {
-            return;
-        }
-
         // remove visual selection effects
         var thisObj = this;
         this.multiSelection.forEach(function(e) {
