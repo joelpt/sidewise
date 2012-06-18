@@ -1,0 +1,291 @@
+{
+  "extName": {
+    "message": "Seitlich Tree Style Tabs"
+  },
+  "extDescription": {
+    "message": "Ein hartnäckiger Sidebar für Chrome mit Baum Style Tabs und vieles mehr."
+  },
+  "sidebarTitle": {
+    "message": "Seitlich"
+  },
+  "sidebars_optionsButtonTooltip": {
+    "message": "Optionen"
+  },
+  "text_page": {
+    "message": "Seite"
+  },
+  "text_pages": {
+    "message": "Seiten"
+  },
+  "text_Version": {
+    "message": "Version"
+  },
+  "text_monitor": {
+    "message": "Überwachung"
+  },
+  "text_monitors": {
+    "message": "Monitore"
+  },
+  "text_Window": {
+    "message": "Fenster"
+  },
+  "text_hibernated": {
+    "message": "Winterschlaf"
+  },
+  "tabTitle_Extensions": {
+    "message": "Extensions"
+  },
+  "tabTitle_Settings": {
+    "message": "Einstellungen"
+  },
+  "tabTitle_Downloads": {
+    "message": "Downloads"
+  },
+  "tabTitle_Bookmarks": {
+    "message": "Lesezeichen"
+  },
+  "tabTitle_History": {
+    "message": "Geschichte"
+  },
+  "tabTitle_NewTab": {
+    "message": "Neuer Tab"
+  },
+  "omniboxDefaultSuggestion": {
+    "message": "Geben Sie den Text auf Seite Titel und Bezeichnungen suchen"
+  },
+  "omniboxSuggestionPrefix": {
+    "message": "Seite:"
+  },
+  "prompt_filterPlaceholderText": {
+    "message": "Geben Sie zu Titeln und URLs suchen"
+  },
+  "prompt_filterActiveText": {
+    "message": "Spiele gezeigt. Klicken Sie hier, um zurückzusetzen."
+  },
+  "prompt_detectMonitors": {
+    "message": "Seitlich wird Ihr Monitor (e) jetzt zu erkennen."
+  },
+  "prompt_detectMonitors_complete": {
+    "message": "Überwachen Erkennung abgeschlossen ist."
+  },
+  "prompt_detectMonitors_mac": {
+    "message": "Seitlich wird Ihr Monitor nun Details zu erkennen. Leider Seitlich derzeit nicht erkennen kann mehrere Monitore richtig auf Mac OSX. Seitlich davon aus haben Sie nur einen einzigen Monitor."
+  },
+  "prompt_closeWindow": {
+    "message": "Schließen Sie Fenster mit $COUNT PAGES$ ?",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4"
+      },
+      "pages": {
+        "content": "$2",
+        "example": "pages"
+      }
+    }
+  },
+  "prompt_confirmResetOptions": {
+    "message": "Sind Sie sicher, dass Sie alle Optionen auf die Standardwerte zurücksetzen?"
+  },
+  "sidebarLabel_Pages": {
+    "message": "Seiten"
+  },
+  "sidebarLabel_Notepad": {
+    "message": "Notizblock"
+  },
+  "sidebarLabel_Bookmarks": {
+    "message": "Lesezeichen"
+  },
+  "sidebarLabel_GlobalHistory": {
+    "message": "Browser-History"
+  },
+  "sidebarLabel_TabHistory": {
+    "message": "Tab History"
+  },
+  "sidebarLabel_ClosedPages": {
+    "message": "Geschlossene Seiten"
+  },
+  "sidebarLabel_Reddit": {
+    "message": "Reddit"
+  },
+  "pages_hibernatedHint": {
+    "message": "Winterschlaf Seite"
+  },
+  "pages_omniboxTip": {
+    "message": "Tipp: Sie können \"SW sometext\" in Chrome-Adressleiste zu Seiten in Seitlich finden geben."
+  },
+  "notepad_heading": {
+    "message": "Notizblock"
+  },
+  "notepad_hint": {
+    "message": "Geben Sie einfach. Text wird automatisch gespeichert."
+  },
+  "notepad_lastSavedAt": {
+    "message": "Zuletzt gespeicherte bei:"
+  },
+  "bookmarks_heading": {
+    "message": "Lesezeichen"
+  },
+  "globalHistory_heading": {
+    "message": "Browser-History"
+  },
+  "tabHistory_heading": {
+    "message": "Tab History"
+  },
+  "closedPages_heading": {
+    "message": "Geschlossene Seiten"
+  },
+  "optionsPageTitle": {
+    "message": "Seitlich Optionen"
+  },
+  "optionsPageHeading": {
+    "message": "Seitlich Optionen"
+  },
+  "optionsErrorSavingSetting": {
+    "message": "Bitte korrigieren Sie Ihre Eingabe."
+  },
+  "optionsSuccessSavingSetting": {
+    "message": "Einstellung gespeichert."
+  },
+  "optionsSavedAllSettings": {
+    "message": "Einstellungen gespeichert."
+  },
+  "optionsResetAllSettings": {
+    "message": "Alle Einstellungen auf die Standardwerte wiederhergestellt."
+  },
+  "optionsDefaultStatus": {
+    "message": "Hallo! Dies ist Seitlich der Optionen-Seite. Ändern Sie Ihre Optionen aus."
+  },
+  "optionsHeadingSidebar": {
+    "message": "Sidebar Verhalten"
+  },
+  "optionsHeadingMonitors": {
+    "message": "Monitore"
+  },
+  "optionsHeadingMisc": {
+    "message": "Erweitert"
+  },
+  "optionsShowAdvanced": {
+    "message": "+ Show advanced options"
+  },
+  "option_openSidebarOnStartup": {
+    "message": "Offene Sidebar beim Start"
+  },
+  "option_keepSidebarOnTop": {
+    "message": "Halten Sidebar sichtbar neben dem Dock-Fenster"
+  },
+  "option_keepSidebarOnTop_hint": {
+    "message": "! <p> Wenn aktiviert, wenn die Umstellung auf Chrom aus einer anderen Applikation, wird die Sidebar Seitlich nach vorne zu bringen, damit andere Fenster nicht verdeckt oder ausblenden. </P> Leider ist dieses Durcheinander mit dem Betriebssystem die native Fenster-Anordnung. Zum Beispiel unter Windows, wirst du zu Alt-Tab zweimal haben, um wieder zu Ihrer letzten Nicht-Chrome-Fenster, wenn diese Option aktiviert ist. </P>"
+  },
+  "option_browserActionButtonBehavior": {
+    "message": "Wenn Browser-Symbolleiste auf die Schaltfläche geklickt wird"
+  },
+  "option_browserActionButtonBehavior_toggle": {
+    "message": "Umschalten Seitenleiste an / aus"
+  },
+  "option_browserActionButtonBehavior_show": {
+    "message": "Show / anzudocken Seitenleiste"
+  },
+  "option_browserActionButtonBehavior_hint": {
+    "message": "Wenn 'show / anzudocken sidebar' ausgewählt wird, wird die Sidebar eingeschaltet sein und angedockt an das aktuelle Fenster, wenn die Schaltfläche geklickt wird. Um die Sidebar in diesem Fall zu schließen, verwenden Sie den Schließen-Button in der Seitenleiste auf die Titelleiste. <br/> Wenn 'Toggle-Seitenleiste an / aus \"gewählt, so klicken Seitlich der Browser Schaltfläche in der Symbolleiste wird die Seitenleiste ein-oder auszuschalten."
+  },
+  "option_dockState": {
+    "message": "Dock-Seitenleiste auf diese Seite des Fensters"
+  },
+  "option_dockState_left": {
+    "message": "links"
+  },
+  "option_dockState_right": {
+    "message": "rechts"
+  },
+  "option_dockState_undocked": {
+    "message": "abgedockt"
+  },
+  "optionsHeadingPages": {
+    "message": "Seiten-Seitenleiste"
+  },
+  "option_pages_doubleClickAction": {
+    "message": "Beim Doppelklick auf eine Zeile"
+  },
+  "option_pages_doubleClickAction_none": {
+    "message": "Nichts tun"
+  },
+  "option_pages_doubleClickAction_close": {
+    "message": "Seite schließen / Fenster"
+  },
+  "option_pages_doubleClickAction_hibernate": {
+    "message": "Toggle Winterschlaf"
+  },
+  "option_pages_doubleClickAction_expand": {
+    "message": "expand / collapse Filiale"
+  },
+  "option_pages_middleClickAction": {
+    "message": "Bei mittleren Maustaste auf eine Zeile"
+  },
+  "option_pages_middleClickAction_none": {
+    "message": "Nichts tun"
+  },
+  "option_pages_middleClickAction_close": {
+    "message": "Seite schließen / Fenster"
+  },
+  "option_pages_middleClickAction_hibernate": {
+    "message": "Toggle Winterschlaf"
+  },
+  "option_pages_middleClickAction_expand": {
+    "message": "expand / collapse Filiale"
+  },
+  "option_smartFocusOnClose": {
+    "message": "Verwenden Sie Smart Focus Logik beim Schließen Tabs"
+  },
+  "option_smartFocusOnClose_hint": {
+    "message": "<p> Wenn diese Funktion aktiviert und die Sidebar offen ist, wird Seitlich zur Verwendung eigener Baum-orientierten Logik zu entscheiden, welche Register zum nächsten zu konzentrieren, nachdem ein Tab geschlossen wird. </p> Beachten Sie, dass dies verursacht manchmal eine schnelle visuelle Sprung zwischen zwei Registerkarten beim Schließen einer Registerkarte, aufgrund der Einschränkungen des Chrome </p> Technische Details:. Smart Focus verwendet die folgende Reihenfolge der Priorität in der Kommissionierung die nächste Registerkarte zu konzentrieren: </p> <ol> <li> Das erste Kind der geschlossenen Tab </li> Nächste Geschwister von geschlossenen Tab </li> vorhergehenden Geschwisterelemente von geschlossenen Tab </li> Eltern der geschlossenen Tab </li> Let Chrome entscheiden </li> </ol> </p> Smart Focus beginnt mit der ersten Regel und geht unten auf der Liste, bis sie eine geeignete Register findet zu. </p> konzentrieren Wenn diese Option deaktiviert ist , Seitlich wird immer lassen Chrome entscheiden, welche Register zu konzentrieren nächsten. </p>"
+  },
+  "option_smartFocusPrefersCousins": {
+    "message": "Smart Focus zieht Vettern vor Eltern"
+  },
+  "option_smartFocusPrefersCousins_hint": {
+    "message": "<p> Wenn diese Option aktiviert ist, wird Smart Focus <i> später Cousine Registerkarten </i>, bevor sie ihre eigenen Eltern <i> Tab fokussiert </i>. </p> Zum Beispiel, sagen Sie konzentrieren Öffnen Sie zwei Reiter, zu reddit.com und ein bis digg.com. Du dann mitten auf einige Links auf jeder dieser Registerkarten, um mehrere Registerkarten Kind unter diesen beiden Registerkarten. </P> öffnen Wenn <b> Vettern bevorzugen </b> ist deaktiviert <i> </i>, einmal Sie schließen das letzte untergeordnete Registerkarte unter reddit.com, wird die übergeordnete reddit.com Reiter konzentriert. </p> Wenn <b> werden Vettern </b> wird <i> aktiviert </i>, sobald Sie bevorzugen schließen Sie das letzte Kind Registerkarte unter reddit.com, das erste Kind unter Registerkarte digg.com (Cousin ersten Grades) wird stattdessen fokussiert werden. </p> Diese Option ist wünschenswert, wenn Sie viele offene Tabs Kind auf diese Weise und bevorzugen zu \"vorwärts blättern\" durch alle Registerkarten Kind vor der Rückkehr zu den Eltern. </p>"
+  },
+  "optionsInfoMonitorDetection": {
+    "message": "<p> Immer, wenn Sie Ihren Monitor-Konfiguration zu ändern, <b> reload Chrome </b>, dann hierher zu kommen und klicken Sie auf 'Detect alle Monitore jetzt' unten. </p> Dies sollte geschehen, wenn Sie hinzufügen oder entfernen überwacht werden Ändern Sie Monitor-Auflösungen, neu zu positionieren Monitore in Ihrer Betriebssystem-Einstellungen, oder ändern Sie den Speicherort / Größe Ihres Systems Taskleisten. </p>"
+  },
+  "optionsInfoMonitorsOnYourSystem": {
+    "message": "Seitlich geht derzeit davon aus haben Sie <b> $1 </b> $2 an das System angeschlossen."
+  },
+  "option_maximizedOffset": {
+    "message": "Maximierten Fenster Bildschirm-Rand Überhang"
+  },
+  "option_maximizedOffset_units": {
+    "message": "Pixel"
+  },
+  "option_detectMonitorsButton": {
+    "message": "Spüren Sie alle Monitore nun"
+  },
+  "option_useAdvancedTreeFiltering": {
+    "message": "Verwenden Nerd-Mode-Baum-Filterung"
+  },
+  "option_useAdvancedTreeFiltering_hint": {
+    "message": "<p> Normalerweise wird die Suche von einer Seitenleiste Baumes Filterkasten match all Zeilen mit Ihren Suchbegriff (e). </p> Wenn diese Option aktiviert ist, für eine Zeile zu passen, alle Nicht-Leerzeichen in Ihrem Suchtext muss vorhanden sein in der Reihenfolge Sie sie eingegeben haben, aber nicht unbedingt nebeneinander. </p> Angenommen, wir haben eine Zeile mit dem Text \"Seitlich ist groß\". Wenn diese Option deaktiviert ist, eine Suche nach \"weise\" würde passen Sie die Zeile, sondern eine Suche nach \"swgreat\" wollte nicht. Wenn diese Option aktiviert ist, sucht die beiden würde die Zeile passen. </P> Auch wenn diese Option deaktiviert ist, ein Multiple-Begriff suchen, wie \"große Seite\" würde immer noch die Zeile passen. </P>"
+  },
+  "option_loggingEnabled": {
+    "message": "Debug-Protokollierung"
+  },
+  "option_loggingEnabled_hint": {
+    "message": "Gibt ausführliche Protokollierung Informationen zu Javascript-Konsole von Hintergrund-Seite, Seitenleiste und Optionen zu sehen. Für die Entwicklung oder die Fehler nur Feedback."
+  },
+  "option_sidebarTargetWidth": {
+    "message": "Sidebar Zielbreite"
+  },
+  "option_alwaysShowAdvancedOptions": {
+    "message": "Always show advanced options"
+  },
+  "option_saveButton": {
+    "message": "Einstellungen exportieren"
+  },
+  "option_resetButton": {
+    "message": "Auf Standard zurücksetzen"
+  },
+  "optionsSaveNotNeeded": {
+    "message": "Hinweis: Die Einstellungen werden automatisch gespeichert, wie Sie sie ändern."
+  }
+}
