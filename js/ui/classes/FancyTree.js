@@ -22,7 +22,7 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   *              onMiddleClick: Function(evt),   // middle click event handler
   *              onExpanderClick: function(evt), // called when a row's branch expander arrow is clicked
   *              onIconError: Function(evt),     // row icon onerror event handler
-  *              titleBodyHandler: Function(row),  // called whenever row title might need updating
+  *              onFormatTitle: Function(row),   // called whenever row title might need updating
   *              onFormatTooltip: Function(evt), // called to obtain HTML for a row's tip before showing it
   *              onResizeTooltip: Function(evt), // called if a row tip is forcibly resized by FancyTree
   *              filterByExtraParams: [String],  // additional parameter(s) to examine when filtering
@@ -153,12 +153,12 @@ FancyTree.prototype = {
         this.rowTypes[name] = params;
 
 
-        if (!params.titleBodyHandler) {
-            var titleBodyHandler = this.defaultTitleBodyHandler;
+        if (!params.onFormatTitle) {
+            var onFormatTitle = this.defaultFormatTitleHandler;
         }
 
-        params.titleBodyHandler = function(row, itemTextElem) {
-            titleBodyHandler.call(thisObj, row, itemTextElem);
+        params.onFormatTitle = function(row, itemTextElem) {
+            onFormatTitle.call(thisObj, row, itemTextElem);
         }
 
         // configure event handling
@@ -277,8 +277,8 @@ FancyTree.prototype = {
             innerRow.children('.ftRowIcon').attr('src', details.icon);
         }
 
-        var titleBodyHandler = this.rowTypes[row.attr('rowtype')].titleBodyHandler;
-        titleBodyHandler(row, innerRow.children('.ftItemText'));
+        var onFormatTitle = this.rowTypes[row.attr('rowtype')].onFormatTitle;
+        onFormatTitle(row, innerRow.children('.ftItemText'));
     },
 
     focusRow: function(idOrElem) {
@@ -477,22 +477,15 @@ FancyTree.prototype = {
         treeObj.handleHideTooltipEvent(evt);
     },
 
-    defaultTitleBodyHandler: function(row, itemTextElem) {
+    defaultFormatTitleHandler: function(row, itemTextElem) {
         var label = row.attr('label');
         var text = row.attr('text');
 
-        // console.log('BEFOREFORMAT', row.get(0).outerHTML);
-        // console.log('BEFOREFORMAT', itemTextElem);
-        // console.log('FORMAT TITLE', row.attr('id'), 'LABEL IS', label, ' //// ', text);
-        // console.log(this);
         itemTextElem.children('.ftItemTitle').text(text);
 
         if (label) {
-            // console.log('LABEL IS HERE');
             itemTextElem.children('.ftItemLabel').text(label + (text ? ': ' : ''));
         }
-        // console.log('AFTERFORMAT', row.get(0).outerHTML);
-
     },
 
 
@@ -999,7 +992,7 @@ FancyTree.prototype = {
         }
 
         // format title
-        rowTypeParams.titleBodyHandler(row, innerRow.children('.ftItemText'));
+        rowTypeParams.onFormatTitle(row, innerRow.children('.ftItemText'));
 
         // configure row button tooltips
         this.setRowButtonTooltips(row);

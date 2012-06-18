@@ -153,8 +153,6 @@ function PageTreeCallbackProxyListener(op, args)
                     details[PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP[key]] = elem[key];
                 }
             }
-
-            console.log('@@@@@@@@@@@@@@@@@@', args.id, JSON.stringify(details));
             ft.updateRow(args.id, details);
             break;
         case 'focusPage':
