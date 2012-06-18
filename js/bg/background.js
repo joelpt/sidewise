@@ -168,16 +168,12 @@ function populatePages()
             var numTabs = tabs.length;
             log('Populating tabs from window', 'windowId', win.id, 'number of tabs', numTabs);
 
-            if (win.type != 'normal') {
-                log('Skipping non-normal window type', 'window type', win.type);
-                continue; // only want actual tab-windows
+            if (win.id == sidebarHandler.windowId) {
+                // ignore sidebar
+                continue;
             }
 
             tree.addNode(new WindowNode(win));
-
-            // log(tabs);
-            // tabs = win.tabs.sort(function(a, b) { return (a.id > b.id) - (a.id < b.id); });
-            // log(tabs);
 
             for (var j = 0; j < numTabs; j++) {
                 var tab = tabs[j];
