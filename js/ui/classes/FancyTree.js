@@ -526,17 +526,16 @@ FancyTree.prototype = {
                 if (evt.shiftKey) {
                     // Ctrl+Shift: Incrementally add spanned range of rows to current multiselection
                     treeObj.addMultiSelectionBetween(fromId, id);
-                    console.log('add range to selection between', fromId, 'and', id);
-                } else {
+                }
+                else {
                     // Ctrl: Un/select a single row
                     // Do we have any multiselection yet? If not, add the current focused tabId
-                    // in addition to the clicked row
+                    // in addition to the ctrl+clicked row
                     if (treeObj.multiSelection.length == 0) {
                         treeObj.toggleMultiSelectionSingle(focusedId);
-                        console.log('add focused row to selection');
                     }
+                    // toggle selection ctrl+clicked row
                     treeObj.toggleMultiSelectionSingle(id);
-                    console.log('add new row to selection ' + id);
                 }
                 treeObj.lastMultiSelectedToId = id;
                 return;
@@ -548,12 +547,10 @@ FancyTree.prototype = {
                     // clear selection first
                     treeObj.clearMultiSelection();
                 }
-
+                // select range of rows
                 treeObj.addMultiSelectionBetween(fromId, id);
                 treeObj.lastMultiSelectedFromId = fromId;
                 treeObj.lastMultiSelectedToId = id;
-
-                console.log('set range to selection between', fromId, 'and', id);
                 return;
             }
 
