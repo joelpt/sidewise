@@ -12,16 +12,26 @@
     // General text snippets
     "text_page": { "message": "page" },
     "text_pages": { "message": "pages" },
-    "text_Extensions": { "message": "Extensions" },
     "text_Version": { "message": "Version" },
     "text_monitor": { "message": "monitor" },
     "text_monitors": { "message": "monitors" },
     "text_Window": { "message": "Window" },
     "text_hibernated": { "message": "hibernated" },
 
+
+    // Chrome internal-URL tab title overrides
+    "tabTitle_Extensions": { "message": "Extensions" },
+    "tabTitle_Settings": { "message": "Settings" },
+    "tabTitle_Downloads": { "message": "Downloads" },
+    "tabTitle_Bookmarks": { "message": "Bookmarks" },
+    "tabTitle_History": { "message": "History" },
+    "tabTitle_NewTab": { "message": "New Tab" },
+
+
     // Omnibox
     "omniboxDefaultSuggestion": { "message": "Enter text to search page titles and labels" },
     "omniboxSuggestionPrefix": { "message": "Page:" },
+
 
     // Prompts
     "prompt_filterPlaceholderText": { "message": "Type to search titles and URLs"},
@@ -118,9 +128,9 @@
     "option_pages_middleClickAction_hibernate": { "message": "toggle hibernation"},
     "option_pages_middleClickAction_expand": { "message": "expand/collapse branch"},
     "option_smartFocusOnClose": { "message": "Use smart focus logic when closing tabs"},
-    "option_smartFocusOnClose_hint": { "message": "<p>When enabled and the sidebar is open, Sidewise will use its own tree-oriented logic to decide which tab to focus next after a tab is closed.</p><p>The gory details: smart focus uses the following order of priority in picking the next tab to focus:</p><p><ol><li>First child of closed tab</li><li>Next sibling of closed tab</li><li>Preceding sibling of closed tab</li><li>Parent of closed tab</li><li>Let Chrome decide</li></ol></p><p>Smart focus starts with the first rule and proceeds down the list until it finds a suitable tab to focus.</p><p>If this option is disabled, Sidewise will always let Chrome decide which tab to focus next.</p>"},
+    "option_smartFocusOnClose_hint": { "message": "<p>When enabled and the sidebar is open, Sidewise will use its own tree-oriented logic to decide which tab to focus next after a tab is closed.</p><p>Note that this sometimes causes a quick visual jump between two tabs when closing a tab, due to limitations of Chrome.</p><p>Technical details: smart focus uses the following order of priority in picking the next tab to focus:</p><p><ol><li>First child of closed tab</li><li>Next sibling of closed tab</li><li>Preceding sibling of closed tab</li><li>Parent of closed tab</li><li>Let Chrome decide</li></ol></p><p>Smart focus starts with the first rule and proceeds down the list until it finds a suitable tab to focus.</p><p>If this option is disabled, Sidewise will always let Chrome decide which tab to focus next.</p>"},
     "option_smartFocusPrefersCousins": { "message": "Smart focus prefers cousins before parents"},
-    "option_smartFocusPrefersCousins_hint": { "message": "<p>When this option is enabled, smart focus will focus <i>later cousin tabs</i> before it focuses its own <i>parent tab</i>.</p><p>For example, say you open two tabs, one to reddit.com and one to digg.com. You then open several children tabs underneath each of these two tabs. </p><p>If <b>prefer cousins</b> is <i>disabled</i>, once you close the last child tab under reddit.com, the parent reddit.com tab will be focused.</p><p>If <b>prefer cousins</b> is <i>enabled</i>, once you close the last child tab under reddit.com, the first child tab under digg.com will be focused instead.</p><p>This option is desirable if you open lots of child tabs in this manner and prefer to 'browse forward' through all the child tabs before returning to the parents.</p>"},
+    "option_smartFocusPrefersCousins_hint": { "message": "<p>When this option is enabled, smart focus will focus <i>later cousin tabs</i> before it focuses its own <i>parent tab</i>.</p><p>For example, say you open two tabs, one to reddit.com and one to digg.com. You then middle-click some links on each of these tabs to open several child tabs underneath those two tabs.</p><p>If <b>prefer cousins</b> is <i>disabled</i>, once you close the last child tab under reddit.com, the parent reddit.com tab will be focused.</p><p>If <b>prefer cousins</b> is <i>enabled</i>, once you close the last child tab under reddit.com, the first child tab under digg.com (first cousin) will be focused instead.</p><p>This option is desirable if you open lots of child tabs in this manner and prefer to 'browse forward' through all the child tabs before returning to the parents.</p>"},
 
     "optionsInfoMonitorDetection": { "message": "<p>Whenever you change your monitor configuration, <b>reload Chrome</b>, then come here and click 'Detect all monitors now' below.</p><p>This should be done whenever you add or remove monitors, change monitor resolutions, reposition monitors in your OS settings, or change the location/size of your system taskbars.</p>"},
     "optionsInfoMonitorsOnYourSystem": { "message": "Sidewise currently believes you have <b>$1</b> $2 connected to your system." },

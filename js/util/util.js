@@ -3,14 +3,27 @@ var URL_FAVICON_REPLACEMENTS = {
     'chrome://chrome/extensions/': '/images/favicon/extensions.png', // Chrome 20 early versions
     'chrome://extensions/': '/images/favicon/extensions.png',        // Chrome 20 later versions+
     'chrome://chrome/settings/': '/images/favicon/settings.png',     // Chrome 19 & 20 early versions
-    'chrome://settings/': '/images/favicon/settings.png'             // Chrome 20 later versions
+    'chrome://settings/': '/images/favicon/settings.png',            // Chrome 20 later versions
+    'chrome://downloads/': '/images/favicon/downloads.png',
+    'chrome://bookmarks/': '/images/favicon/bookmarks.png',
+    'chrome://chrome/history/': '/images/favicon/history.png',
+    'chrome://history/': '/images/favicon/history.png',
+    'chrome://newtab/': '/images/favicon/newtab.png'
 };
+
 URL_FAVICON_REPLACEMENTS[chrome.extension.getURL('/options.html')] = '/images/sidewise_icon_16.png';
 
 var URL_TITLE_REPLACEMENTS = {
-    'chrome://chrome/extensions': getMessage('text_Extensions'),
-    'chrome://chrome/extensions/': getMessage('text_Extensions'),
-    'chrome://extensions/': getMessage('text_Extensions')
+    'chrome://chrome/extensions': getMessage('tabTitle_Extensions'),
+    'chrome://chrome/extensions/': getMessage('tabTitle_Extensions'),
+    'chrome://extensions/': getMessage('tabTitle_Extensions'),
+    'chrome://chrome/settings/': getMessage('tabTitle_Settings'),
+    'chrome://settings/': getMessage('tabTitle_Settings'),
+    'chrome://downloads/': getMessage('tabTitle_Downloads'),
+    'chrome://bookmarks/': getMessage('tabTitle_BookmarkManager'),
+    'chrome://chrome/history/': getMessage('tabTitle_History'),
+    'chrome://history/': getMessage('tabTitle_History'),
+    'chrome://newtab/': getMessage('tabTitle_NewTab')
 };
 
 
