@@ -522,14 +522,14 @@ FancyTree.prototype = {
             var id = row.attr('id');
 
             if (evt.ctrlKey) {
-                treeObj.lastMultiSelectedFromTabId = null; // prevent shift+selection from expanding selection chain
+                treeObj.lastMultiSelectedFromId = null; // prevent shift+selection from expanding selection chain
                 if (evt.shiftKey) {
                     // Ctrl+Shift: Incrementally add spanned range of rows to current multiselection
                     treeObj.addMultiSelectionBetween(fromId, id);
                 }
                 else {
                     // Ctrl: Un/select a single row
-                    // Do we have any multiselection yet? If not, add the current focused tabId
+                    // Do we have any multiselection yet? If not, add the current focused id
                     // in addition to the ctrl+clicked row
                     if (treeObj.multiSelection.length == 0) {
                         treeObj.toggleMultiSelectionSingle(focusedId);
