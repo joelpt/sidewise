@@ -150,21 +150,26 @@ extendClass(PageTree, DataTree, {
     },
 
     // hibernate a page
-    hibernatePage: function(tabId)
+    hibernatePage: function(id)
     {
-        log(tabId);
-        // var page = this.getPage(tabId);
-        this.updatePage(tabId, { hibernated: true });
+        log(id);
+        var tabId = getNumericId(id);
+        this.updatePage(tabId, { hibernated: true, id: 'pH' + generateGuid(), status: 'complete' });
         chrome.tabs.remove(tabId);
         this.updateLastModified();
     },
 
     // awaken (unhibernate) a page
-    awakenPage: function(tabId, activateAfter)
+    awakenPage: function(id, activateAfter)
     {
-        log(tabId);
-        var found = this.getPageEx(tabId);
-
+        log(id);
+        var found = this.getNodeEx(id);
+        // TODO use c.t.create's callback to set a page's state to awakened instead of or in parallel
+        // to this.awakeningPages? this would be a more reliable method of awakening the page because
+        // we'd definitely know the tab id that got woke up and which node it goes to, but we would still
+        // probably need .awakeningPages in order to prevent onTabCreated from making another entry in
+        // the tree; if onTC got fired AFTER c.t.create's callback then we could actually store
+        // k=tabId v=node in awakeningPages instead but i suspect the callbacks fire the other way around :(
         this.awakeningPages[found.node.url] = found.node;
         var topParent = found.ancestors[0];
         if (topParent.elemType == 'window') {

@@ -258,11 +258,11 @@ function onHibernateButtonPageRow(evt) {
     var row = evt.data.row;
 
     if (row.attr('hibernated') == 'true') {
-        bg.tree.awakenPage(getRowNumericId(row), true);
+        bg.tree.awakenPage(row.attr('id'), true);
         return;
     }
 
-    bg.tree.hibernatePage(getRowNumericId(row));
+    bg.tree.hibernatePage(row.attr('id'));
 }
 
 function onPageRowFormatTooltip(evt) {

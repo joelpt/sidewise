@@ -108,11 +108,26 @@ FancyTree.prototype = {
         this.multiSelection = [];
         this.lastMultiSelectedFromId = null;
         this.lastMultiSelectedToId = null;
+
+        // configure tooltip stuff
         this.tooltipTopOffset = options.tooltipTopOffset || 12;
         this.tooltip = null;
         this.simpletip = $('<div id="ftSimpleTip"/>').hide();
         $('body').append(this.simpletip);
         this.tooltipShowTimer = null;
+        var treeObj = this;
+        this.rowButtonTooltipParams = {
+            tip: '#ftSimpleTip',
+            predelay: 400,
+            position: 'top left',
+            offset: [-7, 12],
+            onShow: function(evt) {
+                // prevent tooltip from showing whenever permitTooltipHandler() returns false
+                if (treeObj.permitTooltipHandler && !treeObj.permitTooltipHandler()) {
+                    this.hide();
+                }
+            }
+        }
 
         // configure row types
         this.rowTypes = {};
@@ -959,9 +974,6 @@ FancyTree.prototype = {
             .append(itemRow)
             .append(children);
 
-        // configure row button tooltips
-        this.setRowButtonTooltips(rowContainer);
-
         return rowContainer;
     },
 
@@ -1014,18 +1026,7 @@ FancyTree.prototype = {
             $e.attr('title', $e.attr('tooltip'));
         });
 
-        var treeObj = this;
-        buttons.tooltip({
-            tip: '#ftSimpleTip',
-            predelay: 600,
-            position: 'top left',
-            offset: [-10, 10],
-            onShow: function(evt) {
-                if (treeObj.permitTooltipHandler && !treeObj.permitTooltipHandler()) {
-                    this.hide();
-                }
-            }
-        });
+        buttons.tooltip(this.rowButtonTooltipParams);
     },
 
     updateRowExpander: function(elem) {
