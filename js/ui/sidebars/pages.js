@@ -41,6 +41,8 @@ $(document).ready(function() {
 function initTree(attachToSelector, pageTree) {
     var rowTypes = {
         'page': {
+            autofocusOnClick: true,
+            multiselectable: true,
             onClick: onPageRowClick,
             onDoubleClick: onPageRowDoubleClick,
             onMiddleClick: onPageRowMiddleClick,
@@ -56,6 +58,8 @@ function initTree(attachToSelector, pageTree) {
             ]
         },
         'window': {
+            autofocusOnClick: false,
+            multiselectable: false,
             onClick: onWindowRowClick,
             onDoubleClick: onWindowRowDoubleClick,
             onMiddleClick: onWindowRowMiddleClick,
@@ -149,8 +153,6 @@ function PageTreeCallbackProxyListener(op, args)
                     details[PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP[key]] = elem[key];
                 }
             }
-
-            console.log('@@@@@@@@@@@@@@@@@@', args.id, JSON.stringify(details));
             ft.updateRow(args.id, details);
             break;
         case 'focusPage':
@@ -187,9 +189,6 @@ function onPageRowClick(evt) {
     log(evt);
     var treeObj = evt.data.treeObj;
     var row = evt.data.row;
-
-    // set visible focus immediately; this is just for maximum visible responsiveness
-    treeObj.focusRow(row);
 
     if (row.attr('hibernated') == 'true') {
         // row is hibernated, don't try to activate its (nonexistent) tab;

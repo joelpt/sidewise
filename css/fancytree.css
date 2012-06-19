@@ -81,7 +81,7 @@
 
 /* .ftButtons */
 
-div.ftButtons {
+.ftButtons {
     display: none;
     padding-right: 0.25em;
     -webkit-box-flex: 0.0;
@@ -149,7 +149,7 @@ div.ftButtons {
 
 /* expanded/collapsed styles */
 
-.collapsed > .ftChildren {
+.ftCollapsed > .ftChildren {
     display: none;
 }
 
@@ -169,11 +169,11 @@ div.ftButtons {
     background-image: url('../images/toggle_arrow_expanded_hover.png');
 }
 
-.collapsed > .ftItemRow > .ftExpander {
+.ftCollapsed > .ftItemRow > .ftExpander {
     background-image: url('../images/toggle_arrow_collapsed.png');
 }
 
-.collapsed > .ftItemRow > .ftExpander:hover {
+.ftCollapsed > .ftItemRow > .ftExpander:hover {
     background-image: url('../images/toggle_arrow_collapsed_hover.png');
 }
 
@@ -187,18 +187,33 @@ div.ftButtons {
     border-radius: 2px;
 }
 
-.ftRowNode.focused > .ftItemRow > .ftItemRowContent {
+.ftFocused > .ftItemRow > .ftItemRowContent,
+.ftSelected > .ftItemRow > .ftItemRowContent {
     background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #c1dbfc),color-stop(1, white));
     border: 1px solid rgb(125, 162, 206);
     border-radius: 2px;
-    box-shadow: 0 0 0 1px #dbeafd inset;
+    box-shadow: 0 0 0 1px rgba(219, 234, 253, 0.7) inset;
 }
 
-.ftRowNode.focused > .ftItemRow > .ftItemRowContent:hover {
+.ftFocused > .ftItemRow > .ftItemRowContent:hover,
+.ftSelected > .ftItemRow > .ftItemRowContent:hover {
     background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #b1cbec),color-stop(1, white));
     border: 1px solid rgb(85, 122, 166);
-    border-radius: 2px;
-    box-shadow: 0 0 0 1px #dbeafd inset;
+}
+
+.ftFocused.ftSelected > .ftItemRow > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #91abcc),color-stop(1, white));
+    border: 1px solid rgb(0, 0, 0);
+}
+
+.ftFocused.ftSelected > .ftItemRow > .ftItemRowContent:hover {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #819bbc),color-stop(1, white));
+    border: 1px solid rgb(45, 82, 126);
+}
+
+.ftMultiselecting .ftFocused:not(.ftSelected) > .ftItemRow > .ftItemRowContent {
+    background: #fff;
+    border: 1px dashed rgb(0, 0, 0);
 }
 
 

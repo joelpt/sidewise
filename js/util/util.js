@@ -295,6 +295,20 @@ function castObject(object, toClass) {
     object.__proto__ = toClass.prototype;
 }
 
+// Iterates through the properties of object, calling mapFn(key, value) on each one.
+// To conveniently use as a filter, make mapFn() return undefined for those properties to not output.
+// @returns An array of the return values of the mapFn calls.
+function mapObjectProps(object, mapFn) {
+    var ary = [];
+    for (var k in object) {
+        var r = mapFn(k, object[k]);
+        if (r !== undefined) {
+            ary.push(r);
+        }
+    }
+    return ary;
+}
+
 function onDocumentReady(fn) {
     if (document.readyState == 'complete') {
         fn();
