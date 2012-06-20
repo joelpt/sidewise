@@ -24,7 +24,7 @@ function registerRequestEvents() {
 
 
 function onConnectPort(port) {
-    console.log('onConnect', port);
+    log('onConnect', port);
     // add port to list of known tab ports
     connectedTabs[port.tab.id] = port;
 
@@ -34,18 +34,18 @@ function onConnectPort(port) {
 }
 
 function onPortMessage(port, msg) {
-    console.log('onPortMessage', msg, port);
+    log('onPortMessage', msg, port);
     // port.postMessage({ action: 'wassup' });
     switch (msg.op) {
         case 'getPageDetails':
-            console.log('gotPageDetails', msg.action);
+            log('gotPageDetails', msg.action);
             onGetPageDetailsMessage(port.tab, msg);
             break;
     }
 }
 
-function onPortDisconnect() {
-    console.log('onPortDisconnect', port);
+function onPortDisconnect(port) {
+    log('onPortDisconnect', port);
     // delete entry from known tab ports list
     if (connectedTabs[port.tab.id]) {
         delete connectedTabs[port.tab.id];
@@ -151,9 +151,12 @@ function onGetPageDetailsMessage(tab, msg) {
             tree.updatePage(page, details);
             break;
 
+        // TODO add incognito match
         case 'associate':
+            // clear stubborn tabs list whenever any tab responds to a getPageDetails() request
+            associationStubbornTabIds = {};
+
             // look for an existing restorable page with a matching url+referrer+historylength
-            // TODO add incognito match
             associateTabToPageNode(msg.runId, tab, msg.referrer, msg.historylength);
             break;
 
@@ -200,30 +203,3 @@ function onGetPageDetailsMessage(tab, msg) {
     }
     return true;
 }
-
-// function onGetPageDetailsScriptExecuted(tab, action) {
-//     log(':::::: CALLED', action);
-//     if (action != 'associate') {
-//         return;
-//     }
-
-//     log('>>>>>> ADD 1 TO', associatingTabCount, associatingTabTotal);
-//     associatingTabCount++;
-
-//     if (chrome.extension.lastError) {
-//         // an error means the target tab was unscriptable, so just do
-//         // association without the benefit of referrer and historylength
-//         log('Associating without getPageDetails values', 'Error was:', chrome.extension.lastError.message);
-//         associateTabToPageNode(tab);
-//     }
-
-//     if (!associatingTabs) {
-//         return;
-//     }
-
-//     if (associatingTabCount == associatingTabTotal) {
-//         log('All tabs associated, deducing window associations next');
-//         associatingTabs = false;
-//         associateWindowstoWindowNodes();
-//     }
-// }
