@@ -26,7 +26,7 @@
     -webkit-box-flex: 1.0;
     box-flex: 1.0;
     cursor: pointer;
-    margin-top: 1px;
+    padding-top: 1px;
 }
 
 .ftInnerRow {
@@ -181,8 +181,8 @@
 
 /* standard styling for focused, hovered, selected rows */
 
-.ftRowNode > .ftItemRow > .ftItemRowContent:hover {
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #e1ebff),color-stop(1, white));
+.ftRowNode > .ftItemRow:hover > .ftItemRowContent {
+    background: #f0ffff;
     border: 1px solid #b8d6fb;
     border-radius: 2px;
 }
@@ -195,8 +195,8 @@
     box-shadow: 0 0 0 1px rgba(219, 234, 253, 0.7) inset;
 }
 
-.ftFocused > .ftItemRow > .ftItemRowContent:hover,
-.ftSelected > .ftItemRow > .ftItemRowContent:hover {
+.ftFocused > .ftItemRow:hover > .ftItemRowContent,
+.ftSelected > .ftItemRow:hover > .ftItemRowContent {
     background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #b1cbec),color-stop(1, white));
     border: 1px solid rgb(85, 122, 166);
 }
@@ -206,7 +206,7 @@
     border: 1px solid rgb(0, 0, 0);
 }
 
-.ftFocused.ftSelected > .ftItemRow > .ftItemRowContent:hover {
+.ftFocused.ftSelected > .ftItemRow:hover > .ftItemRowContent {
     background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #819bbc),color-stop(1, white));
     border: 1px solid rgb(45, 82, 126);
 }
