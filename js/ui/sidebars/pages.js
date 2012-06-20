@@ -11,8 +11,11 @@ var PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP = {
     status: 'status',
     pinned: 'pinned',
     unread: 'unread',
-    hibernated: 'hibernated'
+    hibernated: 'hibernated',
+    highlighted: 'highlighted'
 };
+
+var WINDOW_CLOSE_CONFIRM_CHILDREN_THRESHOLD = 2;
 
 
 ///////////////////////////////////////////////////////////
@@ -48,13 +51,14 @@ function initTree(attachToSelector, pageTree) {
             onMiddleClick: onPageRowMiddleClick,
             onExpanderClick: onRowExpanderClick,
             onIconError: onPageRowIconError,
+            onFormatTitle: onPageRowFormatTitle,
             onFormatTooltip: onPageRowFormatTooltip,
             onResizeTooltip: onResizeTooltip,
             filterByExtraParams: ['url'],
             tooltipMaxWidthPercent: 0.9,
             buttons: [
-                {icon: '/images/reload.png', tooltip: 'Hibernate', onClick: onHibernateButtonPageRow },
-                {icon: '/images/close.png', tooltip: 'Close', onClick: onCloseButtonPageRow }
+                {icon: '/images/reload.png', tooltip: 'Hibernate', onClick: onPageRowHibernateButton },
+                {icon: '/images/close.png', tooltip: 'Close', onClick: onPageRowCloseButton }
             ]
         },
         'window': {
@@ -64,11 +68,12 @@ function initTree(attachToSelector, pageTree) {
             onDoubleClick: onWindowRowDoubleClick,
             onMiddleClick: onWindowRowMiddleClick,
             onExpanderClick: onRowExpanderClick,
+            onFormatTitle: onWindowRowFormatTitle,
             onFormatTooltip: onWindowRowFormatTooltip,
             onResizeTooltip: onResizeTooltip,
             tooltipMaxWidthPercent: 0.9,
             buttons: [
-                {icon: '/images/close.png', tooltip: 'Close&nbsp;window', onClick: onCloseButtonWindowRow }
+                {icon: '/images/close.png', tooltip: 'Close&nbsp;window', onClick: onWindowRowCloseButton }
             ]
         }
     };
@@ -102,11 +107,10 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
         row = fancyTree.getNewRowElem('window',
             node.id,
             img,
-            getMessage('text_Window') + ' ' + node.id.slice(1),
+            node.label,
             '',
             { incognito: node.incognito },
-            node.collapsed,
-            null);
+            node.collapsed);
     }
     else if (node instanceof bg.PageNode) {
         row = fancyTree.getNewRowElem('page', node.id, node.favicon, node.label, node.title,
@@ -115,9 +119,10 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
                 status: node.status,
                 pinned: node.pinned,
                 unread: node.unread,
-                hibernated: node.hibernated
+                hibernated: node.hibernated,
+                highlighted: node.highlighted,
             },
-            node.collapsed, null);
+            node.collapsed);
     }
     else {
         throw new Error('Unknown node type');
@@ -144,6 +149,9 @@ function PageTreeCallbackProxyListener(op, args)
             break;
         case 'move':
             ft.moveRow(args.element.id, args.newParentId);
+            break;
+        case 'merge':
+            ft.mergeRows(args.fromId, args.toId);
             break;
         case 'update':
             var elem = args.element;
@@ -225,18 +233,24 @@ function onPageRowMiddleClick(evt) {
 function handlePageRowAction(action, evt) {
     switch (action) {
         case 'close':
-            onCloseButtonPageRow(evt);
+            onPageRowCloseButton(evt);
             break;
         case 'hibernate':
-            onHibernateButtonPageRow(evt);
+            onPageRowHibernateButton(evt);
             break;
         case 'expand':
             evt.data.treeObj.toggleExpandRow(evt.data.row);
             break;
+        case 'setlabel':
+            setRowLabels(evt.data.row);
+            break;
+        case 'highlight':
+            setRowHighlights(evt.data.row);
+            break;
     }
 }
 
-function onCloseButtonPageRow(evt) {
+function onPageRowCloseButton(evt) {
     var row = evt.data.row;
 
     if (row.attr('hibernated') == 'true') {
@@ -254,7 +268,7 @@ function onCloseButtonPageRow(evt) {
     chrome.tabs.remove(getRowNumericId(row));
 }
 
-function onHibernateButtonPageRow(evt) {
+function onPageRowHibernateButton(evt) {
     var row = evt.data.row;
 
     if (row.attr('hibernated') == 'true') {
@@ -263,6 +277,25 @@ function onHibernateButtonPageRow(evt) {
     }
 
     bg.tree.hibernatePage(row.attr('id'));
+}
+
+function onPageRowFormatTitle(row, itemTextElem) {
+    var label = row.attr('label');
+    var text = row.attr('text');
+
+    if (row.hasClass('ftCollapsed')) {
+        var childCount = row.children('.ftChildren').find('.ftRowNode').length;
+        if (childCount > 0) {
+            text = '(+' + childCount + ') ' + text;
+        }
+    }
+
+    if (loggingEnabled) {
+        label = row.attr('id') + (label ? ': ' : '') + label;
+    }
+
+    itemTextElem.children('.ftItemTitle').text(text);
+    itemTextElem.children('.ftItemLabel').text(label + (text && label ? ': ' : ''));
 }
 
 function onPageRowFormatTooltip(evt) {
@@ -314,28 +347,49 @@ function onWindowRowMiddleClick(evt) {
 function handleWindowRowAction(action, evt) {
     switch (action) {
         case 'close':
-            onCloseButtonWindowRow(evt);
+            onWindowRowCloseButton(evt);
             break;
         // case 'hibernate':
-        //     onHibernateButtonPageRow(evt);
+        //     onPageRowHibernateButton(evt);
         //     break;
         case 'expand':
             evt.data.treeObj.toggleExpandRow(evt.data.row);
             break;
+        case 'setlabel':
+            setRowLabels(evt.data.row);
+            break;
     }
 }
 
-function onCloseButtonWindowRow(evt) {
+function onWindowRowCloseButton(evt) {
     var childCount = evt.data.treeObj.getChildrenCount(evt.data.row);
 
-    var msg = getMessage('prompt_closeWindow',
-        [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
+    if (childCount >= WINDOW_CLOSE_CONFIRM_CHILDREN_THRESHOLD) {
+        var msg = getMessage('prompt_closeWindow',
+            [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
 
-    if (!confirm(msg)) {
-        return;
+        if (!confirm(msg)) {
+            return;
+        }
     }
 
     chrome.windows.remove(getRowNumericId(evt.data.row));
+}
+
+function onWindowRowFormatTitle(row, itemTextElem) {
+    var label = row.attr('label');
+    var childCount = row.children('.ftChildren').find('.ftRowNode[rowtype=page]').length;
+    var text = (label ? '' : getMessage('text_Window'))
+        + ' (' + childCount + ' '
+        + getMessage(childCount == 1 ? 'text_page' : 'text_pages') + ')';
+
+
+    if (loggingEnabled) {
+        label = row.attr('id') + ': ' + label;
+    }
+
+    itemTextElem.children('.ftItemTitle').text(text);
+    itemTextElem.children('.ftItemLabel').text(label);
 }
 
 function onWindowRowFormatTooltip(evt) {
@@ -352,6 +406,27 @@ function onWindowRowFormatTooltip(evt) {
 ///////////////////////////////////////////////////////////
 // Helper functions
 ///////////////////////////////////////////////////////////
+
+function setRowLabels(rows) {
+    var label = prompt(getMessage('prompt_setLabel'), $(rows[0]).attr('label'));
+
+    if (label === null) {
+        // user cancelled
+        return;
+    }
+
+    rows.each(function(i, e) {
+        bg.tree.updateNode(e.attributes.id.value, { label: label });
+    });
+}
+
+function setRowHighlights(rows) {
+    var highlighted = $(rows[0]).attr('highlighted') == 'true';
+
+    rows.each(function(i, e) {
+        bg.tree.updateNode(e.attributes.id.value, { highlighted: !highlighted });
+    });
+}
 
 function getBigTooltipContent(header, icon, body) {
     var elem = $('<div class="ftBigTip"/>');
