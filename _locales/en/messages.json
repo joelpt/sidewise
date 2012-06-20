@@ -135,7 +135,7 @@
     "option_useAdvancedTreeFiltering": { "message": "Use nerd-mode tree filtering" },
     "option_useAdvancedTreeFiltering_hint": { "message": "#Normally, searching from a sidebar tree's filter box will match all rows containing your search term(s). //// When this option is enabled, for a row to match, all non-space characters in your search text must be present in the order you entered them, but not necessarily next to each other. //// For example, suppose we have a row containing the text \"Sidewise is great\". When this option is disabled, a search for \"wise\" would match the row, but a search for \"swgreat\" would not. When this option is enabled, both searches would match the row. //// Even when this option is disabled, a multiple-term search like \"side great\" would still match the row." },
     "option_loggingEnabled": { "message": "Enable debug mode" },
-    "option_loggingEnabled_hint": { "message": "Outputs verbose logging information to Javascript console of background page, sidebar, and options page. For development or bug feedback only." },
+    "option_loggingEnabled_hint": { "message": "#For development or bug feedback only. //// Outputs verbose logging information to Javascript console of background, sidebar, and options pages, and prefixes rows in the pages sidebar with their IDs." },
     "option_sidebarTargetWidth": { "message": "Sidebar target width" },
     "option_alwaysShowAdvancedOptions": { "message": "Always show advanced options" },
 
