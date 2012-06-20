@@ -195,8 +195,14 @@ function onTabUpdated(tabId, changeInfo, tab)
     }
     log(tab);
 
-
     var page = tree.getPage(tabId);
+
+    if (!page) {
+        // page row entry doesn't exist so we cannot update it
+        // this can happen during browser startup
+        return;
+    }
+
     var url = tab.url ? dropUrlHash(tab.url) : '';
     var title = getBestPageTitle(tab.title, url)
 
@@ -222,12 +228,20 @@ function onTabUpdated(tabId, changeInfo, tab)
         title: title
     });
 
+    if (tab.url.match(/^chrome-/)) {
+        // chrome-*://* urls do not fire webNavigation events, so we want to check in a bit
+        // for an updated title manually
+        setTimeout(function() {
+            chrome.tabs.get(tab.id, function(t) {
+                tree.updatePage(tab.id, { title: getBestPageTitle(t.title) });
+            });
+        }, 1000);
+    }
+
     if (tab.openerTabId !== undefined) {
-        // TODO work out a way where maybe we can obtain page and parent in one go and update/move them more efficiently
-        var page = tree.getPage(tabId);
         if (!page.placed) {
             log('moving page to parent by openerTabId', tab.openerTabId);
-            tree.moveNode('p' + tabId, 'p' + tab.openerTabId);
+            tree.moveNode(page, 'p' + tab.openerTabId);
 
             // TODO doing this below may be problematic in some cases because we aren't setting page.placed to true here;
             // so when we actually do set page.placed to true we may need to clear page.referrer if we end up moving the
