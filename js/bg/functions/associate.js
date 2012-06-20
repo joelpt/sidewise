@@ -8,20 +8,19 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-var ASSOCIATE_PAGES_CHECK_INTERVAL_MS = 1000;
+var ASSOCIATE_PAGES_CHECK_INTERVAL_MS = 500;
 var ASSOCIATE_PAGES_CHECK_INTERVAL_MS_SLOW = 10000;
+var ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_MS = 20000;
 
+var ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_ITERATIONS =
+    ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_MS / ASSOCIATE_PAGES_CHECK_INTERVAL_MS;
 
 ///////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////
 
 var associationRuns = {};
-
-var associatingTabs = false;
-var associatingTabCount = 0;
-var associatingTabTotal = 0;
-
+var associationStubbornTabIds = {};
 
 ///////////////////////////////////////////////////////////
 // Association functions
@@ -80,7 +79,7 @@ var associatingTabTotal = 0;
 function associatePages() {
     chrome.tabs.query({ }, function(tabs) {
         var runId = generateGuid();
-        var runInfo = { total: 0, count: 0 };
+        var runInfo = { total: 0, count: 0, tabIds: [] };
         associationRuns[runId] = runInfo;
 
         for (var i in tabs) {
@@ -104,6 +103,7 @@ function associatePages() {
 
             // ask the tab for more details via its content_script.js connected port
             try {
+                runInfo.tabIds.push(tab.id);
                 getPageDetails(tab.id, { action: 'associate', runId: runId });
             }
             catch(ex) {
@@ -145,6 +145,29 @@ function associatePagesCheck(runId) {
 
     log('associatePagesCheck', 'total', runInfo.total, 'count', runInfo.count);
 
+    log('tabs left', runInfo.tabIds);
+
+    var newStubbornTabs = {};
+    for (var i in runInfo.tabIds) {
+        var tabId = runInfo.tabIds[i];
+        var count = (associationStubbornTabIds[tabId] || 0) + 1;
+
+        if (count >= ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_ITERATIONS) {
+            // this tab is being too stubborn and will not respond to getPageDetails() attempts,
+            // so just fallback to the simpler method of url matching
+            chrome.tabs.get(tabId, function(tab) {
+                log('Using fallback association for stubborn tab', 'tabId', tab.id, 'runId', runId);
+                associateTabToPageNode(runId, tab);
+            });
+        }
+        else {
+            newStubbornTabs[tabId] = count;
+        }
+    }
+    associationStubbornTabIds = newStubbornTabs;
+
+    log('stubborn tabs list', JSON.stringify(associationStubbornTabIds));
+
     log('Ending old run', runId);
     endAssociationRun(runId);
 
@@ -170,9 +193,15 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
 
     var runInfo = associationRuns[runId];
 
+    // Is this run still in progress?
     if (runInfo) {
-        // Run that started us is still happening
+        // Remove this tab from the list of tabs still to be processed in this run
+        runInfo.tabIds.splice(runInfo.tabIds.indexOf(tab.id), 0);
+
+        // Reset the associatePagesCheck timeout for this run
         TimeoutManager.reset(runId, function() { associatePagesCheck(runId) }, ASSOCIATE_PAGES_CHECK_INTERVAL_MS);
+
+        // Increment number of tabs that have been associated this run
         runInfo.count++;
     }
 
@@ -180,8 +209,9 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         // tab is already properly present as a pagenode in the tree; don't associate/add again
         return;
     }
-    var match = tree.getNode(function(node) {
-        return node.restorable
+    var match = tree.getNodeEx(function(node) {
+        return node instanceof PageNode
+            && node.restorable
             && node.hibernated
             && node.url == tab.url
             && node.pinned == tab.pinned
@@ -189,21 +219,56 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
             && (historylength === undefined || node.historylength == historylength);
     });
 
-    if (match) {
-        // found a match
-        log('matching PageNode found, restoring', tab.id, tab, match);
-        var details = { hibernated: false, restorable: false, id: 'p' + tab.id };
-        if (loggingEnabled) {
-            details.label = details.id;
-        }
-        tree.updateNode(match, details);
+    if (!match) {
+        // apparently a new tab to us
+        log('no matching PageNode found, adding to a new window', tab.id, tab);
+        tree.addTabToWindow(tab);
         return;
     }
 
-    // apparently a new tab to us
-    log('no matching PageNode found, creating as new', tab.id, tab, match);
-    tree.addTabToWindow(tab);
-    // TODO set referrer and historylen here, addTabToWindow needs a callback for this
+    // found a match
+    log('matching PageNode found, restoring', tab.id, tab, match.node);
+    var details = { hibernated: false, restorable: false, id: 'p' + tab.id };
+    tree.updateNode(match.node, details);
+
+    // When node is under a restorable window node, we want to see if this tab/node has
+    // a unique key amongst all nodes. If so, we know that this tab's .windowId
+    // can definitively identify the parent restorable window's new windowId.
+    var topParent = match.ancestors[0];
+    if (topParent instanceof WindowNode && topParent.restorable) {
+        // Node is under a restorable ('fake') window node.
+        // Is there any other node in the tree with the same constructed key?
+        var otherMatch = tree.getNode(function(node) {
+            return node instanceof PageNode
+                && node.url == tab.url
+                && node.pinned == tab.pinned
+                && (referrer === undefined || node.referrer == referrer)
+                && (historylength === undefined || node.historylength == historylength)
+                && node !== match.node; // Don't match the very same node
+        });
+
+        if (otherMatch) {
+            // node's key not unique, cannot use for windowId identification
+            return;
+        }
+
+        // Node's key is unique, so we can use this tab's .windowId to set
+        // the restorable parent window node's proper windowId.
+
+        // does a WindowNode already exist matching the tab's .windowId?
+        var existingWinNode = tree.getNode('w' + tab.windowId);
+        if (existingWinNode) {
+            // already exists, so merge its children into our restorable window
+            tree.mergeNodes(existingWinNode, topParent);
+        }
+
+        // Restore the restorable parent window and assign it tab's .windowId
+        tree.updateNode(topParent, {
+            restorable: false,
+            hibernated: false,
+            id: 'w' + tab.windowId
+        });
+    }
 }
 
 function associateWindowstoWindowNodes() {
@@ -264,9 +329,6 @@ function associateWindowstoWindowNodes() {
 
             // update the restore window to look like the real window
             var details = { restorable: false, hibernated: false, id: 'w' + mostFrequentWindowId };
-            if (loggingEnabled) {
-                details.label = details.id;
-            }
             tree.updateNode(resWindow, details);
 
             // record the windowId used so we don't try to use it again in an upcoming iteration
