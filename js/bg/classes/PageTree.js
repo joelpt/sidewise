@@ -59,10 +59,6 @@ extendClass(PageTree, DataTree, {
 
         var existingId = page.id;
 
-        if (loggingEnabled) {
-            details.label = details.id || page.id;
-        }
-
         this.super().updateNode.call(this, page, details);
         this.callbackProxyFn('update', { id: existingId, element: details });
 
@@ -93,10 +89,12 @@ extendClass(PageTree, DataTree, {
 
     // Merge the node matching fromNodeMatcher and all its children into the node matching toNodeMatcher.
     // The fromNode is removed from the tree after the merge.
-    // If retainFromNodeDetails is true, then the fromNode node itself will be replaced by toNode.
-    mergeNodes: function(fromNodeMatcher, toNodeMatcher, retainFromNodeDetails)
+    mergeNodes: function(fromNodeMatcher, toNodeMatcher)
     {
-        var r = this.super().mergeNodes.call(this, fromNodeMatcher, toNodeMatcher, retainFromNodeDetails);
+        var r = this.super().mergeNodes.call(this, fromNodeMatcher, toNodeMatcher);
+        if (r !== undefined) {
+            this.callbackProxyFn('merge', { fromId: r.fromId, toId: r.toId });
+        }
         return r;
     },
 
