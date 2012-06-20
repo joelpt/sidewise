@@ -203,8 +203,7 @@ DataTree.prototype = {
 
     // Merge the node matching fromNodeMatcher and all its children into the node matching toNodeMatcher.
     // The fromNode is removed from the tree after the merge.
-    // If retainFromNodeDetails is true, then the fromNode node's properties will be replaced by those of toNode.
-    mergeNodes: function(fromNodeMatcher, toNodeMatcher, retainFromNodeDetails)
+    mergeNodes: function(fromNodeMatcher, toNodeMatcher)
     {
         var fromNodeEx = this.getNodeEx(fromNodeMatcher);
         if (!fromNodeEx) {
@@ -216,23 +215,16 @@ DataTree.prototype = {
             throw new Error('Could not find toNode');
         }
 
+        var fromId = fromNodeEx.node.id;
+        var toId = toNode.id;
+
         // Merge children
         toNode.children = toNode.children.concat(fromNodeEx.node.children);
-
-        if (retainFromNodeDetails) {
-            // Retain fromNode's details
-            for (var key in fromNodeEx.node) {
-                if (key == 'children') {
-                    continue;
-                }
-                toNode[key] = fromNodeEx.node[key];
-            }
-        }
 
         // Remove fromNode from tree
         fromNodeEx.siblings.splice(fromNodeEx.index, 1);
 
-        return toNode;
+        return { fromId: fromId, toId: toId };
     },
 
     // Move the first element matching movingMatcherFn, and all of its children, to reside under the first element
