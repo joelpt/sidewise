@@ -22,7 +22,7 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   *              onMiddleClick: Function(evt),   // middle click event handler
   *              onExpanderClick: function(evt), // called when a row's branch expander arrow is clicked
   *              onIconError: Function(evt),     // row icon onerror event handler
-  *              onFormatTitle: Function(row),   // called whenever row title might need updating
+  *              onFormatTitle: Function(row, itemTextElement), // called whenever row title might need updating
   *              onFormatTooltip: Function(evt), // called to obtain HTML for a row's tip before showing it
   *              onResizeTooltip: Function(evt), // called if a row tip is forcibly resized by FancyTree
   *              filterByExtraParams: [String],  // additional parameter(s) to examine when filtering
@@ -167,13 +167,10 @@ FancyTree.prototype = {
         var thisObj = this;
         this.rowTypes[name] = params;
 
+        var onFormatTitle = params.onFormatTitle || this.defaultFormatTitleHandler;
 
-        if (!params.onFormatTitle) {
-            var onFormatTitle = this.defaultFormatTitleHandler;
-        }
-
-        params.onFormatTitle = function(row, itemTextElem) {
-            onFormatTitle.call(thisObj, row, itemTextElem);
+        params.onFormatTitle = function(row) {
+            onFormatTitle.call(thisObj, row, thisObj.getInnerRow(row).children('.ftItemText'));
         }
 
         // configure event handling
@@ -226,6 +223,7 @@ FancyTree.prototype = {
         var parent = this.getRow(parentId);
         parent.children('.ftChildren').append(elem);
         this.updateRowExpander(parent);
+        this.formatLineageTitles(parent);
     },
 
     removeRow: function(id) {
@@ -243,7 +241,10 @@ FancyTree.prototype = {
         }
 
         elem.replaceWith(elem.children('.ftChildren').children());
+
         this.updateRowExpander(parent);
+        this.formatLineageTitles(parent);
+
         this.hideTooltip();
     },
 
@@ -277,9 +278,13 @@ FancyTree.prototype = {
             children.append(elem);
         }
         this.setRowButtonTooltips(elem);
+
         this.updateRowExpander(oldParent);
         this.updateRowExpander(newParent);
         this.updateRowExpander(elem);
+
+        formatLineageTitles(oldParent);
+        formatLineageTitles(newParent);
     },
 
     updateRow: function(id, details) {
@@ -292,8 +297,7 @@ FancyTree.prototype = {
             innerRow.children('.ftRowIcon').attr('src', details.icon);
         }
 
-        var onFormatTitle = this.rowTypes[row.attr('rowtype')].onFormatTitle;
-        onFormatTitle(row, innerRow.children('.ftItemText'));
+        this.getRowTypeParams(row).onFormatTitle(row);
     },
 
     focusRow: function(idOrElem) {
@@ -320,29 +324,47 @@ FancyTree.prototype = {
       * @returns true if element is now expanded, false if now collapsed
       */
     toggleExpandRow: function(id) {
-        var elem = this.getRow(id);
-        var children = this.getChildrenContainer(elem);
-        var onExpanderClick = this.rowTypes[elem.attr('rowtype')].onExpanderClick;
-        var expanded;
+        var thisObj = this;
+        var row = this.getRow(id);
+        var children = this.getChildrenContainer(row);
+        var rowTypeParams = this.getRowTypeParams(row);
+        var onExpanderClick = rowTypeParams.onExpanderClick;
+        var onFormatTitle = rowTypeParams.onFormatTitle;
 
-        if (elem.hasClass('ftCollapsed')) {
-            // expand
-            children.slideToggle(100, function() { elem.removeClass('ftCollapsed'); });
-            expanded = true;
-        }
-        else {
-            // collapse
-            children.slideToggle(100, function() { elem.addClass('ftCollapsed'); });
-            expanded = false;
-        }
+        var expanded = row.hasClass('ftCollapsed');
 
-        if (onExpanderClick) {
-            var evt = { data: { treeObj: this, row: elem, expanded: expanded } };
-            onExpanderClick(evt);
-        }
+        children.slideToggle(100, function() {
+            if (expanded) {
+                row.removeClass('ftCollapsed');
+            }
+            else {
+                row.addClass('ftCollapsed');
+            }
+
+            if (onExpanderClick) {
+                var evt = { data: { treeObj: thisObj, row: row, expanded: expanded } };
+                onExpanderClick(evt);
+            }
+            onFormatTitle(row);
+        });
+
         return expanded;
     },
 
+    mergeRows: function(fromId, toId) {
+        var from = this.getRow(fromId);
+        var to = this.getRow(toId);
+
+        // Append from's children to the end of to's children
+        to.append(this.getChildrenContainer(from).children());
+
+        // Destroy from node
+        from.remove();
+
+        // Update stuffs
+        this.updateRowExpander(to);
+        this.formatLineageTitles(to);
+    },
 
     ///////////////////////////////////////////////////////////
     // Event handlers
@@ -885,7 +907,7 @@ FancyTree.prototype = {
 
 
     ///////////////////////////////////////////////////////////
-    // Row-part retrieval functions
+    // Row element and information retrieval functions
     ///////////////////////////////////////////////////////////
 
     getParentRowNode: function(elem) {
@@ -910,6 +932,10 @@ FancyTree.prototype = {
 
     getChildrenCount: function(elem) {
         return this.getChildrenContainer(elem).find('.ftRowNode').length;
+    },
+
+    getRowTypeParams: function(row) {
+        return this.rowTypes[row.attr('rowtype')];
     },
 
 
@@ -995,7 +1021,7 @@ FancyTree.prototype = {
 
         // set collapsed state
         if (collapsed) {
-            row.addClass('collapsed');
+            row.addClass('ftCollapsed');
         }
 
         // add extra attribs
@@ -1017,9 +1043,9 @@ FancyTree.prototype = {
     // Row helper functions
     ///////////////////////////////////////////////////////////
 
-    setRowButtonTooltips: function(elem) {
-        var rowType = elem.attr('rowtype');
-        var buttons = this.getButtons(elem);
+    setRowButtonTooltips: function(row) {
+        var rowType = row.attr('rowtype');
+        var buttons = this.getButtons(row);
 
         buttons.each(function(i, e) {
             var $e = $(e);
@@ -1029,16 +1055,26 @@ FancyTree.prototype = {
         buttons.tooltip(this.rowButtonTooltipParams);
     },
 
-    updateRowExpander: function(elem) {
-        var cnt = elem.find('.ftChildren').children().length;
-        var expander = elem.children('.ftItemRow').children('.ftTreeControl');
+    updateRowExpander: function(row) {
+        var cnt = row.find('.ftChildren').children().length;
+        var expander = row.children('.ftItemRow').children('.ftTreeControl');
 
         if (cnt == 0) {
             expander.removeClass('ftExpander').addClass('ftNode');
+            row.removeClass('ftCollapsed');
             return;
         }
 
         expander.removeClass('ftNode').addClass('ftExpander');
+    },
+
+    // Call rowType.onFormatTitle() on the given row and all its parent rows
+    formatLineageTitles: function(row) {
+        var thisObj = this;
+        row.parents('.ftRowNode').add(row).each(function(i, e) {
+            var $e = $(e);
+            thisObj.getRowTypeParams($e).onFormatTitle($e);
+        });
     },
 
 
