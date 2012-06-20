@@ -37,6 +37,9 @@ function onWindowRemoved(windowId)
     tree.removeNode('w' + windowId);
     savePageTreeToLocalStorage();
     focusTracker.remove(windowId);
+
+    focusCurrentTabInPageTree();
+
     if (sidebarHandler.sidebarExists())
     {
         chrome.windows.getAll(null, function(windows) {
