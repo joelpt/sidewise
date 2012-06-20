@@ -141,8 +141,8 @@ FancyTree.prototype = {
         var data = { treeObj: treeObj };
 
         $(document)
-            .on('mouseenter', '.ftItemRowContent', data, this.onItemRowContentMouseEnter)
-            .on('mouseleave', '.ftItemRowContent', data, this.onItemRowContentMouseLeave)
+            .on('mouseenter', '.ftItemRow', data, this.onItemRowMouseEnter)
+            .on('mouseleave', '.ftItemRow', data, this.onItemRowMouseLeave)
             .on('mouseover', '#ftTooltip', data, this.handleHideTooltipEvent)
             .on('click', '.ftExpander', data, this.onExpanderClick)
             .on('mouseenter', '.ftButtons', data, this.onMouseEnterButtons)
@@ -496,7 +496,7 @@ FancyTree.prototype = {
         treeObj.startTooltipTimer(row, evt);
     },
 
-    onItemRowContentMouseEnter: function(evt) {
+    onItemRowMouseEnter: function(evt) {
         var treeObj = evt.data.treeObj;
         var row = treeObj.getParentRowNode($(this));
 
@@ -505,7 +505,7 @@ FancyTree.prototype = {
         treeObj.startTooltipTimer(row, evt);
     },
 
-    onItemRowContentMouseLeave: function(evt) {
+    onItemRowMouseLeave: function(evt) {
         var treeObj = evt.data.treeObj;
         var row = treeObj.getParentRowNode($(this));
 
