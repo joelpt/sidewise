@@ -19,11 +19,7 @@ var PageNode = function(tab, overrideStatus)
     this.pinned = tab.pinned;
     this.placed = false;
     this.unread = false;
-    this.hibernated = false;
     this.smartFocusParentTabId = null;
-    this.label = (loggingEnabled ? 'p' + tab.id : '');
-
-    log('PageNode', tab, this);
 };
 
 PageNode.extend(PageTreeNode);
