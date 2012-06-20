@@ -3,11 +3,11 @@
 ///////////////////////////////////////////////////////////
 
 // Set up a port to pass messages between Sidewise and this page
-var port = chrome.extension.connect('gimdgohlhgfhfafpobendnlkpjbbnfjd', { name: 'content_script' });
-console.log('connection', port);
+var port = chrome.extension.connect(chrome.i18n.getMessage('@@extension_id'), { name: 'content_script' });
+// console.log('connection', port);
 
 port.onMessage.addListener(function(msg) {
-    console.log('message', msg);
+    // console.log('message', msg);
     switch (msg.op) {
         case 'getPageDetails':
             sendPageDetails(msg);
@@ -15,9 +15,9 @@ port.onMessage.addListener(function(msg) {
     }
 });
 
-port.onDisconnect.addListener(function(msg) {
-    console.log('disconnect', msg);
-});
+// port.onDisconnect.addListener(function(msg) {
+//     console.log('disconnect', msg);
+// });
 
 // Set up event listenter that fires whenever this page's location (URL) changes.
 window.addEventListener('popstate', onPopState);
@@ -31,7 +31,7 @@ onPopState();
 ///////////////////////////////////////////////////////////
 
 function onPopState(evt) {
-    console.log('event', evt);
+    // console.log('event', evt);
     notifySidewise();
     // try again repeatedly in future because sometimes a page's JS changes the page title
     // shortly after loading and we want to know about this
@@ -52,12 +52,12 @@ function notifySidewise() {
 
     var lastDetails = sessionStorage['sidewiseLastDetailsSent'];
     if (lastDetails == detailsJSON) {
-        console.log('skipping notify message send because details have not changed from last time they were sent');
+        // console.log('skipping notify message send because details have not changed from last time they were sent');
         return;
     }
     sessionStorage['sidewiseLastDetailsSent'] = detailsJSON;
 
-    console.log('sending details', JSON.stringify(details));
+    // console.log('sending details', JSON.stringify(details));
     sendPageDetails(details);
 }
 
