@@ -36,12 +36,6 @@ function postLoad() {
     updateStateFromSettings();
 
     registerRequestEvents();
-    registerWindowEvents();
-    registerTabEvents();
-    registerWebNavigationEvents();
-    registerBrowserActionEvents();
-    registerSnapInEvents();
-    registerOmniboxEvents();
 
     var storedPageTree = loadSetting('pageTree', []);
     // storedPageTree = [];
@@ -57,6 +51,12 @@ function postLoad() {
         setTimeout(associatePages, 2000);  // wait a few moments for content scripts to get going first
     }
 
+    registerWindowEvents();
+    registerTabEvents();
+    registerWebNavigationEvents();
+    registerBrowserActionEvents();
+    registerSnapInEvents();
+    registerOmniboxEvents();
 
     monitorInfo = new MonitorInfo();
 
@@ -110,25 +110,52 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
 
     tree.loadTree(storedPageTree, casts);
 
-    // set hibernated+restorable flags on all non-hibernated nodes
-    tree.forEach(function(node, depth, containingArray, parentNode) {
-        if (!node.hibernated) {
-            node.hibernated = true;
-            node.restorable = true;
-            node.id = node.id[0] + 'R' + generateGuid();
-            if (loggingEnabled) {
-                node.label = 'R';
+    chrome.tabs.query({ }, function(tabs) {
+        var urlAndTitles = tabs.map(function(e) { return e.url + '\n' + e.title });
+
+        // set hibernated+restorable flags on all non-hibernated nodes
+        tree.forEach(function(node, depth, containingArray, parentNode) {
+            // remove nonexisting, nonhibernated chrome-*://* tabs from the tree because
+            // Chrome will often not reopen these types of tabs during a session restore
+            if (node instanceof PageNode
+                && !node.hibernated
+                && node.url.match(/^chrome-/)
+                && urlAndTitles.indexOf(node.url + '\n' + node.title) == -1) {
+
+                var nodeDetail = tree.getNodeEx(node);
+
+                // remove the dead node
+                tree.removeNode(node);
+
+                return;
             }
-        }
-        tree.callbackProxyFn('add', { element: node, parentId: parentNode ? parentNode.id : undefined });
+
+            if (!node.hibernated) {
+                node.hibernated = true;
+                node.restorable = true;
+                node.id = node.id[0] + 'R' + generateGuid();
+            }
+            tree.callbackProxyFn('add', { element: node, parentId: parentNode ? parentNode.id : undefined });
+        });
+
+
+        // remove any WindowNodes that now have no children
+        var toRemove = [];
+        tree.tree.forEach(function(e) {
+            if (e instanceof WindowNode && e.children.length == 0) {
+                toRemove.push(e); // don't remove immediately as it would mess up our containing .forEach indexes
+            }
+        });
+        toRemove.forEach(function(e) {
+            tree.removeNode(e);
+        });
+
+        // rebuild the id index
+        tree.rebuildIdIndex();
+
+        // set modified state
+        tree.updateLastModified();
     });
-
-    // rebuild the id index
-    tree.rebuildIdIndex();
-
-    // set modified state
-    tree.updateLastModified();
-
 }
 
 function PageTreeCallbackProxy(methodName, args) {
