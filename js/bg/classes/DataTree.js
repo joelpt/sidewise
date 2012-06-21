@@ -17,10 +17,7 @@ var DataTree = function() {
     this.idIndex = {};
 };
 
-// TODO give the tree a root node, probably makes traversal functions more logical:
-// function each(fn, node) { fn(node); node.children.each(fn); } // or something
-
-DataTree.prototype = {
+extendClass(DataTree, Object, {
 
     /////////////////////////////////////////////////////
     // Node create-read-update-delete operations
@@ -477,4 +474,4 @@ DataTree.prototype = {
     {
         return function(e) { return e === object; };
     }
-}
+});

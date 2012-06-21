@@ -260,7 +260,41 @@ Function.prototype.extend = function(baseClass, withPrototype) {
     }
 }
 
-function extendClass(subClass, superClass, withPrototype) {
+function extendClass(subClass, superClass, prototype) {
+    if (!superClass) {
+        superClass = Object;
+    }
+    subClass.prototype = Object.create(superClass.prototype);
+    subClass.prototype.constructor = subClass;
+    for (var x in prototype) {
+        if (prototype.hasOwnProperty(x)) {
+            subClass.prototype[x] = prototype[x];
+        }
+    }
+    subClass.prototype.$super = function (propName) {
+        var prop = superClass.prototype[propName];
+        if (typeof prop !== "function") {
+            return prop;
+        }
+        var self = this;
+        return function (/*arg1, arg2, ...*/) {
+            var selfProto = self.__proto__;
+            self.__proto__ = superClass.prototype;
+            try {
+                return prop.apply(self, arguments);
+            }
+            finally {
+                self.__proto__ = selfProto;
+            }
+        };
+    };
+    subClass.prototype.$superClass = superClass;
+    subClass.prototype.$base = function() {
+        this.$super('constructor').apply(this, arguments);
+    }
+}
+
+function extendClassOld(subClass, superClass, withPrototype) {
     function inheritance() {
         this.base = getExtendBase;
         this.super = getExtendSuper;

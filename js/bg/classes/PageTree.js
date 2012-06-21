@@ -22,13 +22,13 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     // Initialization
     ///////////////////////////////////////////////////////////
 
-    this.base().call(this);
+    // this.base().call(this);
+    this.$base();
     this.callbackProxyFn = callbackProxyFn; // callback proxy function for page/window functions
     this.focusedTabId = null;
     this.onModified = this._onPageTreeModified;
     this.onModifiedDelayed = onModifiedDelayed;
     this.onModifiedDelayedWaitMs = PAGETREE_ONMODIFIED_DELAY_MS;
-    this.onModifiedDelayedTimeout = null;
     this.awakeningPages = {};
 };
 
@@ -38,10 +38,20 @@ extendClass(PageTree, DataTree, {
     // Node manipulation
     ///////////////////////////////////////////////////////////
 
+    // getNode: function(matcher)
+    // {
+    //     return this.$super('getNode')(matcher);
+    // },
+
+    // getNodeEx: function(matcher)
+    // {
+    //     return this.$super('getNodeEx')(matcher);
+    // },
+
     // add given node as a child of the node matching parentMatcher
     addNode: function(node, parentMatcher)
     {
-        var r = this.super().addNode.call(this, node, parentMatcher);
+        var r = this.$super('addNode')(node, parentMatcher);
         this.callbackProxyFn('add', { element: node, parentId: r[1] ? r[1].id : undefined });
         return r;
     },
@@ -59,7 +69,7 @@ extendClass(PageTree, DataTree, {
 
         var existingId = page.id;
 
-        this.super().updateNode.call(this, page, details);
+        this.$super('updateNode')(page, details);
         this.callbackProxyFn('update', { id: existingId, element: details });
 
         return page;
@@ -68,7 +78,7 @@ extendClass(PageTree, DataTree, {
     // remove the element matching matcher
     removeNode: function(matcher)
     {
-        var r = this.super().removeNode.call(this, matcher);
+        var r = this.$super('removeNode')(matcher);
         this.callbackProxyFn('remove', { element: r });
         return r;
     },
@@ -79,7 +89,7 @@ extendClass(PageTree, DataTree, {
     {
         var moving = tree.getNode(movingMatcher);
         var parent = tree.getNode(parentMatcher);
-        var r = this.super().moveNode.call(this, moving, parent);
+        var r = this.$super('moveNode')(moving, parent);
 
         if (r !== undefined) {
             this.callbackProxyFn('move', { element: r, newParentId: parent.id });
@@ -91,7 +101,7 @@ extendClass(PageTree, DataTree, {
     // The fromNode is removed from the tree after the merge.
     mergeNodes: function(fromNodeMatcher, toNodeMatcher)
     {
-        var r = this.super().mergeNodes.call(this, fromNodeMatcher, toNodeMatcher);
+        var r = this.$super('mergeNodes')(fromNodeMatcher, toNodeMatcher);
         if (r !== undefined) {
             this.callbackProxyFn('merge', { fromId: r.fromId, toId: r.toId });
         }
