@@ -1,15 +1,12 @@
 {
-    // Extension details
     "extName": { "message": "Sidewise Tree Style Tabs" },
     "extDescription": { "message": "A persistent sidebar for Chrome with tree style tabs and much more." },
 
 
-    // Sidebar container
     "sidebarTitle": { "message": "Sidewise" },
     "sidebars_optionsButtonTooltip": { "message": "Options" },
 
 
-    // General text snippets
     "text_page": { "message": "page" },
     "text_pages": { "message": "pages" },
     "text_Version": { "message": "Version" },
@@ -19,7 +16,6 @@
     "text_hibernated": { "message": "hibernated" },
 
 
-    // Chrome internal-URL tab title overrides
     "tabTitle_Extensions": { "message": "Extensions" },
     "tabTitle_Settings": { "message": "Settings" },
     "tabTitle_Downloads": { "message": "Downloads" },
@@ -28,12 +24,10 @@
     "tabTitle_NewTab": { "message": "New Tab" },
 
 
-    // Omnibox
     "omniboxDefaultSuggestion": { "message": "Enter text to search page titles and labels" },
     "omniboxSuggestionPrefix": { "message": "Page:" },
 
 
-    // Prompts
     "prompt_filterPlaceholderText": { "message": "Type to search titles and URLs"},
     "prompt_filterActiveText": { "message": "Matches shown below. Click here to reset."},
     "prompt_detectMonitors": { "message": "Sidewise will detect your monitor(s) now." },
@@ -49,7 +43,6 @@
     "prompt_confirmResetOptions": { "message": "Are you sure you want to reset all options to the defaults?" },
     "prompt_setLabel": { "message": "Enter the desired label, or clear box for no label:" },
 
-    // Sidebar button labels
     "sidebarLabel_Pages": { "message": "Pages" },
     "sidebarLabel_Notepad": { "message": "Notepad" },
     "sidebarLabel_Bookmarks": { "message": "Bookmarks" },
@@ -59,34 +52,27 @@
     "sidebarLabel_Reddit": { "message": "Reddit" },
 
 
-    // Pages sidebar
     "pages_hibernatedHint": { "message": "Hibernated page" },
     "pages_omniboxTip": { "message": "Tip: You can type \"sw sometext\" into Chrome's address bar to find pages in Sidewise." },
 
 
-    // Notepad sidebar
     "notepad_heading": { "message": "Notepad" },
     "notepad_hint": { "message": "Just start typing. Text is auto-saved." },
     "notepad_lastSavedAt": { "message": "Last saved at:" },
 
 
-    // Bookmarks sidebar
     "bookmarks_heading": { "message": "Bookmarks" },
 
 
-    // Global History sidebar
     "globalHistory_heading": { "message": "Browser History" },
 
 
-    // Tab History sidebar
     "tabHistory_heading": { "message": "Tab History" },
 
 
-    // Closed Pages sidebar
     "closedPages_heading": { "message": "Closed Pages" },
 
 
-    // Options page
     "optionsPageTitle": { "message": "Sidewise Options" },
     "optionsPageHeading": { "message": "Sidewise Options" },
 
