@@ -283,8 +283,8 @@ FancyTree.prototype = {
         this.updateRowExpander(newParent);
         this.updateRowExpander(elem);
 
-        formatLineageTitles(oldParent);
-        formatLineageTitles(newParent);
+        this.formatLineageTitles(oldParent);
+        this.formatLineageTitles(newParent);
     },
 
     updateRow: function(id, details) {
@@ -1073,7 +1073,10 @@ FancyTree.prototype = {
         var thisObj = this;
         row.parents('.ftRowNode').add(row).each(function(i, e) {
             var $e = $(e);
-            thisObj.getRowTypeParams($e).onFormatTitle($e);
+            var rowTypeParams = thisObj.getRowTypeParams($e);
+            if (rowTypeParams && rowTypeParams.onFormatTitle) {
+                rowTypeParams.onFormatTitle($e);
+            }
         });
     },
 
