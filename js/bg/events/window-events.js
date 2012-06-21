@@ -1,9 +1,11 @@
+var windowUpdateCheckInterval = null;
+
 function registerWindowEvents()
 {
     chrome.windows.onCreated.addListener(onWindowCreated);
     chrome.windows.onRemoved.addListener(onWindowRemoved);
     chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
-    setInterval(onWindowUpdateCheckInterval, 100);
+    windowUpdateCheckInterval = setInterval(onWindowUpdateCheckInterval, 100);
 }
 
 function onWindowCreated(win)
@@ -20,6 +22,7 @@ function onWindowCreated(win)
 
 function onWindowRemoved(windowId)
 {
+    log(windowId);
     if (windowId == sidebarHandler.windowId)
     {
         if (sidebarHandler.removeInProgress) {
@@ -33,24 +36,41 @@ function onWindowRemoved(windowId)
     if (windowId == monitorInfo.lastDetectionWindowId) {
         return;
     }
-    log(windowId);
-    tree.removeNode('w' + windowId);
-    savePageTreeToLocalStorage();
+
     focusTracker.remove(windowId);
+    tree.removeNode('w' + windowId);
 
-    focusCurrentTabInPageTree();
-
-    if (sidebarHandler.sidebarExists())
-    {
-        chrome.windows.getAll(null, function(windows) {
-            if (windows.length == 1)
-            {
-                // no windows left except the sidebar's window.
-                // so close the sidebar so chrome may exit.
-                sidebarHandler.remove();
+    chrome.windows.getAll(null, function(wins) {
+        log('shutdown attempt', wins);
+        for (var i in wins) {
+            if (wins[i].type == 'normal') {
+                // at least one normal window still exists aside
+                // from the one that was just removed
+                log('cancel shutdown', wins[i].type);
+                focusCurrentTabInPageTree();
+                return;
             }
-        });
-    }
+        }
+        // No normal windows are left in existence.
+        // Therefore we want Chrome to close, so we'll close any remaining
+        // "popup" windows (such as the sidebar or dev-tools windows)
+        // which should cause Chrome to exit.
+        log('do shutdown');
+        // Prevent page tree from being saved from this point forward
+        TimeoutManager.clear('onPageTreeModified');
+        tree.onModifiedDelayed = undefined;
+
+        // Prevent onWindowUpdateCheckInterval from firing
+        clearInterval(windowUpdateCheckInterval);
+
+        // Close any remaining (popup) windows
+        sidebarHandler.remove();
+
+        for (var i in wins) {
+            chrome.windows.remove(wins[i].id);
+        }
+    });
+
 }
 
 // TODO address Linux case where we get windowId==-1's in between switching between
@@ -188,6 +208,24 @@ function onWindowUpdateCheckInterval() {
         if (sidebarHandler.resizingDockWindow) {
             return;
         }
+
+        // TODO remember last dock window minimized state and only do sidebar un/minimization
+        // when the state changes; this would permit sidebar to be minimized independently
+        // of the dock window though arguably we should not support that
+        //
+        // Ensure sidebar minimized state is the same as the dock window's.
+        chrome.windows.get(sidebarHandler.windowId, function(sidebar) {
+            if (sidebar.state == 'minimized' && dock.state != 'minimized') {
+                chrome.windows.update(sidebar.id, { state: 'normal' }, function() {
+                    chrome.windows.update(dock.id, { focused: true });
+                });
+                return;
+            }
+            if (sidebar.state != 'minimized' && dock.state == 'minimized') {
+                chrome.windows.update(sidebar.id, { state: 'minimized' });
+                return;
+            }
+        });
 
         var dockDims = sidebarHandler.currentDockWindowMetrics;
         var widthDelta = dock.width - dockDims.width;
