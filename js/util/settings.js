@@ -54,7 +54,7 @@ function initializeDefaultSettings(forceReset) {
         useAdvancedTreeFiltering: false,
         pages_doubleClickAction: 'expand',
         pages_middleClickAction: 'none',
-        smartFocusOnClose: true,
+        smartFocusOnClose: false,
         smartFocusPrefersCousins: false,
         loggingEnabled: false,
         alwaysShowAdvancedOptions: false,
