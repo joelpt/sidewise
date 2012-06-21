@@ -1,6 +1,7 @@
 var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
 
 /**
+  * @class
   * @constructor
   * @param appendToElem The root DOM element to append the FancyTree under.
   * @param options A dictionary of options, all optional:
