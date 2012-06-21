@@ -92,19 +92,18 @@ function onCommitted(details)
 
         var page = tree.getPage(details.tabId);
         if (!page.placed) {
+            tree.updatePage(details.tabId, { placed: true });
             chrome.tabs.get(details.tabId, function(tab) {
                 var winNode = tree.getNode('w' + tab.windowId);
                 if (!winNode) {
                     chrome.windows.get(tab.windowId, function(win) {
                         var winNode = new WindowNode(win);
                         tree.addNode(winNode);
-                        tree.moveNode('p' + details.tabId, 'w' + tab.windowId);
-                        tree.updatePage(details.tabId, { placed: true });
+                        tree.moveNode(page, winNode);
                     });
                     return;
                 }
-                tree.moveNode('p' + details.tabId, winNode);
-                tree.updatePage(details.tabId, { placed: true });
+                tree.moveNode(page, winNode);
             });
         }
     }
