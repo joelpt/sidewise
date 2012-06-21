@@ -36,9 +36,15 @@ function updateStateFromSettings() {
 // One-time initialization of default settings.
 // If already initialized, does nothing, unless forceReset is true.
 function initializeDefaultSettings(forceReset) {
-    if (loadSetting('settingsInitialized') && !forceReset) {
+    var version = getVersion();
+    var lastInitVersion = loadSetting('lastInitializedVersion');
+
+    if (version == lastInitVersion && !forceReset) {
+        console.log('Settings are at current version', version);
         return;
     }
+
+    console.log('Initializing settings', 'old version:', lastInitVersion, 'current version:', version);
 
     var defaultSettings = {
         openSidebarOnStartup: true,
@@ -52,11 +58,20 @@ function initializeDefaultSettings(forceReset) {
         smartFocusPrefersCousins: false,
         loggingEnabled: false,
         alwaysShowAdvancedOptions: false,
-        sidebarTargetWidth: 300,
-        settingsInitialized: true
+        sidebarTargetWidth: 300
     };
 
     for (var setting in defaultSettings) {
-        saveSetting(setting, defaultSettings[setting]);
+        var oldValue = loadSetting(setting);
+        var newValue = (oldValue === undefined ? defaultSettings[setting] : oldValue);
+
+        saveSetting(setting, newValue);
+
+        if (oldValue != newValue) {
+            console.log('Initialized setting', setting, 'to:', newValue);
+        }
     }
+
+    saveSetting('lastInitializedVersion', version);
+    console.log('Initialization of settings done, settings version now at', version);
 }
