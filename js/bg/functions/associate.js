@@ -177,6 +177,7 @@ function associatePagesCheck(runId) {
 
 function endAssociationRun(runId) {
     delete associationRuns[runId];
+
     try {
         TimeoutManager.clear(runId);
     }
@@ -224,6 +225,11 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         log('no matching PageNode found, adding to a new window', tab.id, tab);
         tree.addTabToWindow(tab, function(page, win) {
             tree.updateNode(page, { referrer: referrer || '', historylength: historylength || 1 });
+
+            // set focus to this page if it and its window have the current focus
+            if (tab.active && focusTracker.getFocused() == tab.windowId) {
+                tree.focusPage(tab.id);
+            }
         });
         return;
     }
@@ -233,6 +239,11 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
     log('matching PageNode found, restoring', tab.id, tab, match.node);
     var details = { hibernated: false, restorable: false, id: 'p' + tab.id };
     tree.updateNode(match.node, details);
+
+    // set focus to this page if it and its window have the current focus
+    if (tab.active && focusTracker.getFocused() == tab.windowId) {
+        tree.focusPage(tab.id);
+    }
 
     // When node is under a restorable window node, we want to see if this tab/node has
     // a unique key amongst all nodes. If so, we know that this tab's .windowId
