@@ -40,17 +40,10 @@ header {
     border-bottom: 1px solid #999;
 }
 
-@font-face {
-  font-family: 'Berkshire Swash';
-  font-style: normal;
-  font-weight: 400;
-  src: url('/fonts/Berkshire_Swash.woff') format('woff');
-}
-
-
 h1 {
     display: inline-block;
-    font-family: 'Berkshire Swash', 'Trebuchet MS', sans-serif;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-weight: bold;
     font-size: 49px;
     margin-left: 6px;
     text-shadow: 3px 3px 3px rgba(0, 0, 0, 0.25);
@@ -74,9 +67,21 @@ i, em {
 ol {
     list-style: decimal;
     margin-left: 2em;
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
 }
+
+ul {
+    list-style: square;
+    margin-left: 1.75em;
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+}
+
+li+li {
+    padding-top: 0.5em;
+}
+
 
 blockquote {
     margin-left: 1.75em;
