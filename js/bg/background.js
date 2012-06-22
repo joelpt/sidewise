@@ -35,7 +35,7 @@ function postLoad() {
     initializeDefaultSettings();
     updateStateFromSettings();
 
-    registerRequestEvents();
+    registerEventHandlers();
 
     var storedPageTree = loadSetting('pageTree', []);
     // storedPageTree = [];
@@ -50,13 +50,6 @@ function postLoad() {
         injectContentScriptInExistingTabs('content_script.js');
         setTimeout(associatePages, 2000);  // wait a few moments for content scripts to get going first
     }
-
-    registerWindowEvents();
-    registerTabEvents();
-    registerWebNavigationEvents();
-    registerBrowserActionEvents();
-    registerSnapInEvents();
-    registerOmniboxEvents();
 
     monitorInfo = new MonitorInfo();
 
@@ -78,6 +71,16 @@ function postLoad() {
 
         });
     }
+}
+
+function registerEventHandlers() {
+    registerRequestEvents();
+    registerWindowEvents();
+    registerTabEvents();
+    registerWebNavigationEvents();
+    registerBrowserActionEvents();
+    registerSnapInEvents();
+    registerOmniboxEvents();
 }
 
 function createSidebarOnStartup() {
@@ -159,12 +162,12 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
 }
 
 function PageTreeCallbackProxy(methodName, args) {
-    log(methodName, args);
+    // log(methodName, args);
 
     var pagesWindow = sidebarHandler.sidebarPanes['pages'];
 
     if (!pagesWindow) {
-        log('proxy target does not yet exist');
+        log('proxy target does not yet exist', methodName, args);
         return;
     }
 

@@ -1,3 +1,7 @@
+///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
 // delay before asking Chrome for favicon again in onComplete
 var ONCOMPLETED_LATE_UPDATE_DELAY_MS = 1000;
 
@@ -5,13 +9,31 @@ var ONCOMPLETED_LATE_UPDATE_DELAY_MS = 1000;
 var ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS = 500;
 
 
+///////////////////////////////////////////////////////////
+// Globals
+///////////////////////////////////////////////////////////
+
+var expectingNavigationTabIdSwap = false;
+var expectingNavigationOldTabId = null;
+var expectingNavigationPossibleNewTabIds = [];
+
+
+///////////////////////////////////////////////////////////
+// Initialization
+///////////////////////////////////////////////////////////
+
 function registerWebNavigationEvents()
 {
     chrome.webNavigation.onCreatedNavigationTarget.addListener(onCreatedNavigationTarget);
     chrome.webNavigation.onCommitted.addListener(onCommitted);
     chrome.webNavigation.onCompleted.addListener(onCompleted);
-    // chrome.webNavigation.onBeforeNavigate.addListener(onBeforeNavigate);
+    chrome.webNavigation.onBeforeNavigate.addListener(onBeforeNavigate);
 }
+
+
+///////////////////////////////////////////////////////////
+// Event handlers
+///////////////////////////////////////////////////////////
 
 function onCreatedNavigationTarget(details)
 {
@@ -24,8 +46,10 @@ function onCreatedNavigationTarget(details)
         return;
     }
     log(details);
-    tree.moveNode('p' + details.tabId, 'p' + details.sourceTabId);
-    tree.updatePage(details.tabId, { placed: true });
+
+    var page = tree.getPage(details.tabId);
+    tree.moveNode(page, 'p' + details.sourceTabId);
+    tree.updateNode(page, { placed: true });
 }
 
 
@@ -84,12 +108,11 @@ function onCommitted(details)
         return;
     }
     log(details);
-    if (details.frameId == 0
-        && (details.transitionType == 'typed'
-            || details.transitionType == 'generated'
-            || details.transitionType == 'link')
-        && details.transitionQualifiers.indexOf('from_address_bar') != -1) {
-
+    if (details.transitionQualifiers.indexOf('from_address_bar') != -1) {
+        // stick pages which were created by the user typing into the
+        // address bar under their parent window, rather than potentially
+        // beneath the page which the user was viewing at the time of
+        // typing into the address bar and hitting alt+enter
         var page = tree.getPage(details.tabId);
         if (!page.placed) {
             tree.updatePage(details.tabId, { placed: true });
@@ -106,6 +129,40 @@ function onCommitted(details)
                 tree.moveNode(page, winNode);
             });
         }
+        return;
+    }
+
+    if (details.transitionType == 'reload') {
+        // a tab is being manually reloaded, has been duplicated from
+        // another tab, or is being loaded during a session restore
+        // or undo-closed-tab process
+        var page = tree.getPage(details.tabId);
+        if (page) {
+            // existing tab was manually reloaded; we don't care
+            return;
+        }
+        // This is a tab duplication, session restore, or undo-closed-tab
+        // operation. Do an association run to catch cases of session restore
+        // or (functionally equivalent) undo-closed-tabs following a browser
+        // restart.
+        // TODO contend with duplicate-tab case
+        // TODO support de-hibernation of tabs for the undo-closed-tab case,
+        //      where the user might hibernate a page then ctrl+shift+T
+        //      brings it back
+        // TODO this is not working because undone closed tabs fire onTabCreated
+        //      before we get here; to fix, associatePages needs a parameter
+        //      that tells it to instead associate *existing page nodes*
+        //      onto *restorable hibernated nodes*; when this is done
+        //      we'll want to merge the existing page node into the
+        //      restorable page node and possibly copy over the new page node's
+        //      deets, though this may not be necessary because the restorable
+        //      node should already have the matching correct url/ref/histlen
+        //      and as for the title, we should get updates from the
+        //      content script for that if it has changed (or later onTabUpdated's)
+        //      FFS this would be so simple with persistent tab GUIDs, come on
+        //      google
+        associatePages();
+        return;
     }
 }
 
@@ -114,7 +171,20 @@ function onBeforeNavigate(details)
     if (details.frameId > 0) {
         return;
     }
+
     log(details);
+
+    // If we get an onBeforeNavigate event and the corresponding page node
+    // does not yet exist, Chrome may be about to replace an existing tab
+    // with a new tab, changing its tab id but making it look to the user
+    // like they just went forward to a new page in the same tab.
+    // We can get more than one such tabId before a navigation of this sort
+    // actually takes place.
+    if (!tree.getPage(details.tabId)) {
+        log('Expecting a tab id swap', details.tabId);
+        expectingNavigationTabIdSwap = true;
+        expectingNavigationPossibleNewTabIds.push(details.tabId);
+    }
 }
 
 function onCompleted(details)

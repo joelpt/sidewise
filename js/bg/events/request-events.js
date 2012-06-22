@@ -46,9 +46,34 @@ function onPortMessage(port, msg) {
 
 function onPortDisconnect(port) {
     log('onPortDisconnect', port);
+
     // delete entry from known tab ports list
     if (connectedTabs[port.tab.id]) {
         delete connectedTabs[port.tab.id];
+    }
+
+    // If we are expecting a navigation tab-id-swap due to
+    // Chrome preloading of tabs, and one of the possible
+    // preloading tabs fires onPortDisconnect, we know
+    // it has been destroyed and should not expect it as
+    // a possible tab id swap target anymore
+
+    if (expectingNavigationTabIdSwap) {
+        var index = expectingNavigationPossibleNewTabIds.indexOf(port.tab.id);
+        if (index >= 0) {
+            // remove it from the list
+            log('Removed preloading tab from expected nav swap list', port.tab.id);
+            expectingNavigationPossibleNewTabIds.splice(index, 1);
+            log('Remaining list', expectingNavigationPossibleNewTabIds);
+        }
+        if (expectingNavigationPossibleNewTabIds.length == 0) {
+            // no more tab ids left on the preloading tabs list;
+            // cancel our expectations
+            log('No more preloading tabs on the expected list, cancelling expectation');
+            expectingNavigationTabIdSwap = false;
+            expectingNavigationOldTabId = null;
+            expectingNavigationPossibleNewTabIds = [];
+        }
     }
 }
 

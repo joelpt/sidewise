@@ -1,3 +1,7 @@
+///////////////////////////////////////////////////////////
+// Initialization
+///////////////////////////////////////////////////////////
+
 function registerTabEvents()
 {
     chrome.tabs.onCreated.addListener(onTabCreated);
@@ -5,6 +9,11 @@ function registerTabEvents()
     chrome.tabs.onUpdated.addListener(onTabUpdated);
     chrome.tabs.onActivated.addListener(onTabActivated);
 }
+
+
+///////////////////////////////////////////////////////////
+// Event handlers
+///////////////////////////////////////////////////////////
 
 function onTabCreated(tab)
 {
@@ -16,6 +25,46 @@ function onTabCreated(tab)
     {
         log('ignoring creation of the sidebar');
         return;
+    }
+
+    if (expectingNavigationTabIdSwap) {
+        // tab id swapping is probably about to occur
+        if (expectingNavigationOldTabId && expectingNavigationPossibleNewTabIds.indexOf(tab.id) >= 0) {
+            // it did occur; swap tab ids
+            log('Swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id);
+            tree.updatePage(expectingNavigationOldTabId, {
+                id: 'p' + tab.id,
+                url: tab.url
+            });
+            expectingNavigationTabIdSwap = false;
+            expectingNavigationOldTabId = null;
+            expectingNavigationPossibleNewTabIds = [];
+            return;
+        }
+
+        // sometimes onBeforeNavigate fails to fire before we get here when we're expecting
+        // a tab id swap; if this happens, as long as we did get a tabRemoved event while
+        // we were expecting a tab id swap, just assume this newly created tab is in fact
+        // the one that should be swapped in for that removed tab
+        if (expectingNavigationOldTabId) {
+            log('Fallback approach - swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id);
+            tree.updatePage(expectingNavigationOldTabId, {
+                id: 'p' + tab.id,
+                url: tab.url
+            });
+            expectingNavigationTabIdSwap = false;
+            expectingNavigationOldTabId = null;
+            expectingNavigationPossibleNewTabIds = [];
+            return;
+        }
+
+        // we thought a swap might occur but the old (replaceable) tab never was reported
+        // as removed, so the user must have actually created a new tab (alt+enter) from
+        // the tab that Chrome was preloading
+        log('Cancelling expected tab id swap');
+        expectingNavigationTabIdSwap = false;
+        expectingNavigationOldTabId = null;
+        expectingNavigationPossibleNewTabIds = [];
     }
 
     var page = tree.awakeningPages[tab.url];
@@ -108,6 +157,14 @@ function onTabRemoved(tabId, removeInfo)
         return;
     }
     log(tabId, removeInfo);
+
+    if (expectingNavigationTabIdSwap) {
+        // We think Chrome is about to swap this tab with another tab
+        // due to preloading a tab in the background and swapping it in
+        log('Recording expected navigation old tab id', tabId);
+        expectingNavigationOldTabId = tabId;
+        return;
+    }
 
     var page = tree.getPage(tabId);
 
