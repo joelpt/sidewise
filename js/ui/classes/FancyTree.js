@@ -3,7 +3,8 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
 /**
   * @class
   * @constructor
-  * @param appendToElem The root DOM element to append the FancyTree under.
+  * @param treeReplaceElem The DOM element to replace with the treeview.
+  * @param filterBoxReplaceElem The root DOM element to replace with the filter box.
   * @param options A dictionary of options, all optional:
   *        <pre>
   *        {
@@ -48,8 +49,8 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   *       involved row's <li> jQuery element in evt.data.row.
   *
   */
-var FancyTree = function(appendToElem, options) {
-    this.init(appendToElem, options);
+var FancyTree = function(treeReplaceElem, filterBoxReplaceElem, options) {
+    this.init(treeReplaceElem, filterBoxReplaceElem, options);
 }
 
 FancyTree.prototype = {
@@ -58,21 +59,21 @@ FancyTree.prototype = {
     // Initialization
     ///////////////////////////////////////////////////////////
 
-    init: function(appendToElem, options) {
-        // prepare new tree <ul> to appendToElem
-        var rootNode = $('<div class="ftRoot">');
-        var rootUL = $('<ul class="ftChildren">');
+    init: function(treeReplaceElem, filterBoxReplaceElem, options) {
+        // prepare new tree elements to append to treeReplaceElem
+        var rootNode = $('<div class="ftRoot"/>');
+        var rootUL = $('<ul class="ftChildren"/>');
         rootNode.append(rootUL);
 
-        // append new element to appendToElem as child
-        var parentElem = $(appendToElem);
-        parentElem.append(rootNode);
+        // append to treeReplaceElem
+        var treeHostElem = $(treeReplaceElem);
+        treeHostElem.replaceWith(rootNode);
 
         // prepare type-in filter box to put above tree
-        if (options.showFilterBox != false) {
-            // prepare a unique identifier for the search box's history
-            var idElem = $(appendToElem).get(0);
-            var autosaveId = parentElem.parents().toArray().reverse()
+        if (options.showFilterBox !== false) {
+            // construct a unique identifier for the search box's history
+            var idElem = $(filterBoxReplaceElem).get(0);
+            var autosaveId = treeHostElem.parents().toArray().reverse()
                 .reduce(function(prev, curr) {
                     return prev + '/' + curr.tagName + '.' + curr.className + '#' + curr.id
                 }, ''
@@ -87,16 +88,15 @@ FancyTree.prototype = {
                 results: 100,
                 autosave: autosaveId
             }));
+            this.filterElem = filterElem;
+            $(filterBoxReplaceElem).replaceWith(filterElem);
 
             // filter status element
             var filterStatusElem = $('<div/>', { class: 'ftFilterStatus' })
                 .text(options.filterActiveText || 'Matches shown, click here or hit Esc to clear')
                 .hide();
-            filterElem.append(filterStatusElem);
-
-            // put filter box before tree element
-            rootNode.before(filterElem);
-            this.filterElem = filterElem;
+            rootNode.before(filterStatusElem);
+            this.filterStatusElem = filterStatusElem;
         }
 
         // configure tree initial state
@@ -104,7 +104,6 @@ FancyTree.prototype = {
         this.permitTooltipHandler = options.permitTooltipHandler;
         this.focusedRow = null;
         this.hoveredRow = null;
-        this.hoveringRowButtons = false;
         this.filtering = false;
         this.multiSelection = [];
         this.lastMultiSelectedFromId = null;
@@ -188,7 +187,7 @@ FancyTree.prototype = {
         {
             var buttonClass = '.ftButton__' + name + '_' + i;
             var buttonData = { treeObj: this, onClick: params.buttons[i].onClick };
-            $(document).on('click', buttonClass, buttonData, this._rowButtonClickHandler);
+            $(document).on('mouseup', buttonClass, buttonData, this._rowButtonClickHandler);
         }
 
         // construct empty HTML element for this rowtype
@@ -234,12 +233,6 @@ FancyTree.prototype = {
         // ensure button tooltips don't popup after the row is removed, after the tips' predelay
         this.getButtons(elem)
             .each(function(i, e) { $(e).data('tooltip').onShow(function() { this.hide(); } ); })
-
-        // if the element being removed is the currently hovered element, clear hoveringRowButtons state boolean
-        if (this.hoveredRow === elem) {
-            this.hoveringRowButtons = false;
-            this.hoveredRow = null;
-        }
 
         elem.replaceWith(elem.children('.ftChildren').children());
 
@@ -425,7 +418,7 @@ FancyTree.prototype = {
             treeObj.root.removeClass('ftFiltering');
 
             // hide filter status message
-            treeObj.filterElem.children('.ftFilterStatus').hide();
+            treeObj.filterStatusElem.hide();
         }
         else
         {
@@ -468,7 +461,7 @@ FancyTree.prototype = {
             treeObj.root.addClass('ftFiltering');
 
             // show filter status message
-            treeObj.filterElem.children('.ftFilterStatus').show();
+            treeObj.filterStatusElem.show();
 
         }
     },
@@ -486,14 +479,12 @@ FancyTree.prototype = {
 
     onMouseEnterButtons: function(evt) {
         var treeObj = evt.data.treeObj;
-        treeObj.hoveringRowButtons = true;
         treeObj.handleHideTooltipEvent(evt);
     },
 
     onMouseLeaveButtons: function(evt) {
         var treeObj = evt.data.treeObj;
         var row = evt.data.treeObj.getParentRowNode($(this));
-        treeObj.hoveringRowButtons = false;
         treeObj.startTooltipTimer(row, evt);
     },
 
@@ -543,14 +534,6 @@ FancyTree.prototype = {
         var treeObj = evt.data.treeObj;
         var row = treeObj.getParentRowNode($this);
         evt.data.row = row;
-
-        if (treeObj.hoveringRowButtons) {
-            // we manage this state and manually check it here because jquery
-            // doesn't really give us a way to only trigger a child-element's event handlers
-            // without also triggering all container-element's handlers first;
-            // this is basically the inverse of evt.stopPropagation()
-            return;
-        }
 
         // hide any visible tooltips
         treeObj.hideTooltip();
@@ -656,13 +639,6 @@ FancyTree.prototype = {
         var $this = $(this);
         var treeObj = evt.data.treeObj;
         var row = treeObj.getParentRowNode($this);
-
-        if (treeObj.hoveringRowButtons) {
-            // we manage this state and manually check it here because jquery
-            // doesn't really give us a way to only trigger a child-element's event handlers
-            // without also triggering all container-element's handlers first
-            return;
-        }
 
         treeObj.hideTooltip();
 

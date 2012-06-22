@@ -31,8 +31,12 @@ var bg;
 ///////////////////////////////////////////////////////////
 
 $(document).ready(function() {
+    if (loggingEnabled) {
+        $('footer, #main').addClass('debugEnabled');
+    }
+
     bg = chrome.extension.getBackgroundPage();
-    ft = initTree('#pageTree', bg.tree);
+    ft = initTree('#treePlaceholder', '#filterBoxPlaceholder', bg.tree);
 
     var binder = new SidebarPaneFancyTreeBinder(ft, bg);
     binder.bind();
@@ -41,7 +45,7 @@ $(document).ready(function() {
     bg.focusCurrentTabInPageTree();
 });
 
-function initTree(attachToSelector, pageTree) {
+function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     var rowTypes = {
         'page': {
             autofocusOnClick: true,
@@ -57,7 +61,7 @@ function initTree(attachToSelector, pageTree) {
             filterByExtraParams: ['url'],
             tooltipMaxWidthPercent: 0.9,
             buttons: [
-                {icon: '/images/reload.png', tooltip: 'Hibernate', onClick: onPageRowHibernateButton },
+                {icon: '/images/pause.png', tooltip: 'Hibernate/wake', onClick: onPageRowHibernateButton },
                 {icon: '/images/close.png', tooltip: 'Close', onClick: onPageRowCloseButton }
             ]
         },
@@ -78,7 +82,7 @@ function initTree(attachToSelector, pageTree) {
         }
     };
 
-    fancyTree = new FancyTree($(attachToSelector), {
+    fancyTree = new FancyTree($(treeReplaceSelector), $(filterBoxReplaceSelector), {
         rowTypes: rowTypes,
         showFilterBox: true,
         filterPlaceholderText: getMessage('prompt_filterPlaceholderText'),
@@ -294,20 +298,28 @@ function onPageRowFormatTitle(row, itemTextElem) {
         label = row.attr('id') + (label ? ': ' : '') + label;
     }
 
-    itemTextElem.children('.ftItemTitle').text(text);
-    itemTextElem.children('.ftItemLabel').text(label + (text && label ? ': ' : ''));
+    itemTextElem.children('.ftItemTitle').html(text);
+    itemTextElem.children('.ftItemLabel').html(label + (text && label ? ': ' : ''));
 }
 
 function onPageRowFormatTooltip(evt) {
+    var row = evt.data.row;
     var icon = evt.data.icon;
-    var url = evt.data.row.attr('url');
+    var url = row.attr('url');
     var text = evt.data.text;
 
     if (url == text) {
         text = '';
     }
-    if (evt.data.row.attr('hibernated') == 'true') {
+    if (row.attr('hibernated') == 'true') {
         text = '<div class="hibernatedHint">' + getMessage('pages_hibernatedHint') + '</div>' + text;
+    }
+
+    if (loggingEnabled) {
+        var page = bg.tree.getNode(row.attr('id'));
+        url += '<br/><br/>Id: ' + page.id
+            + '<br/>History length: ' + page.historylength
+            + '<br/>Referrer: ' + (page.referrer || "''");
     }
 
     var elem = getBigTooltipContent(text, icon, url);

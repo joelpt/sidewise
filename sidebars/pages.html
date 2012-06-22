@@ -27,24 +27,29 @@
 
 </head>
 <body>
+    <header>
+        <div id="filterBoxPlaceholder"></div>
+    </header>
 
-    <div id="outerContainer">
-        <div id="pageTree"/>
-    </div>
+    <section id="main">
+        <div id="treePlaceholder"></div>
+    </section>
 
-    <div id="debugLinks">
-        <a href="javascript:window.parent.location='pages.html'">promote iframe</a>
-        <a href="javascript:bg.tree.tree = []; bg.injectContentScriptInExistingTabs('content_script.js'); bg.populatePages(); setTimeout(function() { location.reload() }, 500); ">reset tree</a>
-    </div>
+    <footer>
+        <div id="debugLinks">
+            <span onclick="javascript:window.parent.location='pages.html'">promote iframe</span>
+            <span onclick="javascript:bg.tree.tree = []; bg.injectContentScriptInExistingTabs('content_script.js'); bg.populatePages(); setTimeout(function() { location.reload() }, 500); ">reset tree</span>
+        </div>
+    </footer>
 
-    <ul id="pageRowContextMenu" class="ftContextMenu">
+    <!-- <ul id="pageRowContextMenu" class="ftContextMenu">
         <li class="reload">
             <a name="reload">Reload</a>
         </li>
         <li class="close">
             <a name="close">Close</a>
         </li>
-    </ul>
-</div>
+    </ul> -->
+<!-- </div> -->
 </body>
 </html>

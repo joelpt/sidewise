@@ -1,3 +1,4 @@
+
 /* .ftChildren, .ftRowNode */
 
 .ftChildren {
@@ -66,8 +67,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    margin-left: .5em;
-    margin-right: 0.25em;
+    margin-left: 4px;
+    margin-right: 2px;
     font-family: Verdana, sans-serif;
     font-size: 11px;
     padding-top: 2px;
@@ -225,14 +226,10 @@
 }
 
 
-/* filter box and filtered-out rows */
+/* filter box and row filtering */
 
 .ftFilterControl {
-    margin: 4px 4px 0px 0px;
-}
-
-.ftFilterControl + .ftRoot {
-    margin-top: 0.375em;
+    margin: 4px 4px 0px 4px;
 }
 
 .ftFilterInput {
@@ -246,15 +243,22 @@
     font-family: Verdana, sans-serif;
     font-size: 8pt;
     color: black;
-    background-color: yellow;
-    margin-top: 4px;
+    background-color: hsl(55, 80%, 75%);
+    margin: 0px 6px 6px 6px;
     padding: 0.75em 0.75em;
     border-radius: 2px;
     display: none;
-    box-shadow: -1px -1px 2px 1px rgba(0, 0, 0, 0.15) inset, 1px 1px 2px 1px rgba(255, 255, 255, 0.15) inset;
+    box-shadow: -1px -1px 2px 1px rgba(0, 0, 0, 0.1) inset, 1px 1px 2px 1px rgba(255, 255, 255, 0.1) inset;
     border: 1px solid #aaa;
     cursor: pointer;
+}
 
+.ftFilterStatus:hover {
+    background-color: hsl(55, 80%, 65%);
+}
+
+.ftFiltering {
+    margin-left: 6px;
 }
 
 .ftFiltering .ftItemRow {

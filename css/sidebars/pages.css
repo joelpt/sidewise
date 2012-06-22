@@ -1,22 +1,73 @@
 body {
     -webkit-user-select: none;
     user-select: none;
+    /*font-size: 10px;*/
 }
 
-#pageTree {
-    margin: 0em 0em 0em 4px;
+header {
+    position: absolute;
+    top: 0px;
+    width: 100%;
+    height: 30px;
+    overflow: hidden;
+}
+
+footer.debugEnabled {
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
+    height: 20px;
+    overflow: hidden;
+    background: hsl(60, 80%, 80%);
+}
+
+footer:not(.debugEnabled) {
+    display: none;
+}
+
+section#main.debugEnabled {
+    position: absolute;
+    top: 30px;
+    bottom: 20px;
+    width: 100%;
+    overflow: auto;
+}
+
+section#main:not(.debugEnabled) {
+    position: absolute;
+    top: 30px;
+    bottom: 0px;
+    width: 100%;
+    overflow: auto;
 }
 
 #debugLinks {
-    font-size: 12px;
     font-family: Verdana, sans-serif;
-    margin: 1em;
+    border-top: 1px solid black;
+    /*padding: 0.5em 0.5em 0em 0.5em;*/
+    /*box-shadow: 2px 2px 11px #666;*/
+    text-align: center;
 }
 
-#debugLinks a {
-    display: block;
-    margin-bottom: 0.5em;
+#debugLinks span {
+    padding: 1px;
+    color: black;
+    text-decoration: none;
+    clear: none;
+    font-size: 11px;
+
 }
+
+#debugLinks span+span:before {
+    content: '  ';
+}
+
+#debugLinks span:hover {
+    background: hsl(50, 100%, 90%);
+    outline: 1px solid hsl(50, 100%, 20%);
+    cursor: pointer;
+}
+
 
 /* window tree rows */
 
