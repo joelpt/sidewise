@@ -17,7 +17,7 @@ var DataTree = function() {
     this.idIndex = {};
 };
 
-extendClass(DataTree, Object, {
+DataTree.prototype = {
 
     /////////////////////////////////////////////////////
     // Node create-read-update-delete operations
@@ -474,4 +474,7 @@ extendClass(DataTree, Object, {
     {
         return function(e) { return e === object; };
     }
-});
+}
+
+extendClass(DataTree, Object, DataTree.prototype);
+

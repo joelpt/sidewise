@@ -10,6 +10,7 @@ var PAGETREE_ONMODIFIED_DELAY_MS = 1500;
 ///////////////////////////////////////////////////////////
 
 /**
+  * @class
   * Hierarchical data model used by Sidewise in the background page to keep track of page opener/opened structure.
   *
   * @param callbackProxy Proxy object with same-named functions as PageTree's page/window functions. Called after a suitable PageTree function call succeeds.
@@ -32,7 +33,7 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     this.awakeningPages = {};
 };
 
-extendClass(PageTree, DataTree, {
+PageTree.prototype = {
 
     ///////////////////////////////////////////////////////////
     // Node manipulation
@@ -274,4 +275,6 @@ extendClass(PageTree, DataTree, {
     {
         return this.getKeyMatcherFn('id', id);
     }
-});
+}
+
+extendClass(PageTree, DataTree, PageTree.prototype);
