@@ -32,7 +32,7 @@ SidebarHandler.prototype = {
     },
 
     // create the sidebar window
-    create: function() {
+    create: function(onCreated) {
         if (this.sidebarExists()) {
             throw new Error('Cannot create() a new sidebar when one currently exists');
         }
@@ -51,41 +51,50 @@ SidebarHandler.prototype = {
                 };
                 chrome.windows.create(winSpec, function(win) {
                     handler.onCreatedSidebarWindow.call(handler, win);
+                    if (onCreated) {
+                        onCreated(win);
+                    }
                 });
             });
+            return;
         }
-        else {
-            if (!this.dockWindowId) {
-                throw new Error('No dockWindowId assigned for docking');
-            }
-            chrome.windows.get(handler.dockWindowId, function(win) {
-                win = handler.fixMaximizedWinMetrics(win);
-                var metrics = handler.getGoalDockMetrics(win, handler.dockState, handler.targetWidth);
-                log(metrics);
-                handler.lastDockWindowMetrics = {
-                    state: win.state,
-                    left: win.left,
-                    top: win.top,
-                    width: win.width,
-                    height: win.height
-                };
-                handler.currentDockWindowMetrics = {
-                    state: 'normal',
-                    left: metrics.dockWinLeft,
-                    top: win.top,
-                    width: metrics.dockWinWidth,
-                    height: win.height
-                };
-                positionWindow(handler.dockWindowId, handler.currentDockWindowMetrics);
-                var winSpec = { url: 'sidebar.html', type: 'popup',
-                    left: metrics.sidebarLeft,
-                    top: win.top,
-                    width: handler.targetWidth,
-                    height: win.height };
-                log(winSpec);
-                chrome.windows.create(winSpec, function(win) { handler.onCreatedSidebarWindow.call(handler, win); } );
+
+        if (!this.dockWindowId) {
+            throw new Error('No dockWindowId assigned for docking');
+        }
+
+        chrome.windows.get(handler.dockWindowId, function(win) {
+            win = handler.fixMaximizedWinMetrics(win);
+            var metrics = handler.getGoalDockMetrics(win, handler.dockState, handler.targetWidth);
+            log(metrics);
+            handler.lastDockWindowMetrics = {
+                state: win.state,
+                left: win.left,
+                top: win.top,
+                width: win.width,
+                height: win.height
+            };
+            handler.currentDockWindowMetrics = {
+                state: 'normal',
+                left: metrics.dockWinLeft,
+                top: win.top,
+                width: metrics.dockWinWidth,
+                height: win.height
+            };
+            positionWindow(handler.dockWindowId, handler.currentDockWindowMetrics);
+            var winSpec = { url: 'sidebar.html', type: 'popup',
+                left: metrics.sidebarLeft,
+                top: win.top,
+                width: handler.targetWidth,
+                height: win.height };
+            log(winSpec);
+            chrome.windows.create(winSpec, function(win) {
+                handler.onCreatedSidebarWindow.call(handler, win);
+                if (onCreated) {
+                    onCreated(win);
+                }
             });
-        }
+        });
     },
 
     createDockedToCurrentWin: function() {
@@ -180,11 +189,11 @@ SidebarHandler.prototype = {
     },
 
     // called by .remove() after sidebar has been removed
-    onRemoved: function(callback) {
+    onRemoved: function(onRemoved) {
         if (this.dockState == 'undocked') {
             this.reset();
-            if (callback) {
-                callback();
+            if (onRemoved) {
+                onRemoved();
             }
             return;
         }
@@ -194,25 +203,25 @@ SidebarHandler.prototype = {
 
         positionWindow(
             this.dockWindowId,
-            { state: last.state, left: last.left, width: last.width },
+            { state: last.state, left: last.left, width: last.width, top: last.top, height: last.height },
             function(win) {
                 handler.reset();
-                if (callback) {
-                    callback();
+                if (onRemoved) {
+                    onRemoved();
                 }
             }
         );
     },
 
     // redock the sidebar window to a different window
-    redock: function(windowId) {
+    redock: function(windowId, onAfter) {
         if (!this.sidebarExists()) {
             throw new Error('Cannot redock a nonexistent sidebar');
         };
         var handler = this;
         this.remove(function() {
             handler.dockWindowId = windowId;
-            handler.create();
+            handler.create(onAfter);
         });
     },
 
