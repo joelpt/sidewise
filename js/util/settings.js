@@ -58,7 +58,8 @@ function initializeDefaultSettings(forceReset) {
         smartFocusPrefersCousins: false,
         loggingEnabled: false,
         alwaysShowAdvancedOptions: false,
-        sidebarTargetWidth: 300
+        sidebarTargetWidth: 300,
+        allowAutoUnmaximize: true
     };
 
     for (var setting in defaultSettings) {

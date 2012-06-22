@@ -74,7 +74,7 @@ function transformInputElements() {
                 rep.append(labelElem).append(inputBox);
                 break;
             case 'checkbox':
-                labelElem.append(hintElem);
+                labelElem.addClass('optionsWideLabel').append(hintElem);
                 inputBox.append(inputElem).append(labelElem);
                 rep.append(inputBox);
                 break;
