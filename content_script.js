@@ -15,14 +15,10 @@ port.onMessage.addListener(function(msg) {
     }
 });
 
-// port.onDisconnect.addListener(function(msg) {
-//     console.log('disconnect', msg);
-// });
-
 // Set up event listenter that fires whenever this page's location (URL) changes.
 window.addEventListener('popstate', onPopState);
 
-// Fire "location changed" event immediately to give extension our details immediately.
+// Fire "location changed" event immediately to notify the extension.
 onPopState();
 
 
@@ -31,12 +27,18 @@ onPopState();
 ///////////////////////////////////////////////////////////
 
 function onPopState(evt) {
-    // console.log('event', evt);
+    // console.log('event handling', evt);
     notifySidewise();
-    // try again repeatedly in future because sometimes a page's JS changes the page title
-    // shortly after loading and we want to know about this
-    // TODO determine why onTabUpdated does not inform us of such title changes
-    setTimeout(notifySidewise, 1000);
+
+    // Try again repeatedly in the near future because sometimes
+    // a page's JS changes the page title shortly after loading
+    // and we want to catch this. The repeated attempts are needed
+    // during times of heavy browser load, i.e. during session restore.
+    //
+    // Chrome should fire onTabUpdated when the page title is changed
+    // in this way but it does not.
+    setTimeout(notifySidewise, 500);
+    setTimeout(notifySidewise, 1500);
     setTimeout(notifySidewise, 5000);
     setTimeout(notifySidewise, 12000);
 }
@@ -47,7 +49,16 @@ function onPopState(evt) {
 ///////////////////////////////////////////////////////////
 
 function notifySidewise() {
-    var details = { op: 'getPageDetails', action: 'store', referrer: document.referrer, historylength: history.length, guid: getSessionGuid() };
+    sendPageDetails({ action: 'store' });
+}
+
+function sendPageDetails(details) {
+    details.op = 'getPageDetails';
+    details.title = document.title;
+    details.referrer = document.referrer;
+    details.historylength = history.length;
+    details.sessionGuid = getSessionGuid();
+
     var detailsJSON = JSON.stringify(details);
 
     var lastDetails = sessionStorage['sidewiseLastDetailsSent'];
@@ -57,17 +68,8 @@ function notifySidewise() {
     }
     sessionStorage['sidewiseLastDetailsSent'] = detailsJSON;
 
-    // console.log('sending details', JSON.stringify(details));
-    sendPageDetails(details);
-}
-
-function sendPageDetails(params) {
-    params.op = 'getPageDetails';
-    params.title = document.title;
-    params.referrer = document.referrer;
-    params.historylength = history.length;
-    params.sessionGuid = getSessionGuid();
-    port.postMessage(params);
+    // console.log('pushing these details', details);
+    port.postMessage(details);
 }
 
 
