@@ -260,6 +260,30 @@ Function.prototype.extend = function(baseClass, withPrototype) {
     }
 }
 
+// extendClass won't create surrogate child functions for these function names.
+var EXTEND_CLASS_BANNED_SURROGATE_NAMES =
+    ['constructor', '$base', '$super', '$parent'];
+
+// Inherit superClass's prototype onto subClass.
+// Adds properties of prototype argument to subClass's prototype.
+//
+// Adds the following additional prototype properties to subClass:
+//
+// $super: function to call parent functions, e.g.
+//      this.$super('parentFunctionName')(arg1, arg2, ...);
+//      This will use the correct prototype functions of the parent within
+//          the called super-function, so we don't have a parent trying to
+//          call the child's functions of the same name.
+// $base: function to call parent's constructor, e.g.
+//      this.$base(constructorArg1, ...);
+// $parent: equals the superClass object.
+//
+// For functions that exist on the superClass which are not explicitly
+// overriden in the subClass, a surrogate function is generated of the
+// same name and stored in the subClass's prototype which calls $super()
+// for the given function. This ensures that for non-overriden functions,
+// the parent function always gets executed with the proper parent-prototype
+// context, as described above w.r.t. $super.
 function extendClass(subClass, superClass, prototype) {
     if (!superClass) {
         superClass = Object;
@@ -269,6 +293,17 @@ function extendClass(subClass, superClass, prototype) {
     for (var x in prototype) {
         if (prototype.hasOwnProperty(x)) {
             subClass.prototype[x] = prototype[x];
+        }
+    }
+    for (var x in superClass.prototype) {
+        if (EXTEND_CLASS_BANNED_SURROGATE_NAMES.indexOf(x) >= 0) {
+            // skip banned surrogate function names
+            continue;
+        }
+        if (!subClass.prototype.hasOwnProperty(x)) {
+            // subClass didn't override this superClass function,
+            // so create a surrogate function for it
+            subClass.prototype[x] = getExtendClassSurrogateFunction(x);
         }
     }
     subClass.prototype.$super = function (propName) {
@@ -288,39 +323,22 @@ function extendClass(subClass, superClass, prototype) {
             }
         };
     };
-    subClass.prototype.$superClass = superClass;
+    subClass.prototype.$parent = superClass;
     subClass.prototype.$base = function() {
         this.$super('constructor').apply(this, arguments);
     }
 }
 
-function extendClassOld(subClass, superClass, withPrototype) {
-    function inheritance() {
-        this.base = getExtendBase;
-        this.super = getExtendSuper;
-    }
-    inheritance.prototype = superClass.prototype;
-
-    subClass.prototype = new inheritance();
-    subClass.prototype.constructor = subClass;
-    subClass._base = superClass;
-    subClass._super = superClass.prototype;
-
-    if (withPrototype === undefined) {
-        return;
-    }
-
-    for (var attrname in withPrototype) {
-        subClass.prototype[attrname] = withPrototype[attrname];
-    }
-}
-
-function getExtendBase() {
-    return this.constructor._base;
-}
-
-function getExtendSuper() {
-    return this.constructor._super;
+// Factory method to get a surrogate function for a child object
+// to call $super on its parent object. Used when a parent object
+// has a certain prototype function but child has not overriden it;
+// by setting up surrogate functions on the child's prototype for these
+// non-overriden functions we ensure the parent functions always get
+// called with the parent's prototype context.
+function getExtendClassSurrogateFunction(functionName) {
+    return function() {
+        return this.$super(functionName).apply(this, arguments);
+    };
 }
 
 function castObject(object, toClass) {
