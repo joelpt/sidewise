@@ -1,3 +1,7 @@
+var WINDOW_UPDATE_CHECK_INTERVAL_SLOW_MS = 333;
+var WINDOW_UPDATE_CHECK_INTERVAL_FAST_MS = 50;
+var WINDOW_UPDATE_CHECK_INTERVAL_RATE_RESET_MS = 5000;
+
 var windowUpdateCheckInterval = null;
 
 function registerWindowEvents()
@@ -5,7 +9,7 @@ function registerWindowEvents()
     chrome.windows.onCreated.addListener(onWindowCreated);
     chrome.windows.onRemoved.addListener(onWindowRemoved);
     chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
-    windowUpdateCheckInterval = setInterval(onWindowUpdateCheckInterval, 100);
+    setSlowWindowUpdateCheckRate();
 }
 
 function onWindowCreated(win)
@@ -209,6 +213,21 @@ function onWindowUpdateCheckInterval() {
             return;
         }
 
+        var dockDims = sidebarHandler.currentDockWindowMetrics;
+        var allowAutoUnmaximize = loadSetting('allowAutoUnmaximize');
+
+        // quit out early when dock metrics are unchanged from last time and
+        // we don't expect to need to fixup sidebar dimensions
+        if (dock.left == dockDims.left
+            && dock.top == dockDims.top
+            && dock.width == dockDims.width
+            && dock.height == dockDims.height
+            && dock.state == dockDims.state
+            && (allowAutoUnmaximize || dock.state != 'normal'))
+        {
+            return;
+        }
+
         // TODO remember last dock window minimized state and only do sidebar un/minimization
         // when the state changes; this would permit sidebar to be minimized independently
         // of the dock window though arguably we should not support that
@@ -227,41 +246,208 @@ function onWindowUpdateCheckInterval() {
             }
         });
 
-        var dockDims = sidebarHandler.currentDockWindowMetrics;
-        var widthDelta = dock.width - dockDims.width;
-        if (widthDelta == 0) {
+        // TODO add an option to let sidewise unmaximize dock window
+        var offset = monitorInfo.maximizedOffset;
+        if (dock.state == 'maximized' && allowAutoUnmaximize) {
+            // compute the dimensions we want the dock window to have
+            // after unmaximizing it
+            var newDockDims = {
+                left: dock.left + offset,
+                top: dock.top + offset,
+                width: dock.width - 2 * offset,
+                height: dock.height - 2 * offset
+            };
+
+            // discard remembered (pre-sidebar) dock metrics; we'll reinstate them
+            // after redock
+            var memory = clone(sidebarHandler.lastDockWindowMetrics);
+            sidebarHandler.lastDockWindowMetrics = {};
+
+            // unmaximize the dock window, then set its size to "the whole screen",
+            // then do a sidebar redock to fit the sidebar in
+            positionWindow(dock.id, { state: 'normal' }, function() {
+                positionWindow(dock.id, newDockDims, function() {
+                    sidebarHandler.redock(dock.id, function() {
+                        sidebarHandler.lastDockWindowMetrics = memory;
+                    });
+                });
+            });
             return;
         }
 
+        var widthDelta = dock.width - dockDims.width;
+        var leftDelta = dock.left - dockDims.left;
+        var topDelta = dock.top - dockDims.top;
+        var heightDelta = dock.height - dockDims.height;
         var sidebarDims = sidebarHandler.currentSidebarMetrics;
+        var newDims = {};
+        var needAdjustment = false;
 
-        // dock window width has changed, adjust sidebar accordingly
-        if (sidebarHandler.dockState == 'right') {
-            // dock window common edge with right sidebar was adjusted
-            sidebarDims.left += widthDelta;
-            sidebarDims.width -= widthDelta;
+        if (dock.state == 'maximized') {
+            // dock window is currently maximized, so ensure sidebar is next to it
+            // (presumably onto a second monitor)
+            if (sidebarDims.left != dock.left + dock.width - offset) {
+                newDims.left = dock.left + dock.width - offset;
+                newDims.top = dock.top + offset;
+                newDims.height = dock.height - offset * 2;
+
+                // also raise sidebar as it often winds up under some window on
+                // the other monitor in this scenario
+                chrome.windows.update(sidebarHandler.windowId, { focused: true }, function() {
+                    chrome.windows.update(dock.id, { focused: true });
+                });
+
+                needAdjustment = true;
+            }
         }
         else {
-            // dock window common edge with left sidebar was adjusted
-            sidebarDims.width -= widthDelta;
+            if (heightDelta != 0 || leftDelta != 0 || widthDelta != 0) {
+                // dock window has changed height, set sidebar to same height
+                // also do this whenever dock width/height change just to make sure
+                // things stay consistent
+                newDims.height = dock.height;
+                needAdjustment = true;
+            }
+
+            if (topDelta != 0 || leftDelta != 0 || widthDelta != 0) {
+                // dock window's top edge has moved, set sidebar's top to match
+                // also do this whenever dock width/height change just to make sure
+                // things stay consistent
+                newDims.top = dock.top;
+                needAdjustment = true;
+            }
+
+            if (widthDelta != 0) {
+                // dock window width has changed, adjust sidebar accordingly
+                if (sidebarHandler.dockState == 'right' && leftDelta == 0) {
+                    // dock window common edge with right sidebar was adjusted
+                    newDims.left = dock.left + dock.width;
+                    needAdjustment = true;
+                    // sidebarDims.left += widthDelta;
+                    // sidebarDims.width -= widthDelta;
+                }
+                else if (sidebarHandler.dockState == 'left' && leftDelta != 0) {
+                    // sidebar is docked to the left and the left edge of the
+                    // dock window moved in addition to changing width;
+                    // make sidebar stick with that left edge
+                    // sidebarDims.left += leftDelta;
+                    newDims.left = dock.left - sidebarDims.width;
+                    needAdjustment = true;
+                }
+                // sidebarHandler.targetWidth = sidebarDims.width;
+                // saveSetting('sidebarTargetWidth', sidebarDims.width);
+            }
+            else if (leftDelta != 0) {
+                // dock window's left edge has moved without also changing width;
+                // move dock window's left edge to track the movement
+                if (sidebarHandler.dockState == 'right') {
+                    newDims.left = dock.left + dock.width;
+                }
+                else {
+                    newDims.left = dock.left - sidebarDims.width;
+                }
+                needAdjustment = true;
+            }
+            else if (sidebarHandler.dockState == 'right') {
+                if (sidebarDims.left != dock.left + dock.width) {
+                    newDims.left = dock.left + dock.width;
+                    needAdjustment = true;
+                }
+            }
+            else if (sidebarHandler.dockState == 'left') {
+                if (sidebarDims.left != dock.left - sidebarDims.width) {
+                    newDims.left = dock.left - sidebarDims.width;
+                    needAdjustment = true;
+                }
+            }
         }
 
-        // Update stored metrics
+        // Update stored dock metrics
         dockDims.width = dock.width;
+        dockDims.left = dock.left;
+        dockDims.top = dock.top;
+        dockDims.height = dock.height;
+        dockDims.state = dock.state;
+
+        if (!needAdjustment) {
+            return;
+        }
+
+        // dock window has been moved or resized by the user, so the
+        // original (pre-sidebar) remembered dock metrics can no longer
+        // be considered valid
+        sidebarHandler.lastDockWindowMetrics = {};
+
+        // Increase rate of onWindowUpdateCheckInterval calls for a while
+        setFastWindowUpdateCheckRate();
+
+        // Update stored sidebar metrics
+        for (var dim in newDims) {
+            sidebarDims[dim] = newDims[dim];
+        }
         sidebarHandler.targetWidth = sidebarDims.width;
         saveSetting('sidebarTargetWidth', sidebarDims.width);
 
-        // Resize sidebar
+        log('updating sidebar to new dimensions', newDims, sidebarHandler.resizingSidebar);
+
+        // Resize/move sidebar
         sidebarHandler.resizingSidebar = true;
-        positionWindow(sidebarHandler.windowId, {
-            left: sidebarDims.left,
-            width: sidebarDims.width
-        }, function() {
+        positionWindow(sidebarHandler.windowId, newDims, function() {
             TimeoutManager.reset('resetResizingSidebar', onResetResizingSidebar, 500);
         });
+        return;
+
+        // else if (dock.left != dockDims.left || dock.top != dockDims.top) {
+        //     // dock window is being moved; keep sidebar with it
+        //     sidebarDims.left += (dock.left - dockDims.left);
+        //     sidebarDims.top += (dock.top - dockDims.top);
+        // }
+
+        // Update stored metrics
+        // dockDims = { left: dock.left, top: dock.top, width: dock.width, height: dock.height, state: dock.state };
+        // dockDims.width = dock.width;
+        // dockDims.width = dock.width;
+
+        // Resize sidebar
+        // sidebarHandler.resizingSidebar = true;
+        // positionWindow(sidebarHandler.windowId, {
+        //     left: sidebarDims.left,
+        //     top: sidebarDims.top,
+        //     width: sidebarDims.width,
+        //     height: sidebarDims.height
+        // }, function() {
+        //     TimeoutManager.reset('resetResizingSidebar', onResetResizingSidebar, 500);
+        // });
     });
 }
 
 function onResetResizingSidebar() {
     sidebarHandler.resizingSidebar = false;
+}
+
+function setSlowWindowUpdateCheckRate() {
+    log('switching to slow window update check rate');
+    clearInterval(windowUpdateCheckInterval);
+    windowUpdateCheckInterval = setInterval(onWindowUpdateCheckInterval,
+        WINDOW_UPDATE_CHECK_INTERVAL_SLOW_MS);
+}
+
+function setFastWindowUpdateCheckRate() {
+    if (!onWindowUpdateCheckInterval) {
+        return;
+    }
+    log('switching to fast window update check rate');
+    TimeoutManager.reset('resetWindowUpdateCheckRate',
+        resetWindowUpdateCheckRate, WINDOW_UPDATE_CHECK_INTERVAL_RATE_RESET_MS);
+
+    clearInterval(windowUpdateCheckInterval);
+    windowUpdateCheckInterval = setInterval(onWindowUpdateCheckInterval,
+        WINDOW_UPDATE_CHECK_INTERVAL_FAST_MS);
+}
+
+function resetWindowUpdateCheckRate() {
+    if (!onWindowUpdateCheckInterval) {
+        return;
+    }
+    setSlowWindowUpdateCheckRate();
 }
