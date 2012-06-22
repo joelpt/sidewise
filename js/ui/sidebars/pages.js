@@ -78,7 +78,7 @@ function initTree(attachToSelector, pageTree) {
         }
     };
 
-    tree = new FancyTree($(attachToSelector), {
+    fancyTree = new FancyTree($(attachToSelector), {
         rowTypes: rowTypes,
         showFilterBox: true,
         filterPlaceholderText: getMessage('prompt_filterPlaceholderText'),
@@ -87,9 +87,9 @@ function initTree(attachToSelector, pageTree) {
 
     $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));
 
-    populateFancyTreeFromPageTree(tree, pageTree);
+    populateFancyTreeFromPageTree(fancyTree, pageTree);
 
-    return tree;
+    return fancyTree;
 }
 
 function populateFancyTreeFromPageTree(fancyTree, pageTree) {
