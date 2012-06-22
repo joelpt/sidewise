@@ -23,7 +23,6 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     // Initialization
     ///////////////////////////////////////////////////////////
 
-    // this.base().call(this);
     this.$base();
     this.callbackProxyFn = callbackProxyFn; // callback proxy function for page/window functions
     this.focusedTabId = null;
@@ -38,16 +37,6 @@ PageTree.prototype = {
     ///////////////////////////////////////////////////////////
     // Node manipulation
     ///////////////////////////////////////////////////////////
-
-    // getNode: function(matcher)
-    // {
-    //     return this.$super('getNode')(matcher);
-    // },
-
-    // getNodeEx: function(matcher)
-    // {
-    //     return this.$super('getNodeEx')(matcher);
-    // },
 
     // add given node as a child of the node matching parentMatcher
     addNode: function(node, parentMatcher)
