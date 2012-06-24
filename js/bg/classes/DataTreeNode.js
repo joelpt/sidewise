@@ -9,6 +9,7 @@ var DataTreeNode = function()
     this.id = null;
     this.elemType = 'node';
     this.children = [];
+    this.UUID = generateGuid();
 };
 
 extendClass(DataTreeNode, Object, {});
