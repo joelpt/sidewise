@@ -242,24 +242,6 @@ function clamp(value, min, max)
     return value;
 }
 
-Function.prototype.extend = function(baseClass, withPrototype) {
-    function inheritance() {}
-    inheritance.prototype = baseClass.prototype;
-
-    this.prototype = new inheritance();
-    this.prototype.constructor = this;
-    this._base = baseClass;
-    this._super = baseClass.prototype;
-
-    if (withPrototype === undefined) {
-        return;
-    }
-
-    for (var attrname in withPrototype) {
-        this.prototype[attrname] = withPrototype[attrname];
-    }
-}
-
 // extendClass won't create surrogate child functions for these function names.
 var EXTEND_CLASS_BANNED_SURROGATE_NAMES =
     ['constructor', '$base', '$super', '$parent'];
