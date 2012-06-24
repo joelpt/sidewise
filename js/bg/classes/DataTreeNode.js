@@ -10,3 +10,5 @@ var DataTreeNode = function()
     this.elemType = 'node';
     this.children = [];
 };
+
+extendClass(DataTreeNode, Object, {});

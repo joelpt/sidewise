@@ -4,7 +4,8 @@
   */
 var PageTreeNode = function()
 {
-    PageTreeNode._base.call(this);
+    this.$base();
+
     this.label = '';
     this.highlighted = false;
     this.collapsed = false;
@@ -12,4 +13,4 @@ var PageTreeNode = function()
     this.restorable = false;
 };
 
-PageTreeNode.extend(DataTreeNode);
+extendClass(PageTreeNode, DataTreeNode, {});
