@@ -70,9 +70,7 @@ function onPortDisconnect(port) {
             // no more tab ids left on the preloading tabs list;
             // cancel our expectations
             log('No more preloading tabs on the expected list, cancelling expectation');
-            expectingNavigationTabIdSwap = false;
-            expectingNavigationOldTabId = null;
-            expectingNavigationPossibleNewTabIds = [];
+            resetExpectingNavigation();
         }
     }
 }
@@ -185,12 +183,19 @@ function onGetPageDetailsMessage(tab, msg) {
             associateTabToPageNode(msg.runId, tab, msg.referrer, msg.historylength);
             break;
 
+        case 'associate_existing':
+            associateExistingToRestorablePageNode(tabId, msg.referrer, msg.historylength);
+            break;
+
         case 'find_parent':
             // look for an existing parent page node whose url matches our tab's referrer
             var parent = tree.getNode(function(e) {
                 return e.elemType == 'page' && e.id != 'p' + tabId && dropUrlHash(e.url) == msg.referrer
             });
-            log('find_parent', 'page.id', page.id, 'msg.referrer', msg.referrer, 'parent found', parent, 'msg', msg);
+
+            log('find_parent', 'page.id', page.id, 'msg.referrer', msg.referrer, 'msg.historylength', msg.historylength,
+                'parent found', parent);
+
             if (parent) {
                 log('making ' + tabId + ' a child of ' + parent.id);
                 tree.moveNode(page, parent);
@@ -200,27 +205,8 @@ function onGetPageDetailsMessage(tab, msg) {
             if (msg.title) {
                 details.title = msg.title;
             }
-            log('find_parent updating page node', page.id, 'page', page, 'msg', msg);
+            log('find_parent updating page node', page.id, 'page', page, 'new details', details);
             tree.updateNode(page, details);
-            log('find_parent post update', page.id, 'page', tree.getNode(page.id));
-            // chrome.tabs.query({ 'windowId': tab.windowId, 'url': dropUrlHash(msg.referrer) }, function(tabs) {
-
-            //     // exclude potential parent candidates which are the same tab
-            //     tabs = tabs.filter(function(t) { return t.id != tabId; });
-            //     if (tabs.length > 0) {
-            //         log('making ' + tabId + ' a child of ' + tabs[0].id);
-            //         tree.moveNode(page, 'p' + tabs[0].id);
-            //     }
-
-            //     var details = { placed: true, referrer: msg.referrer, historylength: msg.historylength };
-            //     if (msg.title) {
-            //         details.title = msg.title;
-            //     }
-            //     tree.updatePage(page, details);
-
-            //     // TODO handle these cases:
-            //     //      parent tab is already a descendant of the tab with tabId
-            // });
             break;
 
         default:
