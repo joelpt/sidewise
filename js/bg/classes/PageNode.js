@@ -4,7 +4,7 @@
   */
 var PageNode = function(tab, overrideStatus)
 {
-    PageNode._base.call(this);
+    this.$base();
 
     var url = tab.url ? dropUrlHash(tab.url) : '';
 
@@ -20,7 +20,9 @@ var PageNode = function(tab, overrideStatus)
     this.placed = false;
     this.unread = false;
     this.smartFocusParentTabId = null;
+    this.initialCreation = false;
+    this.restored = false;
 };
 
-PageNode.extend(PageTreeNode);
+extendClass(PageNode, PageTreeNode, {});
 
