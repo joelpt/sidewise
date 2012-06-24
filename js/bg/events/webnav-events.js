@@ -32,6 +32,17 @@ function registerWebNavigationEvents()
 
 
 ///////////////////////////////////////////////////////////
+// Global helper functions
+///////////////////////////////////////////////////////////
+
+function resetExpectingNavigation() {
+    expectingNavigationTabIdSwap = false;
+    expectingNavigationOldTabId = null;
+    expectingNavigationPossibleNewTabIds = [];
+}
+
+
+///////////////////////////////////////////////////////////
 // Event handlers
 ///////////////////////////////////////////////////////////
 
@@ -137,31 +148,26 @@ function onCommitted(details)
         // another tab, or is being loaded during a session restore
         // or undo-closed-tab process
         var page = tree.getPage(details.tabId);
-        if (page) {
-            // existing tab was manually reloaded; we don't care
+
+        // page node hasn't been created yet; this happens during
+        // a regular session restore, where we don't have page nodes
+        // in existence for the tabs being restored (with a matching
+        // tabId); the startAssoctionRun() routine will pick these up
+        // and process them
+        // TODO should we just tryAssociateTabToPageNode() directly here
+        // and get rid of the startAssociationRun() crap?
+        if (!page) {
             return;
         }
-        // This is a tab duplication, session restore, or undo-closed-tab
-        // operation. Do an association run to catch cases of session restore
-        // or (functionally equivalent) undo-closed-tabs following a browser
-        // restart.
-        // TODO contend with duplicate-tab case
-        // TODO support de-hibernation of tabs for the undo-closed-tab case,
-        //      where the user might hibernate a page then ctrl+shift+T
-        //      brings it back
-        // TODO this is not working because undone closed tabs fire onTabCreated
-        //      before we get here; to fix, associatePages needs a parameter
-        //      that tells it to instead associate *existing page nodes*
-        //      onto *restorable hibernated nodes*; when this is done
-        //      we'll want to merge the existing page node into the
-        //      restorable page node and possibly copy over the new page node's
-        //      deets, though this may not be necessary because the restorable
-        //      node should already have the matching correct url/ref/histlen
-        //      and as for the title, we should get updates from the
-        //      content script for that if it has changed (or later onTabUpdated's)
-        //      FFS this would be so simple with persistent tab GUIDs, come on
-        //      google
-        associatePages();
+
+        if (page && !page.initialCreation) {
+            // existing tab was just manually reloaded
+            return;
+        }
+
+        // this is a session restore, undo-closed-tab, or tab duplication;
+        // attempt to associate the existing page node to a restorable node
+        tryAssociateExistingToRestorablePageNode(page);
         return;
     }
 }
@@ -180,7 +186,7 @@ function onBeforeNavigate(details)
     // like they just went forward to a new page in the same tab.
     // We can get more than one such tabId before a navigation of this sort
     // actually takes place.
-    if (!tree.getPage(details.tabId)) {
+    if (!tree.getPage(details.tabId) & associationConcurrentRuns == 0) {
         log('Expecting a tab id swap', details.tabId);
         expectingNavigationTabIdSwap = true;
         expectingNavigationPossibleNewTabIds.push(details.tabId);
@@ -210,7 +216,8 @@ function onCompleted(details)
     // fixed/well-known
     tree.updatePage(details.tabId, {
         placed: true,
-        status: 'complete'
+        status: 'complete',
+        initialCreation: false
     });
 
     // Ask for the latest static favicon and page title
