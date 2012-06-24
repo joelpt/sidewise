@@ -295,7 +295,7 @@ function onPageRowFormatTitle(row, itemTextElem) {
     }
 
     if (loggingEnabled) {
-        label = row.attr('id') + (label ? ': ' : '') + label;
+        label = row.attr('id').slice(0, 6) + (label ? ': ' : '') + label;
     }
 
     itemTextElem.children('.ftItemTitle').html(text);
@@ -397,7 +397,7 @@ function onWindowRowFormatTitle(row, itemTextElem) {
 
 
     if (loggingEnabled) {
-        label = row.attr('id') + ': ' + label;
+        label = row.attr('id').slice(0, 6) + ': ' + label;
     }
 
     itemTextElem.children('.ftItemTitle').text(text);
