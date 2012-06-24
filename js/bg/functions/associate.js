@@ -10,7 +10,7 @@
 
 var ASSOCIATE_PAGES_CHECK_INTERVAL_MS = 1000;
 var ASSOCIATE_PAGES_CHECK_INTERVAL_MS_SLOW = 10000;
-var ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_MS = 20000;
+var ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_MS = 15000;
 
 var ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_ITERATIONS =
     ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_MS / ASSOCIATE_PAGES_CHECK_INTERVAL_MS;
@@ -21,6 +21,7 @@ var ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_ITERATIONS =
 
 var associationRuns = {};
 var associationStubbornTabIds = {};
+var associationConcurrentRuns = 0;
 
 ///////////////////////////////////////////////////////////
 // Association functions
@@ -65,22 +66,32 @@ var associationStubbornTabIds = {};
 // "reopen 15 closed tabs" from Chrome's deafult New Tab page since those will not happen upon session restore
 // and should be adequately dealt with inside of onCommitted[transitionType=reload]->associateTabToPageNode()
 // logic. However, during that 120 seconds, we should still expect that we will capture those tabs in a run
-// of associatePages() and thus we should make sure that having both onCommitted and associatePages() firing
+// of startAssociationRun() and thus we should make sure that having both onCommitted and startAssociationRun() firing
 // associateTabToPageNode() doesn't fritz things out. A nice approach might be, when onCommitted sees
 // a 'reload', if we think it might be an "associate to a restorable" case (sessionGUID not found in closed-tabs list
-// or hibernated-tabs-in-tree), then just fire up an associatePages() run and let it do all that work for us;
+// or hibernated-tabs-in-tree), then just fire up an startAssociationRun() run and let it do all that work for us;
 // this is probably a better solution because we can reuse more of the association code and logics; we will
-// just need to take care to set the 120-second timer separately from onCommitted's firing of associatePages().
+// just need to take care to set the 120-second timer separately from onCommitted's firing of startAssociationRun().
 
 // Main entry point for starting the association process.
 // Tries to associate all existing tabs to a page row, and will
 // repeatedly restart the process after a delay until all
 // tabs have been associated with something.
-function associatePages() {
+function startAssociationRun() {
+    if (associationConcurrentRuns > 0) {
+        return;
+    }
+
     chrome.tabs.query({ }, function(tabs) {
+        if (associationConcurrentRuns > 0) {
+            return;
+        }
+
         var runId = generateGuid();
-        var runInfo = { total: 0, count: 0, tabIds: [] };
+        var runInfo = { runId: runId, total: 0, count: 0, tabIds: [] };
         associationRuns[runId] = runInfo;
+        associationConcurrentRuns++;
+        log('Starting a new association run', 'runId', runId, 'runInfo', runInfo);
 
         for (var i in tabs) {
             var tab = tabs[i];
@@ -88,31 +99,13 @@ function associatePages() {
                 // this tab is the sidebar
                 continue;
             }
-            if (tree.getNode('p' + tab.id)) {
+            if (tree.getPage(tab.id)) {
                 // this tab is already in the tree as a normal tab
                 continue;
             }
             runInfo.total++;
-            log('trying association', 'runId', runId, 'tabId', tab.id, 'total', associationRuns[runId].total, 'count', associationRuns[runId].count);
-            if (!isScriptableUrl(tab.url)) {
-                // this tab will never be able to return details to us from content_script.js,
-                // so just associate it without the benefit of those extra details
-                associateTabToPageNode(runId, tab);
-                continue;
-            }
-
-            // ask the tab for more details via its content_script.js connected port
-            try {
-                runInfo.tabIds.push(tab.id);
-                getPageDetails(tab.id, { action: 'associate', runId: runId });
-            }
-            catch(ex) {
-                if (ex.message == 'Port not found') {
-                    log('Port does not exist for association yet', 'tabId', tab.id, 'runId', runId);
-                    continue;
-                }
-                throw ex;
-            }
+            log('trying association', 'runId', runId, 'tabId', tab.id, 'total', runInfo.total, 'count', runInfo.count);
+            tryAssociateTab(runInfo, tab);
         }
         if (runInfo.total == 0) {
             log('No unassociated tabs left to associate; ending association run and doing parent window guessing');
@@ -121,7 +114,6 @@ function associatePages() {
             return;
         }
         log('Started association process, tabs in queue: ' + runInfo.total);
-        // setTimeout(associatePagesCheck, 5000);
         TimeoutManager.reset(runId, function() { associatePagesCheck(runId); }, ASSOCIATE_PAGES_CHECK_INTERVAL_MS);
     });
 }
@@ -131,21 +123,116 @@ function associatePages() {
 // Helper functions used during assocation runs.
 ///////////////////////////////////////////////////////////
 
+function endAssociationRun(runId) {
+    var runInfo = associationRuns[runId];
+    log('Ending association run', runId, runInfo);
+    delete associationRuns[runId];
+    associationConcurrentRuns--;
+
+    try {
+        TimeoutManager.clear(runId);
+    }
+    catch(ex) {
+        if (ex.message != 'A timeout with the given label does not exist') {
+            throw ex;
+        }
+    }
+}
+
+function tryAssociateTab(runInfo, tab) {
+    var runId = runInfo.runId;
+
+    if (!isScriptableUrl(tab.url)) {
+        // this tab will never be able to return details to us from content_script.js,
+        // so just associate it without the benefit of those extra details
+        associateTabToPageNode(runId, tab);
+        return;
+    }
+
+    // ask the tab for more details via its content_script.js connected port
+    try {
+        getPageDetails(tab.id, { action: 'associate', runId: runId });
+        runInfo.tabIds.push(tab.id);
+    }
+    catch(ex) {
+        if (ex.message == 'Port not found') {
+            log('Port does not exist for association yet', 'tabId', tab.id, 'runId', runId);
+            return;
+        }
+        throw ex;
+    }
+}
+
+function tryAssociateExistingToRestorablePageNode(existingPage) {
+    var tabId = getNumericId(existingPage.id);
+
+    // ask the tab for more details via its content_script.js connected port
+    try {
+        getPageDetails(tabId, { action: 'associate_existing' });
+    }
+    catch(ex) {
+        if (ex.message == 'Port not found') {
+            log('Port does not exist for existing-to-restorable association yet, retrying in 1s', 'tabId', tabId, 'existing page', existingPage);
+            setTimeout(function() {
+                tryAssociateExistingToRestorablePageNode(existingPage);
+            }, 1000);
+            return;
+        }
+        throw ex;
+    }
+}
+
+function associateExistingToRestorablePageNode(tabId, referrer, historylength) {
+    var existingPage = tree.getPage(tabId);
+
+    log('associating existing to restorable', 'tabId', tabId, 'existing', existingPage, 'referrer', referrer,
+        'historylength', historylength);
+
+    var matchParams = { hibernated: true, restorable: true, url: existingPage.url, pinned: existingPage.pinned };
+    if (referrer !== undefined) {
+        matchParams.referrer = referrer;
+    }
+    if (historylength !== undefined) {
+        matchParams.historylength = historylength;
+    }
+
+    var match = findPageNodeForAssociation(matchParams);
+
+    if (!match) {
+        log('No restorable match found');
+        return;
+    }
+
+    log('Restorable match found', 'match', match.node, 'match.node.id', match.node.id);
+
+    var details = { restored: true, hibernated: false, restorable: false,
+        id: existingPage.id, status: existingPage.status };
+
+    if (referrer !== undefined) {
+        details.referrer = referrer;
+    }
+    if (historylength !== undefined) {
+        details.historylength = historylength;
+    }
+
+    tree.mergeNodes(existingPage, match.node);
+    tree.updateNode(match.node, details);
+
+    // TODO window association/fixup jazz
+}
+
 function associatePagesCheck(runId) {
     var runInfo = associationRuns[runId];
 
     if (!runInfo) {
-        log('Associating page check thinks we are done', runId);
+        log('Association run is already ended', runId);
         associateWindowstoWindowNodes();
-        log('Starting a slow tick loop of associatePages');
-        setInterval(associatePages, ASSOCIATE_PAGES_CHECK_INTERVAL_MS_SLOW);
+        // log('Starting a slow tick loop of startAssociationRun');
+        // setInterval(startAssociationRun, ASSOCIATE_PAGES_CHECK_INTERVAL_MS_SLOW);
         return;
     }
-    // TimeoutManager.reset(runId, function() { associatePagesCheck(runId) }, ASSOCIATE_PAGES_CHECK_INTERVAL_MS);
 
-    log('associatePagesCheck', 'total', runInfo.total, 'count', runInfo.count);
-
-    log('tabs left', runInfo.tabIds);
+    log('associatePagesCheck', 'total', runInfo.total, 'count', runInfo.count, 'tabIds', runInfo.tabIds);
 
     var newStubbornTabs = {};
     for (var i in runInfo.tabIds) {
@@ -168,25 +255,9 @@ function associatePagesCheck(runId) {
 
     log('stubborn tabs list', JSON.stringify(associationStubbornTabIds));
 
-    log('Ending old run', runId);
     endAssociationRun(runId);
 
-    log('Starting a new associate run');
-    associatePages();
-}
-
-function endAssociationRun(runId) {
-    delete associationRuns[runId];
-
-    try {
-        TimeoutManager.clear(runId);
-    }
-    catch(ex) {
-        if (ex.message == 'A timeout with the given label does not exist') {
-            return;
-        }
-        throw ex;
-    }
+    startAssociationRun();
 }
 
 function associateTabToPageNode(runId, tab, referrer, historylength) {
@@ -206,19 +277,28 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         runInfo.count++;
     }
 
-    if (tree.getNode('p' + tab.id)) {
-        // tab is already properly present as a pagenode in the tree; don't associate/add again
+    var pageId = 'p' + tab.id;
+    var existingPage = tree.getNode(function(e) {
+        return e instanceof PageNode
+            && !e.restored
+            && e.id == pageId;
+    });
+
+    if (existingPage) {
+        // tab is already properly present as a pagenode in the tree and we don't want to
+        // merge it into a restorable pagenode
         return;
     }
-    var match = tree.getNodeEx(function(node) {
-        return node instanceof PageNode
-            && node.restorable
-            && node.hibernated
-            && node.url == tab.url
-            && node.pinned == tab.pinned
-            && (referrer === undefined || node.referrer == referrer)
-            && (historylength === undefined || node.historylength == historylength);
-    });
+
+    var matchParams = { hibernated: true, restorable: true, url: tab.url, pinned: tab.pinned };
+    if (referrer !== undefined) {
+        matchParams.referrer = referrer;
+    }
+    if (historylength !== undefined) {
+        matchParams.historylength = historylength;
+    }
+
+    var match = findPageNodeForAssociation(matchParams);
 
     if (!match) {
         // apparently a new tab to us
@@ -234,10 +314,8 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         return;
     }
 
-
-    // found a match
     log('matching PageNode found, restoring', tab.id, tab, match.node);
-    var details = { hibernated: false, restorable: false, id: 'p' + tab.id };
+    var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id, status: tab.status };
     tree.updateNode(match.node, details);
 
     // set focus to this page if it and its window have the current focus
@@ -261,29 +339,41 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
                 && node !== match.node; // Don't match the very same node
         });
 
-        if (otherMatch) {
-            // node's key not unique, cannot use for windowId identification
-            return;
+        if (!otherMatch) {
+            // Node's key is unique, so we can use this tab's .windowId to set
+            // the restorable parent window node's proper windowId.
+
+            // does a WindowNode already exist matching the tab's .windowId?
+            var existingWinNode = tree.getNode('w' + tab.windowId);
+            if (existingWinNode) {
+                // already exists, so merge its children into our restorable window
+                tree.mergeNodes(existingWinNode, topParent);
+            }
+
+            // Restore the restorable parent window and assign it tab's .windowId
+            tree.updateNode(topParent, {
+                restorable: false,
+                hibernated: false,
+                id: 'w' + tab.windowId
+            });
         }
-
-        // Node's key is unique, so we can use this tab's .windowId to set
-        // the restorable parent window node's proper windowId.
-
-        // does a WindowNode already exist matching the tab's .windowId?
-        var existingWinNode = tree.getNode('w' + tab.windowId);
-        if (existingWinNode) {
-            // already exists, so merge its children into our restorable window
-            tree.mergeNodes(existingWinNode, topParent);
-        }
-
-        // Restore the restorable parent window and assign it tab's .windowId
-        tree.updateNode(topParent, {
-            restorable: false,
-            hibernated: false,
-            id: 'w' + tab.windowId
-        });
     }
 }
+
+function findPageNodeForAssociation(matchParams) {
+    return tree.getNodeEx(function(node) {
+        if (!(node instanceof PageNode)) {
+            return false;
+        }
+        for (var k in matchParams) {
+            if (node[k] !== matchParams[k]) {
+                return false;
+            }
+        }
+        return true;
+    });
+}
+
 
 function associateWindowstoWindowNodes() {
     var resWindows = tree.filter(function(e) {
