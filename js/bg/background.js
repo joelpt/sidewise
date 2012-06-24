@@ -34,21 +34,18 @@ function onLoad()
 function postLoad() {
     initializeDefaultSettings();
     updateStateFromSettings();
-
     registerEventHandlers();
+    injectContentScriptInExistingTabs('content_script.js');
 
     var storedPageTree = loadSetting('pageTree', []);
-    // storedPageTree = [];
     if (storedPageTree.length == 0) {
         // first time population of page tree
-        injectContentScriptInExistingTabs('content_script.js');
         populatePages();
     }
     else {
         // load stored page tree and associate tabs to existing page nodes
         loadPageTreeFromLocalStorage(storedPageTree);
-        injectContentScriptInExistingTabs('content_script.js');
-        setTimeout(associatePages, 2000);  // wait a few moments for content scripts to get going first
+        setTimeout(startAssociationRun, 2000); // wait a couple seconds for content scripts to get going
     }
 
     monitorInfo = new MonitorInfo();
@@ -61,14 +58,6 @@ function postLoad() {
         monitorInfo.retrieveMonitorMetrics(function(monitors, maxOffset) {
             monitorInfo.saveToSettings();
             createSidebarOnStartup();
-
-            // if (DEBUGIT) {
-            //     setTimeout(function() {
-            //         loadPageTreeFromLocalStorage();
-            //         associatePages();
-            //     }, 1000);
-            // }
-
         });
     }
 }
@@ -133,12 +122,19 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
                 return;
             }
 
-            if (!node.hibernated) {
+            node.restored = false;
+            node.status = 'complete';
+
+            // allow restoration of pages which either failed to restore in a previous
+            // session, or were not manually hibernated by the user
+            if (node.restorable || !node.hibernated) {
                 node.hibernated = true;
                 node.restorable = true;
                 node.id = node.id[0] + 'R' + generateGuid();
             }
-            tree.callbackProxyFn('add', { element: node, parentId: parentNode ? parentNode.id : undefined });
+            if (sidebarHandler.sidebarExists()) {
+                tree.callbackProxyFn('add', { element: node, parentId: parentNode ? parentNode.id : undefined });
+            }
         });
 
 
