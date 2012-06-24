@@ -36,9 +36,7 @@ function onTabCreated(tab)
                 id: 'p' + tab.id,
                 url: tab.url
             });
-            expectingNavigationTabIdSwap = false;
-            expectingNavigationOldTabId = null;
-            expectingNavigationPossibleNewTabIds = [];
+            resetExpectingNavigation();
             return;
         }
 
@@ -52,9 +50,7 @@ function onTabCreated(tab)
                 id: 'p' + tab.id,
                 url: tab.url
             });
-            expectingNavigationTabIdSwap = false;
-            expectingNavigationOldTabId = null;
-            expectingNavigationPossibleNewTabIds = [];
+            resetExpectingNavigation();
             return;
         }
 
@@ -62,9 +58,7 @@ function onTabCreated(tab)
         // as removed, so the user must have actually created a new tab (alt+enter) from
         // the tab that Chrome was preloading
         log('Cancelling expected tab id swap');
-        expectingNavigationTabIdSwap = false;
-        expectingNavigationOldTabId = null;
-        expectingNavigationPossibleNewTabIds = [];
+        resetExpectingNavigation();
     }
 
     var page = tree.awakeningPages[tab.url];
@@ -103,6 +97,8 @@ function onTabCreated(tab)
     //          [x] use smart navigation when closing tabs (navigate to children, siblings, and parent in that order)
     //              [x] navigate to cousins first: navigate to children of parent pages later in the tree before parent
 
+    page.initialCreation = false;
+
     // Special handling for extension pages
     if (isExtensionUrl(tab.url)) {
         if (tab.url.match(/options|prefs|settings/)) {
@@ -125,6 +121,18 @@ function onTabCreated(tab)
             return;
         }
     }
+    else if (!isScriptableUrl(tab.url)) {
+        // Non scriptable tab; attempt to associate it with a restorable page node
+        // even though it's possible the user just created this tab freshly. We do this
+        // because onCommitted never fires for non scriptable tabs and therefore
+        // we'll never be able to detect if this tab's transitionType=='reload' which
+        // is how we normally detect that a tab is being restored rather than created anew
+        tree.addNode(page, 'w' + tab.windowId);
+        associateExistingToRestorablePageNode(tab.id);
+        return;
+    }
+
+    page.initialCreation = true;
 
     if (tab.openerTabId) {
         // Make page a child of its opener tab; this may be overriden later in webnav-events.js
@@ -138,8 +146,16 @@ function onTabCreated(tab)
     var winNode = tree.getNode('w' + tab.windowId);
     if (!winNode) {
         chrome.windows.get(tab.windowId, function(win) {
-            var winNode = new WindowNode(win);
-            tree.addNode(winNode);
+            // Check if window node exists again before creating one, since we're
+            // in an async call and it could have happened in the meantime
+            var winNode = tree.getNode('w' + tab.windowId);
+            if (!winNode) {
+                // Still doesn't exist so create one now
+                winNode = new WindowNode(win);
+                tree.addNode(winNode);
+            }
+            tree.addNode(page, winNode);
+            return;
         });
         return;
     }
@@ -167,6 +183,14 @@ function onTabRemoved(tabId, removeInfo)
     }
 
     var page = tree.getPage(tabId);
+
+    if (!page) {
+        // Page node with this tabId doesn't exist; this is most likely because
+        // the user hibernated it from the sidebar. Don't try to remove the node
+        // or do smart-focus because the node doesn't exist and we know nothing
+        // about where it was in the tree.
+        return;
+    }
 
     // smart focus on close
     if (loadSetting('smartFocusOnClose') && sidebarHandler.sidebarExists())
