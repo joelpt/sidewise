@@ -216,18 +216,6 @@ function onWindowUpdateCheckInterval() {
         var dockDims = sidebarHandler.currentDockWindowMetrics;
         var allowAutoUnmaximize = loadSetting('allowAutoUnmaximize');
 
-        // quit out early when dock metrics are unchanged from last time and
-        // we don't expect to need to fixup sidebar dimensions
-        if (dock.left == dockDims.left
-            && dock.top == dockDims.top
-            && dock.width == dockDims.width
-            && dock.height == dockDims.height
-            && dock.state == dockDims.state
-            && (allowAutoUnmaximize || dock.state != 'normal'))
-        {
-            return;
-        }
-
         // TODO remember last dock window minimized state and only do sidebar un/minimization
         // when the state changes; this would permit sidebar to be minimized independently
         // of the dock window though arguably we should not support that
