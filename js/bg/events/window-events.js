@@ -44,6 +44,15 @@ function onWindowRemoved(windowId)
     focusTracker.remove(windowId);
     tree.removeNode('w' + windowId);
 
+    if (sidebarHandler.sidebarExists()
+        && sidebarHandler.dockState != 'undocked'
+        && sidebarHandler.dockWindowId == windowId)
+    {
+        focusTracker.getTopFocusableWindow(function(win) {
+            sidebarHandler.redock(win.id);
+        });
+    }
+
     chrome.windows.getAll(null, function(wins) {
         log('shutdown attempt', wins);
         for (var i in wins) {
