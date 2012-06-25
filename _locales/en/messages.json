@@ -14,7 +14,7 @@
     "text_monitors": { "message": "monitors" },
     "text_Window": { "message": "Window" },
     "text_hibernated": { "message": "hibernated" },
-
+    "text_LastSession": { "message": "Last Session" },
 
     "tabTitle_Extensions": { "message": "Extensions" },
     "tabTitle_Settings": { "message": "Settings" },
