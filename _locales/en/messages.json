@@ -39,7 +39,14 @@
             "count": { "content": "$1", "example": "4" },
             "pages": { "content": "$2", "example": "pages" }
         }
-     },
+    },
+    "prompt_awakenWindow": {
+        "message": "Restore this window and its $COUNT$ $PAGES$?",
+        "placeholders": {
+            "count": { "content": "$1", "example": "4" },
+            "pages": { "content": "$2", "example": "pages" }
+        }
+    },
     "prompt_confirmResetOptions": { "message": "Are you sure you want to reset all options to the defaults?" },
     "prompt_setLabel": { "message": "Enter the desired label, or clear box for no label:" },
 
