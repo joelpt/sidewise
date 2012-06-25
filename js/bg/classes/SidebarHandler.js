@@ -218,10 +218,59 @@ SidebarHandler.prototype = {
         if (!this.sidebarExists()) {
             throw new Error('Cannot redock a nonexistent sidebar');
         };
-        var handler = this;
-        this.remove(function() {
-            handler.dockWindowId = windowId;
-            handler.create(onAfter);
+
+        if (this.dockState == 'undocked') {
+            return;
+        }
+
+        var thisObj = this;
+        var last = this.lastDockWindowMetrics;
+
+        // restore position of existing dock window
+        positionWindow(
+            this.dockWindowId,
+            { state: last.state, left: last.left, width: last.width, top: last.top, height: last.height }
+        );
+
+        // redock to new dock window
+        this.dockWindowId = windowId;
+        chrome.windows.get(windowId, function(win) {
+            win = thisObj.fixMaximizedWinMetrics(win);
+            var metrics = thisObj.getGoalDockMetrics(win, thisObj.dockState, thisObj.targetWidth);
+            log(metrics);
+            thisObj.lastDockWindowMetrics = {
+                state: win.state,
+                left: win.left,
+                top: win.top,
+                width: win.width,
+                height: win.height
+            };
+            thisObj.currentDockWindowMetrics = {
+                state: 'normal',
+                left: metrics.dockWinLeft,
+                top: win.top,
+                width: metrics.dockWinWidth,
+                height: win.height
+            };
+            positionWindow(thisObj.dockWindowId, thisObj.currentDockWindowMetrics);
+
+            var newSidebarMetrics = {
+                left: metrics.sidebarLeft,
+                top: win.top,
+                width: thisObj.targetWidth,
+                height: win.height };
+            thisObj.currentSidebarMetrics = newSidebarMetrics;
+            log(newSidebarMetrics);
+
+            positionWindow(thisObj.windowId, newSidebarMetrics, function() {
+                chrome.windows.update(thisObj.windowId, { focused: true }, function() {
+                    chrome.windows.update(thisObj.dockWindowId, { focused: true }, function() {
+                        if (onAfter) {
+                          onAfter();
+                      }
+                    });
+                });
+            });
         });
     },
 
