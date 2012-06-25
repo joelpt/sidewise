@@ -226,7 +226,7 @@ FancyTree.prototype = {
         this.formatLineageTitles(parent);
     },
 
-    removeRow: function(id) {
+    removeRow: function(id, removeChildren) {
         var elem = this.getRow(id);
         var parent = elem.parent().parent();
 
@@ -234,7 +234,12 @@ FancyTree.prototype = {
         this.getButtons(elem)
             .each(function(i, e) { $(e).data('tooltip').onShow(function() { this.hide(); } ); })
 
-        elem.replaceWith(elem.children('.ftChildren').children());
+        if (removeChildren) {
+            elem.remove();
+        }
+        else {
+            elem.replaceWith(elem.children('.ftChildren').children());
+        }
 
         this.updateRowExpander(parent);
         this.formatLineageTitles(parent);
@@ -312,6 +317,60 @@ FancyTree.prototype = {
         }
     },
 
+    expandRow: function(id) {
+        var thisObj = this;
+        var row = this.getRow(id);
+        var expanded = !(row.hasClass('ftCollapsed'));
+
+        if (expanded) {
+            return false;
+        }
+
+        var children = this.getChildrenContainer(row);
+        var rowTypeParams = this.getRowTypeParams(row);
+        var onExpanderClick = rowTypeParams.onExpanderClick;
+        var onFormatTitle = rowTypeParams.onFormatTitle;
+
+        children.slideDown(100, function() {
+            row.removeClass('ftCollapsed');
+
+            if (onExpanderClick) {
+                var evt = { data: { treeObj: thisObj, row: row, expanded: !expanded } };
+                onExpanderClick(evt);
+            }
+            onFormatTitle(row);
+        });
+
+        return true;
+    },
+
+    collapseRow: function(id) {
+        var thisObj = this;
+        var row = this.getRow(id);
+        var expanded = !(row.hasClass('ftCollapsed'));
+
+        if (!expanded) {
+            return false;
+        }
+
+        var children = this.getChildrenContainer(row);
+        var rowTypeParams = this.getRowTypeParams(row);
+        var onExpanderClick = rowTypeParams.onExpanderClick;
+        var onFormatTitle = rowTypeParams.onFormatTitle;
+
+        children.slideUp(100, function() {
+            row.addClass('ftCollapsed');
+
+            if (onExpanderClick) {
+                var evt = { data: { treeObj: thisObj, row: row, expanded: !expanded } };
+                onExpanderClick(evt);
+            }
+            onFormatTitle(row);
+        });
+
+        return true;
+    },
+
     /**
       * Toggles expanded/collapsed state of an element.
       * Calls the row's rowtype's onExpanderClick function, if defined.
@@ -325,18 +384,17 @@ FancyTree.prototype = {
         var onExpanderClick = rowTypeParams.onExpanderClick;
         var onFormatTitle = rowTypeParams.onFormatTitle;
 
-        var expanded = row.hasClass('ftCollapsed');
-
+        var expanded = !(row.hasClass('ftCollapsed'));
         children.slideToggle(100, function() {
             if (expanded) {
-                row.removeClass('ftCollapsed');
+                row.addClass('ftCollapsed');
             }
             else {
-                row.addClass('ftCollapsed');
+                row.removeClass('ftCollapsed');
             }
 
             if (onExpanderClick) {
-                var evt = { data: { treeObj: thisObj, row: row, expanded: expanded } };
+                var evt = { data: { treeObj: thisObj, row: row, expanded: !expanded } };
                 onExpanderClick(evt);
             }
             onFormatTitle(row);
