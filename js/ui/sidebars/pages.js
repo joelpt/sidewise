@@ -15,7 +15,7 @@ var PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP = {
     highlighted: 'highlighted'
 };
 
-var WINDOW_CLOSE_CONFIRM_CHILDREN_THRESHOLD = 2;
+var WINDOW_ACTION_CONFIRM_CHILDREN_THRESHOLD = 2;
 
 
 ///////////////////////////////////////////////////////////
@@ -112,12 +112,15 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
             node.id,
             img,
             node.label,
-            '',
-            { incognito: node.incognito },
+            node.title,
+            {
+                incognito: node.incognito,
+                hibernated: node.hibernated
+            },
             node.collapsed);
     }
     else if (node instanceof bg.PageNode) {
-        row = fancyTree.getNewRowElem('page', node.id, node.favicon, node.label, node.title,
+        row = fancyTree.getNewRowElem('page', node.id, 'chrome://favicon', node.label, node.title,
             {
                 url: node.url,
                 status: node.status,
@@ -133,6 +136,11 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
     }
 
     fancyTree.addRow(row, parentId);
+
+    if (node instanceof bg.PageNode) {
+        // delay setting of the actual page favicon to avoid delaying initial page load
+        setTimeout(function() { fancyTree.updateRow(row, { icon: node.favicon }); }, 100);
+    }
 }
 
 
@@ -149,7 +157,7 @@ function PageTreeCallbackProxyListener(op, args)
             addPageTreeNodeToFancyTree(ft, args.element, args.parentId);
             break;
         case 'remove':
-            ft.removeRow(args.element.id);
+            ft.removeRow(args.element.id, args.removeChildren);
             break;
         case 'move':
             ft.moveRow(args.element.id, args.newParentId);
@@ -170,6 +178,12 @@ function PageTreeCallbackProxyListener(op, args)
         case 'focusPage':
             ft.focusRow(args.id);
             break;
+        case 'expand':
+            ft.expandRow(args.id);
+            break;
+        case 'collapse':
+            ft.collapseRow(args.id);
+            break;
     }
 }
 
@@ -185,7 +199,7 @@ function onResizeTooltip(evt) {
 }
 
 function onRowExpanderClick(evt) {
-    bg.tree.updateNode(evt.data.row.attr('id'), { collapsed: !evt.data.expanded });
+    bg.tree.updateNode(evt.data.row.attr('id'), { collapsed: !(evt.data.expanded) });
 }
 
 
@@ -343,7 +357,29 @@ function onPageRowIconError(evt) {
 // ----------------------------------------------
 
 function onWindowRowClick(evt) {
-    chrome.windows.update(getRowNumericId(evt.data.row), { focused: true });
+    var row = evt.data.row;
+    var treeObj = evt.data.treeObj;
+    var windowId = getRowNumericId(row);
+
+    if (windowId) {
+        chrome.windows.update(windowId, { focused: true });
+        return;
+    }
+
+    if (row.attr('hibernated') != 'true') {
+        return;
+    }
+
+    var childCount = treeObj.getChildrenCount(row);
+
+    var msg = getMessage('prompt_awakenWindow',
+        [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
+
+    if (!confirm(msg)) {
+        return;
+    }
+
+    bg.tree.awakenWindow(row.attr('id'));
 }
 
 function onWindowRowDoubleClick(evt) {
@@ -374,9 +410,12 @@ function handleWindowRowAction(action, evt) {
 }
 
 function onWindowRowCloseButton(evt) {
-    var childCount = evt.data.treeObj.getChildrenCount(evt.data.row);
+    var treeObj = evt.data.treeObj;
+    var row = evt.data.row;
 
-    if (childCount >= WINDOW_CLOSE_CONFIRM_CHILDREN_THRESHOLD) {
+    var childCount = treeObj.getChildrenCount(row);
+
+    if (childCount >= WINDOW_ACTION_CONFIRM_CHILDREN_THRESHOLD) {
         var msg = getMessage('prompt_closeWindow',
             [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
 
@@ -385,16 +424,36 @@ function onWindowRowCloseButton(evt) {
         }
     }
 
-    chrome.windows.remove(getRowNumericId(evt.data.row));
+    var id = row.attr('id');
+    var windowId = getRowNumericId(row);
+
+    if (!windowId) {
+        bg.tree.removeNode(id, true);
+        return;
+    }
+
+    chrome.windows.get(windowId, function(win) {
+        if (win) {
+            chrome.windows.remove(windowId);
+            return;
+        }
+        bg.tree.removeNode(id, true);
+    });
+
 }
 
 function onWindowRowFormatTitle(row, itemTextElem) {
     var label = row.attr('label');
+    var text = row.attr('text');
     var childCount = row.children('.ftChildren').find('.ftRowNode[rowtype=page]').length;
-    var text = (label ? '' : getMessage('text_Window'))
+
+    if (!text) {
+        text = getMessage('text_Window');
+    }
+
+    text = (label ? '' : text)
         + ' (' + childCount + ' '
         + getMessage(childCount == 1 ? 'text_page' : 'text_pages') + ')';
-
 
     if (loggingEnabled) {
         label = row.attr('id').slice(0, 6) + ': ' + label;
