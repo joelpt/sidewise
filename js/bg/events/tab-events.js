@@ -61,11 +61,15 @@ function onTabCreated(tab)
         resetExpectingNavigation();
     }
 
-    var page = tree.awakeningPages[tab.url];
-    if (page) {
-        log('associating waking tab to existing hibernated page element', tab, page);
-        tree.updatePage(page, { id: 'p' + tab.id, hibernated: false, unread: true, status: 'preload' });
-        delete tree.awakeningPages[tab.url];
+    // TODO do referrer/historylength retrieval for awakening pages in order to do a better
+    // job of matching up duplicate-url pages
+    var waking = first(tree.awakeningPages, function(e) { return e.url == tab.url });
+    if (waking) {
+        var wakingIndex = waking[0];
+        var wakingPage = waking[1];
+        log('associating waking tab to existing hibernated page element', tab, wakingPage);
+        tree.updatePage(wakingPage, { id: 'p' + tab.id, hibernated: false, unread: true, status: 'preload' });
+        tree.awakeningPages.splice(wakingIndex, 1); // remove matched element
         return;
     }
 
@@ -128,7 +132,7 @@ function onTabCreated(tab)
         // we'll never be able to detect if this tab's transitionType=='reload' which
         // is how we normally detect that a tab is being restored rather than created anew
         tree.addNode(page, 'w' + tab.windowId);
-        associateExistingToRestorablePageNode(tab.id);
+        associateExistingToRestorablePageNode(tab);
         return;
     }
 
