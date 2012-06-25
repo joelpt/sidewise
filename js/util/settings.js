@@ -1,20 +1,63 @@
+///////////////////////////////////////////////////////////
+// Globals
+///////////////////////////////////////////////////////////
+
+var settingsCache = {};
+
+
+///////////////////////////////////////////////////////////
+// Setting save and load
+///////////////////////////////////////////////////////////
+
 function saveSetting(name, value) {
-    if (value == null || value === undefined) {
+    if (value === undefined) {
+        // unset localStorage setting value
         localStorage.removeItem(name);
+
+        if (settingsCache[name] !== undefined)  {
+            // unset cached setting value
+            delete settingsCache[name];
+        }
         return;
     }
+
+    // store setting value in localStorage
     localStorage[name] = JSON.stringify(value);
+
+    // cache setting value
+    settingsCache[name] = value;
 }
 
 function loadSetting(name, defaultValue) {
-    var value = localStorage[name];
+    // get setting value from cache
+    var value = settingsCache[name];
 
-    if (value) {
-        return JSON.parse(value);
+    if (value !== undefined) {
+        // cached setting value found, return it
+        return value;
     }
 
+    // get setting value from localStorage
+    value = localStorage[name];
+    if (value !== undefined) {
+        // setting exists, parse it
+        var parsed = JSON.parse(value);
+
+        // store parsed setting value in cache
+        settingsCache[name] = parsed;
+
+        // return parsed setting value
+        return parsed;
+    }
+
+    // did not find the setting, use defaultValue as provided
     return defaultValue;
 }
+
+
+///////////////////////////////////////////////////////////
+// Setting-related helpers
+///////////////////////////////////////////////////////////
 
 function updateStateFromSettings() {
     var bg = chrome.extension.getBackgroundPage();
@@ -30,8 +73,12 @@ function updateStateFromSettings() {
             sh.createWithDockState(dockState);
         });
     }
-    // TODO implement redock/undock type functionality instead of recreating sidebar
 }
+
+
+///////////////////////////////////////////////////////////
+// Settings initialization
+///////////////////////////////////////////////////////////
 
 // One-time initialization of default settings.
 // If already initialized, does nothing, unless forceReset is true.
