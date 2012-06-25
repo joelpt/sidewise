@@ -6,6 +6,7 @@ var PageTreeNode = function()
 {
     this.$base();
 
+    this.title = '';
     this.label = '';
     this.highlighted = false;
     this.collapsed = false;
