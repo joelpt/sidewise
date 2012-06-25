@@ -79,6 +79,14 @@ section#main:not(.debugEnabled) {
     padding-bottom: 1px;
 }
 
+.ftRowNode[rowtype=window][hibernated=true] > .ftItemRow {
+    background: #ddd;
+}
+
+.ftRowNode[rowtype=window][hibernated=true] > .ftItemRow:hover {
+    background: #e2e2e2;
+}
+
 .ftRowNode[rowtype=window] > .ftItemRow .ftItemTitle {
     font-style: italic;
 }
