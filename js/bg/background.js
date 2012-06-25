@@ -104,6 +104,7 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
 
     chrome.tabs.query({ }, function(tabs) {
         var urlAndTitles = tabs.map(function(e) { return e.url + '\n' + e.title });
+        var lastSessionWindowNumber = 1;
 
         // set hibernated+restorable flags on all non-hibernated nodes
         tree.forEach(function(node, depth, containingArray, parentNode) {
@@ -123,15 +124,42 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
             }
 
             node.restored = false;
-            node.status = 'complete';
 
-            // allow restoration of pages which either failed to restore in a previous
-            // session, or were not manually hibernated by the user
-            if (node.restorable || !node.hibernated) {
-                node.hibernated = true;
+            if (node instanceof WindowNode) {
+                // retitle restorable window titles
+                node.title = getMessage('text_LastSession') + ' - ' + lastSessionWindowNumber;
+                lastSessionWindowNumber++;
                 node.restorable = true;
+                node.hibernated = true;
+                node.collapsed = true;
                 node.id = node.id[0] + 'R' + generateGuid();
             }
+            else if (node instanceof PageNode) {
+                // allow restoration of pages which either failed to restore in a previous
+                // session, or were not manually hibernated by the user
+                if (node.restorable || !node.hibernated) {
+                    node.hibernated = true;
+                    node.restorable = true;
+                    node.status = 'complete';
+                    node.id = node.id[0] + 'R' + generateGuid();
+
+                    // TODO this seems to be the wrong place to do this because it looks like
+                    // Chrome only blanks this referrer out sometimes *sigh*
+                    // Proper fix is to add code into the assocate routines - if referrer
+                    // matches this noise, then match a referrer of either that value or ''
+                    // Best approach is probably to refactor the findPageNodeForAssociation
+                    // routine, stop taking a dumb list of deets to match and instead
+                    // accept the specifics that we'll be looking for and do custom
+                    // processing for .referrer in particular; this should also be taking
+                    // a notMatchingNode param
+                    if (node.referrer.match(/^http.+google.+\/search\?.*sugexp=chrome,mod=\d+\&sourceid=chrome/)) {
+                        // Chrome seems to blank out these referrers on session restore, so
+                        // mimic its behavior
+                        node.referrer = '';
+                    }
+                }
+            }
+
             if (sidebarHandler.sidebarExists()) {
                 tree.callbackProxyFn('add', { element: node, parentId: parentNode ? parentNode.id : undefined });
             }
@@ -283,9 +311,8 @@ function findTabParents(tabs) {
         // this is usually overkill, but some browsers will be quite slow; since this only happens
         // when the extension is first initializing it is acceptable overkill
         setTimeout(laterFn, 2000);
-        setTimeout(laterFn, 4000);
-        setTimeout(laterFn, 8000);
-        setTimeout(laterFn, 12000);
+        setTimeout(laterFn, 6000);
+        setTimeout(laterFn, 10000);
         setTimeout(laterFn, 16000);
     }
 
