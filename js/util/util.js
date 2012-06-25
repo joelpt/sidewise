@@ -1,3 +1,9 @@
+///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
+var IS_SCRIPTABLE_URL_REGEX = new RegExp(/^((about|file|view-source|chrome.*):|https?:\/\/chrome.google.com\/webstore)/);
+
 var URL_FAVICON_REPLACEMENTS = {
     'chrome://chrome/extensions': '/images/favicon/extensions.png',  // Chrome 19 and earlier
     'chrome://chrome/extensions/': '/images/favicon/extensions.png', // Chrome 20 early versions
@@ -26,6 +32,10 @@ var URL_TITLE_REPLACEMENTS = {
     'chrome://newtab/': getMessage('tabTitle_NewTab')
 };
 
+
+///////////////////////////////////////////////////////////
+// URL related functions
+///////////////////////////////////////////////////////////
 
 function getBestFavIconUrl(favIconUrl, url) {
     var replacedFavicon = URL_FAVICON_REPLACEMENTS[url];
@@ -72,6 +82,52 @@ function getBestPageTitle(title, url) {
     return url;
 }
 
+function isScriptableUrl(url)
+{
+    return !(url == '' || IS_SCRIPTABLE_URL_REGEX.test(url));
+}
+
+function isExtensionUrl(url)
+{
+    return url.indexOf('chrome-extension://') == 0;
+}
+
+function splitUrl(url)
+{
+    var r = {};
+    var m = url.match(/(?:()(www\.[^\s\/?#]+\.[^\s\/?#]+)|([^\s:\/?#]+):\/\/([^\s\/?#]*))([^\s?#]*)(?:\?([^\s#]*))?(?:#(\S*))?/);
+
+    if (m)
+    {
+        r.protocol = m[3];
+        r.host = m[4];
+        r.path = m[5];
+        r.query = m[6];
+        r.hash = m[7];
+        var m = r.host.match(/([^\.]+\.(org|com|net|info|[a-z]{2,3}(\.[a-z]{2,3})?))$/);
+        r.domain = m ? m[0] : r.host;
+        return r;
+    }
+
+    // that didn't work, try about:foo format
+    m = url.match(/(.+):(.+)/)
+    {
+        r.protocol = 'about';
+        r.host = 'memory';
+        return r;
+    }
+}
+
+function dropUrlHash(url)
+{
+    return url.replace(/#.*$/, '');
+}
+
+
+///////////////////////////////////////////////////////////
+// Script injection
+///////////////////////////////////////////////////////////
+
 function injectContentScriptInExistingTabs(url)
 {
     readFile(url, injectScriptInExistingTabs);
@@ -87,6 +143,20 @@ function injectScriptInExistingTabs(script)
         }
     });
 }
+
+function executeContentScript(url, tabId, scriptBody)
+{
+    if (isScriptableUrl(url))
+    {
+        log_brief(tabId, scriptBody);
+        chrome.tabs.executeScript(tabId, { code: scriptBody });
+    }
+}
+
+
+///////////////////////////////////////////////////////////
+// File reading
+///////////////////////////////////////////////////////////
 
 function readFile(url, callback)
 {
@@ -116,76 +186,20 @@ function readFile(url, callback)
     }
 }
 
-function isScriptableUrl(url)
-{
-    // log(url);
-    return !(url == ''
-        || url.match('^(about|file|view-source|chrome.*):')
-        || url.match('^https?://chrome.google.com/webstore')
-    );
-}
 
-function isExtensionUrl(url)
-{
-    return url.indexOf('chrome-extension://') == 0;
-}
+///////////////////////////////////////////////////////////
+// PageTree related
+///////////////////////////////////////////////////////////
 
 function getNumericId(id)
 {
     return parseInt(id.slice(1));
 }
 
-function executeContentScript(url, tabId, scriptBody)
-{
-    if (isScriptableUrl(url))
-    {
-        log_brief(tabId, scriptBody);
-        chrome.tabs.executeScript(tabId, { code: scriptBody });
-    }
-}
 
-function splitUrl(url)
-{
-    var r = {};
-    var m = url.match(/(?:()(www\.[^\s\/?#]+\.[^\s\/?#]+)|([^\s:\/?#]+):\/\/([^\s\/?#]*))([^\s?#]*)(?:\?([^\s#]*))?(?:#(\S*))?/);
-
-    if (m)
-    {
-        r.protocol = m[3];
-        r.host = m[4];
-        r.path = m[5];
-        r.query = m[6];
-        r.hash = m[7];
-        var m = r.host.match(/([^\.]+\.(org|com|net|info|[a-z]{2,3}(\.[a-z]{2,3})?))$/);
-        r.domain = m ? m[0] : r.host;
-        return r;
-    }
-
-    // that didn't work, try about:foo format
-    m = url.match(/(.+):(.+)/)
-    {
-        r.protocol = 'about';
-        r.host = 'memory';
-        return r;
-    }
-
-
-}
-
-function dropUrlHash(url)
-{
-    return url.replace(/#.*$/, '');
-}
-
-function getClampedWindowDimensions(left, top, width, height, minLeft, minTop, maxWidth, maxHeight)
-{
-    left = clamp(left, minLeft, minLeft + maxWidth);
-    top = clamp(top, minTop, minTop + maxHeight);
-    width = clamp(width, 0, maxWidth);
-    height = clamp(height, 0, maxHeight);
-    r = {left: left, top: top, width: width, height: height};
-    return r;
-}
+///////////////////////////////////////////////////////////
+// Javascript object manipulation
+///////////////////////////////////////////////////////////
 
 function clone(obj) {
     // Handle the 3 simple types, and null or undefined
@@ -220,27 +234,30 @@ function clone(obj) {
     throw new Error("Unable to copy obj! Its type isn't supported.");
 }
 
-// Array Remove - By John Resig (MIT Licensed)
-function remove(array, from, to) {
-    var rest = array.slice((to || from) + 1 || array.length);
-    array.length = from < 0 ? array.length + from : from;
-    return array.push.apply(array, rest);
+function castObject(object, toClass) {
+    // pseudocast: doesn't actually change the object's type, but
+    // will cause instanceof to report correct prototype inheritance
+    object.__proto__ = toClass.prototype;
 }
 
-function first(array, matchFn) {
-    for (var i = 0; i < array.length; i++) {
-        if (matchFn(array[i])) {
-            return array[i];
+// Iterates through the properties of object, calling mapFn(key, value) on each one.
+// To conveniently use as a filter, make mapFn() return undefined for those properties to not output.
+// @returns An array of the return values of the mapFn calls.
+function mapObjectProps(object, mapFn) {
+    var ary = [];
+    for (var k in object) {
+        var r = mapFn(k, object[k]);
+        if (r !== undefined) {
+            ary.push(r);
         }
     }
+    return ary;
 }
 
-function clamp(value, min, max)
-{
-    value = value < min ? min : value;
-    value = value > max ? max : value;
-    return value;
-}
+
+///////////////////////////////////////////////////////////
+// Javascript object subclassing
+///////////////////////////////////////////////////////////
 
 // extendClass won't create surrogate child functions for these function names.
 var EXTEND_CLASS_BANNED_SURROGATE_NAMES =
@@ -323,36 +340,114 @@ function getExtendClassSurrogateFunction(functionName) {
     };
 }
 
-function castObject(object, toClass) {
-    // pseudocast: doesn't actually change the object's type, but
-    // will cause instanceof to report correct prototype inheritance
-    object.__proto__ = toClass.prototype;
+
+///////////////////////////////////////////////////////////
+// Javascript Array manipulation
+///////////////////////////////////////////////////////////
+
+// Array Remove - By John Resig (MIT Licensed)
+function remove(array, from, to) {
+    var rest = array.slice((to || from) + 1 || array.length);
+    array.length = from < 0 ? array.length + from : from;
+    return array.push.apply(array, rest);
 }
 
-// Iterates through the properties of object, calling mapFn(key, value) on each one.
-// To conveniently use as a filter, make mapFn() return undefined for those properties to not output.
-// @returns An array of the return values of the mapFn calls.
-function mapObjectProps(object, mapFn) {
-    var ary = [];
-    for (var k in object) {
-        var r = mapFn(k, object[k]);
-        if (r !== undefined) {
-            ary.push(r);
+function first(array, matchFn) {
+    for (var i = 0; i < array.length; i++) {
+        if (matchFn(array[i])) {
+            return [i, array[i]];
         }
     }
-    return ary;
 }
 
-function onDocumentReady(fn) {
-    if (document.readyState == 'complete') {
-        fn();
-    }
-    window.onload = fn;
+
+///////////////////////////////////////////////////////////
+// Numeric related
+///////////////////////////////////////////////////////////
+
+function clamp(value, min, max)
+{
+    value = value < min ? min : value;
+    value = value > max ? max : value;
+    return value;
 }
+
+
+///////////////////////////////////////////////////////////
+// GUID generation
+///////////////////////////////////////////////////////////
 
 function generateGuid() {
-    var S4 = function() {
-       return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-    };
-    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+    return (guidS4()+guidS4()+"-"+guidS4()+"-"+guidS4()+"-"+guidS4()+"-"+guidS4()+guidS4()+guidS4());
 }
+
+function guidS4() {
+    return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+}
+
+
+///////////////////////////////////////////////////////////
+// Namespaces (nonfunctioning as of yet)
+///////////////////////////////////////////////////////////
+
+// THIS PATTERN IS RECOGNIZED BY SCI
+var namespackle = function() {
+    var yang = function() {};
+    this.zang = function() {};
+
+};
+namespackle();
+
+namespackle.twang = function() {
+    return '';
+};
+
+namespackle.prototype = {
+    zing: function() {}
+};
+
+
+// failcakes in SCI
+
+// (function( coffeeMachine, $, undefined ) {
+//     //Private Property
+//     var coffeeGood = true;
+
+//     //Public Property
+//     coffeeMachine.bean = "Yirgacheffe";
+
+//     //Public Method
+//     coffeeMachine.brew = function() {
+//         clean();
+//         console.log( "Freshly brewed " + coffeeMachine.bean + " ready and waiting");
+//     }
+
+//     //Private Method
+//     function clean() {
+//         console.log( "Cleaning the coffee machine" );
+//     }
+// }( window.coffeeMachine = window.coffeeMachine || {}, jQuery ));
+
+
+
+
+// works in SCI, has private and publics
+//
+var DED = function() {
+    var private_var;
+    function private_method() {
+        console.log('hello world');
+        // do stuff here
+    }
+    return {
+        method_1 : function(n) {
+            // private method does not resolve here in SCI
+            // private_method();
+            // do stuff here
+        },
+        method_2 : function() {
+            // do stuff here
+        }
+    };
+}();
+
