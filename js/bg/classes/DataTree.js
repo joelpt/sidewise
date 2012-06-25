@@ -255,9 +255,6 @@ DataTree.prototype = {
         this.updateLastModified();
         if (removeChildren) {
             // remove all children
-            // TODO consider if we need to trigger callbackProxy 'removePage' for each child node
-            // that gets removed in PageTree; perhaps not if removePage() doesn't take a removeChildren
-            // arg itself
             found.siblings.splice(found.index, 1);
         }
         else {
