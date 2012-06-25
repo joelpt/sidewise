@@ -15,6 +15,13 @@ var ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_MS = 15000;
 var ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_ITERATIONS =
     ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_MS / ASSOCIATE_PAGES_CHECK_INTERVAL_MS;
 
+// When the referrer of a tab matches this regular expression, Chrome is
+// known to sometimes blank out such referrers of tabs created during
+// session restores or undo-closed-tabs
+var CHROME_BLANKABLE_REFERRER_REGEXP = new RegExp(
+    /^http.+google.+\/(search\?.*sugexp=chrome,mod=\d+\&sourceid=chrome|url\?.*source=web)/);
+
+
 ///////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////
@@ -22,6 +29,7 @@ var ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_ITERATIONS =
 var associationRuns = {};
 var associationStubbornTabIds = {};
 var associationConcurrentRuns = 0;
+
 
 ///////////////////////////////////////////////////////////
 // Association functions
@@ -149,10 +157,13 @@ function tryAssociateTab(runInfo, tab) {
         return;
     }
 
+    // record this tab's id in this run's tabIds list as one we expect to be restoring
+    // in a later phase of this run
+    runInfo.tabIds.push(tab.id);
+
     // ask the tab for more details via its content_script.js connected port
     try {
         getPageDetails(tab.id, { action: 'associate', runId: runId });
-        runInfo.tabIds.push(tab.id);
     }
     catch(ex) {
         if (ex.message == 'Port not found') {
@@ -182,21 +193,14 @@ function tryAssociateExistingToRestorablePageNode(existingPage) {
     }
 }
 
-function associateExistingToRestorablePageNode(tabId, referrer, historylength) {
+function associateExistingToRestorablePageNode(tab, referrer, historylength) {
+    var tabId = tab.id;
     var existingPage = tree.getPage(tabId);
 
     log('associating existing to restorable', 'tabId', tabId, 'existing', existingPage, 'referrer', referrer,
         'historylength', historylength);
 
-    var matchParams = { hibernated: true, restorable: true, url: existingPage.url, pinned: existingPage.pinned };
-    if (referrer !== undefined) {
-        matchParams.referrer = referrer;
-    }
-    if (historylength !== undefined) {
-        matchParams.historylength = historylength;
-    }
-
-    var match = findPageNodeForAssociation(matchParams);
+    var match = findPageNodeForAssociation(true, true, tab.url, tab.pinned, referrer, historylength, undefined);
 
     if (!match) {
         log('No restorable match found');
@@ -218,7 +222,12 @@ function associateExistingToRestorablePageNode(tabId, referrer, historylength) {
     tree.mergeNodes(existingPage, match.node);
     tree.updateNode(match.node, details);
 
-    // TODO window association/fixup jazz
+    var topParent = match.ancestors[0];
+    restoreParentWindowViaUniqueChildPageNode(topParent, match.node, tab.windowId);
+
+    // TODO call associateWindowsToWindowNodes() iff all existing restorable windows
+    // have zero .restorable children (and there is at least one such restorable window
+    // still left to try and restore)
 }
 
 function associatePagesCheck(runId) {
@@ -234,7 +243,8 @@ function associatePagesCheck(runId) {
 
     log('associatePagesCheck', 'total', runInfo.total, 'count', runInfo.count, 'tabIds', runInfo.tabIds);
 
-    var newStubbornTabs = {};
+    log('stubborn tabs list before update', JSON.stringify(associationStubbornTabIds));
+
     for (var i in runInfo.tabIds) {
         var tabId = runInfo.tabIds[i];
         var count = (associationStubbornTabIds[tabId] || 0) + 1;
@@ -248,12 +258,11 @@ function associatePagesCheck(runId) {
             });
         }
         else {
-            newStubbornTabs[tabId] = count;
+            associationStubbornTabIds[tabId] = count;
         }
     }
-    associationStubbornTabIds = newStubbornTabs;
 
-    log('stubborn tabs list', JSON.stringify(associationStubbornTabIds));
+    log('stubborn tabs list after update', JSON.stringify(associationStubbornTabIds));
 
     endAssociationRun(runId);
 
@@ -277,12 +286,7 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         runInfo.count++;
     }
 
-    var pageId = 'p' + tab.id;
-    var existingPage = tree.getNode(function(e) {
-        return e instanceof PageNode
-            && !e.restored
-            && e.id == pageId;
-    });
+    var existingPage = tree.getPage(tab.id);
 
     if (existingPage) {
         // tab is already properly present as a pagenode in the tree and we don't want to
@@ -290,15 +294,7 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         return;
     }
 
-    var matchParams = { hibernated: true, restorable: true, url: tab.url, pinned: tab.pinned };
-    if (referrer !== undefined) {
-        matchParams.referrer = referrer;
-    }
-    if (historylength !== undefined) {
-        matchParams.historylength = historylength;
-    }
-
-    var match = findPageNodeForAssociation(matchParams);
+    var match = findPageNodeForAssociation(true, true, tab.url, tab.pinned, referrer, historylength, undefined);
 
     if (!match) {
         // apparently a new tab to us
@@ -315,62 +311,101 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
     }
 
     log('matching PageNode found, restoring', tab.id, tab, match.node);
-    var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id, status: tab.status };
+    var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id };
     tree.updateNode(match.node, details);
+
+    // get updated status from Chrome in a moment
+    chrome.tabs.get(tab.id, function(t) {
+        console.log('status reupdate', 'tab.id', tab.id, 'to node', match.node, 'node id', match.node.id, 't.status', t.status);
+        tree.updateNode(match.node, { status: t.status });
+    });
 
     // set focus to this page if it and its window have the current focus
     if (tab.active && focusTracker.getFocused() == tab.windowId) {
         tree.focusPage(tab.id);
     }
 
+    var topParent = match.ancestors[0];
+    restoreParentWindowViaUniqueChildPageNode(topParent, match.node, tab.windowId);
+}
+
+function restoreParentWindowViaUniqueChildPageNode(parentWindowNode, childPageNode, childWindowId)
+{
     // When node is under a restorable window node, we want to see if this tab/node has
     // a unique key amongst all nodes. If so, we know that this tab's .windowId
     // can definitively identify the parent restorable window's new windowId.
-    var topParent = match.ancestors[0];
-    if (topParent instanceof WindowNode && topParent.restorable) {
-        // Node is under a restorable ('fake') window node.
-        // Is there any other node in the tree with the same constructed key?
-        var otherMatch = tree.getNode(function(node) {
-            return node instanceof PageNode
-                && node.url == tab.url
-                && node.pinned == tab.pinned
-                && (referrer === undefined || node.referrer == referrer)
-                && (historylength === undefined || node.historylength == historylength)
-                && node !== match.node; // Don't match the very same node
-        });
-
-        if (!otherMatch) {
-            // Node's key is unique, so we can use this tab's .windowId to set
-            // the restorable parent window node's proper windowId.
-
-            // does a WindowNode already exist matching the tab's .windowId?
-            var existingWinNode = tree.getNode('w' + tab.windowId);
-            if (existingWinNode) {
-                // already exists, so merge its children into our restorable window
-                tree.mergeNodes(existingWinNode, topParent);
-            }
-
-            // Restore the restorable parent window and assign it tab's .windowId
-            tree.updateNode(topParent, {
-                restorable: false,
-                hibernated: false,
-                id: 'w' + tab.windowId
-            });
-        }
+    if (!parentWindowNode instanceof WindowNode || !parentWindowNode.restorable) {
+        return;
     }
+
+    // parentWindowNode is a restorable window node.
+    // Is there any other page node in the tree with the same constructed key
+    // as childPageNode?
+    var otherMatch = findPageNodeForAssociation(false, false, childPageNode.url, childPageNode.pinned,
+        childPageNode.referrer, childPageNode.historylength, childPageNode);
+
+    if (otherMatch) {
+        // childPageNode's constructed key is not unique, cannot use it
+        // to establish parent window's new windowId
+        return;
+    }
+
+    // Node's key is unique, so we can use this tab's .windowId to set
+    // the restorable parent window node's proper windowId.
+
+    // does a WindowNode already exist matching the tab's .windowId?
+    var existingWinNode = tree.getNode('w' + childWindowId);
+    if (existingWinNode) {
+        // already exists, so merge its children into our restorable window
+        tree.mergeNodes(existingWinNode, parentWindowNode);
+    }
+
+    // Restore the restorable parent window and assign it tab's .windowId
+    tree.updateNode(parentWindowNode, {
+        restorable: false,
+        hibernated: false,
+        id: 'w' + childWindowId,
+        title: WINDOW_DEFAULT_TITLE
+    });
+    tree.expandNode(parentWindowNode);
 }
 
-function findPageNodeForAssociation(matchParams) {
+function findPageNodeForAssociation(mustBeHibernated, mustBeRestorable, url, pinned, referrer, historylength, notMatchingNode) {
+    var fallbackReferrer = referrer;
+    if (referrer && CHROME_BLANKABLE_REFERRER_REGEXP.test(referrer)) {
+        fallbackReferrer = '';
+    }
+
     return tree.getNodeEx(function(node) {
-        if (!(node instanceof PageNode)) {
+        var matched = node instanceof PageNode
+            && (!mustBeHibernated || node.hibernated === true)
+            && (!mustBeRestorable || node.restorable === true)
+            && node.url == url
+            && node.pinned == pinned
+            && (historylength === undefined || node.historylength == historylength)
+            && (notMatchingNode === undefined || node !== notMatchingNode);
+
+        if (!matched) {
             return false;
         }
-        for (var k in matchParams) {
-            if (node[k] !== matchParams[k]) {
-                return false;
-            }
+
+        if (referrer === undefined || referrer == node.referrer) {
+            return true;
         }
-        return true;
+
+        // Chrome sometimes blanks out certain referrers after a browser restart;
+        // for such referrers we will count a node as matching if either the existing
+        // node's referrer or the passed referrer match parameter are blank
+        var fallbackNodeReferrer = node.referrer;
+        if (node.referrer && CHROME_BLANKABLE_REFERRER_REGEXP.test(node.referrer)) {
+            fallbackNodeReferrer = '';
+        }
+
+        if (fallbackReferrer == fallbackNodeReferrer) {
+            return true;
+        }
+
+        return false;
     });
 }
 
@@ -394,7 +429,7 @@ function associateWindowstoWindowNodes() {
                     return last;
                 }
                 var tabId = getNumericId(e.id);
-                var tab = first(tabs, function(e) { return e.id == tabId; });
+                var tab = first(tabs, function(e) { return e.id == tabId; })[1];
                 var windowId = tab.windowId;
                 last[windowId] = (last[windowId] || 0) + 1;
                 return last;
@@ -432,8 +467,11 @@ function associateWindowstoWindowNodes() {
             }
 
             // update the restore window to look like the real window
-            var details = { restorable: false, hibernated: false, id: 'w' + mostFrequentWindowId };
+            var details = { restorable: false, hibernated: false, id: 'w' + mostFrequentWindowId,
+                title: WINDOW_DEFAULT_TITLE;
+            };
             tree.updateNode(resWindow, details);
+            tree.expandNode(resWindow);
 
             // record the windowId used so we don't try to use it again in an upcoming iteration
             associatedWindowIds.push(mostFrequentWindowId);
