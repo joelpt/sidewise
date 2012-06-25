@@ -2,7 +2,7 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-var PAGETREE_ONMODIFIED_DELAY_MS = 1500;
+var PAGETREE_ONMODIFIED_DELAY_MS = 2500;
 
 
 ///////////////////////////////////////////////////////////
@@ -29,7 +29,7 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     this.onModified = this._onPageTreeModified;
     this.onModifiedDelayed = onModifiedDelayed;
     this.onModifiedDelayedWaitMs = PAGETREE_ONMODIFIED_DELAY_MS;
-    this.awakeningPages = {};
+    this.awakeningPages = [];
 };
 
 PageTree.prototype = {
@@ -66,10 +66,10 @@ PageTree.prototype = {
     },
 
     // remove the element matching matcher
-    removeNode: function(matcher)
+    removeNode: function(matcher, removeChildren)
     {
-        var r = this.$super('removeNode')(matcher);
-        this.callbackProxyFn('remove', { element: r });
+        var r = this.$super('removeNode')(matcher, removeChildren);
+        this.callbackProxyFn('remove', { element: r, removeChildren: removeChildren || false });
         return r;
     },
 
@@ -97,6 +97,39 @@ PageTree.prototype = {
         }
         return r;
     },
+
+    expandNode: function(matcher)
+    {
+        var node = this.getNode(matcher);
+
+        if (!node) {
+            throw new Error('Could not find node to expand');
+        }
+
+        if (!node.collapsed) {
+            return;
+        }
+
+        node.collapsed = false;
+        this.callbackProxyFn('expand', { id: node.id });
+    },
+
+    collapseNode: function(matcher)
+    {
+        var node = this.getNode(matcher);
+
+        if (!node) {
+            throw new Error('Could not find node to collapse');
+        }
+
+        if (node.collapsed) {
+            return;
+        }
+
+        node.collapsed = true;
+        this.callbackProxyFn('collapse', { id: node.id });
+    },
+
 
     ///////////////////////////////////////////////////////////
     // PageNode-specific manipulation
@@ -168,7 +201,7 @@ PageTree.prototype = {
         // probably need .awakeningPages in order to prevent onTabCreated from making another entry in
         // the tree; if onTC got fired AFTER c.t.create's callback then we could actually store
         // k=tabId v=node in awakeningPages instead but i suspect the callbacks fire the other way around :(
-        this.awakeningPages[found.node.url] = found.node;
+        this.awakeningPages.push(found.node);
         var topParent = found.ancestors[0];
         if (topParent.elemType == 'window') {
             var windowId = parseInt(topParent.id.slice(1));
@@ -178,6 +211,89 @@ PageTree.prototype = {
         }
         log('awakening', found.node.url, 'no found windowId');
         chrome.tabs.create({ url: found.node.url });
+        this.updateLastModified();
+    },
+
+
+    ///////////////////////////////////////////////////////////
+    // WindowNode-specific manipulation
+    ///////////////////////////////////////////////////////////
+
+    // awaken (unhibernate) a window node
+    awakenWindow: function(id)
+    {
+        log(id);
+        var winNode = this.getNode(id);
+
+        var awakening = this.map(function(e) { return e instanceof PageNode ? e : undefined; }, winNode.children);
+
+        var thisObj = this;
+        awakening.forEach(function(e) {
+            thisObj.awakeningPages.push(e);
+        });
+
+        var urls = awakening.map(function(e) { return e.url; });
+
+        var newWinMetrics;
+        if (sidebarHandler.dockState != 'undocked') {
+            newWinMetrics = clone(sidebarHandler.currentDockWindowMetrics);
+            delete newWinMetrics.state;
+        }
+        else {
+            // TODO get monitor info of monitor that sidebar is on
+            // and put us on the same monitor
+            newWinMetrics = {
+                left: monitorInfo.monitors[0].left,
+                top: monitorInfo.monitors[0].top,
+                width: monitorInfo.monitors[0].availWidth,
+                height: monitorInfo.monitors[0].availHeight
+            };
+        }
+
+        var newWinCreateDetails = { type: 'normal', url: urls };
+
+        // look for a New Tab tab that is all alone in a window; if we find one,
+        // adopt it to the new window
+        var winNodeWithOneNewTabPage = first(tree.tree, function(e) {
+            return e instanceof WindowNode
+                && !(e.hibernated)
+                && e.children.length == 1
+                && e.children[0].children.length == 0
+                && e.children[0].url == 'chrome://newtab/'
+                && !(e.children[0].hibernated);
+        });
+
+        var adoptTabId;
+        if (winNodeWithOneNewTabPage) {
+            adoptTabId = getNumericId(winNodeWithOneNewTabPage[1].children[0].id);
+            newWinCreateDetails.tabId = adoptTabId;
+        }
+
+        // create new window for awakening
+        chrome.windows.create(newWinCreateDetails, function(win) {
+            // if we adopted a New Tab tab, destroy that tab now
+            if (adoptTabId) {
+                chrome.tabs.remove(adoptTabId);
+            }
+
+            chrome.windows.update(win.id, newWinMetrics);
+
+            var newWinNode = thisObj.getNode('w' + win.id);
+            log(newWinNode);
+            if (newWinNode) {
+                thisObj.mergeNodes(newWinNode, winNode);
+            }
+
+            thisObj.updateNode(winNode, {
+                id: 'w' + win.id,
+                restored: true,
+                restorable: false,
+                hibernated: false,
+                title: WINDOW_DEFAULT_TITLE
+            });
+            thisObj.expandNode(winNode);
+        });
+
         this.updateLastModified();
     },
 
