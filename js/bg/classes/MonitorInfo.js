@@ -65,7 +65,10 @@ MonitorInfo.prototype = {
             marginLeft: screen.availLeft,
             marginRight: screen.width - screen.availWidth - screen.availLeft,
             left: 0,
-            width: screen.width
+            width: screen.width,
+            height: screen.height,
+            top: screen.top,
+            availHeight: screen.availHeight
         };
         return mon;
     },
@@ -138,7 +141,10 @@ MonitorInfo.prototype = {
                 availWidth: width - 2 * this.maximizedOffset,
                 marginLeft: left - testedAtLeft + this.maximizedOffset,
                 marginRight: 0, // TODO figure out a way to actually determine this
-                left: testedAtLeft
+                left: testedAtLeft,
+                top: top,
+                height: height,
+                availHeight: height
             };
             mon.width = mon.marginLeft + mon.availWidth + mon.marginRight;
 
@@ -175,7 +181,10 @@ MonitorInfo.prototype = {
                 availWidth: width - 2 * this.maximizedOffset,
                 marginLeft: 0, // TODO puzzle out a way to get these values
                 marginRight: 0,
-                left: left + this.maximizedOffset
+                left: left + this.maximizedOffset,
+                top: top,
+                height: height,
+                availHeight: height
             };
             mon.width = mon.marginLeft + mon.availWidth + mon.marginRight;
 
