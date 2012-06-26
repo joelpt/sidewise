@@ -93,9 +93,9 @@ function onRequest(request, sender, sendResponse) {
 
     switch (request.op)
     {
-        // case 'getPageDetails':
-        //     onGetPageDetailsMessage(sender.tab, request);
-        //     break;
+        case 'getPageDetails':
+            onGetPageDetailsMessage(sender.tab, request);
+            break;
         case 'getIsFullScreen':
             onGetIsFullScreenMessage(sender.tab, request);
             break;
