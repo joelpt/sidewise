@@ -468,7 +468,7 @@ function associateWindowstoWindowNodes() {
 
             // update the restore window to look like the real window
             var details = { restorable: false, hibernated: false, id: 'w' + mostFrequentWindowId,
-                title: WINDOW_DEFAULT_TITLE;
+                title: WINDOW_DEFAULT_TITLE
             };
             tree.updateNode(resWindow, details);
             tree.expandNode(resWindow);
