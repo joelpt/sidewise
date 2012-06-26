@@ -2,7 +2,9 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-var PAGETREE_ONMODIFIED_DELAY_MS = 2500;
+var PAGETREE_ONMODIFIED_DELAY_ON_STARTUP_MS = 3000;
+var PAGETREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS = 1000;
+var PAGETREE_ONMODIFIED_STARTUP_DURATION_MS = 45000;
 
 
 ///////////////////////////////////////////////////////////
@@ -27,9 +29,17 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     this.callbackProxyFn = callbackProxyFn; // callback proxy function for page/window functions
     this.focusedTabId = null;
     this.onModified = this._onPageTreeModified;
-    this.onModifiedDelayed = onModifiedDelayed;
-    this.onModifiedDelayedWaitMs = PAGETREE_ONMODIFIED_DELAY_MS;
     this.awakeningPages = [];
+    this.onModifiedDelayed = onModifiedDelayed;
+
+    // Set startup onModifiedDelay duration
+    this.onModifiedDelayedWaitMs = PAGETREE_ONMODIFIED_DELAY_ON_STARTUP_MS;
+
+    // Update onModifiedDelay duration after startup period
+    var thisObj = this;
+    setTimeout(function() {
+        thisObj.onModifiedDelayedWaitMs = PAGETREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS;
+    }, PAGETREE_ONMODIFIED_STARTUP_DURATION_MS);
 };
 
 PageTree.prototype = {
