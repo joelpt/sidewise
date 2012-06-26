@@ -1,4 +1,11 @@
 ///////////////////////////////////////////////////////////
+// Globals
+///////////////////////////////////////////////////////////
+
+var expectingSmartFocusTabId = null;
+
+
+///////////////////////////////////////////////////////////
 // Initialization
 ///////////////////////////////////////////////////////////
 
@@ -213,6 +220,7 @@ function onTabRemoved(tabId, removeInfo)
         // if we found a next tab to show per our own logic, switch to it
         if (nextTabId) {
             log('Smart focus setting selected tab to ' + nextTabId);
+            expectingSmartFocusTabId = nextTabId;
             chrome.tabs.update(nextTabId, { active: true });
         }
         // else, nothing suitable was found; we'll just let Chrome decide
@@ -352,6 +360,15 @@ function onTabActivated(activeInfo) {
     }
     if (sidebarHandler.tabId == activeInfo.tabId) {
         return;
+    }
+    if (expectingSmartFocusTabId) {
+        if (expectingSmartFocusTabId != activeInfo.tabId) {
+            // ignore Chrome's choice of focused tab when some tab is removed;
+            // we'll set focus to Sidewise's choice when onTabActivated is
+            // called again in a moment
+            return;
+        }
+        expectingSmartFocusTabId = null;
     }
     tree.focusPage(activeInfo.tabId);
 }
