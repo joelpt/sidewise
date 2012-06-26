@@ -88,6 +88,7 @@ function createSidebarOnStartup() {
 
 function savePageTreeToLocalStorage() {
     if (tree.lastModified != tree.lastSaved) {
+        log('saving tree to local storage');
         saveSetting('pageTree', tree.tree);
         tree.lastSaved = tree.lastModified;
     }
