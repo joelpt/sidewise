@@ -200,7 +200,14 @@ function associateExistingToRestorablePageNode(tab, referrer, historylength) {
     log('associating existing to restorable', 'tabId', tabId, 'existing', existingPage, 'referrer', referrer,
         'historylength', historylength);
 
-    var match = findPageNodeForAssociation(true, true, tab.url, tab.pinned, referrer, historylength, undefined);
+    var match = findPageNodeForAssociation({
+        mustBeHibernated: true,
+        mustBeRestorable: true,
+        url: tab.url,
+        pinned: tab.pinned,
+        referrer: referrer,
+        historylength: historylength
+    });
 
     if (!match) {
         log('No restorable match found');
@@ -294,7 +301,15 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         return;
     }
 
-    var match = findPageNodeForAssociation(true, true, tab.url, tab.pinned, referrer, historylength, undefined);
+    var match = findPageNodeForAssociation({
+        mustBeHibernated: true,
+        mustBeRestorable: true,
+        topParentMustBeRealOrRestorableWindow: true,
+        url: tab.url,
+        pinned: tab.pinned,
+        referrer: referrer,
+        historylength: historylength
+    });
 
     if (!match) {
         // apparently a new tab to us
@@ -341,8 +356,13 @@ function restoreParentWindowViaUniqueChildPageNode(parentWindowNode, childPageNo
     // parentWindowNode is a restorable window node.
     // Is there any other page node in the tree with the same constructed key
     // as childPageNode?
-    var otherMatch = findPageNodeForAssociation(false, false, childPageNode.url, childPageNode.pinned,
-        childPageNode.referrer, childPageNode.historylength, childPageNode);
+    var otherMatch = findPageNodeForAssociation({
+        url: childPageNode.url,
+        pinned: childPageNode.pinned,
+        referrer: childPageNode.referrer,
+        historylength: childPageNode.historylength,
+        notMatchingNode: childPageNode
+    });
 
     if (otherMatch) {
         // childPageNode's constructed key is not unique, cannot use it
@@ -370,26 +390,38 @@ function restoreParentWindowViaUniqueChildPageNode(parentWindowNode, childPageNo
     tree.expandNode(parentWindowNode);
 }
 
-function findPageNodeForAssociation(mustBeHibernated, mustBeRestorable, url, pinned, referrer, historylength, notMatchingNode) {
-    var fallbackReferrer = referrer;
-    if (referrer && CHROME_BLANKABLE_REFERRER_REGEXP.test(referrer)) {
+function findPageNodeForAssociation(params) {
+    var fallbackReferrer = params.referrer;
+    if (params.referrer && CHROME_BLANKABLE_REFERRER_REGEXP.test(params.referrer)) {
         fallbackReferrer = '';
     }
 
-    return tree.getNodeEx(function(node) {
+    return tree.getNodeEx(function(node, ancestors) {
         var matched = node instanceof PageNode
-            && (!mustBeHibernated || node.hibernated === true)
-            && (!mustBeRestorable || node.restorable === true)
-            && node.url == url
-            && node.pinned == pinned
-            && (historylength === undefined || node.historylength == historylength)
-            && (notMatchingNode === undefined || node !== notMatchingNode);
+            && (!params.mustBeHibernated || node.hibernated === true)
+            && (!params.mustBeRestorable || node.restorable === true)
+            && node.url == params.url
+            && node.pinned == params.pinned
+            && (params.historylength === undefined || node.historylength == params.historylength)
+            && (params.notMatchingNode === undefined || node !== params.notMatchingNode);
 
         if (!matched) {
             return false;
         }
 
-        if (referrer === undefined || referrer == node.referrer) {
+
+        if (params.topParentMustBeRealOrRestorableWindow) {
+            var topParent = ancestors[0];
+            if (!(topParent instanceof WindowNode)) {
+                return false;
+            }
+
+            if (topParent.restorable == false && topParent.hibernated == true) {
+                return false;
+            }
+        }
+
+        if (params.referrer === undefined || params.referrer == node.referrer) {
             return true;
         }
 
