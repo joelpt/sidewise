@@ -19,7 +19,16 @@ function positionWindow(winId, metrics, callback)
 /* Focus the current Chrome window's active tab in the page tree. */
 function focusCurrentTabInPageTree() {
     var windowId = focusTracker.getFocused();
+
+    if (!windowId) {
+        return;
+    }
+
     chrome.tabs.query({ active: true, windowId: windowId }, function(tabs) {
+        if (tabs.length == 0) {
+            return;
+        }
+
         var activeTab = tabs[0];
         tree.focusPage(activeTab.id);
     });
