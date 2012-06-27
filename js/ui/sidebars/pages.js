@@ -97,7 +97,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
 }
 
 function populateFancyTreeFromPageTree(fancyTree, pageTree) {
-    pageTree.forEach(function(e, d, i, p) {
+    pageTree.forEach(function(e, i, d, a, p) {
         var parentId = (p ? p.id : undefined);
         addPageTreeNodeToFancyTree(fancyTree, e, parentId);
     });
@@ -173,10 +173,20 @@ function PageTreeCallbackProxyListener(op, args)
                     details[PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP[key]] = elem[key];
                 }
             }
-            ft.updateRow(args.id, details);
+            try {
+                ft.updateRow(args.id, details);
+            }
+            catch(ex) {
+                log('Row does not exist to update', args.id, details);
+            }
             break;
         case 'focusPage':
-            ft.focusRow(args.id);
+            try {
+                ft.focusRow(args.id);
+            }
+            catch(ex) {
+                log('Row does not exist to focus', args.id);
+            }
             break;
         case 'expand':
             ft.expandRow(args.id);
