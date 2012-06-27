@@ -305,13 +305,28 @@ function onTabUpdated(tabId, changeInfo, tab)
         favicon = getBestFavIconUrl(tab.favIconUrl, url);
     }
     else if (isStaticFavIconUrl(tab.favIconUrl)) {
-        // got a potentially new static favicon, use it
+        // got a potentially new static favicon, switch it out
         favicon = getBestFavIconUrl(tab.favIconUrl, url);
     }
-    else {
-        // keep the existing favicon
-        favicon = page.favicon;
+    else if (!isScriptableUrl(url)) {
+        // we will never get a tab.faviconUrl for unscriptable tabs, so
+        // just force-set one now from the favicon aliases catalog
+        favicon = getBestFavIconUrl('', url);
     }
+    else {
+        var tabUrlDomain = splitUrl(url).domain;
+        var pageUrlDomain = splitUrl(page.url).domain;
+
+        if (tabUrlDomain != pageUrlDomain) {
+            // changing domains, blank out the favicon until we get a new favicon
+            favicon = 'chrome://favicon/';
+        }
+        else {
+            // keep the existing favicon
+            favicon = page.favicon;
+        }
+    }
+
     // TODO also don't push status unless it's in changeInfo
     // TODO in fact only change what is in changeInfo, period
     tree.updatePage(tabId, {
