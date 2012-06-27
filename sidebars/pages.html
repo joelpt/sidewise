@@ -38,7 +38,7 @@
     <footer>
         <div id="debugLinks">
             <span onclick="javascript:window.parent.location='pages.html'">promote iframe</span>
-            <span onclick="javascript:bg.tree.tree = []; bg.injectContentScriptInExistingTabs('content_script.js'); bg.populatePages(); setTimeout(function() { location.reload() }, 500); ">reset tree</span>
+            <span onclick="javascript:bg.tree.clear(); bg.injectContentScriptInExistingTabs('content_script.js'); bg.populatePages(); setTimeout(function() { location.reload() }, 500); ">reset tree</span>
         </div>
     </footer>
 
