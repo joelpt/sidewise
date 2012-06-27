@@ -2,7 +2,7 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-var PAGETREE_ONMODIFIED_DELAY_ON_STARTUP_MS = 3000;
+var PAGETREE_ONMODIFIED_DELAY_ON_STARTUP_MS = 2000;
 var PAGETREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS = 1000;
 var PAGETREE_ONMODIFIED_STARTUP_DURATION_MS = 45000;
 
@@ -168,6 +168,12 @@ PageTree.prototype = {
     {
         log(tabId);
         var page = this.getPage(tabId);
+
+        if (!page) {
+            log('Page node does not exist to be focused yet', 'tabId', tabId);
+            return;
+        }
+
         this.focusedTabId = tabId;
         this.callbackProxyFn('focusPage', { id: 'p' + tabId });
 
