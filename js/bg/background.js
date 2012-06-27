@@ -45,7 +45,13 @@ function postLoad() {
     else {
         // load stored page tree and associate tabs to existing page nodes
         loadPageTreeFromLocalStorage(storedPageTree);
-        setTimeout(startAssociationRun, 2000); // wait a couple seconds for content scripts to get going
+
+        if (loadSetting('rememberOpenPagesBetweenSessions')) {
+            setTimeout(startAssociationRun, 2000); // wait a couple seconds for content scripts to get going
+        }
+        else {
+            populatePages();
+        }
     }
 
     monitorInfo = new MonitorInfo();
@@ -94,8 +100,9 @@ function savePageTreeToLocalStorage() {
     }
 }
 
+// loads saved tree data from local storage and populates the tree with it
 function loadPageTreeFromLocalStorage(storedPageTree) {
-    // load the tree data
+    var rememberOpenPagesBetweenSessions = loadSetting('rememberOpenPagesBetweenSessions');
     var casts = {
         'window': WindowNode,
         'page': PageNode
@@ -103,12 +110,39 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
 
     tree.loadTree(storedPageTree, casts);
 
+    if (!rememberOpenPagesBetweenSessions) {
+        // set any non-hibernated window nodes which contain at least one
+        // hibernated child node to hibernated
+        tree.tree.forEach(function(node) {
+            if (!(node instanceof WindowNode)) {
+                return;
+            }
+
+            var hibernatedChild = tree.getNodeEx(function(e) { return e.hibernated }, node.children);
+
+            if (hibernatedChild) {
+                node.hibernated = true;
+                node.id = 'wH' + node.UUID;
+                node.title = getMessage('text_hibernatedWindow');
+            }
+        });
+    }
+
     chrome.tabs.query({ }, function(tabs) {
         var urlAndTitles = tabs.map(function(e) { return e.url + '\n' + e.title });
         var lastSessionWindowNumber = 1;
 
         // set hibernated+restorable flags on all non-hibernated nodes
-        tree.forEach(function(node, depth, containingArray, parentNode) {
+        tree.forEach(function(node, index, depth, containingArray, parentNode) {
+
+            if (!rememberOpenPagesBetweenSessions
+                && (node instanceof PageNode || node instanceof WindowNode)
+                && !node.hibernated) {
+                // forget non hibernated nodes between sessions
+                containingArray.splice(index, 1);
+                return;
+            }
+
             // remove nonexisting, nonhibernated chrome-*://* tabs from the tree because
             // Chrome will often not reopen these types of tabs during a session restore
             if (node instanceof PageNode
@@ -126,14 +160,18 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
 
             node.restored = false;
 
-            if (node instanceof WindowNode) {
+            if (node instanceof WindowNode && !node.hibernated) {
                 // retitle restorable window titles
+
                 node.title = getMessage('text_LastSession') + ' - ' + lastSessionWindowNumber;
                 lastSessionWindowNumber++;
                 node.restorable = true;
                 node.hibernated = true;
-                node.collapsed = true;
-                node.id = node.id[0] + 'R' + generateGuid();
+                node.id = node.id[0] + 'R' + node.UUID;
+
+                if (loadSetting('autoCollapseLastSessionWindows')) {
+                    node.collapsed = true;
+                }
             }
             else if (node instanceof PageNode) {
                 // allow restoration of pages which either failed to restore in a previous
@@ -142,22 +180,7 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
                     node.hibernated = true;
                     node.restorable = true;
                     node.status = 'complete';
-                    node.id = node.id[0] + 'R' + generateGuid();
-
-                    // TODO this seems to be the wrong place to do this because it looks like
-                    // Chrome only blanks this referrer out sometimes *sigh*
-                    // Proper fix is to add code into the assocate routines - if referrer
-                    // matches this noise, then match a referrer of either that value or ''
-                    // Best approach is probably to refactor the findPageNodeForAssociation
-                    // routine, stop taking a dumb list of deets to match and instead
-                    // accept the specifics that we'll be looking for and do custom
-                    // processing for .referrer in particular; this should also be taking
-                    // a notMatchingNode param
-                    if (node.referrer.match(/^http.+google.+\/search\?.*sugexp=chrome,mod=\d+\&sourceid=chrome/)) {
-                        // Chrome seems to blank out these referrers on session restore, so
-                        // mimic its behavior
-                        node.referrer = '';
-                    }
+                    node.id = node.id[0] + 'R' + node.UUID;
                 }
             }
 
@@ -228,13 +251,19 @@ function populatePages()
                 continue;
             }
 
-            tree.addNode(new WindowNode(win));
+            var winNode = tree.getNode('w' + win.id);
+            if (!winNode) {
+                winNode = new WindowNode(win);
+                tree.addNode(winNode);
+            }
 
             for (var j = 0; j < numTabs; j++) {
                 var tab = tabs[j];
                 log('Populating', tab.id, tab.title, tab.url, tab);
-                var page = new PageNode(tab);
-                tree.addNode(page, 'w' + win.id);
+                var pageNode = tree.getNode('p' + tab.id);
+                if (!pageNode) {
+                    tree.addNode(new PageNode(tab), winNode);
+                }
                 tabsToQuery.push(tab);
             }
 
