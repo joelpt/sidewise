@@ -1,4 +1,4 @@
-var WINDOW_UPDATE_CHECK_INTERVAL_SLOW_MS = 333;
+var WINDOW_UPDATE_CHECK_INTERVAL_SLOW_MS = 250;
 var WINDOW_UPDATE_CHECK_INTERVAL_FAST_MS = 50;
 var WINDOW_UPDATE_CHECK_INTERVAL_RATE_RESET_MS = 5000;
 
@@ -63,7 +63,11 @@ function onWindowRemoved(windowId)
         && sidebarHandler.dockState != 'undocked'
         && sidebarHandler.dockWindowId == windowId)
     {
+        sidebarHandler.dockWindowId = null;
         focusTracker.getTopFocusableWindow(function(win) {
+            if (!win) {
+                return;
+            }
             sidebarHandler.redock(win.id);
         });
     }
@@ -228,11 +232,15 @@ function onWindowUpdateCheckInterval() {
         return;
     }
 
-    if (!sidebarHandler.sidebarExists() || sidebarHandler.dockState == 'undocked') {
+    if (!sidebarHandler.sidebarExists() || sidebarHandler.dockState == 'undocked' || !sidebarHandler.dockWindowId) {
         return;
     }
 
     chrome.windows.get(sidebarHandler.dockWindowId, function(dock) {
+        if (!dock) {
+            return;
+        }
+
         if (sidebarHandler.resizingDockWindow) {
             return;
         }
@@ -246,6 +254,10 @@ function onWindowUpdateCheckInterval() {
         //
         // Ensure sidebar minimized state is the same as the dock window's.
         chrome.windows.get(sidebarHandler.windowId, function(sidebar) {
+            if (!sidebar) {
+                return;
+            }
+
             if (sidebar.state == 'minimized' && dock.state != 'minimized') {
                 chrome.windows.update(sidebar.id, { state: 'normal' }, function() {
                     chrome.windows.update(dock.id, { focused: true });
