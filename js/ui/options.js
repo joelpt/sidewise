@@ -10,11 +10,15 @@ $(document).ready(function() {
     $('#version').text(getMessage('text_Version') + ' ' + getVersion());
     setMonitorCountInfo(loadSetting('monitorMetrics').length, false);
 
-    $(document).on('change', 'input[type=text], select', onSettingModified);
-    $(document).on('click', 'input[type=checkbox]', onSettingModified);
-    $(document).on('click', '#saveButton', saveAllSettings);
-    $(document).on('click', '#resetButton', resetAllSettings);
-    $(document).on('click', '#detectMonitorsButton', detectMonitors);
+    $(document)
+        .on('change', 'input[type=text], select', onSettingModified)
+        .on('click', 'input[type=checkbox]', onSettingModified)
+        .on('click', '#saveButton', saveAllSettings)
+        .on('click', '#resetButton', resetAllSettings)
+        .on('click', '#detectMonitorsButton', detectMonitors)
+        .on('click', 'a[href=chrome://settings]', function() {
+            chrome.tabs.create({ url: 'chrome://settings', active: true });
+        });
 
     if (loadSetting('alwaysShowAdvancedOptions')) {
         showAdvancedOptions();
@@ -56,7 +60,7 @@ function transformInputElements() {
                 hintClass = 'warningIcon';
             }
             var hintElem = $('<div/>', { class: hintClass, title: hint })
-                .tooltip({ position: 'top right' }).dynamic();
+                .tooltip({ position: 'top right', delay: 100 }).dynamic();
         }
         else {
             var hintElem = $('');
