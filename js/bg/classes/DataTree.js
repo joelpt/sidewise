@@ -125,34 +125,33 @@ DataTree.prototype = {
             inArray = this.tree;
         }
 
-        return this.getNodeExStep(matcherFn, inArray);
+        return this.getNodeExStep(matcherFn, inArray, []);
     },
 
     /**
       * @private
       * Steps through inArray's nodes and children recursively looking for a node for which matcherFn returns true
       */
-    getNodeExStep: function(matcherFn, inArray, parentElem, parentIndex, parentArray) {
+    getNodeExStep: function(matcherFn, inArray, ancestors, parentElem, parentIndex, parentArray) {
         for (var i in inArray)
         {
             var elem = inArray[i];
-            if (matcherFn(elem)) {
+            var newAncestors = ancestors.concat(elem);
+            var index = parseInt(i);
+            if (matcherFn(elem, ancestors, parentElem, parentIndex, parentArray)) {
                 var r = {
                     node: elem,
-                    index: parseInt(i),
+                    index: index,
                     siblings: inArray,
                     parent: parentElem,
-                    parentIndex: parseInt(parentIndex),
+                    parentIndex: parentIndex,
                     parentSiblings: parentArray,
-                    ancestors: [parentElem]
+                    ancestors: newAncestors
                 };
                 return r;
             }
-            var found = this.getNodeExStep(matcherFn, elem.children, elem, i, inArray);
+            var found = this.getNodeExStep(matcherFn, elem.children, newAncestors, elem, index, inArray);
             if (found !== undefined) {
-                if (parentElem !== undefined) {
-                    found.ancestors.splice(0, 0, parentElem);
-                }
                 return found;
             }
         }
@@ -388,8 +387,8 @@ DataTree.prototype = {
       *        Called for each node in sequence and should return the desired mapped value.
       * @param inArray If provided, act only on nodes and descendents in given array; acts on whole tree otherwise.
       * @example
-      * tree.forEach(function(node, depth, containingArray, parentNode) {
-      *     console.log(node.id, depth);
+      * tree.forEach(function(node, index, depth, containingArray, parentNode) {
+      *     console.log(node.id, index, depth, containingArray, parentNode);
       * });
       */
     forEach: function(eachFn, inArray)
@@ -402,8 +401,9 @@ DataTree.prototype = {
       */
     forEachStep: function(eachFn, depth, inArray, parent) {
         var treeObj = this;
+        var i = 0;
         inArray.forEach(function(e) {
-            eachFn(e, depth, inArray, parent);
+            eachFn(e, i++, depth, inArray, parent);
             treeObj.forEachStep(eachFn, depth + 1, e.children, e);
         });
     },
@@ -439,6 +439,13 @@ DataTree.prototype = {
                 + ' [' + node.children.length + ' children]';
         }
         return this.reduce(dumpFn, '');
+    },
+
+    // Empties the tree.
+    clear: function() {
+        this.tree = [];
+        this.idIndex = [];
+        this.updateLastModified();
     },
 
     toString: function() {
