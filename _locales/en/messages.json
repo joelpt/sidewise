@@ -14,6 +14,7 @@
     "text_monitors": { "message": "monitors" },
     "text_Window": { "message": "Window" },
     "text_hibernated": { "message": "hibernated" },
+    "text_hibernatedWindow": { "message": "Hibernated" },
     "text_LastSession": { "message": "Last Session" },
 
     "tabTitle_Extensions": { "message": "Extensions" },
@@ -112,7 +113,7 @@
     "option_pages_middleClickAction": { "message": "When middle-clicking a row"},
     "option_pages_specialClickAction_none": { "message": "do nothing"},
     "option_pages_specialClickAction_close": { "message": "close page/window"},
-    "option_pages_specialClickAction_hibernate": { "message": "toggle hibernation"},
+    "option_pages_specialClickAction_hibernate": { "message": "hibernate/wake"},
     "option_pages_specialClickAction_expand": { "message": "expand/collapse branch"},
     "option_pages_specialClickAction_setLabel": { "message": "set label"},
     "option_pages_specialClickAction_highlight": { "message": "toggle highlight"},
