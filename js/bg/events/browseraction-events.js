@@ -20,6 +20,8 @@ function onBrowserActionClicked()
     // sidebarHandler.createDockedToCurrentWin(newSide);
     var action = loadSetting('browserActionButtonBehavior');
 
+    log(action);
+
     if (sidebarHandler.sidebarExists()) {
         if (action == 'toggle') {
             // sidebar exists, so remove it
