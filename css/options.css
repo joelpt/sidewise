@@ -199,7 +199,7 @@ input, select {
 input[type=checkbox] {
     margin-right: 0.5em;
     position: relative;
-    top: 1px;
+    top: 3px;
 }
 
 input[type=text][datatype=int] {
