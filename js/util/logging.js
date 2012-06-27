@@ -8,7 +8,7 @@ var logObjectsAsJSON = false;
 // Object arguments are turned into JSON strings and output if logObjectsAsJSON is true.
 // Call stack data is included in the output.
 function log() {
-    if (!loggingEnabled) {
+    if (!loggingEnabled || !console) {
         return;
     }
 
