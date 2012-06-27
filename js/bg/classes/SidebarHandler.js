@@ -224,13 +224,11 @@ SidebarHandler.prototype = {
         }
 
         var thisObj = this;
-        var last = this.lastDockWindowMetrics;
 
         // restore position of existing dock window
-        positionWindow(
-            this.dockWindowId,
-            { state: last.state, left: last.left, width: last.width, top: last.top, height: last.height }
-        );
+        if (this.dockWindowId) {
+            positionWindow(this.dockWindowId, this.lastDockWindowMetrics);
+        }
 
         // redock to new dock window
         this.dockWindowId = windowId;
