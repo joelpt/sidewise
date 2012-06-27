@@ -78,8 +78,16 @@ PageTree.prototype = {
     // remove the element matching matcher
     removeNode: function(matcher, removeChildren)
     {
-        var r = this.$super('removeNode')(matcher, removeChildren);
+        var found = this.getNodeEx(matcher);
+        var r = this.$super('removeNode')(found.node, removeChildren);
         this.callbackProxyFn('remove', { element: r, removeChildren: removeChildren || false });
+
+        var topParent = found.ancestors[0];
+        if (topParent instanceof WindowNode && topParent.hibernated && topParent.children.length == 0) {
+            var removedParent = this.$super('removeNode')(topParent, false);
+            this.callbackProxyFn('remove', { element: removedParent });
+        }
+
         return r;
     },
 
@@ -205,22 +213,13 @@ PageTree.prototype = {
     {
         log(id);
         var found = this.getNodeEx(id);
-        // TODO use c.t.create's callback to set a page's state to awakened instead of or in parallel
-        // to this.awakeningPages? this would be a more reliable method of awakening the page because
-        // we'd definitely know the tab id that got woke up and which node it goes to, but we would still
-        // probably need .awakeningPages in order to prevent onTabCreated from making another entry in
-        // the tree; if onTC got fired AFTER c.t.create's callback then we could actually store
-        // k=tabId v=node in awakeningPages instead but i suspect the callbacks fire the other way around :(
-        this.awakeningPages.push(found.node);
+
         var topParent = found.ancestors[0];
-        if (topParent.elemType == 'window') {
-            var windowId = parseInt(topParent.id.slice(1));
-            log('awakening', found.node.url, 'windowId', windowId);
-            chrome.tabs.create({ url: found.node.url, windowId: windowId, active: activateAfter || false });
-            return;
+        if (!(topParent instanceof WindowNode)) {
+            throw new Error('Tried to awakenPage() but page is not contained under a WindowNode');
         }
-        log('awakening', found.node.url, 'no found windowId');
-        chrome.tabs.create({ url: found.node.url });
+
+        this.awakenPageNodes([found.node], topParent);
         this.updateLastModified();
     },
 
@@ -237,74 +236,90 @@ PageTree.prototype = {
 
         var awakening = this.map(function(e) { return e instanceof PageNode ? e : undefined; }, winNode.children);
 
-        var thisObj = this;
-        awakening.forEach(function(e) {
-            thisObj.awakeningPages.push(e);
-        });
-
-        var urls = awakening.map(function(e) { return e.url; });
-
-        var newWinMetrics;
-        if (sidebarHandler.dockState != 'undocked') {
-            newWinMetrics = clone(sidebarHandler.currentDockWindowMetrics);
-            delete newWinMetrics.state;
-        }
-        else {
-            // TODO get monitor info of monitor that sidebar is on
-            // and put us on the same monitor
-            newWinMetrics = {
-                left: monitorInfo.monitors[0].left,
-                top: monitorInfo.monitors[0].top,
-                width: monitorInfo.monitors[0].availWidth,
-                height: monitorInfo.monitors[0].availHeight
-            };
-        }
-
-        var newWinCreateDetails = { type: 'normal', url: urls };
-
-        // look for a New Tab tab that is all alone in a window; if we find one,
-        // adopt it to the new window
-        var winNodeWithOneNewTabPage = first(tree.tree, function(e) {
-            return e instanceof WindowNode
-                && !(e.hibernated)
-                && e.children.length == 1
-                && e.children[0].children.length == 0
-                && e.children[0].url == 'chrome://newtab/'
-                && !(e.children[0].hibernated);
-        });
-
-        var adoptTabId;
-        if (winNodeWithOneNewTabPage) {
-            adoptTabId = getNumericId(winNodeWithOneNewTabPage[1].children[0].id);
-            newWinCreateDetails.tabId = adoptTabId;
-        }
-
-        // create new window for awakening
-        chrome.windows.create(newWinCreateDetails, function(win) {
-            // if we adopted a New Tab tab, destroy that tab now
-            if (adoptTabId) {
-                chrome.tabs.remove(adoptTabId);
-            }
-
-            chrome.windows.update(win.id, newWinMetrics);
-
-            var newWinNode = thisObj.getNode('w' + win.id);
-            log(newWinNode);
-            if (newWinNode) {
-                thisObj.mergeNodes(newWinNode, winNode);
-            }
-
-            thisObj.updateNode(winNode, {
-                id: 'w' + win.id,
-                restored: true,
-                restorable: false,
-                hibernated: false,
-                title: WINDOW_DEFAULT_TITLE
-            });
-            thisObj.expandNode(winNode);
-        });
-
+        this.awakenPageNodes(awakening, winNode);
         this.updateLastModified();
+    },
+
+    awakenPageNodes: function(nodes, existingWindowNode, activateAfter) {
+        var thisObj = this;
+
+        var urls = nodes.map(function(e) { return e.url; });
+        nodes.forEach(function(e) { thisObj.awakeningPages.push(e); });
+
+        if (existingWindowNode.hibernated) {
+            // need a new window to load page(s) into
+            var newWinMetrics;
+            if (sidebarHandler.dockState != 'undocked') {
+                newWinMetrics = clone(sidebarHandler.currentDockWindowMetrics);
+                delete newWinMetrics.state;
+            }
+            else {
+                // TODO get monitor info of monitor that sidebar is on
+                // and put us on the same monitor
+                newWinMetrics = {
+                    left: monitorInfo.monitors[0].left,
+                    top: monitorInfo.monitors[0].top,
+                    width: monitorInfo.monitors[0].availWidth,
+                    height: monitorInfo.monitors[0].availHeight
+                };
+            }
+
+            var newWinCreateDetails = { type: 'normal', url: urls };
+
+            // look for a New Tab tab that is all alone in a window; if we find one,
+            // adopt it to the new window
+            var winNodeWithOneNewTabPage = first(tree.tree, function(e) {
+                return e instanceof WindowNode
+                    && !(e.hibernated)
+                    && e.children.length == 1
+                    && e.children[0].children.length == 0
+                    && e.children[0].url == 'chrome://newtab/'
+                    && !(e.children[0].hibernated);
+            });
+
+            var adoptTabId;
+            if (winNodeWithOneNewTabPage) {
+                adoptTabId = getNumericId(winNodeWithOneNewTabPage[1].children[0].id);
+                newWinCreateDetails.tabId = adoptTabId;
+            }
+
+            // create new window for awakening
+            chrome.windows.create(newWinCreateDetails, function(win) {
+                // if we adopted a New Tab tab, destroy that tab now
+                if (adoptTabId) {
+                    chrome.tabs.remove(adoptTabId);
+                }
+
+                chrome.windows.update(win.id, newWinMetrics);
+
+                var newWinNode = thisObj.getNode('w' + win.id);
+                log(newWinNode);
+                if (newWinNode) {
+                    thisObj.mergeNodes(newWinNode, existingWindowNode);
+                }
+
+                thisObj.updateNode(existingWindowNode, {
+                    id: 'w' + win.id,
+                    restored: true,
+                    restorable: false,
+                    hibernated: false,
+                    title: WINDOW_DEFAULT_TITLE
+                });
+                thisObj.expandNode(existingWindowNode);
+            });
+            return;
+        }
+
+        // existingWindowNode is not hibernated (its Chrome window already exists)
+        var windowId = getNumericId(existingWindowNode.id);
+        nodes.forEach(function(e) {
+            log('awakening', e.url, 'windowId', windowId);
+            chrome.tabs.create({
+                url: e.url,
+                windowId: windowId,
+                active: activateAfter || false
+            });
+        });
     },
 
 
