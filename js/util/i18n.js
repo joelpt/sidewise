@@ -30,7 +30,9 @@ function getMessage(key, placeholderValues) {
 
 // Transform a message using Markdown syntax translation after turning //'s into \n's
 function transformMessage(msg) {
+    msg = msg.replace(/:\/\//g, 'URL_PROTOCOL_SEPARATOR');
     msg = msg.replace(/\s*\/\/\s*/g, '\n');
+    msg = msg.replace(/URL_PROTOCOL_SEPARATOR/g, '://');
     return marked(msg);
 }
 
