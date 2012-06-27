@@ -106,7 +106,9 @@ function initializeDefaultSettings(forceReset) {
         loggingEnabled: false,
         alwaysShowAdvancedOptions: false,
         sidebarTargetWidth: 300,
-        allowAutoUnmaximize: true
+        allowAutoUnmaximize: true,
+        autoCollapseLastSessionWindows: true,
+        rememberOpenPagesBetweenSessions: true
     };
 
     for (var setting in defaultSettings) {

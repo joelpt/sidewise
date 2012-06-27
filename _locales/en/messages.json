@@ -89,10 +89,13 @@
     "optionsSavedAllSettings": { "message": "Settings saved." },
     "optionsResetAllSettings": { "message": "All settings restored to defaults." },
     "optionsDefaultStatus": { "message": "Hello! This is Sidewise's options page. Modify your options below." },
+    "optionsShowAdvanced": { "message": "+ Show advanced options" },
+
     "optionsHeadingSidebar": { "message": "Sidebar behavior" },
     "optionsHeadingMonitors": { "message": "Monitors" },
     "optionsHeadingMisc": { "message": "Advanced" },
-    "optionsShowAdvanced": { "message": "+ Show advanced options" },
+    "optionsHeadingPages": { "message": "Pages sidebar"},
+    "optionsHeadingPageHibernation": { "message": "Page hibernation" },
 
     "option_openSidebarOnStartup": { "message": "Open sidebar on startup" },
     "option_keepSidebarOnTop": { "message": "Keep sidebar visible next to dock window" },
@@ -108,7 +111,6 @@
     "option_dockState_right": { "message": "right" },
     "option_dockState_undocked": { "message": "undocked" },
 
-    "optionsHeadingPages": { "message": "Pages sidebar"},
     "option_pages_doubleClickAction": { "message": "When double-clicking a row"},
     "option_pages_middleClickAction": { "message": "When middle-clicking a row"},
     "option_pages_specialClickAction_none": { "message": "do nothing"},
@@ -122,8 +124,13 @@
     "option_smartFocusPrefersCousins": { "message": "Smart focus prefers cousins before parents"},
     "option_smartFocusPrefersCousins_hint": { "message": "#When this option is enabled, smart focus will focus *later cousin tabs* before it focuses its own *parent tab*. //// For example, say you open two tabs, one to reddit.com and one to digg.com. You then middle-click some links on each of these tabs to open several child tabs underneath those two tabs. //// If *prefer cousins* is *disabled*, once you close the last child tab under reddit.com, the parent reddit.com tab will be focused. //// If *prefer cousins* is *enabled*, once you close the last child tab under reddit.com, the first child tab under digg.com (first cousin) will be focused instead. //// This option is desirable if you open lots of child tabs in this manner and prefer to 'browse forward' through all the child tabs before returning to the parents."},
 
+    "option_rememberOpenPagesBetweenSessions": { "message": "Remember open pages between browser sessions" },
+    "option_rememberOpenPagesBetweenSessions_hint": { "message": "#When enabled, Sidewise will retain the pages you had open in the previous browser session in its Pages sidebar. //// In Chrome's [![settings](/images/favicon/settings.png)settings page](chrome://settings), if you use the 'Continue where I left off' option, you'll almost certainly want this enabled. //// Even if you don't use that Chrome option, you may still want this option enabled. In this case, the windows and pages from your previous browser sessions will show up in the Pages sidebar as hibernated 'Last Session' windows. By clicking on a 'Last Session' window, you can restore those pages from a previous browser session into a new window." },
+    "option_autoCollapseLastSessionWindows": { "message": "Automatically collapse Last Session windows on startup" },
+    "option_autoCollapseLastSessionWindows_hint": { "message": "#When enabled, 'Last Session' windows will be automatically collapsed in the Pages tree when you launch Chrome. //// When disabled, 'Last Session' windows will retain the same expanded/collapsed state they had during the last Chrome session. //// Regardless of this setting, whenever pages are restored within a 'Last Session' window, that window will be automatically expanded in the page tree." },
+
     "optionsInfoMonitorDetection": { "message": "#Whenever you change your monitor configuration, *reload Chrome*, then come here and click 'Detect all monitors now' below. //// This should be done whenever you add or remove monitors, change monitor resolutions, reposition monitors in your OS settings, or change the location/size of your system taskbars."},
-    "optionsInfoMonitorsOnYourSystem": { "message": "#Sidewise currently believes you have *$1* $2 connected to your system." },
+    "optionsInfoMonitorsOnYourSystem": { "message": "#Sidewise currently believes you have **$1** $2 connected to your system." },
     "option_maximizedOffset": { "message": "Maximized window screen-edge overhang" },
     "option_maximizedOffset_units": { "message": "pixels" },
     "option_detectMonitorsButton": { "message": "Detect all monitors now" },
