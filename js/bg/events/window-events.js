@@ -42,7 +42,22 @@ function onWindowRemoved(windowId)
     }
 
     focusTracker.remove(windowId);
-    tree.removeNode('w' + windowId);
+
+    var node = tree.getNode('w' + windowId);
+    if (node) {
+        // If the window node of the window being removed still has some children,
+        // convert the window node to a hibernated window node rather than
+        // removing it
+        if (node.children.length > 0) {
+            tree.updateNode(node, { hibernated: true, title: getMessage('text_hibernatedWindow'),
+                id: 'wR' + node.UUID
+            });
+        }
+        else {
+            // window node is childless so just remove it
+            tree.removeNode(node);
+        }
+    }
 
     if (sidebarHandler.sidebarExists()
         && sidebarHandler.dockState != 'undocked'
