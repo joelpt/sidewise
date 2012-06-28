@@ -1223,58 +1223,30 @@ FancyTree.prototype = {
         var viewTop = 0;
         var parents = $elem.parents();
         var scrolledParent;
-        var elemOffsetTop = $elem.offset().top;
+
         for (var i = 0; i < parents.length; i++) {
             var scrolledParent = parents[i];
             viewTop = scrolledParent.scrollTop;
-            elemOffsetTop -= $(scrolledParent).position().top;
             if (viewTop > 0) {
                 break;
             }
         }
 
+        var documentHeight = $(document).height();
+
         var rootNodeMarginTop = this.root.offset().top + viewTop;
-        var rootNodeMarginBottom = $(document).height() - rootNodeMarginTop - this.root.parent().height();
-        var rootNodeOverhangBottom = this.root.height() - viewTop - scrolledParent.offsetHeight;
-        // var viewBottom = this.root.offset().top + this.root.height() + viewTop - rootNodeOverhangBottom - rootNodeMarginTop;
+        var rootNodeMarginBottom = documentHeight - rootNodeMarginTop - this.root.parent().height();
+
         var viewBottom = viewTop + scrolledParent.offsetHeight;
-        elemOffsetTop -= viewTop;
-        // var viewBottom = scrolledParent.offsetHeight;// + viewTop;
         if (viewBottom == 0) {
-            viewBottom = $(document).height() - rootNodeMarginTop - rootNodeMarginBottom;
+            viewBottom = documentHeight - rootNodeMarginTop - rootNodeMarginBottom;
         }
+
         var elemTop = $elem.offset().top - rootNodeMarginTop;
         var elemBottom = elemTop + $elem.height();
 
-        console.log('root node top and bot margins vs. document', rootNodeMarginTop, rootNodeMarginBottom);
-        console.log('root node bot overhang', rootNodeOverhangBottom);
-        console.log('viewTop and viewBottom', viewTop, viewBottom);
-        console.log('elemOffsetTop before adjust', elemOffsetTop);
-        console.log('we believe the relative offset top edge of the scrolled container to be',
-            scrolledParent.offsetTop, scrolledParent.offsetHeight
-            );
-        console.log(scrolledParent.offsetHeight);
-        console.log(elemOffsetTop);
-        console.log(viewTop, elemTop);
-        console.log(viewBottom, elemBottom);
-
-        if (elemTop >= 0 && elemTop + viewTop <= viewBottom ) {
-            console.log('element top edge is VISIBLE');
-        }
-
-        if (elemBottom >= 0 && elemBottom + viewTop <= viewBottom ) {
-            console.log('element bottom edge is VISIBLE');
-        }
-
         return (elemTop >= 0 && elemTop + viewTop <= viewBottom
             && elemBottom >= 0 && elemBottom + viewTop <= viewBottom);
-
-        // return true;
-    // return ((elemBottom >= viewTop) && (elemTop <= viewBottom)
-    //   && (elemBottom <= viewBottom) &&  (elemTop >= viewTop) );
-
-        // return ((elemTop >= viewTop) );
-
     }
 
 };
