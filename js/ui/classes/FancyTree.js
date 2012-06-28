@@ -8,6 +8,7 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   * @param options A dictionary of options, all optional:
   *        <pre>
   *        {
+  *          scrollTargetElem: jQueryElem,       // the tree parent element that can scroll
   *          showFilterBox: Boolean,             // if set to false, hide type-in filtering box above tree
   *          filterPlaceholderText: String,      // text to show in filter box when otherwise empty
   *          filterActiveText: String,           // text to show below filter box when filtering is active
@@ -104,6 +105,8 @@ FancyTree.prototype = {
         this.root = rootNode;
         this.permitTooltipHandler = options.permitTooltipHandler;
         this.useAdvancedFiltering = options.useAdvancedFiltering;
+        this.scrollTargetElem = options.scrollTargetElem || $(document.body);
+
         this.focusedRow = null;
         this.hoveredRow = null;
         this.filtering = false;
@@ -314,8 +317,8 @@ FancyTree.prototype = {
         this.focusedRow = elem;
         elem.addClass('ftFocused');
 
-        if (!this.isScrolledIntoView(elem)) {
-            elem.parents().scrollTo(elem, 150);
+        if (!this.isScrolledIntoView(elem, this.root, this.scrollTargetElem)) {
+            this.scrollTargetElem.scrollTo(elem, { duration: 250 });
         }
     },
 
@@ -937,7 +940,7 @@ FancyTree.prototype = {
         tooltip.offset(newpos);
 
         // if tooltip is now at least partly offscreen, move it to below the row instead
-        if (!this.isScrolledIntoView(tooltip)) {
+        if (tooltip.offset().top < 0) {
             // put below
             newpos.top = pos.top + this.tooltipTopOffset + content.height();
             tooltip.offset(newpos);
@@ -1215,7 +1218,7 @@ FancyTree.prototype = {
     ///////////////////////////////////////////////////////////
     // Helper functions
     ///////////////////////////////////////////////////////////
-    isScrolledIntoView: function(elem)
+    isScrolledIntoView: function(elem, withinElem, scrollTargetElem)
     {
         var $window = $(window);
         var $elem = $(elem);
@@ -1225,24 +1228,22 @@ FancyTree.prototype = {
         var scrolledParent;
 
         for (var i = 0; i < parents.length; i++) {
-            var scrolledParent = parents[i];
-            viewTop = scrolledParent.scrollTop;
-            if (viewTop > 0) {
+            scrolledParent = parents[i];
+
+            if ($(scrolledParent).is(scrollTargetElem)) {
+                viewTop = scrolledParent.scrollTop;
                 break;
             }
         }
 
         var documentHeight = $(document).height();
 
-        var rootNodeMarginTop = this.root.offset().top + viewTop;
-        var rootNodeMarginBottom = documentHeight - rootNodeMarginTop - this.root.parent().height();
+        var withinElemMarginTop = withinElem.offset().top + viewTop;
+        var withinElemMarginBottom = documentHeight - withinElemMarginTop - withinElem.parent().height();
 
         var viewBottom = viewTop + scrolledParent.offsetHeight;
-        if (viewBottom == 0) {
-            viewBottom = documentHeight - rootNodeMarginTop - rootNodeMarginBottom;
-        }
 
-        var elemTop = $elem.offset().top - rootNodeMarginTop;
+        var elemTop = $elem.offset().top - withinElemMarginTop;
         var elemBottom = elemTop + $elem.height();
 
         return (elemTop >= 0 && elemTop + viewTop <= viewBottom
