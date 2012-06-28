@@ -350,18 +350,18 @@ function onTabUpdated(tabId, changeInfo, tab)
         if (!page.placed) {
             log('moving page to parent by openerTabId', tab.openerTabId);
             tree.moveNode(page, 'p' + tab.openerTabId);
-
-            // TODO doing this below may be problematic in some cases because we aren't setting page.placed to true here;
-            // so when we actually do set page.placed to true we may need to clear page.referrer if we end up moving the
-            // tab under a Window insted of allowing it to be a child of another page
-            // // -- was breaking session restoring because chrome will still report a referrer of ''
-            // //    leaving this disabled for now to see if there are actually cases where it is useful to do this
-            // //    .. if needed we could have a fake_referrer or something
-            // if (page.referrer == null || page.referrer == '') {
-            //     log('record referrer via openerTabId\'s page.url');
-            //     tree.updateNode(page, { referrer: tree.getPage(tab.openerTabId).url });
-            // }
         }
+    }
+
+    // Some pages, e.g. maps.google.com, modify the history without triggering any
+    // content-script-detectable events that we would otherwise use to detect such a modification.
+    // So we always ask pages for current details here.
+    try {
+        getPageDetails(tab.id, { action: 'store' });
+    }
+    catch(ex) {
+        // getPageDetails won't work if a page was just created because the port hasn't been established
+        // yet, but this is okay because the page's content script will send us details anyway
     }
 }
 

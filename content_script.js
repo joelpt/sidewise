@@ -10,9 +10,8 @@ var LOGGING_ENABLED = true;
 ///////////////////////////////////////////////////////////
 
 var port;
-var portIsSafe;
 
-window.addEventListener('popstate', onPopState);
+window.addEventListener('popstate', onLocationOrHistoryChanged);
 
 connectPort();
 notifySidewiseMultiple();
@@ -25,12 +24,10 @@ notifySidewiseMultiple();
 // Set up a port to pass messages between Sidewise and this page
 function connectPort() {
     port = chrome.extension.connect({ name: 'content_script' });
-    portIsSafe = true;
     log('connection', port);
 
     port.onMessage.addListener(function(msg) {
         log('message', msg.op, msg.action, msg);
-        portIsSafe = true;
         switch (msg.op) {
             case 'getPageDetails':
                 sendPageDetails(msg);
@@ -40,7 +37,6 @@ function connectPort() {
 
     port.onDisconnect.addListener(function() {
         log('disconnect', port);
-        portIsSafe = false;
     });
 }
 
@@ -49,12 +45,8 @@ function connectPort() {
 // Event handlers
 ///////////////////////////////////////////////////////////
 
-function onPopState(evt) {
-    log('--onPopState--', evt);
-    // Port can sometimes be silently disconnected by pages that
-    // manipulate the browser's history state to simulate back/forward
-    // navigation without performing a page reload, e.g. mail.google.com.
-    portIsSafe = false;
+function onLocationOrHistoryChanged(evt) {
+    log(evt.type, evt);
     notifySidewiseMultiple();
 }
 
@@ -98,14 +90,8 @@ function sendPageDetails(details) {
     }
     sessionStorage['sidewiseLastDetailsSent'] = detailsJSON;
 
-    if (portIsSafe) {
-        log('pushing details via port', detailsJSON);
-        port.postMessage(details);
-    }
-    else {
-        log('pushing details via sendRequest', detailsJSON);
-        chrome.extension.sendRequest(details);
-    }
+    log('pushing details via sendRequest', detailsJSON);
+    chrome.extension.sendRequest(details);
 }
 
 
