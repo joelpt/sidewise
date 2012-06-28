@@ -323,7 +323,8 @@ PageTree.prototype = {
             chrome.tabs.create({
                 url: e.url,
                 windowId: windowId,
-                active: activateAfter || false
+                active: activateAfter || false,
+                pinned: e.pinned
             });
         });
     },
