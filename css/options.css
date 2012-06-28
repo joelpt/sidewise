@@ -192,6 +192,10 @@ input[type=checkbox]+.optionsLabel::after {
     content: none;
 }
 
+label:hover {
+    border-bottom: 1px dotted #666;
+}
+
 input, select {
     margin: 0;
 }
