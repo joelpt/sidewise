@@ -14,7 +14,6 @@
 
     <script type="text/javascript" src="/js/util/marked.js"></script>
     <script type="text/javascript" src="/js/util/i18n.js"></script>
-    <script type="text/javascript" src="/js/util/settings.js"></script>
     <script type="text/javascript" src="/js/util/logging.js"></script>
     <script type="text/javascript" src="/js/util/chrome-functions.js"></script>
 
@@ -46,7 +45,9 @@
             </select>
             <input type="checkbox" name="openSidebarOnStartup"/>
             <input type="checkbox" name="keepSidebarOnTop"/>
-            <input type="checkbox" name="allowAutoUnmaximize"/>
+            <div class="advancedOptions">
+                <input type="checkbox" name="allowAutoUnmaximize"/>
+            </div>
 
             <h2 i18n="optionsHeadingPages"></h2>
             <select name="pages_doubleClickAction">
@@ -66,15 +67,18 @@
                 <option value="highlight" i18n="option_pages_specialClickAction_highlight"/>
             </select>
             <input type="checkbox" name="smartFocusOnClose"/>
-            <blockquote>
-                <input type="checkbox" name="smartFocusPrefersCousins"/>
-            </blockquote>
+            <div class="advancedOptions">
+                <blockquote>
+                    <input type="checkbox" name="smartFocusPrefersCousins"/>
+                </blockquote>
+            </div>
 
             <h2 i18n="optionsHeadingPageHibernation"></h2>
             <input type="checkbox" name="rememberOpenPagesBetweenSessions"/>
             <blockquote>
                 <input type="checkbox" name="autoCollapseLastSessionWindows"/>
             </blockquote>
+            <input type="checkbox" name="wakeHibernatedPagesOnClick"/>
 
             <h2 i18n="optionsHeadingMonitors"></h2>
             <div class="optionsRow">
@@ -88,7 +92,7 @@
             <div class="optionsRow">
                 <a href="#" id="advancedOptionsExpander" i18n="optionsShowAdvanced"></a>
             </div>
-            <div id="advancedOptions">
+            <div class="advancedOptions">
                 <h2 i18n="optionsHeadingMisc"></h2>
                 <input type="checkbox" name="useAdvancedTreeFiltering"/>
                 <input type="checkbox" name="loggingEnabled"/>
@@ -99,7 +103,7 @@
             <div id="saveBox" align="right">
                 <div class="hint" i18n="optionsSaveNotNeeded"></div>
                 <input type="button" id="resetButton" name="resetButton" />
-                <input type="button" id="saveButton" name="saveButton"/>
+                <input type="button" id="closeButton" name="closeButton"/>
             </div>
 
         </div>

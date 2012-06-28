@@ -11,6 +11,7 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   *          showFilterBox: Boolean,             // if set to false, hide type-in filtering box above tree
   *          filterPlaceholderText: String,      // text to show in filter box when otherwise empty
   *          filterActiveText: String,           // text to show below filter box when filtering is active
+  *          useAdvancedFiltering: Boolean,      // if true, use nonadjacent char matching when filtering
   *          permitTooltipHandler: Function(),   // if this function returns false, block showing a row tip
   *          tooltipTopOffset: Integer,          // offset row tip from row by this much pixel spacing
   *          rowTypes:
@@ -102,6 +103,7 @@ FancyTree.prototype = {
         // configure tree initial state
         this.root = rootNode;
         this.permitTooltipHandler = options.permitTooltipHandler;
+        this.useAdvancedFiltering = options.useAdvancedFiltering;
         this.focusedRow = null;
         this.hoveredRow = null;
         this.filtering = false;
@@ -483,7 +485,7 @@ FancyTree.prototype = {
             treeObj.filtering = true;
 
             // filter out non matching entries
-            var advancedFilter = loadSetting('useAdvancedTreeFiltering');
+            var advancedFilter = treeObj.useAdvancedFiltering;
             var escapedFilter = filter.replace('"', '\\"'); // escape embedded double quotes
             if (advancedFilter) {
                 filter = filter.replace(/ /g, '');

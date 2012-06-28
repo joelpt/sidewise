@@ -1,18 +1,24 @@
 var NOTEPAD_AUTOSAVE_DELAY_MS = 1000;
 var TAB_INSERT_STRING = '  ';
 
+var bg;
+var settings;
+
 $(document).ready(onReady);
 
 function onReady() {
+    bg = chrome.extension.getBackgroundPage();
+    settings = bg.settings;
+
     setI18NText();
 
     $('#notepad')
         .keyup(onNotepadKeyUp)
         .keydown(onNotepadKeyDown)
-        .val(loadSetting('notepadContent', ''))
+        .val(settings.get('notepadContent', ''))
         .focus();
 
-    var lastSavedDateVal = loadSetting('notepadSavedAt');
+    var lastSavedDateVal = settings.get('notepadSavedAt');
     if (lastSavedDateVal) {
         setLastSavedText(lastSavedDateVal);
     }
@@ -37,10 +43,10 @@ function onNotepadKeyDown(evt) {
 }
 
 function saveNotepad() {
-    saveSetting('notepadContent', $('#notepad').val());
+    settings.set('notepadContent', $('#notepad').val());
 
     var dateVal = Date.now();
-    saveSetting('notepadSavedAt', dateVal);
+    settings.set('notepadSavedAt', dateVal);
 
     setLastSavedText(dateVal);
 }

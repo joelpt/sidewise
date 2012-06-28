@@ -172,7 +172,7 @@ SidebarHandler.prototype = {
             sidebarDims.top = sidebar.top;
             sidebarDims.height = sidebar.height;
             handler.targetWidth = sidebar.width;
-            saveSetting('sidebarTargetWidth', sidebar.width);
+            settings.set('sidebarTargetWidth', sidebar.width);
             positionWindow(
                 handler.dockWindowId,
                 {

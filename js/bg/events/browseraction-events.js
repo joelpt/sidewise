@@ -18,7 +18,7 @@ function onBrowserActionClicked()
 
     // // No sidebar exists so just create it now
     // sidebarHandler.createDockedToCurrentWin(newSide);
-    var action = loadSetting('browserActionButtonBehavior');
+    var action = settings.get('browserActionButtonBehavior');
 
     log(action);
 
@@ -49,5 +49,5 @@ function onBrowserActionClicked()
     }
 
     // sidebar doesn't exist so create it with user's choice of docking mode from settings
-    sidebarHandler.createWithDockState(loadSetting('dockState'));
+    sidebarHandler.createWithDockState(settings.get('dockState'));
 }

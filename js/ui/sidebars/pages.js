@@ -24,7 +24,7 @@ var WINDOW_ACTION_CONFIRM_CHILDREN_THRESHOLD = 2;
 
 var ft;
 var bg;
-
+var settings;
 
 ///////////////////////////////////////////////////////////
 // Initialization
@@ -36,6 +36,7 @@ $(document).ready(function() {
     }
 
     bg = chrome.extension.getBackgroundPage();
+    settings = bg.settings;
     ft = initTree('#treePlaceholder', '#filterBoxPlaceholder', bg.tree);
 
     var binder = new SidebarPaneFancyTreeBinder(ft, bg);
@@ -86,7 +87,8 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
         rowTypes: rowTypes,
         showFilterBox: true,
         filterPlaceholderText: getMessage('prompt_filterPlaceholderText'),
-        filterActiveText: getMessage('prompt_filterActiveText')
+        filterActiveText: getMessage('prompt_filterActiveText'),
+        useAdvancedFiltering: settings.get('useAdvancedTreeFiltering')
     });
 
     $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));
@@ -229,9 +231,13 @@ function onPageRowClick(evt) {
     var row = evt.data.row;
 
     if (row.attr('hibernated') == 'true') {
-        // row is hibernated, don't try to activate its (nonexistent) tab;
-        // just show its tooltip quickly
+        // row is hibernated, show its tooltip extra quickly
         treeObj.startTooltipTimer(row, evt, 500);
+
+        if (settings.get('wakeHibernatedPagesOnClick')) {
+            // also wake it up
+            bg.tree.awakenPage(row.attr('id'), true);
+        }
         return;
     }
 
@@ -251,12 +257,12 @@ function onPageRowClick(evt) {
 }
 
 function onPageRowDoubleClick(evt) {
-    var action = loadSetting('pages_doubleClickAction');
+    var action = settings.get('pages_doubleClickAction');
     handlePageRowAction(action, evt);
 }
 
 function onPageRowMiddleClick(evt) {
-    var action = loadSetting('pages_middleClickAction');
+    var action = settings.get('pages_middleClickAction');
     handlePageRowAction(action, evt);
 }
 
@@ -427,12 +433,12 @@ function onWindowRowClick(evt) {
 }
 
 function onWindowRowDoubleClick(evt) {
-    var action = loadSetting('pages_doubleClickAction');
+    var action = settings.get('pages_doubleClickAction');
     handleWindowRowAction(action, evt);
 }
 
 function onWindowRowMiddleClick(evt) {
-    var action = loadSetting('pages_middleClickAction');
+    var action = settings.get('pages_middleClickAction');
     handleWindowRowAction(action, evt);
 }
 

@@ -148,7 +148,7 @@ function onWindowFocusChanged(windowId)
     focusTracker.chromeHasFocus = true;
 
     // Did Chrome just get focus back from another app, and sidebar is present, and keepSidebarOnTop is true?
-    if (!wasFocused && sidebarHandler.sidebarExists() && loadSetting('keepSidebarOnTop', false)) {
+    if (!wasFocused && sidebarHandler.sidebarExists() && settings.get('keepSidebarOnTop', false)) {
         // Chrome was not focused and just became focused; do sidebar+dockwin force-on-top handling
         if (windowId == sidebarHandler.windowId && sidebarHandler.dockState != 'undocked') {
             // Sidebar has been focused; raise the dock window too then refocus sidebar
@@ -246,7 +246,7 @@ function onWindowUpdateCheckInterval() {
         }
 
         var dockDims = sidebarHandler.currentDockWindowMetrics;
-        var allowAutoUnmaximize = loadSetting('allowAutoUnmaximize');
+        var allowAutoUnmaximize = settings.get('allowAutoUnmaximize');
 
         // TODO remember last dock window minimized state and only do sidebar un/minimization
         // when the state changes; this would permit sidebar to be minimized independently
@@ -359,7 +359,7 @@ function onWindowUpdateCheckInterval() {
                     needAdjustment = true;
                 }
                 // sidebarHandler.targetWidth = sidebarDims.width;
-                // saveSetting('sidebarTargetWidth', sidebarDims.width);
+                // settings.set('sidebarTargetWidth', sidebarDims.width);
             }
             else if (leftDelta != 0) {
                 // dock window's left edge has moved without also changing width;
@@ -410,7 +410,7 @@ function onWindowUpdateCheckInterval() {
             sidebarDims[dim] = newDims[dim];
         }
         sidebarHandler.targetWidth = sidebarDims.width;
-        saveSetting('sidebarTargetWidth', sidebarDims.width);
+        settings.set('sidebarTargetWidth', sidebarDims.width);
 
         log('updating sidebar to new dimensions', newDims, sidebarHandler.resizingSidebar);
 

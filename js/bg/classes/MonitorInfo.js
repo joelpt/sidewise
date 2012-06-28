@@ -1,6 +1,6 @@
 var MonitorInfo = function() {
-    this.monitors = loadSetting('monitorMetrics') || [];
-    this.maximizedOffset = loadSetting('maximizedOffset') || 0;
+    this.monitors = settings.get('monitorMetrics') || [];
+    this.maximizedOffset = settings.get('maximizedOffset') || 0;
     this.detectOnComplete = null;
     this.detectingMonitors = false;
     this.lastDetectionWindowId = null;
@@ -49,8 +49,8 @@ MonitorInfo.prototype = {
 
     saveToSettings: function() {
         log(this.monitors, this.maximizedOffset);
-        saveSetting('monitorMetrics', this.monitors);
-        saveSetting('maximizedOffset', this.maximizedOffset);
+        settings.set('monitorMetrics', this.monitors);
+        settings.set('maximizedOffset', this.maximizedOffset);
     },
 
     isDetecting: function() {

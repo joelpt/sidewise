@@ -89,7 +89,7 @@
     "optionsSavedAllSettings": { "message": "Settings saved." },
     "optionsResetAllSettings": { "message": "All settings restored to defaults." },
     "optionsDefaultStatus": { "message": "Hello! This is Sidewise's options page. Modify your options below." },
-    "optionsShowAdvanced": { "message": "+ Show advanced options" },
+    "optionsShowAdvanced": { "message": "Reveal advanced options" },
 
     "optionsHeadingSidebar": { "message": "Sidebar behavior" },
     "optionsHeadingMonitors": { "message": "Monitors" },
@@ -128,6 +128,8 @@
     "option_rememberOpenPagesBetweenSessions_hint": { "message": "#When enabled, Sidewise will remember the details of the pages you had open in your previous browser session(s) whenever you restart Chrome. //// In Chrome's [![settings](/images/favicon/settings.png)settings page](chrome://settings), if you use the 'Continue where I left off' option, you'll almost certainly want this enabled. //// Even if you don't use Chrome's 'Continue where I left off' option, you may still want this option enabled. In this case, the windows and pages from your previous browser sessions will show up in the Pages sidebar in hibernated 'Last Session' windows. By clicking on a 'Last Session' window, you can then restore those pages from the previous browser session. //// Enabling this option and *disabling* Chrome's 'Continue where I left off' option is actually one of the more powerful ways to use Sidewise's page hibernation feature, because it allows you to *optionally* restore previous sessions' pages just when you need to, instead of *always* restoring everything on browser launch." },
     "option_autoCollapseLastSessionWindows": { "message": "Automatically collapse Last Session windows on startup" },
     "option_autoCollapseLastSessionWindows_hint": { "message": "#When enabled, 'Last Session' windows will be automatically collapsed in the Pages tree when you launch Chrome. //// When disabled, 'Last Session' windows will retain the same expanded/collapsed state they had during the last Chrome session. //// Regardless of this setting, whenever pages are restored within a 'Last Session' window, that window will be automatically expanded in the page tree." },
+    "option_wakeHibernatedPagesOnClick": { "message": "Wake hibernated page rows on click" },
+    "option_wakeHibernatedPagesOnClick_hint": { "message": "If disabled, you can wake hibernated page rows using the hibernate/wake button at the right end of the row." },
 
     "optionsInfoMonitorDetection": { "message": "#Whenever you change your monitor configuration, *reload Chrome*, then come here and click 'Detect all monitors now' below. //// This should be done whenever you add or remove monitors, change monitor resolutions, reposition monitors in your OS settings, or change the location/size of your system taskbars."},
     "optionsInfoMonitorsOnYourSystem": { "message": "#Sidewise currently believes you have **$1** $2 connected to your system." },
@@ -140,9 +142,10 @@
     "option_loggingEnabled": { "message": "Enable debug mode" },
     "option_loggingEnabled_hint": { "message": "#For development or bug feedback only. //// Outputs verbose logging information to Javascript console of background, sidebar, and options pages, and prefixes rows in the pages sidebar with their IDs." },
     "option_sidebarTargetWidth": { "message": "Sidebar target width" },
+    "option_sidebarTargetWidth_hint": { "message": "You can just drag the edges of the sidebar to adjust its width, but if you prefer you can specify an exact value here." },
     "option_alwaysShowAdvancedOptions": { "message": "Always show advanced options" },
 
-    "option_saveButton": { "message": "Save settings" },
+    "option_closeButton": { "message": "Close settings" },
     "option_resetButton": { "message": "Reset to defaults" },
     "optionsSaveNotNeeded": { "message": "Note: Settings are automatically saved as you change them." }
 }

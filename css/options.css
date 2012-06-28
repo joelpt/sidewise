@@ -163,7 +163,7 @@ blockquote {
     border-top: 1px solid #999;
 }
 
-#advancedOptions {
+.advancedOptions {
     display: none;
 }
 

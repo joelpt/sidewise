@@ -1,4 +1,4 @@
-var loggingEnabled = loadSetting('loggingEnabled', false);
+var loggingEnabled = localStorage['loggingEnabled'] || false;
 var logObjectsAsJSON = false;
 // loggingEnabled = false;
 

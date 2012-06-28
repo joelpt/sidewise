@@ -1,30 +1,34 @@
 var bg;
+var settings;
 
 $(document).ready(function() {
     bg = chrome.extension.getBackgroundPage();
+    settings = bg.settings;
 
     setI18NText();
     transformInputElements();
     loadSettings();
 
     $('#version').text(getMessage('text_Version') + ' ' + getVersion());
-    setMonitorCountInfo(loadSetting('monitorMetrics').length, false);
+    setMonitorCountInfo(settings.get('monitorMetrics').length, false);
 
     $(document)
         .on('change', 'input[type=text], select', onSettingModified)
         .on('click', 'input[type=checkbox]', onSettingModified)
-        .on('click', '#saveButton', saveAllSettings)
+        .on('click', '#closeButton', onCloseButtonClick)
         .on('click', '#resetButton', resetAllSettings)
         .on('click', '#detectMonitorsButton', detectMonitors)
         .on('click', 'a[href=chrome://settings]', function() {
             chrome.tabs.create({ url: 'chrome://settings', active: true });
         });
 
-    if (loadSetting('alwaysShowAdvancedOptions')) {
-        showAdvancedOptions();
+    if (settings.get('alwaysShowAdvancedOptions')) {
+        showAdvancedOptions(false);
     }
     else {
-        $(document).on('click', '#advancedOptionsExpander', showAdvancedOptions);
+        $(document).on('click', '#advancedOptionsExpander', function() {
+            showAdvancedOptions(true);
+        });
     }
 
     setTimeout(function() {
@@ -75,7 +79,7 @@ function transformInputElements() {
         switch (type) {
             case 'text':
                 inputBox.append(inputElem).append(unitsElem);
-                rep.append(labelElem).append(inputBox);
+                rep.append(labelElem).append(inputBox).append(hintElem);
                 break;
             case 'checkbox':
                 labelElem.addClass('optionsWideLabel').append(hintElem);
@@ -104,7 +108,7 @@ function loadSettings() {
         var $e = $(e);
         var type = $e.attr('type') || e.tagName.toLowerCase();
         var name = $e.attr('name');
-        var value = loadSetting(name);
+        var value = settings.get(name);
 
         switch (type) {
             case 'button':
@@ -168,7 +172,7 @@ function saveOneSetting(e) {
         return false;
     }
 
-    saveSetting(name, storeValue);
+    settings.set(name, storeValue);
     return true;
 }
 
@@ -178,7 +182,7 @@ function onSettingModified(evt) {
     if (saveOneSetting(target)) {
         $target.removeClass('invalid');
         showStatusMessage(getMessage('optionsSuccessSavingSetting'));
-        updateStateFromSettings();
+        settings.updateStateFromSettings();
         return;
     }
 
@@ -186,11 +190,8 @@ function onSettingModified(evt) {
     showErrorMessage(getMessage('optionsErrorSavingSetting'));
 }
 
-function saveAllSettings(evt) {
-    $('input').each(function(i, e) {
-        saveOneSetting(e);
-    });
-    showStatusMessage(getMessage('optionsSavedAllSettings'));
+function onCloseButtonClick() {
+    window.close();
 }
 
 function resetAllSettings(evt) {
@@ -243,7 +244,11 @@ function setMonitorCountInfo(count, highlight) {
     }
 }
 
-function showAdvancedOptions() {
+function showAdvancedOptions(highlight) {
     $('#advancedOptionsExpander').hide();
-    $('#advancedOptions').show();
+    var $advOpts = $('.advancedOptions');
+    $advOpts.show()
+    if (highlight) {
+        $advOpts.css('background-color', 'hsl(60, 60%, 88%)');
+    }
 };

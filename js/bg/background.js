@@ -6,7 +6,7 @@ var tree;
 var sidebarHandler;
 var focusTracker;
 var monitorInfo;
-
+var settings;
 
 ///////////////////////////////////////////////////////////
 // Initialization
@@ -19,6 +19,7 @@ function onLoad()
     // this functions like a bit like an onready event for Chrome
     chrome.tabs.getCurrent(function() {
         // Early initialization
+        settings = new Settings();
         tree = new PageTree(PageTreeCallbackProxy, savePageTreeToLocalStorage);
         sidebarHandler = new SidebarHandler();
 
@@ -32,12 +33,12 @@ function onLoad()
 //   - keep retrying on chrome.ext.lastError, esp. if lastError is something meaningful that can distinguish this case?
 
 function postLoad() {
-    initializeDefaultSettings();
-    updateStateFromSettings();
+    settings.initializeDefaults();
+    settings.updateStateFromSettings();
     registerEventHandlers();
     injectContentScriptInExistingTabs('content_script.js');
 
-    var storedPageTree = loadSetting('pageTree', []);
+    var storedPageTree = settings.get('pageTree', []);
     if (storedPageTree.length == 0) {
         // first time population of page tree
         populatePages();
@@ -46,7 +47,7 @@ function postLoad() {
         // load stored page tree and associate tabs to existing page nodes
         loadPageTreeFromLocalStorage(storedPageTree);
 
-        if (loadSetting('rememberOpenPagesBetweenSessions')) {
+        if (settings.get('rememberOpenPagesBetweenSessions')) {
             setTimeout(startAssociationRun, 2000); // wait a couple seconds for content scripts to get going
         }
         else {
@@ -79,12 +80,12 @@ function registerEventHandlers() {
 }
 
 function createSidebarOnStartup() {
-    if (!loadSetting('openSidebarOnStartup')) {
+    if (!settings.get('openSidebarOnStartup')) {
         return;
     }
     sidebarHandler.monitorMetrics = monitorInfo.detectedMonitors;
     sidebarHandler.maximizedOffset = monitorInfo.detectedMaxMonitorOffset;
-    sidebarHandler.createWithDockState(loadSetting('dockState', 'right'));
+    sidebarHandler.createWithDockState(settings.get('dockState', 'right'));
 }
 
 
@@ -95,14 +96,14 @@ function createSidebarOnStartup() {
 function savePageTreeToLocalStorage() {
     if (tree.lastModified != tree.lastSaved) {
         log('saving tree to local storage');
-        saveSetting('pageTree', tree.tree);
+        settings.set('pageTree', tree.tree);
         tree.lastSaved = tree.lastModified;
     }
 }
 
 // loads saved tree data from local storage and populates the tree with it
 function loadPageTreeFromLocalStorage(storedPageTree) {
-    var rememberOpenPagesBetweenSessions = loadSetting('rememberOpenPagesBetweenSessions');
+    var rememberOpenPagesBetweenSessions = settings.get('rememberOpenPagesBetweenSessions');
     var casts = {
         'window': WindowNode,
         'page': PageNode
@@ -169,7 +170,7 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
                 node.hibernated = true;
                 node.id = node.id[0] + 'R' + node.UUID;
 
-                if (loadSetting('autoCollapseLastSessionWindows')) {
+                if (settings.get('autoCollapseLastSessionWindows')) {
                     node.collapsed = true;
                 }
             }

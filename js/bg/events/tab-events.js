@@ -204,14 +204,14 @@ function onTabRemoved(tabId, removeInfo)
     }
 
     // smart focus on close
-    if (loadSetting('smartFocusOnClose') && sidebarHandler.sidebarExists())
+    if (settings.get('smartFocusOnClose') && sidebarHandler.sidebarExists())
     {
         var nextTabId;
         if (page.smartFocusParentTabId) {
             nextTabId = page.smartFocusParentTabId;
         }
         else {
-            nextTabId = findNextTabToFocus(tabId, loadSetting('smartFocusPrefersCousins'));
+            nextTabId = findNextTabToFocus(tabId, settings.get('smartFocusPrefersCousins'));
             if (nextTabId) {
                 nextTabId = parseInt(nextTabId.slice(1));
             }
