@@ -60,7 +60,7 @@ function transformInputElements() {
                 hintClass = 'warningIcon';
             }
             var hintElem = $('<div/>', { class: hintClass, title: hint })
-                .tooltip({ position: 'top right', delay: 100 }).dynamic();
+                .tooltip({ position: 'top right', delay: 50 }).dynamic();
         }
         else {
             var hintElem = $('');
