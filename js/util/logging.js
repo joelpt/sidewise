@@ -1,4 +1,4 @@
-var loggingEnabled = localStorage['loggingEnabled'] || false;
+var loggingEnabled = localStorage['loggingEnabled'] == 'true' || false;
 var logObjectsAsJSON = false;
 // loggingEnabled = false;
 
