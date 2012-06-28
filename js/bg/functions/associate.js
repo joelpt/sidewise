@@ -331,7 +331,6 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
 
     // get updated status from Chrome in a moment
     chrome.tabs.get(tab.id, function(t) {
-        console.log('status reupdate', 'tab.id', tab.id, 'to node', match.node, 'node id', match.node.id, 't.status', t.status);
         tree.updateNode(match.node, { status: t.status });
     });
 
