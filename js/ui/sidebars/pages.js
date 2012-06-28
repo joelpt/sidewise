@@ -85,6 +85,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
 
     fancyTree = new FancyTree($(treeReplaceSelector), $(filterBoxReplaceSelector), {
         rowTypes: rowTypes,
+        scrollTargetElem: $('#main'),
         showFilterBox: true,
         filterPlaceholderText: getMessage('prompt_filterPlaceholderText'),
         filterActiveText: getMessage('prompt_filterActiveText'),
