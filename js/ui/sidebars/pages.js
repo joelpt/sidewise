@@ -62,8 +62,8 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             filterByExtraParams: ['url'],
             tooltipMaxWidthPercent: 0.9,
             buttons: [
-                {icon: '/images/pause.png', tooltip: 'Hibernate/wake', onClick: onPageRowHibernateButton },
-                {icon: '/images/close.png', tooltip: 'Close', onClick: onPageRowCloseButton }
+                {icon: '/images/pause.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
+                {icon: '/images/close.png', tooltip: getMessage('pages_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
             ]
         },
         'window': {
@@ -78,7 +78,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onResizeTooltip: onResizeTooltip,
             tooltipMaxWidthPercent: 0.9,
             buttons: [
-                {icon: '/images/close.png', tooltip: 'Close&nbsp;window', onClick: onWindowRowCloseButton }
+                {icon: '/images/close.png', tooltip: getMessage('pages_windowRowButtonTip_close'), onClick: onWindowRowCloseButton }
             ]
         }
     };
@@ -92,8 +92,9 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     });
 
     $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));
-    $(document).on('mouseup', '.pinned', onRowPinMouseUp);
-    $(document).on('mouseleave', '.pinned', onRowPinMouseLeave);
+    $(document)
+        .on('mouseup', '.pinned', onRowPinMouseUp)
+        .on('mouseleave', '.pinned', onRowPinMouseLeave);
 
     populateFancyTreeFromPageTree(fancyTree, pageTree);
 
@@ -336,7 +337,7 @@ function onPageRowFormatTitle(row, itemTextElem) {
     var existingPin = itemTextElem.parent().children('.pinned');
     if (row.attr('pinned') == 'true') {
         if (existingPin.length == 0) {
-            var newPin = $('<img/>', { class: 'pinned', src: '/images/pinned.png', title: 'Click to unpin tab' });
+            var newPin = $('<img/>', { class: 'pinned', src: '/images/pinned.png', title: getMessage('pages_pageRowButtonTip_unpin') });
             itemTextElem.before(newPin);
             newPin.tooltip({ tip: '#ftSimpleTip', predelay: 400, position: 'top right', offset: [10, 10],
                 onShow: function(evt) {
