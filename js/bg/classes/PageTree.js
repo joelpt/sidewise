@@ -225,7 +225,7 @@ PageTree.prototype = {
             throw new Error('Tried to awakenPage() but page is not contained under a WindowNode');
         }
 
-        this.awakenPageNodes([found.node], topParent);
+        this.awakenPageNodes([found.node], topParent, activateAfter);
         this.updateLastModified();
     },
 
