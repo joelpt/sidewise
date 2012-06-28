@@ -119,6 +119,10 @@ Settings.prototype = {
         var bg = chrome.extension.getBackgroundPage();
         var sh = bg.sidebarHandler;
 
+        var loggingChanged = false;
+        if (loggingEnabled != this.get("loggingEnabled")) {
+            loggingChanged = true;
+        }
         bg.loggingEnabled = this.get("loggingEnabled");
 
         sh.targetWidth = this.get('sidebarTargetWidth');
@@ -131,9 +135,28 @@ Settings.prototype = {
                 });
                 return;
             }
-            var pagesDOMWindow = sh.sidebarPanes['pages'];
-            if (pagesDOMWindow) {
-                pagesDOMWindow.ft.useAdvancedFiltering = this.get('useAdvancedTreeFiltering');
+
+            // Push changes out to sidebar panes
+            for (var k in sh.sidebarPanes) {
+                var domWindow = sh.sidebarPanes[k];
+                if (domWindow) {
+                    try {
+                        domWindow.ft.useAdvancedFiltering = this.get('useAdvancedTreeFiltering');
+                    }
+                    catch(ex) {}
+
+                    if (loggingChanged) {
+                        if (domWindow.loggingEnabled === undefined) {
+                            continue;
+                        }
+                        if (k != 'sidebarHost') {
+                            // reload the sidebar pane, which will cause it to get
+                            // an updated loggingEnabled value on load and redraw
+                            // its contents accordingly
+                            domWindow.location.reload();
+                        }
+                    }
+                }
             }
         }
     }
