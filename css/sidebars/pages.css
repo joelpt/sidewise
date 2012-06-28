@@ -145,38 +145,38 @@ section#main:not(.debugEnabled) {
 }
 
 .ftRowNode[rowtype=page][highlighted=true]:not(.ftFocused):not(.ftSelected) > .ftItemRow > .ftItemRowContent {
-    background: hsl(52, 90%, 70%);
+    background: hsl(55, 90%, 70%);
 }
 
 .ftRowNode[rowtype=page][highlighted=true]:not(.ftFocused):not(.ftSelected) > .ftItemRow:hover > .ftItemRowContent {
-    background: hsl(52, 100%, 73%);
-    border: 1px solid hsl(52, 90%, 48%);
+    background: hsl(55, 100%, 73%);
+    border: 1px solid hsl(55, 90%, 48%);
 }
 
 .ftRowNode[rowtype=page][highlighted=true].ftFocused > .ftItemRow > .ftItemRowContent,
 .ftRowNode[rowtype=page][highlighted=true].ftSelected > .ftItemRow > .ftItemRowContent {
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(52, 90%, 55%)),color-stop(1, white));
-    border: 1px solid hsl(52, 90%, 35%);
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(55, 90%, 55%)),color-stop(1, white));
+    border: 1px solid hsl(55, 90%, 35%);
 }
 
 .ftRowNode[rowtype=page][highlighted=true].ftFocused > .ftItemRow:hover > .ftItemRowContent,
 .ftRowNode[rowtype=page][highlighted=true].ftSelected > .ftItemRow:hover > .ftItemRowContent {
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(52, 90%, 49%)),color-stop(1, white));
-    border: 1px solid hsl(52, 90%, 25%);
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(55, 90%, 49%)),color-stop(1, white));
+    border: 1px solid hsl(55, 90%, 25%);
 }
 
 .ftRowNode[rowtype=page][highlighted=true].ftFocused.ftSelected > .ftItemRow > .ftItemRowContent {
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(52, 100%, 42%)),color-stop(1, white));
-    border: 1px solid hsl(52, 90%, 0%);
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(55, 100%, 42%)),color-stop(1, white));
+    border: 1px solid hsl(55, 90%, 0%);
 }
 
 .ftRowNode[rowtype=page][highlighted=true].ftFocused.ftSelected > .ftItemRow:hover > .ftItemRowContent {
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(52, 100%, 39%)),color-stop(1, white));
-    border: 1px solid hsl(52, 90%, 0%);
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(55, 100%, 39%)),color-stop(1, white));
+    border: 1px solid hsl(55, 90%, 0%);
 }
 
 .ftMultiselecting .ftFocused[rowtype=page][highlighted=true]:not(.ftSelected) > .ftItemRow > .ftItemRowContent {
-    background: hsl(52, 90%, 90%);
+    background: hsl(55, 90%, 90%);
     border: 1px dashed rgb(0, 0, 0);
 }
 
@@ -264,4 +264,17 @@ section#main:not(.debugEnabled) {
 @-webkit-keyframes spin-throbber-preload {
     0%   { -webkit-transform: rotate(360deg); }
     100%  { -webkit-transform: rotate(0deg); }
+}
+
+.pinned {
+    padding-left: 3px;
+}
+
+.pinned:hover {
+    padding-left: 3px;
+    background-color: hsl(55, 80%, 80%);
+}
+
+.pinned+.ftItemText {
+    margin-left: 2px;
 }

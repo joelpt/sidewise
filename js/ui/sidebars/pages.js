@@ -90,6 +90,8 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     });
 
     $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));
+    $(document).on('mouseup', '.pinned', onRowPinMouseUp);
+    $(document).on('mouseleave', '.pinned', onRowPinMouseLeave);
 
     populateFancyTreeFromPageTree(fancyTree, pageTree);
 
@@ -324,6 +326,28 @@ function onPageRowFormatTitle(row, itemTextElem) {
 
     itemTextElem.children('.ftItemTitle').html(text);
     itemTextElem.children('.ftItemLabel').html(label + (text && label ? ': ' : ''));
+
+    var existingPin = itemTextElem.parent().children('.pinned');
+    if (row.attr('pinned') == 'true') {
+        if (existingPin.length == 0) {
+            var newPin = $('<img/>', { class: 'pinned', src: '/images/pinned.png', title: 'Click to unpin tab' });
+            itemTextElem.before(newPin);
+            newPin.tooltip({ tip: '#ftSimpleTip', predelay: 400, position: 'top right', offset: [10, 10],
+                onShow: function(evt) {
+                    // prevent tooltip from showing whenever permitTooltipHandler() returns false
+                    if (ft.permitTooltipHandler && !ft.permitTooltipHandler()) {
+                        this.hide();
+                    }
+                    ft.hideTooltip(true);
+                }
+            });
+        }
+    }
+    else {
+        if (existingPin.length > 0) {
+            existingPin.remove();
+        }
+    }
 }
 
 function onPageRowFormatTooltip(evt) {
@@ -361,6 +385,16 @@ function onPageRowIconError(evt) {
     evt.target.src = getChromeFavIconUrl(evt.data.row.attr('url'));
 }
 
+function onRowPinMouseUp(evt) {
+    var row = $(this).closest('.ftRowNode');
+    chrome.tabs.update(getRowNumericId(row), { pinned: false });
+    evt.stopPropagation();
+}
+
+function onRowPinMouseLeave(evt) {
+    var row = $(this).closest('.ftItemRow');
+    row.trigger('mouseenter');
+}
 
 // ----------------------------------------------
 // Window rowtype handlers

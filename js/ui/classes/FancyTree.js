@@ -856,8 +856,10 @@ FancyTree.prototype = {
         treeObj.hideTooltip.call(treeObj);
     },
 
-    hideTooltip: function() {
-        $('#ftSimpleTip').hide();
+    hideTooltip: function(justRowTip) {
+        if (!justRowTip) {
+            $('#ftSimpleTip').hide();
+        }
 
         if (this.tooltip) {
             this.tooltip.remove();

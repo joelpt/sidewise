@@ -333,7 +333,8 @@ function onTabUpdated(tabId, changeInfo, tab)
         status: tab.status,
         url: tab.url,
         favicon: favicon,
-        title: title
+        title: title,
+        pinned: tab.pinned
     });
 
     if (tab.url.match(/^chrome-/)) {
