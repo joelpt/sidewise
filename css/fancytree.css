@@ -215,7 +215,7 @@
 
 .ftMultiselecting .ftFocused:not(.ftSelected) > .ftItemRow > .ftItemRowContent {
     background: #fff;
-    border: 1px dashed rgb(0, 0, 0);
+    border: 1px dashed rgba(0, 0, 0, 0.5);
 }
 
 
@@ -231,59 +231,68 @@
     padding: 2px;
     margin: 0px;
     display: none;
-    box-shadow: 3px 3px 6px #999;
+    box-shadow: 2px 2px 4px hsla(0, 0%, 0%, 0.5);
     cursor: default;
     font-family: 'Verdana', sans-serif;
     font-size: 11px;
 }
 
-.ftContextMenu LI {
+.ftContextMenuItem {
     list-style: none;
     padding: 0px;
     margin: 0px;
-}
-
-.ftContextMenu A {
-    color: #111;
-    text-decoration: none;
-    display: block;
-    /*line-height: 20px;*/
-    height: 14px;
-    /* TODO embed desired images as <imgs> rather than using background-images */
-    /*background-position: 6px center;*/
-    /*background-repeat: no-repeat;*/
-    outline: none;
-    padding: 1px 5px 0px 5px;
-    padding-left: 28px;
+    height: 20px;
     border: 1px solid white;
+    border-radius: 2px;
 }
 
-.ftContextMenu LI:hover A {
-    /*color: #FFF;*/
-    /*background-color: #3399FF;*/
-    background-image: none;
-    background: #f0ffff;
-    border: 1px solid #b8d6fb;
-    /*border-radius: 2px;*/
+.ftContextMenuItem img {
+    padding-top: 2px;
+    padding-left: 2px;
+    padding-right: 10px;
 }
 
-.ftContextMenu LI.disabled A {
+.ftContextMenuItem span {
+    color: #111;
+    line-height: 20px;
+    position: relative;
+    top: -3px;
+}
+
+.ftContextMenuItem:hover {
+    border: 1px solid #aecff7;
+    box-shadow: -1px -1px 1px 1px rgba(255, 255, 255, 1) inset, 1px 1px 1px 1px rgba(255, 255, 255, 1) inset;
+    background: -webkit-linear-gradient(top, #f2f4f6 0%, #e6edf6 100%);
+}
+
+.ftContextMenuItemDisabled span {
     color: #AAA;
     cursor: default;
 }
 
-.ftContextMenu LI:hover.disabled A {
+.ftContextMenuItemDisabled:hover {
     background-color: transparent;
 }
 
-.ftContextMenu LI.separator {
-    border-top: solid 1px #888;
+.ftContextMenuSeparator {
+    border-top: solid 1px #ddd;
+    border-bottom: solid 1px rgba(0,0,0,0);
+    border-left: solid 1px rgba(0,0,0,0);
+    border-right: solid 1px rgba(0,0,0,0);
     margin-top: 2px;
-    padding-top: 4px;
+    margin-bottom: 2px;
+    height: 0px;
+    border-radius: 0px;
 }
 
-/*.ftContextMenu LI.close A { background-image: url(/images/close.png); }*/
-/*.ftContextMenu LI.reload A { background-image: url(/images/reload.png); }*/
+.ftContextMenuSeparator:hover {
+    border-top: solid 1px #ddd;
+    border-bottom: solid 1px rgba(0,0,0,0);
+    border-left: solid 1px rgba(0,0,0,0);
+    border-right: solid 1px rgba(0,0,0,0);
+    background: none;
+    box-shadow: none;
+}
 
 
 /* filter box and row filtering */
