@@ -113,6 +113,7 @@ FancyTree.prototype = {
         this.multiSelection = [];
         this.lastMultiSelectedFromId = null;
         this.lastMultiSelectedToId = null;
+        this.contextMenuShown = false;
 
         // configure tooltip stuff
         this.tooltipTopOffset = options.tooltipTopOffset || 12;
@@ -151,7 +152,8 @@ FancyTree.prototype = {
             .on('mouseover', '#ftTooltip', data, this.handleHideTooltipEvent)
             .on('click', '.ftExpander', data, this.onExpanderClick)
             .on('mouseenter', '.ftButtons', data, this.onMouseEnterButtons)
-            .on('mouseleave', '.ftButtons', data, this.onMouseLeaveButtons);
+            .on('mouseleave', '.ftButtons', data, this.onMouseLeaveButtons)
+            .on('contextmenu', rootNode, data, this.onContextMenu);
 
         if (options.showFilterBox != false) {
             // add event handlers for filter box
@@ -317,8 +319,11 @@ FancyTree.prototype = {
         this.focusedRow = elem;
         elem.addClass('ftFocused');
 
-        if (!this.isScrolledIntoView(elem, this.root, this.scrollTargetElem)) {
-            this.scrollTargetElem.scrollTo(elem, { duration: 250 });
+        var innerRow = this.getInnerRow(elem);
+        var scrollDistance = this.scrollDistanceRequired(innerRow, this.root, this.scrollTargetElem);
+        if (scrollDistance) {
+            var scrollParam = (scrollDistance > 0 ? '+' : '-') + '=' + (Math.abs(scrollDistance) + 2);
+            this.scrollTargetElem.scrollTo(scrollParam, { duration: 200 });
         }
     },
 
@@ -442,6 +447,40 @@ FancyTree.prototype = {
             return false;
         }
         return true;
+    },
+
+    onContextMenu: function(evt) {
+        var treeObj = evt.data.treeObj;
+
+        if (treeObj.contextMenuShown) {
+            treeObj.disableContextMenu.call(treeObj);
+            treeObj.clearMultiSelection.call(treeObj);
+            return false;
+        }
+
+        treeObj.enableContextMenu.call(treeObj, evt.pageX, evt.pageY);
+        return false;
+    },
+
+
+    // show context menu positioned at mouse click
+    enableContextMenu: function(x, y)
+    {
+      var menu = $('#ftContextMenu');
+      menu.css({ top: y, left: x });
+      menu.show();
+      this.contextMenuShown = true;
+    },
+
+    disableContextMenu: function() {
+        // hide context menu
+        if (!this.contextMenuShown)
+        {
+          return false;
+        }
+
+        $('#ftContextMenu').hide();
+        this.contextMenuShown = false;
     },
 
     onFilterStatusClick: function(evt) {
@@ -1218,7 +1257,8 @@ FancyTree.prototype = {
     ///////////////////////////////////////////////////////////
     // Helper functions
     ///////////////////////////////////////////////////////////
-    isScrolledIntoView: function(elem, withinElem, scrollTargetElem)
+    //
+    scrollDistanceRequired: function(elem, withinElem, scrollTargetElem)
     {
         var $window = $(window);
         var $elem = $(elem);
@@ -1236,18 +1276,22 @@ FancyTree.prototype = {
             }
         }
 
-        var documentHeight = $(document).height();
-
-        var withinElemMarginTop = withinElem.offset().top + viewTop;
-        var withinElemMarginBottom = documentHeight - withinElemMarginTop - withinElem.parent().height();
-
         var viewBottom = viewTop + scrolledParent.offsetHeight;
+        var withinElemMarginTop = withinElem.offset().top + viewTop;
 
+        var elemHeight = $elem.height();
         var elemTop = $elem.offset().top - withinElemMarginTop;
-        var elemBottom = elemTop + $elem.height();
+        var elemBottom = elemTop + elemHeight;
 
-        return (elemTop >= 0 && elemTop + viewTop <= viewBottom
-            && elemBottom >= 0 && elemBottom + viewTop <= viewBottom);
+        if (elemTop < 0) {
+            // top edge is not visible
+            return elemTop;
+        }
+        if (elemBottom + viewTop > viewBottom) {
+            // bottom edge is not visible
+            return (elemTop + viewTop) - viewBottom + elemHeight;
+        }
+        return 0;
     }
 
 };
