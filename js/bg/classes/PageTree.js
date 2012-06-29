@@ -167,6 +167,11 @@ PageTree.prototype = {
     focusPage: function(tabId)
     {
         log(tabId);
+
+        if (this.focusedTabId == tabId) {
+            return;
+        }
+
         var page = this.getPage(tabId);
 
         if (!page) {
