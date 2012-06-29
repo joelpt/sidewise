@@ -223,8 +223,67 @@
 /* context menus */
 
 .ftContextMenu {
+    position: absolute;
+    width: 120px;
+    z-index: 99999;
+    border: solid 1px #888;
+    background: #EEE;
+    padding: 2px;
+    margin: 0px;
     display: none;
+    box-shadow: 3px 3px 6px #999;
+    cursor: default;
+    font-family: 'Verdana', sans-serif;
+    font-size: 11px;
 }
+
+.ftContextMenu LI {
+    list-style: none;
+    padding: 0px;
+    margin: 0px;
+}
+
+.ftContextMenu A {
+    color: #111;
+    text-decoration: none;
+    display: block;
+    /*line-height: 20px;*/
+    height: 14px;
+    /* TODO embed desired images as <imgs> rather than using background-images */
+    /*background-position: 6px center;*/
+    /*background-repeat: no-repeat;*/
+    outline: none;
+    padding: 1px 5px 0px 5px;
+    padding-left: 28px;
+    border: 1px solid white;
+}
+
+.ftContextMenu LI:hover A {
+    /*color: #FFF;*/
+    /*background-color: #3399FF;*/
+    background-image: none;
+    background: #f0ffff;
+    border: 1px solid #b8d6fb;
+    /*border-radius: 2px;*/
+}
+
+.ftContextMenu LI.disabled A {
+    color: #AAA;
+    cursor: default;
+}
+
+.ftContextMenu LI:hover.disabled A {
+    background-color: transparent;
+}
+
+.ftContextMenu LI.separator {
+    border-top: solid 1px #888;
+    margin-top: 2px;
+    padding-top: 4px;
+}
+
+/*.ftContextMenu LI.close A { background-image: url(/images/close.png); }*/
+/*.ftContextMenu LI.reload A { background-image: url(/images/reload.png); }*/
 
 
 /* filter box and row filtering */
