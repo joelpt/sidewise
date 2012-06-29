@@ -182,12 +182,7 @@ function PageTreeCallbackProxyListener(op, args)
             ft.updateRow(args.id, details);
             break;
         case 'focusPage':
-            try {
-                ft.focusRow(args.id);
-            }
-            catch(ex) {
-                log('Row does not exist to focus', args.id);
-            }
+            ft.focusRow(args.id);
             break;
         case 'expand':
             ft.expandRow(args.id);
