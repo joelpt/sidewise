@@ -180,17 +180,24 @@ function onBeforeNavigate(details)
 
     log(details);
 
+    var page = tree.getPage(details.tabId);
+
+    if (page) {
+        tree.updateNode(page, { status: 'preload' });
+        return;
+    }
     // If we get an onBeforeNavigate event and the corresponding page node
     // does not yet exist, Chrome may be about to replace an existing tab
     // with a new tab, changing its tab id but making it look to the user
     // like they just went forward to a new page in the same tab.
     // We can get more than one such tabId before a navigation of this sort
     // actually takes place.
-    if (!tree.getPage(details.tabId) & associationConcurrentRuns == 0) {
-        log('Expecting a tab id swap', details.tabId);
-        expectingNavigationTabIdSwap = true;
-        expectingNavigationPossibleNewTabIds.push(details.tabId);
+    if (associationConcurrentRuns > 0) {
+        return;
     }
+    log('Expecting a tab id swap', details.tabId);
+    expectingNavigationTabIdSwap = true;
+    expectingNavigationPossibleNewTabIds.push(details.tabId);
 }
 
 function onCompleted(details)
