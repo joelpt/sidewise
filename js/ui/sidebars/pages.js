@@ -179,12 +179,7 @@ function PageTreeCallbackProxyListener(op, args)
                     details[PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP[key]] = elem[key];
                 }
             }
-            try {
-                ft.updateRow(args.id, details);
-            }
-            catch(ex) {
-                log('Row does not exist to update', args.id, details);
-            }
+            ft.updateRow(args.id, details);
             break;
         case 'focusPage':
             try {
