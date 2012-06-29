@@ -85,6 +85,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
 
     fancyTree = new FancyTree($(treeReplaceSelector), $(filterBoxReplaceSelector), {
         rowTypes: rowTypes,
+        onContextMenuShow: onContextMenuShow,
         scrollTargetElem: $('#main'),
         showFilterBox: true,
         filterPlaceholderText: getMessage('prompt_filterPlaceholderText'),
@@ -210,12 +211,79 @@ function onRowExpanderClick(evt) {
 
 
 ///////////////////////////////////////////////////////////
-// FancyTree specific rowtype event handlers
+// FancyTree context menu handlers
 ///////////////////////////////////////////////////////////
 
-// ----------------------------------------------
+function onContextMenuShow(rows) {
+    return [
+        { id: 'reloadPage', icon: '/images/reload.png', label: 'Reload', callback: onContextMenuItemReload }, //, preserveSelectionAfter: true },
+        { separator: true },
+        { id: 'closePage', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemClose },
+        { id: 'hibernatePage', icon: '/images/pause.png', label: 'Hibernate', callback: onContextMenuItemHibernate },
+        { id: 'awakenPage', icon: '/images/pause.png', label: 'Awaken', callback: onContextMenuItemAwaken },
+        { id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel }, //, preserveSelectionAfter: true },
+        { id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight }, //, preserveSelectionAfter: true },
+        { id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight } //, preserveSelectionAfter: true }
+    ];
+}
+
+function onContextMenuItemClose(rows) {
+    console.log('CLOSE');
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        closePageRow(row.jQueryElement);
+    }
+}
+
+function onContextMenuItemHibernate(rows) {
+    console.log('HIBERNATE');
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        togglePageRowHibernated(row.jQueryElement, -1);
+    }
+}
+
+function onContextMenuItemAwaken(rows) {
+    console.log('HIBERNATE');
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        togglePageRowHibernated(row.jQueryElement, 1);
+    }
+}
+
+function onContextMenuItemReload(rows) {
+    console.log('RELOAD');
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        if (row.hibernated) {
+            continue;
+        }
+        var chromeId = row.chromeId;
+        chrome.tabs.executeScript(chromeId, { code: "window.location.reload();" });
+    }
+}
+
+function onContextMenuItemSetLabel(rows) {
+    setRowLabels(rows.map(function(e) { return e.jQueryElement; }));
+}
+
+function onContextMenuItemSetHighlight(rows) {
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        setRowHighlight(row.jQueryElement, 1);
+    }
+}
+
+function onContextMenuItemClearHighlight(rows) {
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        setRowHighlight(row.jQueryElement, -1);
+    }
+}
+
+///////////////////////////////////////////////////////////
 // Page rowtype handlers
-// ----------------------------------------------
+///////////////////////////////////////////////////////////
 
 function onPageRowClick(evt) {
     log(evt);
@@ -273,38 +341,9 @@ function handlePageRowAction(action, evt) {
             setRowLabels(evt.data.row);
             break;
         case 'highlight':
-            setRowHighlights(evt.data.row);
+            setRowHighlight(evt.data.row, 0);
             break;
     }
-}
-
-function onPageRowCloseButton(evt) {
-    var row = evt.data.row;
-
-    if (row.attr('hibernated') == 'true') {
-        // page is hibernated so just remove it; don't actually try to close its
-        // (nonexistent) tab
-        bg.tree.removeNode(row.attr('id'));
-        return;
-    }
-
-    if (row.hasClass('closing')) {
-        // already trying to close this page
-        return;
-    }
-    row.addClass('closing'); // "about to close" styling
-    chrome.tabs.remove(getRowNumericId(row));
-}
-
-function onPageRowHibernateButton(evt) {
-    var row = evt.data.row;
-
-    if (row.attr('hibernated') == 'true') {
-        bg.tree.awakenPage(row.attr('id'), true);
-        return;
-    }
-
-    bg.tree.hibernatePage(row.attr('id'));
 }
 
 function onPageRowFormatTitle(row, itemTextElem) {
@@ -383,9 +422,17 @@ function onPageRowIconError(evt) {
     evt.target.src = getChromeFavIconUrl(evt.data.row.attr('url'));
 }
 
+function onPageRowCloseButton(evt) {
+    closePageRow(evt.data.row);
+}
+
+function onPageRowHibernateButton(evt) {
+    togglePageRowHibernated(evt.data.row);
+}
+
 function onRowPinMouseUp(evt) {
     var row = $(this).closest('.ftRowNode');
-    chrome.tabs.update(getRowNumericId(row), { pinned: false });
+    setPageRowPinnedState(row, false);
     evt.stopPropagation();
 }
 
@@ -394,9 +441,10 @@ function onRowPinMouseLeave(evt) {
     row.trigger('mouseenter');
 }
 
-// ----------------------------------------------
+
+///////////////////////////////////////////////////////////
 // Window rowtype handlers
-// ----------------------------------------------
+///////////////////////////////////////////////////////////
 
 function onWindowRowClick(evt) {
     var row = evt.data.row;
@@ -517,8 +565,48 @@ function onWindowRowFormatTooltip(evt) {
 
 
 ///////////////////////////////////////////////////////////
-// Helper functions
+// Row action helper functions
 ///////////////////////////////////////////////////////////
+
+function closePageRow(row) {
+    if (row.attr('hibernated') == 'true') {
+        // page is hibernated so just remove it; don't actually try to close its
+        // (nonexistent) tab
+        bg.tree.removeNode(row.attr('id'));
+        return;
+    }
+
+    if (row.hasClass('closing')) {
+        // already trying to close this page
+        return;
+    }
+    row.addClass('closing'); // "about to close" styling
+    chrome.tabs.remove(getRowNumericId(row));
+}
+
+// hibernateAwakeState values:
+//   1: awaken page row
+//   0: toggle hibernate/awake
+//  -1: hibernate page row
+function togglePageRowHibernated(row, hibernateAwakeState) {
+    hibernateAwakeState = hibernateAwakeState || 0;
+
+    var hibernated = (row.attr('hibernated') == 'true');
+    if (hibernated && hibernateAwakeState >= 0) {
+        bg.tree.awakenPage(row.attr('id'), true);
+        return;
+    }
+
+    if (hibernateAwakeState == 1 || hibernated) {
+        return;
+    }
+
+    bg.tree.hibernatePage(row.attr('id'));
+}
+
+function setPageRowPinnedState(row, pinned) {
+    chrome.tabs.update(getRowNumericId(row), { pinned: pinned });
+}
 
 function setRowLabels(rows) {
     var label = prompt(getMessage('prompt_setLabel'), $(rows[0]).attr('label'));
@@ -528,18 +616,36 @@ function setRowLabels(rows) {
         return;
     }
 
-    rows.each(function(i, e) {
-        bg.tree.updateNode(e.attributes.id.value, { label: label });
-    });
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        bg.tree.updateNode(row.attr('id'), { label: label });
+    }
 }
 
-function setRowHighlights(rows) {
-    var highlighted = $(rows[0]).attr('highlighted') == 'true';
+// highlightState values:
+//   1: set highlight
+//   0: toggle highlight
+//  -1: clear highlight
+function setRowHighlight(row, highlightState) {
+    highlightState = highlightState || 0;
 
-    rows.each(function(i, e) {
-        bg.tree.updateNode(e.attributes.id.value, { highlighted: !highlighted });
-    });
+    var highlighted = (row.attr('highlighted') == 'true');
+    if (highlighted && highlightState <= 0) {
+        bg.tree.updateNode(row.attr('id'), { highlighted: false });
+        return;
+    }
+
+    if (highlightState == -1 || highlighted) {
+        return;
+    }
+
+    bg.tree.updateNode(row.attr('id'), { highlighted: true });
 }
+
+
+///////////////////////////////////////////////////////////
+// Miscellaneous helper functions
+///////////////////////////////////////////////////////////
 
 function getBigTooltipContent(header, icon, body) {
     var elem = $('<div class="ftBigTip"/>');
