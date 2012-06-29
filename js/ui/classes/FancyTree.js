@@ -8,6 +8,8 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   * @param options A dictionary of options, all optional:
   *        <pre>
   *        {
+  *          onContextMenuShow: Function(rows),  // passed a list of rows that are currently selected, this
+  *                                              // should return an array of context menu items to show
   *          scrollTargetElem: jQueryElem,       // the tree parent element that can scroll
   *          showFilterBox: Boolean,             // if set to false, hide type-in filtering box above tree
   *          filterPlaceholderText: String,      // text to show in filter box when otherwise empty
@@ -113,7 +115,11 @@ FancyTree.prototype = {
         this.multiSelection = [];
         this.lastMultiSelectedFromId = null;
         this.lastMultiSelectedToId = null;
+
+        this.onContextMenuShow = onContextMenuShow;
+        this.contextMenuItems = {};
         this.contextMenuShown = false;
+        this.contextMenuTarget = null;
 
         // configure tooltip stuff
         this.tooltipTopOffset = options.tooltipTopOffset || 12;
@@ -153,7 +159,10 @@ FancyTree.prototype = {
             .on('click', '.ftExpander', data, this.onExpanderClick)
             .on('mouseenter', '.ftButtons', data, this.onMouseEnterButtons)
             .on('mouseleave', '.ftButtons', data, this.onMouseLeaveButtons)
-            .on('contextmenu', rootNode, data, this.onContextMenu);
+            .on('contextmenu', rootNode, data, this.onContextMenu)
+            .on('mouseup', '.ftContextMenuItem', data, this.onContextMenuItemClick)
+            .on('mouseup', '.ftContextMenuSeparator', data, function() { return false; })
+            .on('mouseup', 'body', data, this.onBodyMouseUp);
 
         if (options.showFilterBox != false) {
             // add event handlers for filter box
@@ -161,7 +170,7 @@ FancyTree.prototype = {
                 .on('click', this.filterElem, data, this.onFilterBoxModified)
                 .on('keyup', this.filterElem, data, this.onFilterBoxModified)
                 .on('click', '.ftFilterStatus', data, this.onFilterStatusClick)
-                .on('keydown', 'document', data, this.onDocumentKeyDown);
+                .on('keydown', 'body', data, this.onBodyKeyDown);
         }
     },
 
@@ -309,6 +318,11 @@ FancyTree.prototype = {
     focusRow: function(idOrElem) {
         var elem = this.getRow(idOrElem);
         var id = elem.attr('id');
+
+        if (this.focusedRow == elem) {
+            return;
+        }
+
         if (this.focusedRow) {
             this.focusedRow.removeClass('ftFocused');
         }
@@ -428,12 +442,33 @@ FancyTree.prototype = {
         this.formatLineageTitles(to);
     },
 
+
     ///////////////////////////////////////////////////////////
-    // Event handlers
+    // Top level event handlers
     ///////////////////////////////////////////////////////////
 
-    onDocumentKeyDown: function(evt) {
+    onBodyMouseUp: function(evt) {
         var treeObj = evt.data.treeObj;
+        if ($(evt.target).parents().is(treeObj.root)) {
+            console.log('clicked within the root');
+            return true;
+        }
+
+        treeObj.clearMultiSelection.call(treeObj);
+
+        console.log('clicked outside the root');
+        if (treeObj.contextMenuShown) {
+            console.log('hiding the context menu sucka');
+            treeObj.disableContextMenu.call(treeObj);
+            return false;
+        }
+        console.log('return true from bodymouseup');
+        return true;
+    },
+
+    onBodyKeyDown: function(evt) {
+        var treeObj = evt.data.treeObj;
+        console.log('keydown', evt);
 
         if (evt.keyCode == 70 && evt.ctrlKey) { // Ctrl+F
             // focus filter box
@@ -444,44 +479,94 @@ FancyTree.prototype = {
             // clear filter box
             treeObj.filterElem.children('.ftFilterInput').val('').trigger('keyup');
             treeObj.filtering = false;
+
+            // close context menu
+            if (treeObj.contextMenuShown) {
+                treeObj.disableContextMenu.call(treeObj);
+            }
+
             return false;
         }
         return true;
     },
 
+
+    ///////////////////////////////////////////////////////////
+    // Context menu event handlers
+    ///////////////////////////////////////////////////////////
+
     onContextMenu: function(evt) {
         var treeObj = evt.data.treeObj;
 
+        console.log('i\'d hit that', treeObj.contextMenuShown);
         if (treeObj.contextMenuShown) {
             treeObj.disableContextMenu.call(treeObj);
-            treeObj.clearMultiSelection.call(treeObj);
+        }
+
+        var row = treeObj.getParentRowNode($(evt.target));
+
+        if (!row) {
+            // didn't click a row
             return false;
+        }
+
+        treeObj.contextMenuTarget = row;
+
+        if (treeObj.multiSelection.length == 0 || !row.hasClass('ftSelected')) {
+            console.log(row);
+            treeObj.clearMultiSelection.call(treeObj);
+            treeObj.toggleMultiSelectionSingle.call(treeObj, row.attr('id'));
         }
 
         treeObj.enableContextMenu.call(treeObj, evt.pageX, evt.pageY);
         return false;
     },
 
+    onContextMenuItemClick: function(evt) {
+        var treeObj = evt.data.treeObj;
+        var id = this.attributes.contextMenuId.value;
+        var contextMenuItem = treeObj.contextMenuItems[id];
+        var callback = contextMenuItem.callback;
 
-    // show context menu positioned at mouse click
-    enableContextMenu: function(x, y)
-    {
-      var menu = $('#ftContextMenu');
-      menu.css({ top: y, left: x });
-      menu.show();
-      this.contextMenuShown = true;
-    },
+        treeObj.disableContextMenu.call(treeObj);
 
-    disableContextMenu: function() {
-        // hide context menu
-        if (!this.contextMenuShown)
-        {
-          return false;
+        var rows = treeObj.multiSelection.map(function(e) {
+            var row = treeObj.getRow(e);
+            var bareRow = row.get(0);
+            var attribs = bareRow.attributes;
+            var r = { htmlElement: bareRow, jQueryElement: row };
+            for (var i = 0; i < attribs.length; i++) {
+                var attrib = attribs[i];
+
+                try {
+                    r[attrib.nodeName] = JSON.parse(attrib.nodeValue);
+                }
+                catch(ex) {
+                    r[attrib.nodeName] = attrib.nodeValue;
+                }
+
+                if (attrib.nodeName == 'id' && attribs.hibernated != 'true') {
+                    r.chromeId = parseInt(attrib.nodeValue.slice(1));
+                }
+            }
+            return r;
+        });
+
+        if (!contextMenuItem.preserveSelectionAfter) {
+            treeObj.clearMultiSelection.call(treeObj);
         }
 
-        $('#ftContextMenu').hide();
-        this.contextMenuShown = false;
+        // Perform context menu after a short delay to allow for sidebar to
+        // do its visual updates first
+        setTimeout(function() { callback(rows); }, 50);
+
+        return false;
     },
+
+
+    ///////////////////////////////////////////////////////////
+    // Filter box event handlers
+    ///////////////////////////////////////////////////////////
 
     onFilterStatusClick: function(evt) {
         var treeObj = evt.data.treeObj;
@@ -568,14 +653,26 @@ FancyTree.prototype = {
         }
     },
 
+
+    ///////////////////////////////////////////////////////////
+    // General row-level event handlers
+    ///////////////////////////////////////////////////////////
+
     onTooltipMouseOver: function(evt) {
         $(this).hide();
     },
 
     onExpanderClick: function(evt) {
+        var treeObj = evt.data.treeObj;
+
+        if (treeObj.contextMenuShown) {
+            treeObj.disableContextMenu.call(treeObj);
+            return false;
+        }
+
         var expander = $(this);
         var parentLI = expander.closest('.ftRowNode');
-        evt.data.treeObj.toggleExpandRow(parentLI);
+        treeObj.toggleExpandRow(parentLI);
         evt.stopPropagation();
     },
 
@@ -621,7 +718,7 @@ FancyTree.prototype = {
 
 
     ///////////////////////////////////////////////////////////
-    // Row click event handlers
+    // Row click-event handlers
     ///////////////////////////////////////////////////////////
 
     _rowMouseDownHandler: function(evt) {
@@ -632,8 +729,9 @@ FancyTree.prototype = {
     },
 
     _rowMouseUpHandler: function(evt) {
-        var $this = $(this);
         var treeObj = evt.data.treeObj;
+
+        var $this = $(this);
         var row = treeObj.getParentRowNode($this);
         evt.data.row = row;
 
@@ -643,6 +741,10 @@ FancyTree.prototype = {
         // middle click
         if (evt.which == 2) {
             if (evt.data.onMiddleClick) {
+                if (treeObj.contextMenuShown) {
+                    treeObj.disableContextMenu.call(treeObj);
+                }
+
                 // handle middle click
                 evt.data.onMiddleClick(evt);
             }
@@ -652,6 +754,10 @@ FancyTree.prototype = {
         // left click
         if (evt.which == 1) {
             if (evt.ctrlKey || evt.shiftKey) {
+                if (treeObj.contextMenuShown) {
+                    treeObj.disableContextMenu.call(treeObj);
+                }
+
                 // we got a left click and ctrl or shift was held down
                 treeObj._rowMultiSelectionClickHandler(evt);
                 return;
@@ -659,6 +765,11 @@ FancyTree.prototype = {
 
             // regular left click (no modifier keys)
             if (evt.data.onClick) {
+                if (treeObj.contextMenuShown) {
+                    treeObj.clearMultiSelection.call(treeObj);
+                    treeObj.disableContextMenu.call(treeObj);
+                }
+
                 // clear existing multiselection if any
                 treeObj.clearMultiSelection();
 
@@ -749,6 +860,16 @@ FancyTree.prototype = {
     },
 
     _rowButtonClickHandler: function(evt) {
+        var treeObj = evt.data.treeObj;
+
+        if (treeObj.contextMenuShown) {
+            treeObj.disableContextMenu.call(treeObj);
+        }
+
+        if (evt.which != 1) {
+            return;
+        }
+
         $('#ftSimpleTip').hide();
         evt.data.row = $(this).closest('li');
         evt.data.onClick(evt);
@@ -854,7 +975,11 @@ FancyTree.prototype = {
         // remove visual selection effects
         var thisObj = this;
         this.multiSelection.forEach(function(e) {
-            thisObj.removeSelectionEffect(thisObj.getRow(e));
+            try {
+                var row = thisObj.getRow(e);
+                thisObj.removeSelectionEffect(row);
+            }
+            catch (ex) { }
         });
         this.root.removeClass('ftMultiselecting');
 
@@ -866,12 +991,16 @@ FancyTree.prototype = {
 
     addSelectionEffect: function(row)
     {
-      row.addClass('ftSelected');
+        var rowTypeParams = this.getRowTypeParams(row);
+        if (!rowTypeParams.multiselectable) {
+            return;
+        }
+        row.addClass('ftSelected');
     },
 
     removeSelectionEffect: function(row)
     {
-      row.removeClass('ftSelected');
+        row.removeClass('ftSelected');
     },
 
 
@@ -919,6 +1048,11 @@ FancyTree.prototype = {
     showTooltip: function(row, bodyWidth, evt) {
         // block tooltip from showing if permitTooltipHandler says so
         if (this.permitTooltipHandler && !this.permitTooltipHandler()) {
+            return;
+        }
+
+        // don't show tooltip when context menu is visible
+        if (this.contextMenuShown) {
             return;
         }
 
@@ -1163,6 +1297,78 @@ FancyTree.prototype = {
 
 
     ///////////////////////////////////////////////////////////
+    // Context menu functions
+    ///////////////////////////////////////////////////////////
+
+    // show context menu positioned at mouse click
+    enableContextMenu: function(x, y)
+    {
+        if (!this.onContextMenuShow) {
+            return;
+        }
+
+        var items = this.onContextMenuShow(this.multiSelection);
+
+        if (items.length == 0) {
+            return;
+        }
+
+        var menu = $('<ul/>', { id: 'ftContextMenu', class: 'ftContextMenu' });
+
+        this.contextMenuItems = {};
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var elem;
+            if (item.separator) {
+                elem = $('<li/>', { class: 'ftContextMenuSeparator' });
+            }
+            else {
+                var id = item.id;
+                this.contextMenuItems[id] = item;
+                var elem = $('<li/>', { class: 'ftContextMenuItem', contextMenuId: id })
+                    .append($('<img/>', { src: item.icon || '/images/x.gif' }))
+                    .append($('<span/>').html(item.label));
+            }
+            menu.append(elem);
+        }
+
+        $(document.body).append(menu);
+
+        var width = menu.width();
+        var height = menu.height();
+
+        var docWidth = $(document).width();
+        var docHeight = $(document).height();
+
+        if (x + width > docWidth - 15) {
+           x = docWidth - width - 15;
+        }
+
+        if (y + height > docHeight - 15) {
+            y = docHeight - height - 15;
+        }
+
+        menu.css({ top: y, left: x });
+
+        menu.show();
+        this.contextMenuShown = true;
+        console.log('set context menu shown state', ft.contextMenuShown);
+    },
+
+    disableContextMenu: function() {
+        // hide context menu
+        if (!this.contextMenuShown)
+        {
+          return false;
+        }
+
+        $('#ftContextMenu').remove();
+        console.log('disabling context menu shown');
+        this.contextMenuShown = false;
+    },
+
+
+    ///////////////////////////////////////////////////////////
     // Filter substring/subchar highlighting
     ///////////////////////////////////////////////////////////
 
@@ -1257,7 +1463,7 @@ FancyTree.prototype = {
     ///////////////////////////////////////////////////////////
     // Helper functions
     ///////////////////////////////////////////////////////////
-    //
+
     scrollDistanceRequired: function(elem, withinElem, scrollTargetElem)
     {
         var $window = $(window);
