@@ -9,7 +9,6 @@
     <script type="text/javascript" src="/js/jquery/jquery-1.7.2.min.js"></script>
     <script type='text/javascript' src='/js/jquery/jquery-ui-1.8.13.custom.min.js'></script>
     <script type='text/javascript' src='/js/jquery/jquery.scrollTo-min.js'></script>
-    <script type='text/javascript' src='/js/jquery/jquery.contextMenu.js'></script>
     <script type="text/javascript" src="/js/jquery/jquery.tools.min.js"></script>
     <script type="text/javascript" src="/js/jquery/jquery-helpers.js"></script>
 
@@ -26,29 +25,21 @@
 
 </head>
 <body>
-    <header>
-        <div id="filterBoxPlaceholder"></div>
-    </header>
 
-    <section id="main">
-        <div id="treePlaceholder"></div>
-    </section>
+<header>
+    <div id="filterBoxPlaceholder"></div>
+</header>
 
-    <footer>
-        <div id="debugLinks">
-            <span onclick="javascript:window.parent.location='pages.html'">promote iframe</span>
-            <span onclick="javascript:bg.tree.clear(); bg.injectContentScriptInExistingTabs('content_script.js'); bg.populatePages(); setTimeout(function() { location.reload() }, 500); ">reset tree</span>
-        </div>
-    </footer>
+<section id="main">
+    <div id="treePlaceholder"></div>
+</section>
 
-    <!-- <ul id="pageRowContextMenu" class="ftContextMenu">
-        <li class="reload">
-            <a name="reload">Reload</a>
-        </li>
-        <li class="close">
-            <a name="close">Close</a>
-        </li>
-    </ul> -->
-<!-- </div> -->
+<footer>
+    <div id="debugLinks">
+        <span onclick="javascript:window.parent.location='pages.html'">promote iframe</span>
+        <span onclick="javascript:bg.tree.clear(); bg.injectContentScriptInExistingTabs('content_script.js'); bg.populatePages(); setTimeout(function() { location.reload() }, 500); ">reset tree</span>
+    </div>
+</footer>
+
 </body>
 </html>
