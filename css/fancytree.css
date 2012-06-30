@@ -358,3 +358,20 @@
     text-decoration: underline;
     font-weight: bold;
 }
+
+
+/* draggable/droppable styling */
+
+.ftDragHelper {
+    background: -webkit-linear-gradient(top, hsl(220, 80%, 80%) 0%, #fff 100%);
+    border: 1px solid #666;
+    border-radius: 4px;
+    box-shadow: 2px 2px 11px rgba(0, 0, 0, 0.5);
+    color: black;
+    font-family: Verdana;
+    font-style: italic;
+    font-weight: bold;
+    font-size: 11px;
+    word-wrap: none;
+    padding: 6px;
+}

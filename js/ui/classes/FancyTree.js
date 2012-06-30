@@ -1,4 +1,14 @@
+///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
 var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
+var DRAG_TO_NEXT_SENSITIVITY_RATIO = 0.6;
+
+
+///////////////////////////////////////////////////////////
+// FancyTree
+///////////////////////////////////////////////////////////
 
 /**
   * @class
@@ -23,6 +33,11 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   *            {
   *              autofocusOnClick: Boolean,      // if true (default), set focus to row when clicked
   *              multiselectable: Boolean,       // if true (default), row can be in ctrl/shift selections
+  *              allowedDropTargets: Array       // if provided, a row of this type will be permitted to be
+  *                                              // drag-dropped into the given rowtypes; pass the allowed row
+  *                                              // type identifiers as strings, and pass the special
+  *                                              // identifier 'ROOT' to permit dropping onto the root level
+  *                                              // of the tree, e.g. ['bookmark', 'folder', 'ROOT']
   *              onClick: Function(evt),         // left single click event handler
   *              onDoubleClick: Function(evt),   // left double click event handler
   *              onMiddleClick: Function(evt),   // middle click event handler
@@ -112,6 +127,7 @@ FancyTree.prototype = {
         this.focusedRow = null;
         this.hoveredRow = null;
         this.filtering = false;
+
         this.multiSelection = [];
         this.lastMultiSelectedFromId = null;
         this.lastMultiSelectedToId = null;
@@ -120,6 +136,10 @@ FancyTree.prototype = {
         this.contextMenuItems = {};
         this.contextMenuShown = false;
         this.contextMenuTarget = null;
+
+        this.dragging = false;
+        this.draggingToNext = false;
+        this.draggingOverRow = null;
 
         // configure tooltip stuff
         this.tooltipTopOffset = options.tooltipTopOffset || 12;
@@ -183,8 +203,8 @@ FancyTree.prototype = {
         var thisObj = this;
         this.rowTypes[name] = params;
 
+        // configure onFormatTitle handler
         var onFormatTitle = params.onFormatTitle || this.defaultFormatTitleHandler;
-
         params.onFormatTitle = function(row) {
             onFormatTitle.call(thisObj, row, thisObj.getInnerRow(row).children('.ftItemText'));
         }
@@ -208,6 +228,115 @@ FancyTree.prototype = {
 
         // construct empty HTML element for this rowtype
         params.baseElement = this.buildRowTypeElem(name);
+
+        if (!params.allowedDropTargets || params.allowedDropTargets.length == 0) {
+            return;
+        }
+
+        // configure draggable and droppable parameters
+        params.draggableParams = {
+            cursorAt: { top: 35, left: 0 },
+            distance: 5,
+            delay: 50,
+            helper: function(e, ui)
+            {
+                var multiSelectionFakeLength = (thisObj.multiSelection.length == 0 ? 1 : thisObj.multiSelection.length);
+                return '<div class="ftDragHelper"><b>Moving ' + multiSelectionFakeLength + ' tab' + (multiSelectionFakeLength == 1 ? '' : 's') + '</b></div>';
+            },
+            revert: 'invalid',
+            opacity: 0.95,
+            revertDuration: 300,
+            scroll: true,
+            start: function(e, ui) {
+                thisObj.dragging = true;
+                if (thisObj.multiSelection.length == 0 || !$(e.target).parent().hasClass('ftSelected'))
+                {
+                    console.log('resetting multiselection before dragging');
+                    var row = thisObj.getParentRowNode($(e.target));
+                    // pageRowClicked(row);
+                    thisObj.clearMultiSelection.call(thisObj);
+                    thisObj.toggleMultiSelectionSingle.call(thisObj, row.attr('id'));
+                    //thisObj.multiSelection.push(row.attr('id'));
+                }
+            },
+            stop: function(e, ui) {
+                thisObj.dragging = false;
+                $('.ftDragToChild').removeClass('ftDragToChild');
+                $('.ftDragToNext').removeClass('ftDragToNext');
+                if (thisObj.multiSelection.length == 1)
+                {
+                    thisObj.clearMultiSelection.call(thisObj);
+                }
+            }
+            // },
+            // drag: function(e, ui) {
+            //   var over = $(e.target);
+            //   var overPageRow = over.closest('.pageRow');
+            //   var rowHeight = overPageRow.height();
+            //   var topDelta = e.pageY - overPageRow.position().top;
+
+            //   console.log(topDelta > rowHeight / 2);
+            //   console.log('should be over tab id ' + overPageRow.attr('id'));
+            //   var isOnLowerHalf = (topDelta > rowHeight / 2);
+
+            //   $('.dragToNext').removeClass('dragToNext');
+            //   overPageRow.addClass('dragToNext');
+
+            // }
+        };
+
+        var dropSelectors = params.allowedDropTargets.map(function(e) {
+            if (e == 'ROOT') {
+                return '.ftRoot';
+            }
+
+            return '.ftRowNode[rowtype="' + e + '"] > .ftItemRow > .ftItemRowContent > .ftInnerRow';
+        });
+
+        params.droppableParams = {
+            accept: dropSelectors.join(','),
+            tolerance: 'pointer',
+            hoverClass: 'ftDragOver',
+            drop: function(e, ui) {
+                console.log('drop!');
+                console.log(e.target);
+                console.log(ui);
+                console.log(thisObj.multiSelection.length);
+                // console.log(thisObj.draggingOverRow.attr('id'));
+                console.log(thisObj.draggingToNext);
+                console.log('!pord');
+
+                console.log('PERFORM DROP');
+
+                // var overTabId = thisObj.draggingOverRow.attr('id');
+            }
+                // for (index in thisObj.multiSelection)
+                // {
+                //     var tabId = multiSelection[index];
+                //     console.log('moving ' + tabId + ' draggingToNext ' + draggingToNext);
+                //     if (draggingToNext)
+                //     {
+                //         var siblingPageRow = getPageRowByTabId(overTabId);
+                //         var parentTabId = siblingPageRow.parents('.pageRow:first').attr('id');
+                //         var afterSiblingTabId = overTabId;
+                //         movePageRow(getPageRowByTabId(tabId), parentTabId, afterSiblingTabId);
+                //     }
+                //     else
+                //     {
+                //         movePageRow(getPageRowByTabId(tabId), overTabId, -1);
+                //     }
+                // }
+
+                // clearMultiSelection();
+            // },
+            // over: function(e, ui) {
+            //     document.title = 'over ' + e.target.parentNode.id;
+            //     console.log(e);
+            //     console.log(ui);
+            // }
+        };
+
+
     },
 
 
@@ -327,6 +456,11 @@ FancyTree.prototype = {
             this.focusedRow.removeClass('ftFocused');
         }
 
+        if (this.multiSelection.length > 0) {
+            if (this.multiSelection.indexOf(id) == -1) {
+                this.clearMultiSelection();
+            }
+        }
         this.lastMultiSelectedToId = id;
         this.lastMultiSelectedFromId = id;
 
@@ -1249,6 +1383,15 @@ FancyTree.prototype = {
 
         // configure row button tooltips
         this.setRowButtonTooltips(row);
+
+        // configure drag & drop
+        if (rowTypeParams.draggableParams) {
+            innerRow.draggable(rowTypeParams.draggableParams);
+        }
+
+        if (rowTypeParams.droppableParams) {
+            innerRow.droppable(rowTypeParams.droppableParams);
+        }
 
         return row;
     },

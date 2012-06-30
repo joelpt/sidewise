@@ -51,6 +51,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
         'page': {
             autofocusOnClick: true,
             multiselectable: true,
+            allowedDropTargets: ['window', 'page'],
             onClick: onPageRowClick,
             onDoubleClick: onPageRowDoubleClick,
             onMiddleClick: onPageRowMiddleClick,
@@ -69,6 +70,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
         'window': {
             autofocusOnClick: false,
             multiselectable: false,
+            allowedDropTargets: ['ROOT'],
             onClick: onWindowRowClick,
             onDoubleClick: onWindowRowDoubleClick,
             onMiddleClick: onWindowRowMiddleClick,
