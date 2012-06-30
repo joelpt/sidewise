@@ -107,7 +107,9 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
         .on('contextmenu', rootNode, data, this.onContextMenu)
         .on('mouseup', '.ftContextMenuItem', data, this.onContextMenuItemClick)
         .on('mouseup', '.ftContextMenuSeparator', data, function() { return false; })
-        .on('mouseup', 'body', data, this.onBodyMouseUp);
+        .on('mouseup', 'body', data, this.onBodyMouseUp)
+        .on('mousemove', '.ftItemRow', data, this.onItemRowMouseMove);
+
 
     if (options.showFilterBox != false) {
         // add event handlers for filter box

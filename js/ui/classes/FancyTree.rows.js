@@ -11,6 +11,10 @@ FancyTree.prototype.getParentRowNode = function(elem) {
     return elem.closest('.ftRowNode');
 };
 
+FancyTree.prototype.getItemRow = function(elem) {
+    return elem.children('.ftItemRow');
+};
+
 FancyTree.prototype.getItemRowContent = function(elem) {
     return elem.children('.ftItemRow').children('.ftItemRowContent');
 };

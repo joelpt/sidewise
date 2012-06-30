@@ -6,7 +6,7 @@
 FancyTree.prototype.startTooltipTimer =  function(row, evt, afterDelay) {
     // block tooltip from showing if permitTooltipHandler says so
     if (this.permitTooltipHandler && !this.permitTooltipHandler()) {
-        returnx;
+        return;
     }
 
     var treeObj = this;

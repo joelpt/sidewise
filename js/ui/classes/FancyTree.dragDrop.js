@@ -3,11 +3,60 @@
 // Stuff to assist with drag and drop.
 ///////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
+var DRAG_TO_NEXT_SENSITIVITY_RATIO = 0.45;
+
+
+///////////////////////////////////////////////////////////
+// Event handlers
+///////////////////////////////////////////////////////////
+
+FancyTree.prototype.onItemRowMouseMove = function(evt) {
+    var treeObj = evt.data.treeObj;
+
+    if (!treeObj.dragging) {
+        return;
+    }
+
+    console.log(evt.target.className);
+    var over = $(evt.target);
+    var overRow = treeObj.getParentRowNode(over);
+
+    console.log(topDelta, rowHeight, topDelta > rowHeight / 2);
+    //console.log(evt.pageX + ', ' + evt.pageY + ' .. ');
+    //console.log(overRow.attr('id'));
+    //console.log(over.position().left + ', ' + over.position().top);
+    // var isOnLowerHalf = ( (topDelta / rowHeight) > dragToChildSensitivityRatio );
+    // draggingToNext = !isOnLowerHalf;
+    var rowHeight = overRow.height();
+    var topDelta = evt.pageY - overRow.offset().top;
+    draggingToNext = ((topDelta / rowHeight) > DRAG_TO_NEXT_SENSITIVITY_RATIO);
+
+    $('.ftDragToChild').removeClass('ftDragToChild');
+    $('.ftDragToNext').removeClass('ftDragToNext');
+
+    if (draggingToNext) {
+        overRow.addClass('ftDragToNext');
+    } else {
+        overRow.addClass('ftDragToChild');
+    }
+
+    treeObj.draggingOverRow = overRow;
+};
+
+
+///////////////////////////////////////////////////////////
+// jQuery.draggable/droppable parameter getters
+///////////////////////////////////////////////////////////
+
 FancyTree.prototype.getDraggableParams = function() {
     var thisObj = this;
 
     return {
-            cursorAt: { top: 35, left: 0 },
+            cursorAt: { top: -30, left: 5 },
             distance: 5,
             delay: 50,
             helper: function(e, ui)
@@ -16,7 +65,7 @@ FancyTree.prototype.getDraggableParams = function() {
                 return '<div class="ftDragHelper"><b>Moving ' + multiSelectionFakeLength + ' tab' + (multiSelectionFakeLength == 1 ? '' : 's') + '</b></div>';
             },
             revert: 'invalid',
-            opacity: 0.95,
+            opacity: 0.96,
             revertDuration: 300,
             scroll: true,
             start: function(e, ui) {
@@ -40,21 +89,6 @@ FancyTree.prototype.getDraggableParams = function() {
                     thisObj.clearMultiSelection.call(thisObj);
                 }
             }
-            // },
-            // drag: function(e, ui) {
-            //   var over = $(e.target);
-            //   var overPageRow = over.closest('.pageRow');
-            //   var rowHeight = overPageRow.height();
-            //   var topDelta = e.pageY - overPageRow.position().top;
-
-            //   console.log(topDelta > rowHeight / 2);
-            //   console.log('should be over tab id ' + overPageRow.attr('id'));
-            //   var isOnLowerHalf = (topDelta > rowHeight / 2);
-
-            //   $('.dragToNext').removeClass('dragToNext');
-            //   overPageRow.addClass('dragToNext');
-
-            // }
         };
 };
 
@@ -65,7 +99,7 @@ FancyTree.prototype.getDroppableParams = function(allowedDropTargets) {
             return '.ftRoot';
         }
 
-        return '.ftRowNode[rowtype="' + e + '"] > .ftItemRow > .ftItemRowContent > .ftInnerRow';
+        return '.ftRowNode[rowtype="' + e + '"] > .ftItemRow *';
     });
 
     var thisObj = this;

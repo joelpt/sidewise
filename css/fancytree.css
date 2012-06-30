@@ -366,12 +366,22 @@
     background: -webkit-linear-gradient(top, hsl(220, 80%, 80%) 0%, #fff 100%);
     border: 1px solid #666;
     border-radius: 4px;
-    box-shadow: 2px 2px 11px rgba(0, 0, 0, 0.5);
+    box-shadow: 0px 0px 11px rgba(0, 0, 0, 0.5);
     color: black;
     font-family: Verdana;
     font-style: italic;
     font-weight: bold;
     font-size: 11px;
     word-wrap: none;
-    padding: 6px;
+    padding: 8px;
+}
+
+.ftDragToNext > .ftItemRow {
+    border-bottom: 2px solid blue;
+    height: 19px;
+}
+
+.ftDragToChild > .ftItemRow > .ftItemRowContent {
+    border: 1px solid blue !important;
+    outline: 1px solid blue;
 }
