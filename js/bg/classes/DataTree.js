@@ -29,21 +29,47 @@ DataTree.prototype = {
       * @param node The node to add.
       * @param parentMatcher The parentMatcher to use for identifying the parent; see getNode().
       *                      If parentMatcher is omitted, add to the top level of the tree.
-      * @returns [node, parent]
+      * @param beforeSiblingMatcher If provided, node will be added under the parent before the
+      *                             node that matches beforeSiblingMatcher.
+      * @returns [node, parent, beforeSibling], where parent/beforeSibling may be undefined
       */
-    addNode: function(node, parentMatcher)
+    addNode: function(node, parentMatcher, beforeSiblingMatcher)
     {
-        if (parentMatcher === undefined)
-        {
-            this.tree.push(node);
-            this.idIndex[node.id] = node;
-            return [node, undefined];
+        var parent, beforeSibling;
+
+        if (parentMatcher) {
+            parent = this.getNode(parentMatcher);
+
+            if (!parent) {
+                throw new Error('Could not find element matching parentMatcher');
+            }
         }
-        parent = this.getNode(parentMatcher);
-        parent.children.push(node);
+
+        if (beforeSiblingMatcher) {
+            beforeSibling = this.getNodeEx(beforeSiblingMatcher);
+
+            if (!beforeSibling) {
+                throw new Error('Could not find element matching beforeSiblingMatcher');
+            }
+
+            if (beforeSibling.parent !== parent) {
+                throw new Error('Specified sibling is not a child of specified parent');
+            }
+        }
+
+        if (beforeSibling) {
+            parent.children.splice(beforeSibling.index, 0, node);
+        }
+        else if (parent) {
+            parent.children.push(node);
+        }
+        else {
+            this.tree.push(node);
+        }
+
         this.idIndex[node.id] = node;
         this.updateLastModified();
-        return [node, parent];
+        return [node, parent, beforeSibling ? beforeSibling.node : undefined];
     },
 
     /**
@@ -179,22 +205,36 @@ DataTree.prototype = {
     },
 
     // Move the node matching movingMatcher to reside under the node matching parentMatcher.
-    // This is a shallow move; the moved node's children are spliced in-place into its old location
-    // Returns the moved node if a move was actually performed.
-    moveNode: function(movingMatcher, parentMatcher)
+    // If beforeSiblingMatcher is specified, node will be placed before beforeSiblingMatcher under new parent.
+    // If keepChildren is true, all children of the moving node will keep its existing children after the move.
+    // If keepChildren if false (default), the moving node's children get spliced into the moving node's old spot.
+    //
+    // Returns [moved, newParent, beforeSibling] if a move was actually performed, or undefined if not.
+    moveNode: function(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren)
     {
-        var moving = this.getNodeEx(movingMatcher);
+        var moving = this.getNode(movingMatcher);
         var parent = this.getNode(parentMatcher);
 
-        if (moving.parent == parent) {
-            // already under this parent
-            return undefined;
+        if (keepChildren) {
+            // don't allow move if parent is currently a child of moving (would create a cycle)
+            var test = tree.getNodeEx(function(e) { return e === parent; }, moving.children);
+            if (test !== undefined) {
+                console.log('Denying move; would have created a cycle');
+                return undefined;
+            }
         }
 
-        this.removeNode(moving.node);
-        moving.node.children = []; // remove all of its children
-        this.addNode(moving.node, parent);
-        return moving.node;
+        var r;
+        if (keepChildren) {
+            this.removeNode(moving, true);
+            r = this.addNode(moving, parent, beforeSiblingMatcher);
+        }
+        else {
+            this.removeNode(moving, false);
+            moving.children = []; // remove all of its children
+            r = this.addNode(moving, parent, beforeSiblingMatcher);
+        }
+        return r;
     },
 
     // Merge the node matching fromNodeMatcher and all its children into the node matching toNodeMatcher.
@@ -223,27 +263,8 @@ DataTree.prototype = {
         return { fromId: fromId, toId: toId };
     },
 
-    // Move the first element matching movingMatcherFn, and all of its children, to reside under the first element
-    // matching parentMatcherFn. Moves that would create a cycle (trying to make a page its own descendant) will
-    // throw an exception.
-    // moveElemDeep: function(movingMatcherFn, parentMatcherFn)
-    // {
-    //     var parent = this.findElem(parentMatcherFn, this.tree);
-    //     var result = this.findElem(movingMatcherFn, this.tree, function(e, i, a) {
-    //         // don't allow move if parent is currently a child of page (moving would create a cycle)
-    //         var test = tree.findElem(function(elem) { return elem == parent; }, e.children);
-    //         if (test !== undefined)
-    //             throw new Error('moveElemDeep would have created a cycle, aborting');
-
-    //         a.splice(i, 1); // remove moving page from its current spot
-    //         parent.children.push(e); // insert moving page as child of new parent
-    //     });
-    //     this.updateLastModified();
-    //     return result;
-    // },
-
     // remove the first element from the tree matching matcher
-    // removeChildren: if true, remove element's children; if false, splice them into element's old spot
+    // removeChildren: if true, remove element's children; if false (default), splice them into element's old spot
     removeNode: function(matcher, removeChildren)
     {
         var found = this.getNodeEx(matcher);
