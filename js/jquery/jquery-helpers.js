@@ -11,6 +11,8 @@ $.expr[':'].regexicontains = function(obj, index, meta, stack) {
     return re.test(obj.textContent || obj.innerText || jQuery(obj).text() || '');
 };
 
+// Adds an insertAtCaret jQuery method to insert myValue at the current
+// insert point in a textarea/input=text
 jQuery.fn.extend({
     insertAtCaret: function(myValue) {
         return this.each(function(i) {
@@ -38,3 +40,4 @@ jQuery.fn.extend({
         });
     }
 });
+
