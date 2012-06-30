@@ -48,11 +48,24 @@ PageTree.prototype = {
     // Node manipulation
     ///////////////////////////////////////////////////////////
 
-    // add given node as a child of the node matching parentMatcher
-    addNode: function(node, parentMatcher)
+    /**
+      * Adds a node to the tree as a child of the element matched by parentMatcher.
+      *
+      * @param node The node to add.
+      * @param parentMatcher The parentMatcher to use for identifying the parent; see getNode().
+      *                      If parentMatcher is omitted, add to the top level of the tree.
+      * @param beforeSiblingMatcher If provided, node will be added under the parent before the
+      *                             node that matches beforeSiblingMatcher.
+      * @returns [node, parent, beforeSibling], where parent/beforeSibling may be undefined
+      */
+    addNode: function(node, parentMatcher, beforeSiblingMatcher)
     {
-        var r = this.$super('addNode')(node, parentMatcher);
-        this.callbackProxyFn('add', { element: node, parentId: r[1] ? r[1].id : undefined });
+        var r = this.$super('addNode')(node, parentMatcher, beforeSiblingMatcher);
+        this.callbackProxyFn('add', {
+            element: node,
+            parentId: r[1] ? r[1].id : undefined,
+            beforeSiblingId: r[2] ? r[2].id : undefined
+        });
         return r;
     },
 
@@ -91,16 +104,23 @@ PageTree.prototype = {
         return r;
     },
 
-    // move the element matching movingMatcher to reside under parent matching parentMatcher
-    // this is a shallow move; moving elements's children are spliced in-place into its old location
-    moveNode: function(movingMatcher, parentMatcher)
+    // Move the node matching movingMatcher to reside under the node matching parentMatcher.
+    // If beforeSiblingMatcher is specified, node will be placed before beforeSiblingMatcher under new parent.
+    // If keepChildren is true, all children of the moving node will keep its existing children after the move.
+    // If keepChildren if false (default), the moving node's children get spliced into the moving node's old spot.
+    //
+    // Returns [moved, newParent, beforeSibling] if a move was actually performed, or undefined if not.
+    moveNode: function(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren)
     {
-        var moving = tree.getNode(movingMatcher);
-        var parent = tree.getNode(parentMatcher);
-        var r = this.$super('moveNode')(moving, parent);
+        var r = this.$super('moveNode')(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren);
 
         if (r !== undefined) {
-            this.callbackProxyFn('move', { element: r, newParentId: parent.id });
+            this.callbackProxyFn('move', {
+                element: r[0],
+                newParentId: parentMatcher ? r[1].id : undefined,
+                beforeSiblingId: beforeSiblingMatcher ? r[2].id : undefined,
+                keepChildren: keepChildren || false
+            });
         }
         return r;
     },
@@ -181,12 +201,6 @@ PageTree.prototype = {
         if (page.unread) {
             this.updatePage(page, { unread: false });
         }
-    },
-
-    // move the page with tabId to reside under newParentTabId, bringing children along
-    movePageDeep: function(tabId, newParentTabId)
-    {
-        return this.moveElemDeep(this.getPageIdMatcherFn(tabId), this.getPageIdMatcherFn(newParentTabId));
     },
 
     // update an existing page with given details
