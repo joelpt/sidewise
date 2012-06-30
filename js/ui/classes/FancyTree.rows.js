@@ -31,10 +31,6 @@ FancyTree.prototype.getChildrenCount = function(elem) {
     return this.getChildrenContainer(elem).find('.ftRowNode').length;
 };
 
-FancyTree.prototype.getRowTypeParams = function(row) {
-    return this.rowTypes[row.attr('rowtype')];
-};
-
 
 ///////////////////////////////////////////////////////////
 // Row HTML element construction
