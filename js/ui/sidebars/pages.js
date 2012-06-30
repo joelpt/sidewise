@@ -26,6 +26,7 @@ var ft;
 var bg;
 var settings;
 
+
 ///////////////////////////////////////////////////////////
 // Initialization
 ///////////////////////////////////////////////////////////
@@ -213,12 +214,12 @@ function onRowExpanderClick(evt) {
 
 function onContextMenuShow(rows) {
     return [
-        { id: 'reloadPage', icon: '/images/reload.png', label: 'Reload', callback: onContextMenuItemReload }, //, preserveSelectionAfter: true },
+        { id: 'reloadPage', icon: '/images/reload.png', label: 'Reload', callback: onContextMenuItemReload, preserveSelectionAfter: true },
         { separator: true },
         { id: 'closePage', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemClose },
         { id: 'hibernatePage', icon: '/images/pause.png', label: 'Hibernate', callback: onContextMenuItemHibernate },
         { id: 'awakenPage', icon: '/images/pause.png', label: 'Awaken', callback: onContextMenuItemAwaken },
-        { id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel }, //, preserveSelectionAfter: true },
+        { id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true },
         { id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight }, //, preserveSelectionAfter: true },
         { id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight } //, preserveSelectionAfter: true }
     ];
