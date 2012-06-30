@@ -155,7 +155,7 @@ function executeContentScript(url, tabId, scriptBody)
 
 
 ///////////////////////////////////////////////////////////
-// File reading
+// File/script reading
 ///////////////////////////////////////////////////////////
 
 function readFile(url, callback)
@@ -184,6 +184,17 @@ function readFile(url, callback)
     } catch(e) {
         console.error(e);
     }
+}
+
+// Adds a includeScripts method which loads the specified
+// scripts in order and executes them
+// Requires jQuery
+function includeScripts(scriptUrls) {
+    $.ajaxSetup({async: false});
+    scriptUrls.forEach(function(e) {
+        $.getScript(e);
+    });
+    $.ajaxSetup({async: true});
 }
 
 
