@@ -127,7 +127,7 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
             node.collapsed);
     }
     else if (node instanceof bg.PageNode) {
-        row = fancyTree.getNewRowElem('page', node.id, 'chrome://favicon', node.label, node.title,
+        row = fancyTree.getNewRowElem('page', node.id, node.favicon, node.label, node.title,
             {
                 url: node.url,
                 status: node.status,
@@ -143,11 +143,6 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
     }
 
     fancyTree.addRow(row, parentId);
-
-    if (node instanceof bg.PageNode) {
-        // delay setting of the actual page favicon to avoid delaying initial page load
-        setTimeout(function() { fancyTree.updateRow(row, { icon: node.favicon }); }, 100);
-    }
 }
 
 
@@ -167,7 +162,7 @@ function PageTreeCallbackProxyListener(op, args)
             ft.removeRow(args.element.id, args.removeChildren);
             break;
         case 'move':
-            ft.moveRow(args.element.id, args.newParentId);
+            ft.moveRow(args.element.id, args.newParentId, args.beforeSiblingId, args.keepChildren);
             break;
         case 'merge':
             ft.mergeRows(args.fromId, args.toId);
