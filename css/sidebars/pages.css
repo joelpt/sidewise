@@ -138,7 +138,7 @@ section#main:not(.debugEnabled) {
 }
 
 .ftRowNode[rowtype=page].closing > .ftItemRow {
-    color: gray;
+    text-decoration: line-through;
 }
 
 .ftRowNode[rowtype=page][hibernated=true] > .ftItemRow > .ftItemRowContent {
