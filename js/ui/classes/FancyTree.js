@@ -263,7 +263,7 @@ FancyTree.prototype = {
         this.hideTooltip();
     },
 
-    moveRow: function(id, newParentId, beforeSiblingId) {
+    moveRow: function(id, newParentId, beforeSiblingId, keepChildren) {
         var elem = this.getRow(id);
         var oldParent = elem.parent().parent();
 
@@ -275,22 +275,22 @@ FancyTree.prototype = {
             newParent = this.getRow(newParentId);
         }
 
-        if (!beforeSiblingId && oldParent.get(0).id == newParent.get(0).id) {
+        if (!beforeSiblingId && oldParent.attr('id') == newParent.attr('id')) {
             return;
         }
 
-        this.removeRow(id); // prevents possible DOM_HIERARCHY exceptions
+        this.removeRow(id, keepChildren); // prevents possible DOM_HIERARCHY exceptions
 
-        var children = this.getChildrenContainer(newParent);
+        var newParentChildren = this.getChildrenContainer(newParent);
         if (beforeSiblingId) {
-            var sibling = children.children('#' + beforeSiblingId);
+            var sibling = newParentChildren.children('#' + beforeSiblingId);
             if (sibling.length == 0) {
                 throw new Error('Could not find sibling with id ' + beforeSiblingId);
             }
             sibling.before(elem);
         }
         else {
-            children.append(elem);
+            newParentChildren.append(elem);
         }
         this.setRowButtonTooltips(elem);
 
