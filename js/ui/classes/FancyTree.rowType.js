@@ -16,7 +16,11 @@ FancyTree.prototype.addRowType = function(name, params) {
     var thisObj = this;
     this.rowTypes[name] = params;
 
-    // configure onFormatTitle handler
+    // configure params
+    params.allowAtTopLevel = (params.allowAtTopLevel === undefined ? true : params.allowAtTopLevel);
+    params.allowAtChildLevel = (params.allowAtChildLevel === undefined ? true : params.allowAtChildLevel);
+
+    // configure title formatting handler
     var onFormatTitle = params.onFormatTitle || this.defaultFormatTitleHandler;
     params.onFormatTitle = function(row) {
         onFormatTitle.call(thisObj, row, thisObj.getInnerRow(row).children('.ftItemText'));
