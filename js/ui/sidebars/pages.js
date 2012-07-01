@@ -50,6 +50,8 @@ $(document).ready(function() {
 function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     var rowTypes = {
         'page': {
+            allowAtTopLevel: false,
+            allowAtChildLevel: true,
             autofocusOnClick: true,
             multiselectable: true,
             allowedDropTargets: ['window', 'page'],
@@ -69,9 +71,11 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             ]
         },
         'window': {
+            allowAtTopLevel: true,
+            allowAtChildLevel: false,
             autofocusOnClick: false,
             multiselectable: false,
-            allowedDropTargets: ['ROOT'],
+            allowedDropTargets: ['ROOT', 'window'],
             onClick: onWindowRowClick,
             onDoubleClick: onWindowRowDoubleClick,
             onMiddleClick: onWindowRowMiddleClick,

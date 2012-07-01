@@ -13,6 +13,10 @@ FancyTree.prototype.rowMouseDownHandler = function(evt) {
 FancyTree.prototype.rowMouseUpHandler = function(evt) {
     var treeObj = evt.data.treeObj;
 
+    if (treeObj.dragging) {
+        return;
+    }
+
     var $this = $(this);
     var row = treeObj.getParentRowNode($this);
     evt.data.row = row;
