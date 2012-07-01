@@ -30,6 +30,8 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   *          {
   *            identifier:                       // identifying string for each type of row to support
   *            {
+  *              allowAtTopLevel: Boolean,       // allow row at top (root) level, default=true
+  *              allowAtChildLevel: Boolean,     // allow row as child of another row, default=true
   *              autofocusOnClick: Boolean,      // if true (default), set focus to row when clicked
   *              multiselectable: Boolean,       // if true (default), row can be in ctrl/shift selections
   *              allowedDropTargets: Array       // if provided, a row of this type will be permitted to be
