@@ -105,6 +105,7 @@ FancyTree.prototype.getNewRowElem = function(rowType, id, icon, label, text, ext
     var rowTypeParams = this.rowTypes[rowType];
     var row = rowTypeParams.baseElement.clone(true, true);
     var innerRow = this.getInnerRow(row);
+    var itemRow = this.getItemRow(row);
     var iconElem = innerRow.find('.ftRowIcon');
 
     row
@@ -134,11 +135,11 @@ FancyTree.prototype.getNewRowElem = function(rowType, id, icon, label, text, ext
 
     // configure drag & drop
     if (rowTypeParams.draggableParams) {
-        innerRow.draggable(rowTypeParams.draggableParams);
+        itemRow.draggable(rowTypeParams.draggableParams);
     }
 
     if (rowTypeParams.droppableParams) {
-        innerRow.droppable(rowTypeParams.droppableParams);
+        itemRow.droppable(rowTypeParams.droppableParams);
     }
 
     return row;
