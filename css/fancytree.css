@@ -242,7 +242,7 @@
     padding: 0px;
     margin: 0px;
     height: 20px;
-    border: 1px solid white;
+    border: 1px solid transparent;
     border-radius: 2px;
 }
 
@@ -374,14 +374,17 @@
     font-size: 11px;
     word-wrap: none;
     padding: 8px;
+    z-index: 10;
 }
 
-.ftDragToNext > .ftItemRow {
-    border-bottom: 2px solid blue;
-    height: 19px;
+#ftDragInsertBar {
+    position: absolute;
+    display: none;
+    outline: 1px solid blue;
 }
 
 .ftDragToChild > .ftItemRow > .ftItemRowContent {
     border: 1px solid blue !important;
     outline: 1px solid blue;
 }
+
