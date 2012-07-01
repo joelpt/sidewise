@@ -130,6 +130,15 @@ section#main:not(.debugEnabled) {
     top: -1px;
 }
 
+.ftDragToChild[rowtype=window] > .ftItemRow > .ftItemRowContent {
+    border-width: 0px !important;
+    outline: 2px solid blue;
+}
+
+#ftDragInsertBar[targetrowtype=window] {
+    margin-top: 2px;
+}
+
 
 /* page tree row states */
 
