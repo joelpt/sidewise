@@ -167,7 +167,6 @@ SidebarNavManager.prototype = {
             $target = $target.closest('.sidebarButton');
         }
         $target.addClass('mousedown');
-        evt.data.manager.showSidebarPane.call(evt.data.manager, $target.attr('buttonid'));
         evt.stopPropagation();
     },
 
