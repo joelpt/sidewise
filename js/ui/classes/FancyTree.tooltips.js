@@ -46,8 +46,8 @@ FancyTree.prototype.showTooltip =  function(row, bodyWidth, evt) {
         return;
     }
 
-    // don't show tooltip when context menu is visible or we are dragging
-    if (this.contextMenuShown || this.dragging) {
+    // don't show tooltip when context menu is visible or we are dragging or dropping
+    if (this.contextMenuShown || this.dragging || this.dropping) {
         return;
     }
 
