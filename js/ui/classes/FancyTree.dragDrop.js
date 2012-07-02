@@ -250,10 +250,19 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
             treeObj.drawDragInsertBar.call(treeObj, 'A', dragInsertBarTarget, treeObj.getParentRowNode(dragInsertBarTarget).attr('rowtype'));
         }
         else {
-            // insert below hovered row (as sibling)
-            draggingTo = 'B';
-            dragInsertBarTarget = overItemRowContent;
-            treeObj.drawDragInsertBar.call(treeObj, 'B', dragInsertBarTarget, treeObj.getParentRowNode(dragInsertBarTarget).attr('rowtype'));
+            if (underRoot && children.length == 0) {
+                // to child (within)
+                draggingTo = 'C';
+                dragInsertBarTarget = overItemRowContent;
+                overRow.addClass('ftDragToChild');
+                treeObj.hideDragInsertBar.call(treeObj);
+            }
+            else {
+                // insert below hovered row (as sibling)
+                draggingTo = 'B';
+                dragInsertBarTarget = overItemRowContent;
+                treeObj.drawDragInsertBar.call(treeObj, 'B', dragInsertBarTarget, treeObj.getParentRowNode(dragInsertBarTarget).attr('rowtype'));
+            }
         }
     }
     else {
@@ -336,6 +345,11 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
     var moveToHasChildren = $moveToChildren.children().length > 0;
     var moveToIsCollapsed = $moveToRow.hasClass('.ftCollapsed');
 
+    var $topParents = $moveToRow.parents('.ftRowNode').last(); // add topmost parent of move destination row
+    if ($topParents.length == 0) {
+        $topParents = $moveToRow;
+    }
+
     if (moveToPosition == 'B') {
         // causes us to do moves in a way that retains the original ordering
         $rows = $rows.reverse();
@@ -347,6 +361,16 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
         var $parents = $e.parents('.ftRowNode');
         var $parent = $parents.first(); // immediate parent
         var $parentsSelected = $parents.filter(function(i, p) { return $(p).is($rows) }); // intersect selected and parents lists
+
+        var $topParent = $parents.last();
+        if ($topParent.length == 0) {
+            // no topmost parent; just add ourselves
+            $topParents = $topParents.add($e);
+        }
+        else {
+            // add topmost parent
+            $topParents = $topParents.add($topParent);
+        }
 
         // iterate through the children of each row in $rows, finding those rows that are not also in $rows
         // and moving them up the tree to their closest parent row which is not also in $rows
@@ -370,13 +394,13 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
 
             if ($closestUnselectedParent) {
                 // move the unselected child up the tree
-                thisObj.moveRow($child, $closestUnselectedParent, $selectedParentInClosestUnselectedParent, true);
+                thisObj.moveRow($child, $closestUnselectedParent, $selectedParentInClosestUnselectedParent, true, true);
 
-            // reset draggable/droppable on any descendant rows of $child; jQuery UI loses .draggable/.droppable on these
-            var $childDescendants = $child.find('.ftChildren > .ftRowNode');
-            $childDescendants.each(function(i, e) {
-                thisObj.setDraggableDroppable.call(thisObj, $(e));
-            });
+                // reset draggable/droppable on any descendant rows of $child; jQuery UI loses .draggable/.droppable on these
+                // var $childDescendants = $child.find('.ftChildren > .ftRowNode');
+                // $childDescendants.each(function(i, e) {
+                //     thisObj.setDraggableDroppable.call(thisObj, $(e));
+                // });
             }
         });
 
@@ -385,12 +409,18 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
         //     return;
         // }
 
-        // move the row
+        // determine parent row of move target
         var $moveToParent = thisObj.getParentRowNode($moveToRow.parent());
+        if ($moveToParent.length == 0) {
+            $moveToParent = undefined; // no parent row, we'll just leave this blank so the tree's root acts as the parent
+        }
+
+
+        // move the row
         if ($parentsSelected.length == 0) {
             // no ancestors are selected; move row to dragged-to position
             if (moveToPosition == 'A') { // above
-                thisObj.moveRow.call(thisObj, $e, $moveToParent, $moveToRow, true);
+                thisObj.moveRow.call(thisObj, $e, $moveToParent, $moveToRow, true, true);
                 // $moveToRow.before($e);
                 return;
             }
@@ -407,7 +437,7 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
                         $moveToBeforeChild = undefined;
                     }
 
-                    thisObj.moveRow.call(thisObj, $e, $moveToRow, $moveToBeforeChild, true);
+                    thisObj.moveRow.call(thisObj, $e, $moveToRow, $moveToBeforeChild, true, true);
                     // var $childDescendants = $e.find('.ftChildren > .ftRowNode');
                     // $childDescendants.each(function(i, e) {
                     //     thisObj.setDraggableDroppable.call(thisObj, $(e));
@@ -427,17 +457,17 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
                     $moveToNextSibling = undefined;
                 }
 
-                thisObj.moveRow.call(thisObj, $e, $moveToParent, $moveToNextSibling, true);
-                var $childDescendants = $e.find('.ftChildren > .ftRowNode');
-                $childDescendants.each(function(i, e) {
-                    thisObj.setDraggableDroppable.call(thisObj, $(e));
-                });
+                thisObj.moveRow.call(thisObj, $e, $moveToParent, $moveToNextSibling, true, true);
+                // var $childDescendants = $e.find('.ftChildren > .ftRowNode');
+                // $childDescendants.each(function(i, e) {
+                //     thisObj.setDraggableDroppable.call(thisObj, $(e));
+                // });
                 // $moveToRow.after($e);
                 return;
             }
 
             if (moveToPosition == 'C') { // child of
-                thisObj.moveRow.call(thisObj, $e, $moveToRow, undefined, true);
+                thisObj.moveRow.call(thisObj, $e, $moveToRow, undefined, true, true);
                 // $moveToChildren.append($e);
                 return;
             }
@@ -450,12 +480,36 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
 
         if ($closestParent.is($parent)) {
             // already under my current and selected parent, do naught
-            thisObj.setDraggableDroppable.call(thisObj, $e);
+            // thisObj.setDraggableDroppable.call(thisObj, $e);
             return;
         }
 
         // not immediately under a selected parent; move to the closest
         // selected ancestor
+        // TODO use .movePageRow here, or else stop using .movePageRow above and implement
+        // a move to hiddenDiv -> move to target scenario in this function instead
         $closestParent.append($e);
     });
+
+    console.log('top parents', $topParents);
+    var $fixups;
+    if ($topParents.length == 0) {
+        // just moving to/from root level, update everybody
+        $fixups = thisObj.root.find('.ftRowNode');
+    }
+    else {
+        // only do potentially affected nodes
+        $fixups = $topParents.find('.ftRowNode').add($topParents);
+    }
+
+    // reconfigure all possibly affected nodes in a moment
+    setTimeout(function() {
+        $fixups.each(function(i, e) {
+            var $e = $(e);
+            thisObj.setDraggableDroppable.call(thisObj, $e);
+            thisObj.updateRowExpander.call(thisObj, $e);
+            thisObj.setRowButtonTooltips.call(thisObj, $e);
+            thisObj.formatRowTitle.call(thisObj, $e);
+        });
+    }, 0);
 };
