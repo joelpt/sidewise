@@ -30,7 +30,7 @@ FancyTree.prototype.addRow = function(elem, parentId) {
     this.formatLineageTitles(parent);
 };
 
-FancyTree.prototype.removeRow = function(id, removeChildren) {
+FancyTree.prototype.removeRow = function(id, removeChildren, skipElementReconfiguration) {
     var elem = this.getRow(id);
     var parent = elem.parent().parent();
 
@@ -49,13 +49,17 @@ FancyTree.prototype.removeRow = function(id, removeChildren) {
         elem.replaceWith(elem.children('.ftChildren').children());
     }
 
+    this.hideTooltip();
+
+    if (skipElementReconfiguration) {
+        return;
+    }
+
     this.updateRowExpander(parent);
     this.formatLineageTitles(parent);
-
-    this.hideTooltip();
 };
 
-FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChildren) {
+FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChildren, skipElementReconfiguration) {
     var elem = this.getRow(id);
     var oldParent = elem.parent().parent();
 
@@ -67,7 +71,7 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
         newParent = this.getRow(newParentId);
     }
 
-    this.removeRow(id, keepChildren); // prevents possible DOM_HIERARCHY exceptions
+    this.removeRow(id, keepChildren, skipElementReconfiguration); // prevents possible DOM_HIERARCHY exceptions
 
     var newParentChildren = this.getChildrenContainer(newParent);
     if (beforeSiblingId) {
@@ -81,6 +85,11 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
     else {
         newParentChildren.append(elem);
     }
+
+    if (skipElementReconfiguration) {
+        return;
+    }
+
     this.setRowButtonTooltips(elem);
 
     this.setDraggableDroppable(elem);
