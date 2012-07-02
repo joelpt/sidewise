@@ -29,7 +29,7 @@ FancyTree.prototype.slideOutAndShrink = function(rows, onAfter) {
            });
     });
     if (onAfter) {
-        setTimeout(function() { onAfter(heights); }, 2 * EFFECT_DURATION_BASE_MS + 25);
+        setTimeout(function() { onAfter(heights); }, $.fx.off ? 25 : 2 * EFFECT_DURATION_BASE_MS + 25);
     }
     return heights;
 };
@@ -49,7 +49,7 @@ FancyTree.prototype.growAndSlideIn = function(rows, newHeights, onAfter) {
             });
     });
     if (onAfter) {
-        setTimeout(onAfter, 2 * EFFECT_DURATION_BASE_MS + 25);
+        setTimeout(onAfter, $.fx.off ? 25 : 2 * EFFECT_DURATION_BASE_MS + 25);
     }
 };
 
