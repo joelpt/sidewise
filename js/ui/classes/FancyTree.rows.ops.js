@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////
-// FancyTree.elements.js
-// Element manipulation
+// FancyTree.rows.ops.js
+// Basic operations on tree rows (get, add, remove, ...)
 ///////////////////////////////////////////////////////////
 
 FancyTree.prototype.getRow = function(idOrElem) {
@@ -35,8 +35,12 @@ FancyTree.prototype.removeRow = function(id, removeChildren) {
     var parent = elem.parent().parent();
 
     // ensure button tooltips don't popup after the row is removed, after the tips' predelay
-    this.getButtons(elem)
-        .each(function(i, e) { $(e).data('tooltip').onShow(function() { this.hide(); } ); })
+    this.getButtons(elem).each(function(i, e) {
+        var tooltipData = $(e).data('tooltip');
+        if (tooltipData) {
+            tooltipData.onShow(function() { this.hide(); });
+        }
+    });
 
     if (removeChildren) {
         elem.remove();
@@ -63,17 +67,14 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
         newParent = this.getRow(newParentId);
     }
 
-    if (!beforeSiblingId && oldParent.attr('id') == newParent.attr('id')) {
-        return;
-    }
-
     this.removeRow(id, keepChildren); // prevents possible DOM_HIERARCHY exceptions
 
     var newParentChildren = this.getChildrenContainer(newParent);
     if (beforeSiblingId) {
-        var sibling = newParentChildren.children('#' + beforeSiblingId);
+        var beforeSibling = this.getRow(beforeSiblingId);
+        var sibling = newParentChildren.children('#' + beforeSibling.attr('id'));
         if (sibling.length == 0) {
-            throw new Error('Could not find sibling with id ' + beforeSiblingId);
+            throw new Error('Could not find sibling ' + beforeSiblingId);
         }
         sibling.before(elem);
     }
@@ -81,6 +82,8 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
         newParentChildren.append(elem);
     }
     this.setRowButtonTooltips(elem);
+
+    this.setDraggableDroppable(elem);
 
     this.updateRowExpander(oldParent);
     this.updateRowExpander(newParent);
