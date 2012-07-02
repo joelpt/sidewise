@@ -28,14 +28,18 @@ FancyTree.prototype.updateRowExpander = function(row) {
     expander.removeClass('ftNode').addClass('ftExpander');
 };
 
+FancyTree.prototype.formatRowTitle = function(row) {
+    var rowTypeParams = this.getRowTypeParams(row);
+    if (rowTypeParams && rowTypeParams.onFormatTitle) {
+        rowTypeParams.onFormatTitle(row);
+    }
+};
+
 // Call rowType.onFormatTitle() on the given row and all its parent rows
 FancyTree.prototype.formatLineageTitles = function(row) {
     var thisObj = this;
     row.parents('.ftRowNode').add(row).each(function(i, e) {
         var $e = $(e);
-        var rowTypeParams = thisObj.getRowTypeParams($e);
-        if (rowTypeParams && rowTypeParams.onFormatTitle) {
-            rowTypeParams.onFormatTitle($e);
-        }
+        thisObj.formatRowTitle.call(thisObj, row);
     });
 };
