@@ -38,6 +38,9 @@ $(document).ready(function() {
 
     bg = chrome.extension.getBackgroundPage();
     settings = bg.settings;
+
+    $.fx.off = !settings.get('animationEnabled');
+
     ft = initTree('#treePlaceholder', '#filterBoxPlaceholder', bg.tree);
 
     var binder = new SidebarPaneFancyTreeBinder(ft, bg);

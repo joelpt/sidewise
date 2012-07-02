@@ -114,6 +114,8 @@
     "option_dockState_left": { "message": "left" },
     "option_dockState_right": { "message": "right" },
     "option_dockState_undocked": { "message": "undocked" },
+    "option_animationEnabled": { "message": "Enable animations" },
+    "option_animationEnabled_hint": { "message": "Disabling animations can improve performance on slower machines." },
 
     "option_pages_doubleClickAction": { "message": "When double-clicking a row"},
     "option_pages_middleClickAction": { "message": "When middle-clicking a row"},

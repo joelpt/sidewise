@@ -13,11 +13,16 @@ var sidebars = [
 var initialSidebar = 'pages';
 var manager;
 var bg;
+var settings;
 
 $(document).ready(onReady);
 
 function onReady() {
     bg = chrome.extension.getBackgroundPage();
+    settings = bg.settings;
+
+    $.fx.off = !settings.get('animationEnabled');
+
     manager = new SidebarNavManager($('ul#sidebarButtons'), $('tr#sidebars'),
         $('table#main'), $('body'), 'td');
     manager.addSidebarPanes(sidebars);

@@ -8,6 +8,7 @@ $(document).ready(function() {
     setI18NText();
     transformInputElements();
     loadSettings();
+    setCloudPlayState();
 
     $('#version').text(getMessage('text_Version') + ' ' + getVersion());
     setMonitorCountInfo(settings.get('monitorMetrics').length, false);
@@ -183,11 +184,16 @@ function onSettingModified(evt) {
         $target.removeClass('invalid');
         showStatusMessage(getMessage('optionsSuccessSavingSetting'));
         settings.updateStateFromSettings();
+        setCloudPlayState();
         return;
     }
 
     $target.addClass('invalid');
     showErrorMessage(getMessage('optionsErrorSavingSetting'));
+}
+
+function setCloudPlayState() {
+    $('#clouds > div').css('-webkit-animation-play-state', settings.get('animationEnabled') ? 'running' : 'paused');
 }
 
 function onCloseButtonClick() {

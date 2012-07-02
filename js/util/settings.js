@@ -92,7 +92,8 @@ Settings.prototype = {
             allowAutoUnmaximize: true,
             autoCollapseLastSessionWindows: true,
             rememberOpenPagesBetweenSessions: true,
-            wakeHibernatedPagesOnClick: true
+            wakeHibernatedPagesOnClick: true,
+            animationEnabled: true
         };
 
         for (var setting in defaultSettings) {
@@ -141,9 +142,16 @@ Settings.prototype = {
                 var domWindow = sh.sidebarPanes[k];
                 if (domWindow) {
                     try {
+                        // TODO improve this; we assume too much wrt what's happening in
+                        // the child page with domWindow.ft. To fix, when someone calls
+                        // sbh.registerSidebarPane, accept an onSettingsChanged event handler arg
+                        // and call it here; SidebarPaneFancyTreeBinder can bind up the onSettingsChanged
+                        // event to listen for settings changes and set java.fx appropriately
                         domWindow.ft.useAdvancedFiltering = this.get('useAdvancedTreeFiltering');
                     }
                     catch(ex) {}
+
+                    domWindow.$.fx.off = !this.get('animationEnabled');
 
                     if (loggingChanged) {
                         if (domWindow.loggingEnabled === undefined) {
