@@ -91,59 +91,40 @@ FancyTree.prototype.getDroppableParams = function(allowedDropTargets) {
 
     var thisObj = this;
     return {
-        // accept: dropSelectors.join(', '),
-            tolerance: 'pointer',
-            hoverClass: 'ftDragOver',
-            accept: function(e) {
-                console.log('accept:', thisObj.canAcceptDropTo);
-                return thisObj.canAcceptDropTo;
-            },
-            // accept: function(e) {
-            //     console.log('accept', allowedDropTargets, allowedDropTargets.indexOf(thisObj.draggingRow.attr('rowtype')));
-            //     if (allowedDropTargets.indexOf(thisObj.draggingRow.attr('rowtype')) >= 0) {
-            //         return true;
-            //     }
-            //     return false;
-            // },
-            drop: function(evt, ui) {
-                thisObj.dropping = true;
-                console.log('---PERFORM DROP---');
-                console.log('drop info', 'target',
-                    thisObj.getParentRowNode(thisObj.draggingOverRow).attr('id'),
-                    'to', thisObj.draggingTo);
-                var $rows = thisObj.root.find('#' + thisObj.multiSelection.join(',#'));
-
-                thisObj.moveDraggedRowsAnimate($rows, thisObj.draggingTo, thisObj.draggingOverRow, function() {
-                    thisObj.dropping = false;
-                });
-
-                // var overTabId = thisObj.draggingOverRow.attr('id');
-            }
-                // for (index in thisObj.multiSelection)
-                // {
-                //     var tabId = multiSelection[index];
-                //     console.log('moving ' + tabId + ' draggingToNext ' + draggingToNext);
-                //     if (draggingToNext)
-                //     {
-                //         var siblingPageRow = getPageRowByTabId(overTabId);
-                //         var parentTabId = siblingPageRow.parents('.pageRow:first').attr('id');
-                //         var afterSiblingTabId = overTabId;
-                //         movePageRow(getPageRowByTabId(tabId), parentTabId, afterSiblingTabId);
-                //     }
-                //     else
-                //     {
-                //         movePageRow(getPageRowByTabId(tabId), overTabId, -1);
-                //     }
-                // }
-
-                // clearMultiSelection();
-                // },
-                // over: function(e, ui) {
-                //     document.title = 'over ' + e.target.parentNode.id;
-                //     console.log(e);
-                //     console.log(ui);
-                // }
+        tolerance: 'pointer',
+        hoverClass: 'ftDragOver',
+        accept: function(e) {
+            console.log('accept:', thisObj.canAcceptDropTo);
+            return thisObj.canAcceptDropTo;
+        },
+        drop: function(evt, ui) {
+            thisObj.onItemRowDrop.call(thisObj);
+        }
     };
+};
+
+FancyTree.prototype.onItemRowDrop = function() {
+    this.dropping = true;
+    console.log('---PERFORM DROP---');
+    console.log('drop info', 'target', this.getParentRowNode(this.draggingOverRow).attr('id'), 'to', this.draggingTo);
+    var $rows = this.root.find('#' + this.multiSelection.join(',#'));
+
+    if ($rows.length == 0) {
+        return;
+    }
+    if ($rows.length == 1) {
+        // don't animate single row movements, it is just annoying
+        var fxAreOff = $.fx.off;
+        $.fx.off = true;
+        this.moveDraggedRowsAnimate($rows, this.draggingTo, this.draggingOverRow, function() {
+            this.dropping = false; $.fx.off = fxAreOff;
+        });
+    }
+    else {
+        this.moveDraggedRowsAnimate($rows, this.draggingTo, this.draggingOverRow, function() {
+            this.dropping = false;
+        });
+    }
 };
 
 
@@ -339,7 +320,7 @@ FancyTree.prototype.moveDraggedRowsAnimate = function($rows, moveToPosition, $mo
     });
 };
 
-FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow) {
+FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow, onComplete) {
     var thisObj = this;
     var $moveToChildren = thisObj.getChildrenContainer($moveToRow);
     var moveToHasChildren = $moveToChildren.children().length > 0;
@@ -395,26 +376,14 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
             if ($closestUnselectedParent) {
                 // move the unselected child up the tree
                 thisObj.moveRow($child, $closestUnselectedParent, $selectedParentInClosestUnselectedParent, true, true);
-
-                // reset draggable/droppable on any descendant rows of $child; jQuery UI loses .draggable/.droppable on these
-                // var $childDescendants = $child.find('.ftChildren > .ftRowNode');
-                // $childDescendants.each(function(i, e) {
-                //     thisObj.setDraggableDroppable.call(thisObj, $(e));
-                // });
             }
         });
-
-        // if ($parent.is($rows)) {
-        //     // moving row is directly under a parent row which is also selected; no move because we want to retain this branch's structure
-        //     return;
-        // }
 
         // determine parent row of move target
         var $moveToParent = thisObj.getParentRowNode($moveToRow.parent());
         if ($moveToParent.length == 0) {
             $moveToParent = undefined; // no parent row, we'll just leave this blank so the tree's root acts as the parent
         }
-
 
         // move the row
         if ($parentsSelected.length == 0) {
@@ -438,11 +407,6 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
                     }
 
                     thisObj.moveRow.call(thisObj, $e, $moveToRow, $moveToBeforeChild, true, true);
-                    // var $childDescendants = $e.find('.ftChildren > .ftRowNode');
-                    // $childDescendants.each(function(i, e) {
-                    //     thisObj.setDraggableDroppable.call(thisObj, $(e));
-                    // });
-
                     // $moveToChildren.prepend($e);
                     return;
                 }
@@ -458,10 +422,6 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
                 }
 
                 thisObj.moveRow.call(thisObj, $e, $moveToParent, $moveToNextSibling, true, true);
-                // var $childDescendants = $e.find('.ftChildren > .ftRowNode');
-                // $childDescendants.each(function(i, e) {
-                //     thisObj.setDraggableDroppable.call(thisObj, $(e));
-                // });
                 // $moveToRow.after($e);
                 return;
             }
@@ -512,4 +472,8 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
             thisObj.formatRowTitle.call(thisObj, $e);
         });
     }, 0);
+
+    if (onComplete) {
+        onComplete();
+    }
 };
