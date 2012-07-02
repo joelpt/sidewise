@@ -7,7 +7,7 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-var EFFECT_DURATION_BASE_MS = 175;
+var EFFECT_DURATION_BASE_MS = 150;
 
 
 ///////////////////////////////////////////////////////////
@@ -22,14 +22,14 @@ FancyTree.prototype.slideOutAndShrink = function(rows, onAfter) {
         var height = itemRow.height()
         heights.push(height);
         itemRow.show().css('margin-left', '0px').css('width', '100%').css('height', height)
-            .animate({ 'margin-left': '100%', 'width': '0' }, EFFECT_DURATION_BASE_MS, function() {
+            .animate({ 'margin-left': '100%', 'width': '0' }, EFFECT_DURATION_BASE_MS, 'easeOutSine', function() {
                 $(this).animate({ 'height': '0px' }, EFFECT_DURATION_BASE_MS, function() {
                     $(this).hide();
                 });
            });
     });
     if (onAfter) {
-        setTimeout(function() { onAfter(heights); }, $.fx.off ? 25 : 2 * EFFECT_DURATION_BASE_MS + 25);
+        setTimeout(function() { onAfter(heights); }, $.fx.off ? 50 : 2 * EFFECT_DURATION_BASE_MS + 50);
     }
     return heights;
 };
@@ -49,7 +49,7 @@ FancyTree.prototype.growAndSlideIn = function(rows, newHeights, onAfter) {
             });
     });
     if (onAfter) {
-        setTimeout(onAfter, $.fx.off ? 25 : 2 * EFFECT_DURATION_BASE_MS + 25);
+        setTimeout(onAfter, $.fx.off ? 50 : 2 * EFFECT_DURATION_BASE_MS + 50);
     }
 };
 
