@@ -21,8 +21,8 @@ FancyTree.prototype.slideOutAndShrink = function(rows, onAfter) {
         var itemRow = $(e).children('.ftItemRow');
         var height = itemRow.height()
         heights.push(height);
-        itemRow.show().css('margin-left', '0px').css('width', '50%').css('height', height)
-            .animate({ 'margin-left': '50%', 'width': '0' }, EFFECT_DURATION_BASE_MS, function() {
+        itemRow.show().css('margin-left', '0px').css('width', '100%').css('height', height)
+            .animate({ 'margin-left': '100%', 'width': '0' }, EFFECT_DURATION_BASE_MS, function() {
                 $(this).animate({ 'height': '0px' }, EFFECT_DURATION_BASE_MS, function() {
                     $(this).hide();
                 });
