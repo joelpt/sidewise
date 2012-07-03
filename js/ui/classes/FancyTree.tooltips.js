@@ -103,14 +103,14 @@ FancyTree.prototype.showTooltip =  function(row, bodyWidth, evt) {
     var rightOverflow = -(bodyWidth - pos.left - width - 5);
     var newpos = {
         left: (rightOverflow <= 0 ? pos.left : Math.max(0, bodyWidth - width - 6)),
-        top: pos.top - (tooltip.height() + this.tooltipTopOffset)
+        top: pos.top + content.height() + this.tooltipTopOffset
     };
     tooltip.offset(newpos);
 
     // if tooltip is now at least partly offscreen, move it to below the row instead
-    if (tooltip.offset().top < 0) {
+    if (tooltip.offset().top + tooltip.height() + this.tooltipTopOffset > $(document).height()) {
         // put below
-        newpos.top = pos.top + this.tooltipTopOffset + content.height();
+        newpos.top = pos.top - this.tooltipTopOffset - tooltip.height();
         tooltip.offset(newpos);
     }
 };
