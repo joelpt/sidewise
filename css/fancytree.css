@@ -215,7 +215,7 @@
 
 .ftMultiselecting .ftFocused:not(.ftSelected) > .ftItemRow > .ftItemRowContent {
     background: #fff;
-    border: 1px dashed rgba(0, 0, 0, 0.5);
+    border: 1px dashed blue;
 }
 
 
