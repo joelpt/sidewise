@@ -26,7 +26,7 @@ function registerRequestEvents() {
 function onConnectPort(port) {
     log('onConnect', port);
     // add port to list of known tab ports
-    connectedTabs[port.tab.id] = port;
+    connectedTabs[port.sender.tab.id] = port;
 
     // wire up port event listeners
     port.onMessage.addListener(function(msg) { onPortMessage(port, msg); });
@@ -39,7 +39,7 @@ function onPortMessage(port, msg) {
     switch (msg.op) {
         case 'getPageDetails':
             log('gotPageDetails', msg.action);
-            onGetPageDetailsMessage(port.tab, msg);
+            onGetPageDetailsMessage(port.sender.tab, msg);
             break;
     }
 }
@@ -48,8 +48,8 @@ function onPortDisconnect(port) {
     log('onPortDisconnect', port);
 
     // delete entry from known tab ports list
-    if (connectedTabs[port.tab.id]) {
-        delete connectedTabs[port.tab.id];
+    if (connectedTabs[port.sender.tab.id]) {
+        delete connectedTabs[port.sender.tab.id];
     }
 
     // If we are expecting a navigation tab-id-swap due to
@@ -59,10 +59,10 @@ function onPortDisconnect(port) {
     // a possible tab id swap target anymore
 
     if (expectingNavigationTabIdSwap) {
-        var index = expectingNavigationPossibleNewTabIds.indexOf(port.tab.id);
+        var index = expectingNavigationPossibleNewTabIds.indexOf(port.sender.tab.id);
         if (index >= 0) {
             // remove it from the list
-            log('Removed preloading tab from expected nav swap list', port.tab.id);
+            log('Removed preloading tab from expected nav swap list', port.sender.tab.id);
             expectingNavigationPossibleNewTabIds.splice(index, 1);
             log('Remaining list', expectingNavigationPossibleNewTabIds);
         }
