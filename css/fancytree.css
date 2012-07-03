@@ -375,12 +375,16 @@
     word-wrap: none;
     padding: 8px;
     z-index: 10;
+    pointer-events: none;
+    cursor: pointer;
 }
 
 #ftDragInsertBar {
     position: absolute;
     display: none;
     outline: 1px solid blue;
+    pointer-events: none;
+    cursor: pointer;
 }
 
 .ftDragToChild > .ftItemRow > .ftItemRowContent {
