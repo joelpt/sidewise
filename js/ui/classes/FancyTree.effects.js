@@ -19,18 +19,21 @@ FancyTree.prototype.slideOutAndShrink = function(rows, onAfter) {
     var heights = [];
     rows.each(function(i, e) {
         var itemRow = $(e).children('.ftItemRow');
-        var height = itemRow.height()
+        var height = itemRow.height();
         heights.push(height);
         itemRow.show().css('margin-left', '0px').css('width', '100%').css('height', height)
             .animate({ 'margin-left': '100%', 'width': '0' }, EFFECT_DURATION_BASE_MS, 'easeOutSine', function() {
                 $(this).animate({ 'height': '0px' }, EFFECT_DURATION_BASE_MS, function() {
                     $(this).hide();
+                    if (i == rows.length - 1 && onAfter)  {
+                        setTimeout(function() { onAfter(heights); }, 20);
+                    }
                 });
            });
     });
-    if (onAfter) {
-        setTimeout(function() { onAfter(heights); }, $.fx.off ? 50 : 2 * EFFECT_DURATION_BASE_MS + 50);
-    }
+    // if (onAfter) {
+    //     setTimeout(function() { onAfter(heights); }, $.fx.off ? 20 : 2 * EFFECT_DURATION_BASE_MS + 50);
+    // }
     return heights;
 };
 
@@ -45,11 +48,15 @@ FancyTree.prototype.growAndSlideIn = function(rows, newHeights, onAfter) {
         // return;
         itemRow.show().css('margin-left', '100%').css('width', '0').css('height', 0)
             .animate({ 'height': height }, EFFECT_DURATION_BASE_MS, function() {
-                $(this).animate({ 'margin-left': '0', 'width': '100%' }, EFFECT_DURATION_BASE_MS, 'easeOutCubic');
+                $(this).animate({ 'margin-left': '0', 'width': '100%' }, EFFECT_DURATION_BASE_MS, 'easeOutCubic', function() {
+                    if (i == rows.length - 1 && onAfter)  {
+                        setTimeout(onAfter, 20);
+                    }
+                });
             });
     });
-    if (onAfter) {
-        setTimeout(onAfter, $.fx.off ? 50 : 2 * EFFECT_DURATION_BASE_MS + 50);
-    }
+    // if (onAfter) {
+    //     setTimeout(onAfter, $.fx.off ? 20 : 2 * EFFECT_DURATION_BASE_MS + 50);
+    // }
 };
 
