@@ -76,8 +76,10 @@ section#main:not(.debugEnabled) {
     background: #ffc;
     border-top: 1px solid #ccc;
     border-bottom: 1px solid #ccc;
-    padding-top: 3px;
-    padding-bottom: 1px;
+    padding-top: 4px;
+    padding-bottom: 0px;
+    margin-bottom: 2px;
+    height: 21px;
 }
 
 .ftRowNode[rowtype=window][hibernated=true] > .ftItemRow {
@@ -105,10 +107,6 @@ section#main:not(.debugEnabled) {
     background: inherit;
     border: none;
     border-radius: 0;
-}
-
-.ftRowNode[rowtype=window] > .ftItemRow {
-    margin-bottom: 2px;
 }
 
 .ftRowNode[rowtype=window] > .ftChildren {
