@@ -361,8 +361,11 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
     }
 
     var thisObj = this;
-    this.moveDraggedRowsAnimate($rows, this.draggingTo, this.draggingOverRow, function() {
+    this.moveDraggedRowsAnimate($rows, this.draggingTo, this.draggingOverRow, function(moves) {
         $.fx.off = fxAreOff;
+        if (thisObj.onDragDrop) {
+            thisObj.onDragDrop(moves);
+        }
         setTimeout(function() { thisObj.dropping = false; }, 100);
     });
 };
@@ -431,9 +434,16 @@ FancyTree.prototype.moveDraggedRowsAnimate = function($rows, moveToPosition, $mo
         }
     });
 
+    var moves;
     thisObj.slideOutAndShrink.call(thisObj, $rows, defaultRowHeight, function(heights) {
-        thisObj.moveDraggedRows.call(thisObj, $rows, moveToPosition, $moveToRow);
-        thisObj.growAndSlideIn.call(thisObj, $rows, heights, onComplete);
+        thisObj.moveDraggedRows.call(thisObj, $rows, moveToPosition, $moveToRow, function(movesDone) {
+            moves = movesDone;
+        });
+        thisObj.growAndSlideIn.call(thisObj, $rows, heights, function() {
+            if (onComplete) {
+                onComplete(moves);
+            }
+        });
     });
 };
 
@@ -442,7 +452,7 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
     var $moveToChildren = thisObj.getChildrenContainer($moveToRow);
     var moveToHasChildren = $moveToChildren.children().length > 0;
     var moveToIsCollapsed = $moveToRow.hasClass('.ftCollapsed');
-
+    var moves = [];
     var $topParents = $moveToRow.parents('.ftRowNode').last(); // add topmost parent of move destination row
     if ($topParents.length == 0) {
         $topParents = $moveToRow;
@@ -492,7 +502,7 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
 
             if ($closestUnselectedParent) {
                 // move the unselected child up the tree
-                thisObj.moveRow($child, $closestUnselectedParent, $selectedParentInClosestUnselectedParent, true, true);
+                moves.push(thisObj.moveRow($child, $closestUnselectedParent, $selectedParentInClosestUnselectedParent, true, true));
             }
         });
 
@@ -504,9 +514,10 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
 
         // move the row
         if ($parentsSelected.length == 0) {
+            console.log('none of my parents are selected');
             // no ancestors are selected; move row to dragged-to position
             if (moveToPosition == 'A') { // above
-                thisObj.moveRow.call(thisObj, $e, $moveToParent, $moveToRow, true, true);
+                moves.push(thisObj.moveRow($e, $moveToParent, $moveToRow, true, true));
                 // $moveToRow.before($e);
                 return;
             }
@@ -523,7 +534,7 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
                         $moveToBeforeChild = undefined;
                     }
 
-                    thisObj.moveRow.call(thisObj, $e, $moveToRow, $moveToBeforeChild, true, true);
+                    moves.push(thisObj.moveRow($e, $moveToRow, $moveToBeforeChild, true, true));
                     // $moveToChildren.prepend($e);
                     return;
                 }
@@ -538,13 +549,13 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
                     $moveToNextSibling = undefined;
                 }
 
-                thisObj.moveRow.call(thisObj, $e, $moveToParent, $moveToNextSibling, true, true);
+                moves.push(thisObj.moveRow($e, $moveToParent, $moveToNextSibling, true, true));
                 // $moveToRow.after($e);
                 return;
             }
 
             if (moveToPosition == 'C') { // child of
-                thisObj.moveRow.call(thisObj, $e, $moveToRow, undefined, true, true);
+                moves.push(thisObj.moveRow($e, $moveToRow, undefined, true, true));
                 // $moveToChildren.append($e);
                 return;
             }
@@ -561,11 +572,13 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
             return;
         }
 
+        console.log('move to closest selected ancestor');
         // not immediately under a selected parent; move to the closest
         // selected ancestor
         // TODO use .movePageRow here, or else stop using .movePageRow above and implement
         // a move to hiddenDiv -> move to target scenario in this function instead
-        thisObj.getChildrenContainer.call(thisObj, $closestParent).children().append($e);
+        moves.push(thisObj.moveRow($e, $closestParent, undefined, true, true));
+        // thisObj.getChildrenContainer.call(thisObj, $closestParent).children().append($e);
     });
 
     console.log('top parents', $topParents);
@@ -591,6 +604,6 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
     }, 10);
 
     if (onComplete) {
-        onComplete();
+        onComplete(moves);
     }
 };
