@@ -107,8 +107,13 @@ section#main:not(.debugEnabled) {
     border-radius: 0;
 }
 
+.ftRowNode[rowtype=window] > .ftItemRow {
+    margin-bottom: 2px;
+}
+
 .ftRowNode[rowtype=window] > .ftChildren {
-    margin-top: 2px;
+    padding-top: 0px;
+    margin-top: 0px;
     margin-left: -3px;
 }
 
@@ -219,8 +224,8 @@ section#main:not(.debugEnabled) {
 #ftTooltip[rowtype=page] .ftBigTipBody {
     font-family: Consolas, "Lucida Console", monospace;
     font-size: 11px;
-    line-height: 1.2em;
-    max-height: 4.8em;
+    line-height: 1.1em;
+    /*max-height: 4.8em;*/
     overflow: hidden;
     color: #333;
  }
