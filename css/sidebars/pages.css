@@ -213,12 +213,16 @@ section#main:not(.debugEnabled) {
 
 #ftTooltip[rowtype=page] .ftBigTip {
     margin: 10px 8px 10px 8px;
+    font-size: 8pt;
 }
 
 #ftTooltip[rowtype=page] .ftBigTipBody {
     font-family: Consolas, "Lucida Console", monospace;
-    font-size: 8pt;
-}
+    font-size: 11px;
+    max-height: 4.15em;
+    overflow: hidden;
+    color: #333;
+ }
 
 #ftTooltip[rowtype=page] .ftBigTipHeader {
 }
