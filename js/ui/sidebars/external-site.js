@@ -1,5 +1,9 @@
 var IFRAME_LOAD_TIMEOUT_MS = 12000;
 
+// Hide our parent iframe from any possible access by external iframe
+// since it can get at the extension's JS context
+window.parent = undefined;
+
 window.onload = onLoad;
 
 function onLoad() {

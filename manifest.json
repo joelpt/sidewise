@@ -35,7 +35,9 @@
         // "bookmarks"
     ],
     "web_accessible_resources": [
-        "/sidebars/pages.html"
+        "/sidebars/pages.html",
+        "/sidebars/notepad.html",
+        "/sidebars/external-site.html"
     ]
 
 }

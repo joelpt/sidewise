@@ -4,6 +4,10 @@
 
 var IS_SCRIPTABLE_URL_REGEX = new RegExp(/^((about|file|view-source|chrome.*):|https?:\/\/chrome.google.com\/webstore)/);
 
+///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
 var URL_FAVICON_REPLACEMENTS = {
     'chrome://chrome/extensions': '/images/favicon/extensions.png',  // Chrome 19 and earlier
     'chrome://chrome/extensions/': '/images/favicon/extensions.png', // Chrome 20 early versions
@@ -17,7 +21,7 @@ var URL_FAVICON_REPLACEMENTS = {
     'chrome://newtab/': '/images/favicon/newtab.png'
 };
 
-URL_FAVICON_REPLACEMENTS[chrome.extension.getURL('/options.html')] = '/images/sidewise_icon_16.png';
+URL_FAVICON_REPLACEMENTS[(chrome.extension || window.parent.chrome.extension).getURL('/options.html')] = '/images/sidewise_icon_16.png';
 
 var URL_TITLE_REPLACEMENTS = {
     'chrome://chrome/extensions': getMessage('tabTitle_Extensions'),

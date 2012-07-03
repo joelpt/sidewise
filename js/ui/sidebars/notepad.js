@@ -1,15 +1,11 @@
 var NOTEPAD_AUTOSAVE_DELAY_MS = 1000;
 var TAB_INSERT_STRING = '  ';
 
-var bg;
-var settings;
+initSidebarPane();
 
 $(document).ready(onReady);
 
 function onReady() {
-    bg = chrome.extension.getBackgroundPage();
-    settings = bg.settings;
-
     setI18NText();
 
     $('#notepad')

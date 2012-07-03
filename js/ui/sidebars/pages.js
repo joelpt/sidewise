@@ -23,8 +23,7 @@ var WINDOW_ACTION_CONFIRM_CHILDREN_THRESHOLD = 2;
 ///////////////////////////////////////////////////////////
 
 var ft;
-var bg;
-var settings;
+initSidebarPane();
 
 
 ///////////////////////////////////////////////////////////
@@ -32,14 +31,10 @@ var settings;
 ///////////////////////////////////////////////////////////
 
 $(document).ready(function() {
+
     if (loggingEnabled) {
         $('footer, #main').addClass('debugEnabled');
     }
-
-    bg = chrome.extension.getBackgroundPage();
-    settings = bg.settings;
-
-    $.fx.off = !settings.get('animationEnabled');
 
     ft = initTree('#treePlaceholder', '#filterBoxPlaceholder', bg.tree);
 

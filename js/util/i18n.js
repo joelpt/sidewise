@@ -10,7 +10,7 @@ function setI18NText() {
 
 // Get an i18n message from _locales/xx/messages.json and transform it
 function getMessage(key, placeholderValues) {
-    var msg = chrome.i18n.getMessage(key, placeholderValues);
+    var msg = (chrome.i18n || window.parent.chrome.i18n).getMessage(key, placeholderValues);
     if (key.match(/^prompt_/)) {
         return transformPromptMessage(msg);
     }
