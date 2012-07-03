@@ -71,12 +71,13 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
         newParent = this.getRow(newParentId);
     }
 
-    this.removeRow(id, keepChildren, skipElementReconfiguration); // prevents possible DOM_HIERARCHY exceptions
+    this.removeRow(id, keepChildren, true); // prevents possible DOM_HIERARCHY exceptions
 
     var newParentChildren = this.getChildrenContainer(newParent);
+    var sibling;
     if (beforeSiblingId) {
         var beforeSibling = this.getRow(beforeSiblingId);
-        var sibling = newParentChildren.children('#' + beforeSibling.attr('id'));
+        sibling = newParentChildren.children('#' + beforeSibling.attr('id'));
         if (sibling.length == 0) {
             throw new Error('Could not find sibling ' + beforeSiblingId);
         }
@@ -86,20 +87,20 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
         newParentChildren.append(elem);
     }
 
-    if (skipElementReconfiguration) {
-        return;
+    if (!skipElementReconfiguration) {
+        this.setRowButtonTooltips(elem);
+
+        this.setDraggableDroppable(elem);
+
+        this.updateRowExpander(oldParent);
+        this.updateRowExpander(newParent);
+        this.updateRowExpander(elem);
+
+        this.formatLineageTitles(oldParent);
+        this.formatLineageTitles(newParent);
     }
 
-    this.setRowButtonTooltips(elem);
-
-    this.setDraggableDroppable(elem);
-
-    this.updateRowExpander(oldParent);
-    this.updateRowExpander(newParent);
-    this.updateRowExpander(elem);
-
-    this.formatLineageTitles(oldParent);
-    this.formatLineageTitles(newParent);
+    return { row: elem, parent: newParentChildren, beforeSibling: sibling };
 };
 
 FancyTree.prototype.updateRow = function(id, details) {
