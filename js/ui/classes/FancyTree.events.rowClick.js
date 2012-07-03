@@ -17,6 +17,15 @@ FancyTree.prototype.rowMouseUpHandler = function(evt) {
         return;
     }
 
+    if (treeObj.ignoreNextRowMouseUpEvent) {
+        // When rowButtonClickHandler fires, it sets this to true, and rowMouseUpHandler
+        // gets called immediately after; this prevents us from performing the row-click
+        // behavior immediately after clicking a row button, while still allowing for
+        // event propagation to occur (important for drag & drop to receive all mouseup events)
+        treeObj.ignoreNextRowMouseUpEvent = false;
+        return;
+    }
+
     var $this = $(this);
     var row = treeObj.getParentRowNode($this);
     evt.data.row = row;
@@ -157,8 +166,10 @@ FancyTree.prototype.rowButtonClickHandler = function(evt) {
     }
 
     $('#ftSimpleTip').hide();
-    evt.data.row = $(this).closest('li');
+    evt.data.row = $(this).closest('.ftRowNode');
     evt.data.onClick(evt);
-    evt.stopPropagation();
-    return false;
+
+    treeObj.ignoreNextRowMouseUpEvent = true;
+    // evt.stopPropagation();
+    // return false;
 };
