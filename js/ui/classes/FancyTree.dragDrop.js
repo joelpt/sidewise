@@ -65,6 +65,7 @@ FancyTree.prototype.getDraggableParams = function() {
                 thisObj.dragging = true;
                 thisObj.draggingRow = thisObj.getParentRowNode(target);
                 thisObj.canAcceptDropTo = false;
+                thisObj.dragSelectedCollapsedRow = false;
                 var isCollapsed = target.parent().hasClass('ftCollapsed');
                 var hiddenRowCount = 0;
 
@@ -82,6 +83,8 @@ FancyTree.prototype.getDraggableParams = function() {
                         // pageRowClicked(row);
                         thisObj.clearMultiSelection();
                         thisObj.toggleMultiSelectionSingle(row.attr('id'));
+
+                        thisObj.dragSelectedCollapsedRow = isCollapsed;
 
                         if (!isCollapsed) {
                             console.log('selecting children too');
@@ -349,7 +352,7 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
     }
 
     var fxAreOff = $.fx.off;
-    if ($rows.length == 1 && !this.dragToreOffParent) {
+    if (($rows.length == 1 && !this.dragToreOffParent) || this.dragSelectedCollapsedRow) {
         // don't animate single row movements, it is just annoying; we'll still use normal
         // animation if the ctrl key is held however, because this probably means a parent
         // was torn off with ctrl and those moves can be rather confusing (children popping
