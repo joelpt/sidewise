@@ -17,9 +17,12 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   * @param options A dictionary of options, all optional:
   *        <pre>
   *        {
+  *          scrollTargetElem: jQueryElem,       // the tree parent element that can scroll
   *          onContextMenuShow: Function(rows),  // passed a list of rows that are currently selected, this
   *                                              // should return an array of context menu items to show
-  *          scrollTargetElem: jQueryElem,       // the tree parent element that can scroll
+  *          onDragDrop: Function(moves)         // called when some rows have been moved as a result of drag & drop
+  *                                              // moves contains the movements performed as jQuery objects:
+  *                                              //     [{ movedRow, movedToParent, movedToBeforeSibling }, ...]
   *          showFilterBox: Boolean,             // if set to false, hide type-in filtering box above tree
   *          filterPlaceholderText: String,      // text to show in filter box when otherwise empty
   *          filterActiveText: String,           // text to show below filter box when filtering is active
