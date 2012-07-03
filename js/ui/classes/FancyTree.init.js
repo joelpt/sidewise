@@ -72,6 +72,7 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.dropping = false;
     this.dragToreOffParent = false;
     this.draggingJustCancelled = false;
+    this.dragSelectedCollapsedRow = false;
 
     // configure tooltip stuff
     this.tooltipTopOffset = options.tooltipTopOffset || 20;
