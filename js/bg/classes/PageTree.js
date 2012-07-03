@@ -108,13 +108,14 @@ PageTree.prototype = {
     // If beforeSiblingMatcher is specified, node will be placed before beforeSiblingMatcher under new parent.
     // If keepChildren is true, all children of the moving node will keep its existing children after the move.
     // If keepChildren if false (default), the moving node's children get spliced into the moving node's old spot.
+    // If blockCallback is true, don't call the callback.
     //
     // Returns [moved, newParent, beforeSibling] if a move was actually performed, or undefined if not.
-    moveNode: function(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren)
+    moveNode: function(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren, blockCallback)
     {
         var r = this.$super('moveNode')(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren);
 
-        if (r !== undefined) {
+        if (r !== undefined && !blockCallback) {
             this.callbackProxyFn('move', {
                 element: r[0],
                 newParentId: parentMatcher ? r[1].id : undefined,
