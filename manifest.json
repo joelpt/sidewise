@@ -1,6 +1,6 @@
 {
 	"name": "__MSG_extName__",
-	"version": "2012.7.2.2",
+	"version": "2012.7.2.4",
 	"description": "__MSG_extDescription__",
 	"icons": {
         "16": "images/sidewise_icon_16.png",
