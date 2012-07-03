@@ -96,6 +96,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     fancyTree = new FancyTree($(treeReplaceSelector), $(filterBoxReplaceSelector), {
         rowTypes: rowTypes,
         onContextMenuShow: onContextMenuShow,
+        onDragDrop: onRowDragDrop,
         scrollTargetElem: $('#main'),
         showFilterBox: true,
         filterPlaceholderText: getMessage('prompt_filterPlaceholderText'),
@@ -218,6 +219,20 @@ function onRowExpanderClick(evt) {
     bg.tree.updateNode(evt.data.row.attr('id'), { collapsed: !(evt.data.expanded) });
 }
 
+function onRowDragDrop(moves) {
+    console.log('MOVES', moves);
+    for (var i = 0; i < moves.length; i++) {
+        var move = moves[i];
+        var rowId = move.row.attr('id');
+        var parentId = move.parent.attr('id');
+        var beforeSiblingId = (move.beforeSibling
+            ? move.beforeSibling.attr('id')
+            : undefined
+        );
+        console.log('---- recording move ----', 'row', rowId, 'parent', parentId, 'beforeSibling', beforeSiblingId, 'keepChildren', move.keepChildren);
+        bg.tree.moveNode(rowId, parentId, beforeSiblingId, move.keepChildren, true);
+    }
+}
 
 ///////////////////////////////////////////////////////////
 // FancyTree context menu handlers
