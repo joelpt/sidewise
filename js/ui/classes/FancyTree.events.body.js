@@ -5,8 +5,15 @@
 
 FancyTree.prototype.onBodyMouseUp = function(evt) {
     var treeObj = evt.data.treeObj;
+
     if ($(evt.target).parents().is(treeObj.root)) {
+        // over the tree
         return true;
+    }
+
+    if (treeObj.draggingJustCancelled) {
+        treeObj.ignoreNextRowMouseUpEvent = false;
+        treeObj.draggingJustCancelled = false;
     }
 
     treeObj.clearMultiSelection.call(treeObj);
@@ -36,6 +43,20 @@ FancyTree.prototype.onBodyKeyDown = function(evt) {
             treeObj.disableContextMenu.call(treeObj);
         }
 
+        if (treeObj.dragging) {
+            // debugger;
+            // console.log(document.elementFromPoint(evt.clientX, evt.clientY));
+            // TODO move this stuff into a new func FT.resetDragState();
+            treeObj.dragToreOffParent = false;
+            treeObj.canAcceptDropTo = false;
+            treeObj.draggingRow = null;
+            treeObj.draggingOverRow = null;
+            treeObj.dragging = false;
+            treeObj.draggingJustCancelled = true;
+            treeObj.ignoreNextRowMouseUpEvent = true;
+            $('.ui-draggable-dragging')
+                .trigger('mouseup');
+        }
         return false;
     }
     return true;
