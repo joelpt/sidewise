@@ -57,11 +57,12 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.lastMultiSelectedFromId = null;
     this.lastMultiSelectedToId = null;
 
-    this.onContextMenuShow = onContextMenuShow;
+    this.onContextMenuShow = options.onContextMenuShow;
     this.contextMenuItems = {};
     this.contextMenuShown = false;
     this.contextMenuTarget = null;
 
+    this.onDragDrop = options.onDragDrop;
     this.dragging = false;
     this.draggingRow = null;
     this.draggingTo = null;
