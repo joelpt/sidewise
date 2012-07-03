@@ -52,6 +52,7 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.focusedRow = null;
     this.hoveredRow = null;
     this.filtering = false;
+    this.ignoreNextRowMouseUpEvent = false;
 
     this.multiSelection = [];
     this.lastMultiSelectedFromId = null;
@@ -69,6 +70,8 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.draggingOverRow = null;
     this.canAcceptDropTo = false;
     this.dropping = false;
+    this.dragToreOffParent = false;
+    this.draggingJustCancelled = false;
 
     // configure tooltip stuff
     this.tooltipTopOffset = options.tooltipTopOffset || 20;
@@ -113,7 +116,6 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
         .on('mouseup', '.ftContextMenuSeparator', data, function() { return false; })
         .on('mouseup', 'body', data, this.onBodyMouseUp)
         .on('mousemove', '.ftItemRow', data, this.onItemRowMouseMove);
-
 
     if (options.showFilterBox != false) {
         // add event handlers for filter box
