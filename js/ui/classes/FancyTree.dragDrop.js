@@ -36,6 +36,8 @@ FancyTree.prototype.getDraggableParams = function() {
     var thisObj = this;
 
     return {
+            axis: 'y',
+            containment: 'document',
             cursorAt: { top: -30, left: 5 },
             distance: 5,
             delay: 50,
@@ -49,46 +51,80 @@ FancyTree.prototype.getDraggableParams = function() {
             revertDuration: 300,
             scroll: true,
             start: function(evt, ui) {
-                thisObj.hideTooltip.call(thisObj);
                 var target = $(evt.target);
+                var row = thisObj.getParentRowNode.call(thisObj, target);
+
+                // TODO figure out how to make this work properly, currently it mangles the tree structure somehow
+                // but without it, we have difficulty with dragdrops sometimes not working when you are in some 1px naughtyland in between rows
+                // MIGHT be using margin instead of padding on .ftChildren, or vice versa... any way you go though, if you want
+                // var droppableParams = thisObj.getDragInsertBarDroppableParams(); // TODO should not need a get() function for this; make it static
+                // thisObj.root.droppable(droppableParams);
+                // thisObj.root.find('.ftChildren').droppable(droppableParams);
+
+                thisObj.hideTooltip.call(thisObj);
                 thisObj.dragging = true;
                 thisObj.draggingRow = thisObj.getParentRowNode(target);
                 thisObj.canAcceptDropTo = false;
                 console.log('start drag, row being dragged', thisObj.draggingRow);
-                if (thisObj.multiSelection.length == 0 || !target.parent().hasClass('ftSelected'))
+                if (evt.ctrlKey) {
+                    thisObj.clearMultiSelection.call(thisObj);
+                    thisObj.toggleMultiSelectionSingle.call(thisObj, row.attr('id'));
+                }
+                else if (thisObj.multiSelection.length == 0 || !target.parent().hasClass('ftSelected'))
                 {
                     console.log('resetting multiselection before dragging');
-                    var row = thisObj.getParentRowNode(target);
                     // pageRowClicked(row);
                     thisObj.clearMultiSelection.call(thisObj);
                     thisObj.toggleMultiSelectionSingle.call(thisObj, row.attr('id'));
-                    //thisObj.multiSelection.push(row.attr('id'));
+
+                    // select every child too by default; holding ctrl and click+dragging will just grab the parent
+                    row.find('.ftChildren > .ftRowNode').each(function(i, e) {
+                        thisObj.toggleMultiSelectionSingle.call(thisObj, e.attributes.id.value);
+                    });
+
+                    // if (evt.shiftKey) {
+                    //     // select every child too
+                    //     row.find('.ftChildren > .ftRowNode').each(function(i, e) {
+                    //         thisObj.toggleMultiSelectionSingle.call(thisObj, e.attributes.id.value);
+                    //     });
+                    // }
                 }
+                // NO, this causes weird behavior with child nodes getting bad widths,
+                // one fix is to always bring along all children of a collapsed node including unselected ones
+                // when we do a move; this is a good idea and is just another case before the rest of the logic
+                // "if collapsed, movePageRow keepChildren=true, to the correct insert-point ... done and done"
+                //
+                // else
+                // {
+                //     // select kids of collapsed nodes automagically
+                //     thisObj.multiSelection.forEach(function(e) {
+                //         var $row = thisObj.getRow.call(thisObj, e);
+
+                //         if (!($row.hasClass('ftCollapsed'))) {
+                //             return;
+                //         }
+
+                //         $row.find('.ftChildren > .ftRowNode').each(function(i, e) {
+                //             thisObj.toggleMultiSelectionSingle.call(thisObj, e.attributes.id.value);
+                //         });
+
+                //     });
+                // }
             },
             stop: function(e, ui) {
                 thisObj.dragging = false;
                 $('.ftDragToChild').removeClass('ftDragToChild');
                 thisObj.hideDragInsertBar.call(thisObj);
-                if (thisObj.multiSelection.length == 1)
-                {
-                    thisObj.clearMultiSelection.call(thisObj);
-                }
+                // Finding this annoying
+                // if (thisObj.multiSelection.length == 1)
+                // {
+                //     thisObj.clearMultiSelection.call(thisObj);
+                // }
             }
         };
 };
 
-FancyTree.prototype.getDroppableParams = function(allowedDropTargets) {
-    // var dropSelectors = allowedDropTargets.map(function(e) {
-    //     if (e == 'ROOT') {
-    //         return '.ftRoot';
-    //     }
-
-    //     return '.ftRowNode[rowtype="' + e + '"] > .ftItemRow';
-    // });
-
-    // console.log(dropSelectors.join(','));
-    console.log('generating droppableParams');
-
+FancyTree.prototype.getDroppableParams = function() {
     var thisObj = this;
     return {
         tolerance: 'pointer',
@@ -101,30 +137,6 @@ FancyTree.prototype.getDroppableParams = function(allowedDropTargets) {
             thisObj.onItemRowDrop.call(thisObj);
         }
     };
-};
-
-FancyTree.prototype.onItemRowDrop = function() {
-    this.dropping = true;
-    console.log('---PERFORM DROP---');
-    console.log('drop info', 'target', this.getParentRowNode(this.draggingOverRow).attr('id'), 'to', this.draggingTo);
-    var $rows = this.root.find('#' + this.multiSelection.join(',#'));
-
-    if ($rows.length == 0) {
-        return;
-    }
-    if ($rows.length == 1) {
-        // don't animate single row movements, it is just annoying
-        var fxAreOff = $.fx.off;
-        $.fx.off = true;
-        this.moveDraggedRowsAnimate($rows, this.draggingTo, this.draggingOverRow, function() {
-            this.dropping = false; $.fx.off = fxAreOff;
-        });
-    }
-    else {
-        this.moveDraggedRowsAnimate($rows, this.draggingTo, this.draggingOverRow, function() {
-            this.dropping = false;
-        });
-    }
 };
 
 
@@ -264,6 +276,34 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
     treeObj.draggingTo = draggingTo;
 };
 
+FancyTree.prototype.onItemRowDrop = function() {
+    this.dropping = true;
+    console.log('---PERFORM DROP---');
+    console.log('drop info', 'target', this.getParentRowNode(this.draggingOverRow).attr('id'), 'to', this.draggingTo);
+    var $rows = this.root.find('#' + this.multiSelection.join(',#'));
+
+    if ($rows.length == 0) {
+        return;
+    }
+
+    var thisObj = this;
+    if ($rows.length == 1) {
+        var fxAreOff = $.fx.off;
+        $.fx.off = true;
+
+        // don't animate single row movements, it is just annoying
+        this.moveDraggedRowsAnimate($rows, this.draggingTo, this.draggingOverRow, function() {
+            thisObj.dropping = false;
+            $.fx.off = fxAreOff;
+        });
+    }
+    else {
+        this.moveDraggedRowsAnimate($rows, this.draggingTo, this.draggingOverRow, function() {
+            thisObj.dropping = false;
+        });
+    }
+};
+
 
 ///////////////////////////////////////////////////////////
 // Dragging insertion bar
@@ -296,10 +336,25 @@ FancyTree.prototype.drawDragInsertBarAt = function(targetRowType, left, top, wid
     console.log('set bar css to: LTRB', left, top, width, height);
     bar.css({ left: left, top: top, width: width, height: height });
     bar.show();
+
+    var droppableParams = this.getDragInsertBarDroppableParams;
+    bar.droppable(droppableParams);
 };
 
 FancyTree.prototype.hideDragInsertBar = function() {
     $('#ftDragInsertBar').hide();
+};
+
+FancyTree.prototype.getDragInsertBarDroppableParams = function() {
+    var thisObj = this;
+    return {
+        accept: '*',
+        tolerance: 'pointer',
+        hoverClass: 'ftDragOver',
+        drop: function(evt, ui) {
+            thisObj.onItemRowDrop.call(thisObj);
+        }
+    };
 };
 
 
@@ -313,6 +368,8 @@ FancyTree.prototype.moveDraggedRowsAnimate = function($rows, moveToPosition, $mo
     if ($rows.length == 0) {
         throw new Error('Nothing to move');
     }
+
+    console.log('dragmoving these', $rows);
 
     thisObj.slideOutAndShrink.call(thisObj, $rows, function(heights) {
         thisObj.moveDraggedRows.call(thisObj, $rows, moveToPosition, $moveToRow);
@@ -448,7 +505,7 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
         // selected ancestor
         // TODO use .movePageRow here, or else stop using .movePageRow above and implement
         // a move to hiddenDiv -> move to target scenario in this function instead
-        $closestParent.append($e);
+        thisObj.getChildrenContainer.call(thisObj, $closestParent).children().append($e);
     });
 
     console.log('top parents', $topParents);
