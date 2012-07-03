@@ -14,6 +14,7 @@ FancyTree.prototype.onExpanderClick = function(evt) {
         treeObj.disableContextMenu.call(treeObj);
         return false;
     }
+    treeObj.hideTooltip();
 
     var expander = $(this);
     var parentLI = expander.closest('.ftRowNode');
