@@ -137,7 +137,7 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
             node.collapsed);
     }
     else if (node instanceof bg.PageNode) {
-        row = fancyTree.getNewRowElem('page', node.id, node.favicon, node.label, node.title,
+        row = fancyTree.getNewRowElem('page', node.id, 'chrome://favicon', node.label, node.title,
             {
                 url: node.url,
                 status: node.status,
@@ -153,6 +153,10 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
     }
 
     fancyTree.addRow(row, parentId);
+
+    setTimeout(function() {
+        fancyTree.updateRow.call(fancyTree, row, { icon: node.favicon });
+    }, 10);
 }
 
 
