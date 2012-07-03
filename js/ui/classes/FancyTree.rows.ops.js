@@ -100,7 +100,7 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
         this.formatLineageTitles(newParent);
     }
 
-    return { row: elem, parent: newParentChildren, beforeSibling: sibling };
+    return { row: elem, parent: newParent, beforeSibling: sibling, keepChildren: keepChildren };
 };
 
 FancyTree.prototype.updateRow = function(id, details) {
