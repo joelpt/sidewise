@@ -67,7 +67,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onFormatTooltip: onPageRowFormatTooltip,
             onResizeTooltip: onResizeTooltip,
             filterByExtraParams: ['url'],
-            tooltipMaxWidthPercent: 0.9,
+            tooltipMaxWidthPercent: 0.95,
             buttons: [
                 {icon: '/images/pause.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
                 {icon: '/images/close.png', tooltip: getMessage('pages_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
@@ -86,7 +86,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onFormatTitle: onWindowRowFormatTitle,
             onFormatTooltip: onWindowRowFormatTooltip,
             onResizeTooltip: onResizeTooltip,
-            tooltipMaxWidthPercent: 0.9,
+            tooltipMaxWidthPercent: 0.95,
             buttons: [
                 {icon: '/images/close.png', tooltip: getMessage('pages_windowRowButtonTip_close'), onClick: onWindowRowCloseButton }
             ]
@@ -229,7 +229,7 @@ function onContextMenuShow(rows) {
         { separator: true },
         { id: 'closePage', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemClose },
         { id: 'hibernatePage', icon: '/images/pause.png', label: 'Hibernate', callback: onContextMenuItemHibernate },
-        { id: 'awakenPage', icon: '/images/pause.png', label: 'Awaken', callback: onContextMenuItemAwaken },
+        { id: 'awakenPage', icon: '/images/pause.png', label: 'Wake up', callback: onContextMenuItemAwaken },
         { id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true },
         { id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight }, //, preserveSelectionAfter: true },
         { id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight } //, preserveSelectionAfter: true }
@@ -253,7 +253,7 @@ function onContextMenuItemHibernate(rows) {
 }
 
 function onContextMenuItemAwaken(rows) {
-    console.log('HIBERNATE');
+    console.log('WAKIE');
     for (var i = 0; i < rows.length; i++) {
         var row = rows[i];
         togglePageRowHibernated(row.jQueryElement, 1);
@@ -341,7 +341,8 @@ function handlePageRowAction(action, evt) {
             onPageRowCloseButton(evt);
             break;
         case 'hibernate':
-            onPageRowHibernateButton(evt);
+            var isFocused = evt.data.row.is(evt.data.treeObj.focusedRow);
+            togglePageRowHibernated(evt.data.row, 0, isFocused);
             break;
         case 'expand':
             evt.data.treeObj.toggleExpandRow(evt.data.row);
@@ -597,12 +598,12 @@ function closePageRow(row) {
 //   1: awaken page row
 //   0: toggle hibernate/awake
 //  -1: hibernate page row
-function togglePageRowHibernated(row, hibernateAwakeState) {
+function togglePageRowHibernated(row, hibernateAwakeState, activateAfterWaking) {
     hibernateAwakeState = hibernateAwakeState || 0;
 
     var hibernated = (row.attr('hibernated') == 'true');
     if (hibernated && hibernateAwakeState >= 0) {
-        bg.tree.awakenPage(row.attr('id'), true);
+        bg.tree.awakenPage(row.attr('id'), activateAfterWaking || false);
         return;
     }
 
