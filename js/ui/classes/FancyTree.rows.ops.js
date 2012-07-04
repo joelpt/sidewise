@@ -62,6 +62,7 @@ FancyTree.prototype.removeRow = function(id, removeChildren, skipElementReconfig
 FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChildren, skipElementReconfiguration) {
     var elem = this.getRow(id);
     var oldParent = elem.parent().parent();
+    var oldAncestors = elem.parents('.ftRowNode');
 
     var newParent;
     if (!newParentId) {
@@ -100,7 +101,7 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
         this.formatLineageTitles(newParent);
     }
 
-    return { row: elem, parent: newParent, beforeSibling: sibling, keepChildren: keepChildren };
+    return { row: elem, parent: newParent, beforeSibling: sibling, keepChildren: keepChildren, oldAncestors: oldAncestors };
 };
 
 FancyTree.prototype.updateRow = function(id, details) {
