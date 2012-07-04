@@ -88,7 +88,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             filterByExtraParams: ['url'],
             tooltipMaxWidthPercent: 0.95,
             buttons: [
-                {icon: '/images/pause.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
+                {icon: '/images/hibernate_wake.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
                 {icon: '/images/close.png', tooltip: getMessage('pages_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
             ]
         },
@@ -261,24 +261,51 @@ function onRowDragDrop(moves) {
 function onContextMenuShow(rows) {
     console.log(rows);
     if (rows[0].rowtype == 'window') {
-        return [
-            { id: 'closeWindow', icon: '/images/close.png', label: 'Close window', callback: onContextMenuItemCloseWindow },
-            { id: 'hibernateWindow', icon: '/images/pause.png', label: 'Hibernate all tabs in window', callback: onContextMenuItemHibernateWindow },
-            { id: 'awakenWindow', icon: '/images/pause.png', label: 'Wake all tabs in window', callback: onContextMenuItemWakeWindow },
-            { id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true }
-        ];
+        var $row = rows[0].jQueryElement;
+        var hibernatedCount = $row.find('.ftChildren > .ftRowNode[hibernated=true]').length;
+        var awakeCount = $row.find('.ftChildren > .ftRowNode:not([hibernated=true])').length;
 
-    };
-    return [
-        { id: 'reloadPage', icon: '/images/reload.png', label: 'Reload', callback: onContextMenuItemReload, preserveSelectionAfter: true },
-        { separator: true },
-        { id: 'closePage', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemClosePages },
-        { id: 'hibernatePage', icon: '/images/pause.png', label: 'Hibernate', callback: onContextMenuItemHibernatePages },
-        { id: 'awakenPage', icon: '/images/pause.png', label: 'Wake up', callback: onContextMenuItemWakePages },
-        { id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true },
-        { id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight }, //, preserveSelectionAfter: true },
-        { id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight } //, preserveSelectionAfter: true }
-    ];
+        var items = [];
+
+        if (awakeCount)
+            items.push({ id: 'hibernateWindow', icon: '/images/hibernate.png', label: 'Hibernate all tabs in window', callback: onContextMenuItemHibernateWindow });
+
+        if (hibernatedCount)
+            items.push({ id: 'awakenWindow', icon: '/images/wake.png', label: 'Wake all tabs in window', callback: onContextMenuItemWakeWindow });
+
+        if (awakeCount || hibernatedCount)
+            items.push({ separator: true });
+
+        items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
+        items.push({ separator: true });
+        items.push({ id: 'closeWindow', icon: '/images/close.png', label: 'Close window', callback: onContextMenuItemCloseWindow });
+        return items;
+    }
+
+    var hibernatedCount = rows.filter(function(e) { return e.rowtype == 'page' && e.hibernated; }).length;
+    var awakeCount = rows.filter(function(e) { return e.rowtype == 'page' && !e.hibernated; }).length;
+    var items = [];
+
+    if (awakeCount)
+        items.push({ id: 'hibernatePage', icon: '/images/hibernate.png', label: 'Hibernate', callback: onContextMenuItemHibernatePages });
+
+    if (hibernatedCount)
+        items.push({ id: 'awakenPage', icon: '/images/wake.png', label: 'Wake up', callback: onContextMenuItemWakePages });
+
+    if (awakeCount || hibernatedCount)
+        items.push({ separator: true });
+
+    items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
+    items.push({ id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight }); //, preserveSelectionAfter: true },
+    items.push({ id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight }); //, preserveSelectionAfter: true }
+    items.push({ separator: true });
+
+    if (awakeCount)
+        items.push({ id: 'reloadPage', icon: '/images/reload.png', label: 'Reload', callback: onContextMenuItemReload, preserveSelectionAfter: true });
+
+    items.push({ id: 'closePage', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemClosePages });
+
+    return items;
 }
 
 function onContextMenuItemCloseWindow(rows) {
