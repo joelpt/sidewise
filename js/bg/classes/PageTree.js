@@ -256,11 +256,36 @@ PageTree.prototype = {
         log(id);
         var winNode = this.getNode(id);
 
-        var awakening = this.map(function(e) { return e instanceof PageNode ? e : undefined; }, winNode.children);
+        var awakening = this.filter(function(e) {
+            return e instanceof PageNode && e.hibernated;
+        }, winNode.children);
 
         this.awakenPageNodes(awakening, winNode);
         this.updateLastModified();
     },
+
+    // hibernate a window node and all its children
+    hibernateWindow: function(id)
+    {
+        log(id);
+        var winNode = this.getNode(id);
+
+        var hibernating = this.filter(function(e) {
+            return e instanceof PageNode && !e.hibernated;
+        }, winNode.children);
+
+        var self = this;
+        hibernating.forEach(function(e) {
+            self.hibernatePage(e.id);
+        });
+
+        this.updateLastModified();
+    },
+
+
+    ///////////////////////////////////////////////////////////
+    // Hibernation control
+    ///////////////////////////////////////////////////////////
 
     awakenPageNodes: function(nodes, existingWindowNode, activateAfter) {
         var thisObj = this;
