@@ -224,7 +224,6 @@
 
 .ftContextMenu {
     position: absolute;
-    width: 120px;
     z-index: 99999;
     border: solid 1px #888;
     background: #EEE;
@@ -239,7 +238,7 @@
 
 .ftContextMenuItem {
     list-style: none;
-    padding: 0px;
+    padding-right: 1em;
     margin: 0px;
     height: 20px;
     border: 1px solid transparent;
