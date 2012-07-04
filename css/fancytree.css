@@ -243,6 +243,7 @@
     height: 20px;
     border: 1px solid transparent;
     border-radius: 2px;
+    white-space: nowrap;
 }
 
 .ftContextMenuItem img {
