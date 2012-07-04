@@ -29,20 +29,16 @@ FancyTree.prototype.onContextMenu = function(evt) {
         treeObj.toggleMultiSelectionSingle.call(treeObj, row.attr('id'));
     }
 
+    treeObj.contextMenuSelectionData = treeObj.buildContextMenuSelectionData(treeObj.multiSelection);
+
     treeObj.enableContextMenu.call(treeObj, evt.pageX, evt.pageY);
     return false;
 };
 
-FancyTree.prototype.onContextMenuItemClick = function(evt) {
-    var treeObj = evt.data.treeObj;
-    var id = this.attributes.contextMenuId.value;
-    var contextMenuItem = treeObj.contextMenuItems[id];
-    var callback = contextMenuItem.callback;
-
-    treeObj.disableContextMenu.call(treeObj);
-
-    var rows = treeObj.multiSelection.map(function(e) {
-        var row = treeObj.getRow(e);
+FancyTree.prototype.buildContextMenuSelectionData = function(rowIds) {
+    var thisObj = this;
+    var rows = rowIds.map(function(e) {
+        var row = thisObj.getRow(e);
         var bareRow = row.get(0);
         var attribs = bareRow.attributes;
         var r = { htmlElement: bareRow, jQueryElement: row };
@@ -56,15 +52,27 @@ FancyTree.prototype.onContextMenuItemClick = function(evt) {
                 r[attrib.nodeName] = attrib.nodeValue;
             }
 
+            // TODO don't do this here, it is not fancytree specific
             if (attrib.nodeName == 'id' && attribs.hibernated != 'true') {
                 r.chromeId = parseInt(attrib.nodeValue.slice(1));
             }
         }
         return r;
     });
+    return rows;
+};
+
+FancyTree.prototype.onContextMenuItemClick = function(evt) {
+    var treeObj = evt.data.treeObj;
+    var id = this.attributes.contextMenuId.value;
+    var contextMenuItem = treeObj.contextMenuItems[id];
+    var callback = contextMenuItem.callback;
+    var rows = treeObj.contextMenuSelectionData;
+
+    treeObj.disableContextMenu();
 
     if (!contextMenuItem.preserveSelectionAfter) {
-        treeObj.clearMultiSelection.call(treeObj);
+        treeObj.clearMultiSelection();
     }
 
     // Perform context menu after a short delay to allow for sidebar to
@@ -86,7 +94,7 @@ FancyTree.prototype.enableContextMenu = function(x, y)
         return;
     }
 
-    var items = this.onContextMenuShow(this.multiSelection);
+    var items = this.onContextMenuShow(this.contextMenuSelectionData);
 
     if (items.length == 0) {
         return;
