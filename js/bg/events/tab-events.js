@@ -15,6 +15,7 @@ function registerTabEvents()
     chrome.tabs.onRemoved.addListener(onTabRemoved);
     chrome.tabs.onUpdated.addListener(onTabUpdated);
     chrome.tabs.onActivated.addListener(onTabActivated);
+    chrome.tabs.onAttached.addListener(onTabAttached);
 }
 
 
@@ -387,4 +388,21 @@ function onTabActivated(activeInfo) {
         expectingSmartFocusTabId = null;
     }
     tree.focusPage(activeInfo.tabId);
+}
+
+function onTabAttached(tabId, attachInfo) {
+    var moving = tree.getPageEx(tabId);
+
+    if (!moving) {
+        throw new Error('Could not find page with tab id ' + tabId);
+    }
+
+    if (moving.ancestors[0] instanceof WindowNode
+        && !(moving.ancestors[0].hibernated)
+        && getNumericId(moving.ancestors[0].id) == attachInfo.newWindowId) {
+        // row is already under the correct parent window in the tree
+        return;
+    }
+
+    tree.moveNode(moving.node, tree.getNode('w' + attachInfo.newWindowId));
 }
