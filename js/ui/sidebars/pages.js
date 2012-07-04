@@ -718,8 +718,8 @@ function setRowLabels(rows) {
     }
 
     for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        bg.tree.updateNode(row.attr('id'), { label: label });
+        var $row = $(rows[i]);
+        bg.tree.updateNode($row.attr('id'), { label: label });
     }
 }
 
