@@ -32,9 +32,7 @@ initSidebarPane();
 
 $(document).ready(function() {
 
-    if (loggingEnabled) {
-        $('footer, #main').addClass('debugEnabled');
-    }
+    initDebugBar();
 
     ft = initTree('#treePlaceholder', '#filterBoxPlaceholder', bg.tree);
 
@@ -44,6 +42,31 @@ $(document).ready(function() {
     bg.sidebarHandler.registerSidebarPane('pages', window);
     bg.focusCurrentTabInPageTree();
 });
+
+function initDebugBar() {
+    if (!loggingEnabled) {
+        return;
+    }
+
+    $('footer, #main').addClass('debugEnabled');
+
+    $(document)
+        .on('click', '#debug_promoteIframe', debugBarClickPromoteIframe)
+        .on('click', '#debug_resetTree', debugBarClickResetTree);
+}
+
+function debugBarClickPromoteIframe() {
+    window.parent.location='pages.html';
+}
+
+function debugBarClickResetTree() {
+    bg.tree.clear();
+    bg.injectContentScriptInExistingTabs('content_script.js');
+    bg.populatePages();
+    setTimeout(function() {
+        location.reload()
+    }, 500);
+}
 
 function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     var rowTypes = {
@@ -234,19 +257,37 @@ function onRowDragDrop(moves) {
 ///////////////////////////////////////////////////////////
 
 function onContextMenuShow(rows) {
+    console.log(rows);
+    if (rows[0].rowtype == 'window') {
+        return [
+            { id: 'closeWindow', icon: '/images/close.png', label: 'Close window', callback: onContextMenuItemCloseWindow },
+            { id: 'hibernateWindow', icon: '/images/pause.png', label: 'Hibernate all tabs in window', callback: onContextMenuItemHibernateWindow },
+            { id: 'awakenWindow', icon: '/images/pause.png', label: 'Wake all tabs in window', callback: onContextMenuItemWakeWindow },
+            { id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true }
+        ];
+
+    };
     return [
         { id: 'reloadPage', icon: '/images/reload.png', label: 'Reload', callback: onContextMenuItemReload, preserveSelectionAfter: true },
         { separator: true },
-        { id: 'closePage', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemClose },
-        { id: 'hibernatePage', icon: '/images/pause.png', label: 'Hibernate', callback: onContextMenuItemHibernate },
-        { id: 'awakenPage', icon: '/images/pause.png', label: 'Wake up', callback: onContextMenuItemAwaken },
+        { id: 'closePage', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemClosePages },
+        { id: 'hibernatePage', icon: '/images/pause.png', label: 'Hibernate', callback: onContextMenuItemHibernatePages },
+        { id: 'awakenPage', icon: '/images/pause.png', label: 'Wake up', callback: onContextMenuItemWakePages },
         { id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true },
         { id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight }, //, preserveSelectionAfter: true },
         { id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight } //, preserveSelectionAfter: true }
     ];
 }
 
-function onContextMenuItemClose(rows) {
+function onContextMenuItemCloseWindow(rows) {
+    var id = rows[0].id;
+    console.log('CLOSE WIN', id);
+    closeWindowRow(rows[0].jQueryElement);
+    // var $descendants = rows[0].jQueryElement.children('.ftChildren').find('.ftRowNode');
+    // $descendants.each(function(i, e) { closePageRow($(e)); });
+}
+
+function onContextMenuItemClosePages(rows) {
     console.log('CLOSE');
     for (var i = 0; i < rows.length; i++) {
         var row = rows[i];
@@ -254,7 +295,19 @@ function onContextMenuItemClose(rows) {
     }
 }
 
-function onContextMenuItemHibernate(rows) {
+function onContextMenuItemWakeWindow(rows) {
+    var id = rows[0].id;
+    console.log('WAKE WIN', id);
+    bg.tree.awakenWindow(id);
+}
+
+function onContextMenuItemHibernateWindow(rows) {
+    var id = rows[0].id;
+    console.log('HIBERNATE WIN', id);
+    bg.tree.hibernateWindow(id);
+}
+
+function onContextMenuItemHibernatePages(rows) {
     console.log('HIBERNATE');
     for (var i = 0; i < rows.length; i++) {
         var row = rows[i];
@@ -262,7 +315,7 @@ function onContextMenuItemHibernate(rows) {
     }
 }
 
-function onContextMenuItemAwaken(rows) {
+function onContextMenuItemWakePages(rows) {
     console.log('WAKIE');
     for (var i = 0; i < rows.length; i++) {
         var row = rows[i];
@@ -523,7 +576,11 @@ function onWindowRowCloseButton(evt) {
     var treeObj = evt.data.treeObj;
     var row = evt.data.row;
 
-    var childCount = treeObj.getChildrenCount(row);
+    closeWindowRow(row);
+}
+
+function closeWindowRow(row) {
+    var childCount = ft.getChildrenCount(row);
 
     if (childCount >= WINDOW_ACTION_CONFIRM_CHILDREN_THRESHOLD) {
         var msg = getMessage('prompt_closeWindow',
@@ -537,7 +594,7 @@ function onWindowRowCloseButton(evt) {
     var id = row.attr('id');
     var windowId = getRowNumericId(row);
 
-    if (!windowId) {
+    if (row.attr('hibernated') == 'true' || !windowId) {
         bg.tree.removeNode(id, true);
         return;
     }
@@ -549,7 +606,6 @@ function onWindowRowCloseButton(evt) {
         }
         bg.tree.removeNode(id, true);
     });
-
 }
 
 function onWindowRowFormatTitle(row, itemTextElem) {
@@ -589,17 +645,13 @@ function onWindowRowFormatTooltip(evt) {
 ///////////////////////////////////////////////////////////
 
 function closePageRow(row) {
-    if (row.attr('hibernated') == 'true') {
+    if (row.attr('hibernated') == 'true' || row.hasClass('closing')) {
         // page is hibernated so just remove it; don't actually try to close its
-        // (nonexistent) tab
+        // (nonexistent) tab; or we were already trying to close this tab
         bg.tree.removeNode(row.attr('id'));
         return;
     }
 
-    if (row.hasClass('closing')) {
-        // already trying to close this page
-        return;
-    }
     row.addClass('closing'); // "about to close" styling
     chrome.tabs.remove(getRowNumericId(row));
 }
