@@ -37,11 +37,13 @@ var ROW_TOOLTIP_SHOW_DELAY_MS = 1000;
   *              allowAtChildLevel: Boolean,     // allow row as child of another row, default=true
   *              autofocusOnClick: Boolean,      // if true (default), set focus to row when clicked
   *              multiselectable: Boolean,       // if true (default), row can be in ctrl/shift selections
-  *              allowedDropTargets: Array       // if provided, a row of this type will be permitted to be
+  *              allowedDropTargets: Array,      // if provided, a row of this type will be permitted to be
   *                                              // drag-dropped into the given rowtypes; pass the allowed row
   *                                              // type identifiers as strings, and pass the special
   *                                              // identifier 'ROOT' to permit dropping onto the root level
   *                                              // of the tree, e.g. ['bookmark', 'folder', 'ROOT']
+  *              autoselectChildrenOnDrag: Bool  // if true, when staring a drag with no selection, auto-
+  *                                              // select the children of the dragged row
   *              onClick: Function(evt),         // left single click event handler
   *              onDoubleClick: Function(evt),   // left double click event handler
   *              onMiddleClick: Function(evt),   // middle click event handler

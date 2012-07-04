@@ -7,8 +7,8 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-var DRAG_TO_ABOVE_SENSITIVITY_RATIO = 0.34;
-var DRAG_TO_BELOW_SENSITIVITY_RATIO = 0.66;
+var DRAG_TO_ABOVE_SENSITIVITY_RATIO = 0.30;
+var DRAG_TO_BELOW_SENSITIVITY_RATIO = 0.70;
 
 
 ///////////////////////////////////////////////////////////
@@ -53,6 +53,7 @@ FancyTree.prototype.getDraggableParams = function() {
             start: function(evt, ui) {
                 var target = $(evt.target);
                 var row = thisObj.getParentRowNode(target);
+                var rowTypeParams = thisObj.getRowTypeParams(row);
 
                 // TODO figure out how to make this work properly, currently it mangles the tree structure somehow
                 // but without it, we have difficulty with dragdrops sometimes not working when you are in some 1px naughtyland in between rows
@@ -63,6 +64,7 @@ FancyTree.prototype.getDraggableParams = function() {
 
                 thisObj.hideTooltip.call(thisObj);
                 thisObj.dragging = true;
+                thisObj.dropping = false;
                 thisObj.draggingRow = thisObj.getParentRowNode(target);
                 thisObj.canAcceptDropTo = false;
                 thisObj.dragSelectedCollapsedRow = false;
@@ -81,12 +83,12 @@ FancyTree.prototype.getDraggableParams = function() {
                     {
                         console.log('resetting multiselection before dragging');
                         // pageRowClicked(row);
-                        thisObj.clearMultiSelection();
-                        thisObj.toggleMultiSelectionSingle(row.attr('id'));
+                        thisObj.clearMultiSelection.call(thisObj);
+                        thisObj.toggleMultiSelectionSingle.call(thisObj, row.attr('id'));
 
                         thisObj.dragSelectedCollapsedRow = isCollapsed;
 
-                        if (!isCollapsed) {
+                        if (!isCollapsed && rowTypeParams.autoselectChildrenOnDrag) {
                             console.log('selecting children too');
                             // select every child too by default; holding ctrl and click+dragging will just grab the parent
                             row.children('.ftChildren').find('.ftRowNode').each(function(i, e) {
@@ -94,7 +96,7 @@ FancyTree.prototype.getDraggableParams = function() {
                                     if ($e.parents('.ftCollapsed').length > 0) {
                                         return;
                                     }
-                                    thisObj.toggleMultiSelectionSingle($e.attr('id'));
+                                    thisObj.toggleMultiSelectionSingle.call(thisObj, $e.attr('id'));
                                 });
                         }
 
@@ -106,17 +108,19 @@ FancyTree.prototype.getDraggableParams = function() {
                         // }
                     }
 
-                    // ensure all children of collapsed nodes are also selected
-                    var $collapsedRows = $('#' + thisObj.multiSelection.join('.ftCollapsed,#') + '.ftCollapsed');
-                    var $collapsedUnselectedChildren = $collapsedRows.find('.ftRowNode:not(.ftSelected)');
-                    console.log('selecting hidden (collapsed) children rows', $collapsedUnselectedChildren);
-                    $collapsedUnselectedChildren.each(function(i, e) {
-                        thisObj.toggleMultiSelectionSingle(e.attributes.id.value);
-                    });
+                    if (rowTypeParams.autoselectChildrenOnDrag) {
+                        // ensure all children of collapsed nodes are also selected
+                        var $collapsedRows = $('#' + thisObj.multiSelection.join('.ftCollapsed,#') + '.ftCollapsed');
+                        var $collapsedUnselectedChildren = $collapsedRows.find('.ftRowNode:not(.ftSelected)');
+                        console.log('selecting hidden (collapsed) children rows', $collapsedUnselectedChildren);
+                        $collapsedUnselectedChildren.each(function(i, e) {
+                            thisObj.toggleMultiSelectionSingle.call(thisObj, e.attributes.id.value);
+                        });
 
-                    // count up collapsed+selected children (hidden rows)
-                    var $collapsedSelectedChildren = $collapsedRows.find('.ftRowNode.ftSelected');
-                    hiddenRowCount = $collapsedSelectedChildren.length;
+                        // count up collapsed+selected children (hidden rows)
+                        var $collapsedSelectedChildren = $collapsedRows.find('.ftRowNode.ftSelected');
+                        hiddenRowCount = $collapsedSelectedChildren.length;
+                    }
                 }
 
 
@@ -366,7 +370,7 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
         if (thisObj.onDragDrop) {
             thisObj.onDragDrop(moves);
         }
-        setTimeout(function() { thisObj.dropping = false; }, 100);
+        setTimeout(function() { thisObj.dropping = false; }, 150);
     });
 };
 
