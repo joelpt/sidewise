@@ -2,9 +2,9 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-var PAGETREE_ONMODIFIED_DELAY_ON_STARTUP_MS = 2000;
+var PAGETREE_ONMODIFIED_DELAY_ON_STARTUP_MS = 1500;
 var PAGETREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS = 1000;
-var PAGETREE_ONMODIFIED_STARTUP_DURATION_MS = 45000;
+var PAGETREE_ONMODIFIED_STARTUP_DURATION_MS = 20000;
 
 
 ///////////////////////////////////////////////////////////
