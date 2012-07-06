@@ -269,7 +269,7 @@ input.invalid {
     width: 276px;
     background-repeat: no-repeat;
     z-index: -1000;
-    left: -1000px;
+    left: -10000px;
     background-image: url(/images/cloud1.png);
     -webkit-animation-timing-function: linear;
     -webkit-animation-iteration-count: infinite;
