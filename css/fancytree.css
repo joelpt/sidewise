@@ -394,6 +394,7 @@
     outline: 1px solid blue;
     pointer-events: none;
     cursor: pointer;
+    z-index: 20;
 }
 
 .ftDragToChild > .ftItemRow > .ftItemRowContent {
