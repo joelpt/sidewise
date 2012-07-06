@@ -126,6 +126,20 @@ PageTree.prototype = {
         return r;
     },
 
+    moveNodeRel: function(movingMatcher, relation, toMatcher, blockCallback)
+    {
+        var r = this.$super('moveNodeRel')(movingMatcher, relation, toMatcher);
+
+        if (r !== undefined && !blockCallback) {
+            this.callbackProxyFn('moveRel', {
+                moved: r[0],
+                relation: r[1],
+                to: r[2]
+            });
+        }
+        return r;
+    },
+
     // Merge the node matching fromNodeMatcher and all its children into the node matching toNodeMatcher.
     // The fromNode is removed from the tree after the merge.
     mergeNodes: function(fromNodeMatcher, toNodeMatcher)

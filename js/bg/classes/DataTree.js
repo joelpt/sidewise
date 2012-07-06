@@ -237,6 +237,51 @@ DataTree.prototype = {
         return r;
     },
 
+    moveNodeRel: function(movingMatcher, relation, toMatcher)
+    {
+        var moving = this.getNode(movingMatcher);
+        if (!moving) {
+            throw new Error('Could not find node matching movingMatcher');
+        }
+
+        var to = this.getNodeEx(toMatcher);
+        if (!to) {
+            throw new Error('Could not find node matching toMatcher');
+        }
+
+        var underParent;
+        var beforeSibling;
+        switch (relation) {
+            case 'before':
+                underParent = to.parent;
+                beforeSibling = to.node;
+                break;
+            case 'after':
+                underParent = to.parent;
+                if (to.index < to.siblings.length - 1) {
+                    beforeSibling = to.siblings[to.index + 1];
+                }
+                break;
+            case 'append':
+                underParent = to.node;
+                break;
+            case 'prepend':
+                underParent = to.node;
+                if (to.node.children.length > 0) {
+                    beforeSibling = to.node.children[0];
+                }
+                break;
+            default:
+                throw new Error('Unrecognized relation ' + relation);
+        }
+
+        this.removeNode(moving, false);
+        moving.children = []; // remove all of its children
+        return this.addNode(moving, underParent, beforeSibling);
+
+        // return [moving, relation, to];
+    },
+
     // Merge the node matching fromNodeMatcher and all its children into the node matching toNodeMatcher.
     // The fromNode is removed from the tree after the merge.
     mergeNodes: function(fromNodeMatcher, toNodeMatcher)
