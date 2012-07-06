@@ -3,9 +3,9 @@ html {
 }
 
 body {
-    height: 100%;
     background: -webkit-linear-gradient(top, rgba(30,87,153,1) 0%,rgba(255,255,255,1) 100%);
     background-repeat: no-repeat;
+    background-attachment: fixed;
 }
 
 #top  {
