@@ -75,6 +75,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             allowAtChildLevel: true,
             autofocusOnClick: true,
             permitAutoSelectChildren: true,
+            alwaysMoveChildren: false,
             multiselectable: true,
             allowedDropTargets: ['window', 'page'],
             onClick: onPageRowClick,
@@ -97,6 +98,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             allowAtChildLevel: false,
             autofocusOnClick: false,
             permitAutoSelectChildren: false,
+            alwaysMoveChildren: true,
             multiselectable: false,
             allowedDropTargets: ['ROOT', 'window'],
             onClick: onWindowRowClick,
@@ -241,7 +243,7 @@ function onRowExpanderClick(evt) {
 }
 
 function onRowDragDrop(moves) {
-    console.log('MOVES', moves);
+    // console.log('MOVES', moves);
     for (var i = 0; i < moves.length; i++) {
         var move = moves[i];
         var $row = move.$row;
@@ -324,10 +326,13 @@ function onRowDragDrop(moves) {
 
 function onContextMenuShow(rows) {
     console.log(rows);
+
     if (rows[0].rowtype == 'window') {
         var $row = rows[0].jQueryElement;
-        var hibernatedCount = $row.find('.ftChildren > .ftRowNode[hibernated=true]').length;
-        var awakeCount = $row.find('.ftChildren > .ftRowNode:not([hibernated=true])').length;
+        var $children = $row.find('.ftChildren > .ftRowNode');
+
+        var hibernatedCount = $children.filter(function(i, e) { return $(e).attr('hibernated') == 'true' }).length;
+        var awakeCount = $children.length - hibernatedCount;
 
         var items = [];
 
@@ -347,7 +352,11 @@ function onContextMenuShow(rows) {
     }
 
     var hibernatedCount = rows.filter(function(e) { return e.rowtype == 'page' && e.hibernated; }).length;
-    var awakeCount = rows.filter(function(e) { return e.rowtype == 'page' && !e.hibernated; }).length;
+    var awakeCount = rows.length - hibernatedCount;
+
+    var highlightedCount = rows.filter(function(e) { return e.rowtype == 'page' && e.highlighted; }).length;
+    var unhighlightedCount = rows.length - highlightedCount;
+
     var items = [];
 
     if (awakeCount)
@@ -360,8 +369,13 @@ function onContextMenuShow(rows) {
         items.push({ separator: true });
 
     items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
-    items.push({ id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight }); //, preserveSelectionAfter: true },
-    items.push({ id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight }); //, preserveSelectionAfter: true }
+
+    if (unhighlightedCount)
+        items.push({ id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
+
+    if (highlightedCount)
+        items.push({ id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
+
     items.push({ separator: true });
 
     if (awakeCount)
