@@ -363,20 +363,29 @@
 /* draggable/droppable styling */
 
 .ftDragHelper {
-    background: -webkit-linear-gradient(top, hsl(220, 80%, 80%) 0%, #fff 100%);
+    background: -webkit-linear-gradient(top, hsl(220, 80%, 85%) 0%, #fff 100%);
     border: 1px solid #666;
     border-radius: 4px;
     box-shadow: 0px 0px 11px rgba(0, 0, 0, 0.5);
     color: black;
-    font-family: Verdana;
-    font-style: italic;
-    font-weight: bold;
-    font-size: 11px;
     word-wrap: none;
     padding: 8px;
     z-index: 10;
     pointer-events: none;
     cursor: pointer;
+}
+
+.ftDragHelperMessage {
+    font-family: Verdana;
+    font-style: italic;
+    font-weight: bold;
+    font-size: 11px;
+}
+
+.ftDragHelperFooter {
+    margin-top: 1em;
+    font-size: 10px;
+    font-family: sans-serif;
 }
 
 #ftDragInsertBar {
@@ -392,3 +401,6 @@
     outline: 1px solid blue;
 }
 
+.ftDrawAttention > .ftItemRow > .ftItemRowContent {
+    outline: 2px solid rgba(0, 0, 255, 0.25);
+}
