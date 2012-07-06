@@ -57,14 +57,21 @@ DataTree.prototype = {
             }
         }
 
-        if (beforeSibling) {
-            parent.children.splice(beforeSibling.index, 0, node);
-        }
-        else if (parent) {
-            parent.children.push(node);
+        if (parent) {
+            if (beforeSibling) {
+                parent.children.splice(beforeSibling.index, 0, node);
+            }
+            else {
+                parent.children.push(node);
+            }
         }
         else {
-            this.tree.push(node);
+            if (beforeSibling) {
+                this.tree.splice(beforeSibling.index, 0, node);
+            }
+            else {
+                this.tree.push(node);
+            }
         }
 
         this.idIndex[node.id] = node;
@@ -244,6 +251,9 @@ DataTree.prototype = {
             throw new Error('Could not find node matching movingMatcher');
         }
 
+        this.removeNode(moving, false);
+        moving.children = []; // remove all of its children
+
         var to = this.getNodeEx(toMatcher);
         if (!to) {
             throw new Error('Could not find node matching toMatcher');
@@ -258,25 +268,19 @@ DataTree.prototype = {
                 break;
             case 'after':
                 underParent = to.parent;
-                if (to.index < to.siblings.length - 1) {
-                    beforeSibling = to.siblings[to.index + 1];
-                }
+                beforeSibling = to.siblings[to.index + 1]; // undefined when out of range
                 break;
             case 'append':
                 underParent = to.node;
                 break;
             case 'prepend':
                 underParent = to.node;
-                if (to.node.children.length > 0) {
-                    beforeSibling = to.node.children[0];
-                }
+                beforeSibling = to.node.children[0]; // undefined when out of range
                 break;
             default:
                 throw new Error('Unrecognized relation ' + relation);
         }
 
-        this.removeNode(moving, false);
-        moving.children = []; // remove all of its children
         return this.addNode(moving, underParent, beforeSibling);
 
         // return [moving, relation, to];
