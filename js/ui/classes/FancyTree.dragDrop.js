@@ -54,13 +54,10 @@ FancyTree.prototype.getDraggableParams = function() {
                 var row = thisObj.getParentRowNode(target);
                 var rowTypeParams = thisObj.getRowTypeParams(row);
 
-                // TODO figure out how to make this work properly, currently it mangles the tree structure somehow
-                // but without it, we have difficulty with dragdrops sometimes not working when you are in some 1px naughtyland in between rows
-                // MIGHT be using margin instead of padding on .ftChildren, or vice versa... any way you go though, if you want
                 var droppableParams = thisObj.getGenericDroppableParams(); // TODO should not need a get() function for this; make it static
-                // thisObj.root.droppable(droppableParams);
                 thisObj.root.find('.ftChildren').droppable(droppableParams);
-
+                // TODO make .ftRoot (temporarily?) droppable during dragging and allow drops on it when we've gotten a drag-to object
+                // and make mouseover of it put at the *end* of the tree (topmost possible level at end of tree)
                 thisObj.hideTooltip.call(thisObj);
                 thisObj.dragging = true;
                 thisObj.dropping = false;
@@ -74,7 +71,7 @@ FancyTree.prototype.getDraggableParams = function() {
                 console.log('start drag, row being dragged', thisObj.draggingRow);
                 if (evt.ctrlKey) {
                     thisObj.clearMultiSelection.call(thisObj);
-                    thisObj.toggleMultiSelectionSingle.call(thisObj, row.attr('id'));
+                    thisObj.toggleMultiSelectionSingle.call(thisObj, row.attr('id'), true);
                     thisObj.dragToreOffParent = true;
                 }
                 else {
@@ -84,11 +81,11 @@ FancyTree.prototype.getDraggableParams = function() {
                         console.log('resetting multiselection before dragging');
                         // pageRowClicked(row);
                         thisObj.clearMultiSelection.call(thisObj);
-                        thisObj.toggleMultiSelectionSingle.call(thisObj, row.attr('id'));
+                        thisObj.toggleMultiSelectionSingle.call(thisObj, row.attr('id'), true);
 
                         thisObj.dragSelectedCollapsedRow = isCollapsed;
 
-                        if (!isCollapsed && rowTypeParams.autoselectChildrenOnDrag) {
+                        if (!isCollapsed && thisObj.autoSelectChildrenOnDrag && rowTypeParams.permitAutoSelectChildren) {
                             console.log('selecting children too');
                             // select every child too by default; holding ctrl and click+dragging will just grab the parent
                             row.children('.ftChildren').find('.ftRowNode').each(function(i, e) {
@@ -96,7 +93,7 @@ FancyTree.prototype.getDraggableParams = function() {
                                     if ($e.parents('.ftCollapsed').length > 0) {
                                         return;
                                     }
-                                    thisObj.toggleMultiSelectionSingle.call(thisObj, $e.attr('id'));
+                                    thisObj.toggleMultiSelectionSingle.call(thisObj, $e.attr('id'), true);
                                     $lastAutoSelectedRow = $e;
                                 });
                         }
@@ -105,22 +102,22 @@ FancyTree.prototype.getDraggableParams = function() {
                             $lastAutoSelectedRow.addClass('ftDrawAttention');
                             setTimeout(function() { $lastAutoSelectedRow.removeClass('ftDrawAttention'); }, 150);
                         }
-
-                        // if (evt.shiftKey) {
-                        //     // select every child too
-                        //     row.find('.ftChildren > .ftRowNode').each(function(i, e) {
-                        //         thisObj.toggleMultiSelectionSingle.call(thisObj, e.attributes.id.value);
-                        //     });
-                        // }
                     }
 
-                    if (rowTypeParams.autoselectChildrenOnDrag) {
+                    if (evt.shiftKey) {
+                        // ALL children should be autoselected
+                        var $children = $('#' + thisObj.multiSelection.join(',#')).find('.ftRowNode');
+                        $children.each(function(i, e) {
+                            thisObj.toggleMultiSelectionSingle.call(thisObj, e.attributes.id.value, true);
+                        });
+                    }
+                    else if (rowTypeParams.autoselectChildrenOnDrag) {
                         // ensure all children of collapsed nodes are also selected
                         var $collapsedRows = $('#' + thisObj.multiSelection.join('.ftCollapsed,#') + '.ftCollapsed');
                         var $collapsedUnselectedChildren = $collapsedRows.find('.ftRowNode:not(.ftSelected)');
                         console.log('selecting hidden (collapsed) children rows', $collapsedUnselectedChildren);
                         $collapsedUnselectedChildren.each(function(i, e) {
-                            thisObj.toggleMultiSelectionSingle.call(thisObj, e.attributes.id.value);
+                            thisObj.toggleMultiSelectionSingle.call(thisObj, e.attributes.id.value, true);
                         });
 
                         // count up collapsed+selected children (hidden rows)
@@ -130,12 +127,28 @@ FancyTree.prototype.getDraggableParams = function() {
                 }
 
 
+                var helperTip = '<br/>' + 'Ctrl/Shift+click: select multiple rows.';
+                if (evt.ctrlKey) {
+                    helperTip = 'Dragging hovered row.';
+                }
+                else if (evt.shiftKey) {
+                    helperTip = 'Autoselected children.';
+                }
+                else if (thisObj.autoSelectChildrenOnDrag) {
+                    helperTip = 'Ctrl+drag: drag just the hovered row.' + helperTip;
+                }
+                else {
+                    helperTip = 'Shift+drag: also drag all children rows.' + helperTip;
+                }
+
+                // + 'Ctrl+drag: drag only the hovered row.</br>'
+                // + 'Ctrl/Shift+click: select multiple rows.'
+
                 $('.ftDragHelper').html(
                     '<div class="ftDragHelperMessage">Moving ' + thisObj.multiSelection.length + ' row' + (thisObj.multiSelection.length == 1 ? '' : 's')
                     + (hiddenRowCount > 0 ? ' (' + hiddenRowCount + ' hidden)' : '')
                     + '</div><div class="ftDragHelperFooter">'
-                    + 'Ctrl+drag: drag only the hovered row.</br>'
-                    + 'Ctrl/Shift+click: select multiple rows.'
+                    + helperTip
                     + '</div>'
                 );
 
