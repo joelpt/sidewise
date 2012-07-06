@@ -68,7 +68,7 @@ FancyTree.prototype.getDraggableParams = function() {
                 var hiddenRowCount = 0;
                 var $lastAutoSelectedRow = null;
 
-                console.log('start drag, row being dragged', thisObj.draggingRow);
+                //DEBUG console.log('start drag, row being dragged', thisObj.draggingRow);
                 if (evt.ctrlKey) {
                     thisObj.clearMultiSelection.call(thisObj);
                     thisObj.toggleMultiSelectionSingle.call(thisObj, row.attr('id'), true);
@@ -78,7 +78,7 @@ FancyTree.prototype.getDraggableParams = function() {
                     thisObj.dragToreOffParent = false;
                     if (thisObj.multiSelection.length == 0 || !(target.parent().hasClass('ftSelected')))
                     {
-                        console.log('resetting multiselection before dragging');
+                        //DEBUG console.log('resetting multiselection before dragging');
                         // pageRowClicked(row);
                         thisObj.clearMultiSelection.call(thisObj);
                         thisObj.toggleMultiSelectionSingle.call(thisObj, row.attr('id'), true);
@@ -86,7 +86,7 @@ FancyTree.prototype.getDraggableParams = function() {
                         thisObj.dragSelectedCollapsedRow = isCollapsed;
 
                         if (!isCollapsed && thisObj.autoSelectChildrenOnDrag && rowTypeParams.permitAutoSelectChildren) {
-                            console.log('selecting children too');
+                            //DEBUG console.log('selecting children too');
                             // select every child too by default; holding ctrl and click+dragging will just grab the parent
                             row.children('.ftChildren').find('.ftRowNode').each(function(i, e) {
                                     var $e = $(e);
@@ -115,7 +115,7 @@ FancyTree.prototype.getDraggableParams = function() {
                         // ensure all children of collapsed nodes are also selected
                         var $collapsedRows = $('#' + thisObj.multiSelection.join('.ftCollapsed,#') + '.ftCollapsed');
                         var $collapsedUnselectedChildren = $collapsedRows.find('.ftRowNode:not(.ftSelected)');
-                        console.log('selecting hidden (collapsed) children rows', $collapsedUnselectedChildren);
+                        //DEBUG console.log('selecting hidden (collapsed) children rows', $collapsedUnselectedChildren);
                         $collapsedUnselectedChildren.each(function(i, e) {
                             thisObj.toggleMultiSelectionSingle.call(thisObj, e.attributes.id.value, true);
                         });
@@ -196,7 +196,7 @@ FancyTree.prototype.getDroppableParams = function() {
         tolerance: 'pointer',
         hoverClass: 'ftDragOver',
         accept: function(e) {
-            // console.log('accept:', thisObj.canAcceptDropTo);
+            // //DEBUG console.log('accept:', thisObj.canAcceptDropTo);
             return thisObj.canAcceptDropTo;
         },
         drop: function(evt, ui) {
@@ -234,7 +234,7 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
         return;
     }
 
-    console.log(evt.target.className);
+    //DEBUG console.log(evt.target.className);
     var over = $(evt.target);
     var overRow = treeObj.getParentRowNode(over);
     var draggingParams = treeObj.getRowTypeParams(treeObj.draggingRow);
@@ -258,9 +258,9 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
 
     var overItemRow = treeObj.getItemRow(overRow);
     var overItemRowContent = treeObj.getItemRowContent(overRow);
-    //console.log(evt.pageX + ', ' + evt.pageY + ' .. ');
-    //console.log(overRow.attr('id'));
-    //console.log(over.position().left + ', ' + over.position().top);
+    ////DEBUG console.log(evt.pageX + ', ' + evt.pageY + ' .. ');
+    ////DEBUG console.log(overRow.attr('id'));
+    ////DEBUG console.log(over.position().left + ', ' + over.position().top);
     // var isOnLowerHalf = ( (topDelta / rowHeight) > dragToChildSensitivityRatio );
     // draggingToNext = !isOnLowerHalf;
     var rowHeight = overItemRow.height();
@@ -274,7 +274,7 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
 
     if (deltaPct <= DRAG_TO_ABOVE_SENSITIVITY_RATIO) {
         // to above position
-        console.log('my container is root', underRoot);
+        //DEBUG console.log('my container is root', underRoot);
         if (underRoot && draggingParams.allowAtTopLevel && allowedDropTargets.indexOf('ROOT') >= 0) {
             draggingTo = 'before';
             dragInsertBarTarget = overItemRow;
@@ -369,14 +369,17 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
     }
 
     this.dropping = true;
-    console.log('---PERFORM DROP---');
-    console.log('this', this);
-    console.log('drop info', 'target', this.getParentRowNode(this.draggingOverRow).attr('id'), 'to', this.draggingTo);
+    //DEBUG console.log('---PERFORM DROP---');
+    //DEBUG console.log('this', this);
+    //DEBUG console.log('drop info', 'target', this.getParentRowNode(this.draggingOverRow).attr('id'), 'to', this.draggingTo);
     var $rows = this.root.find('#' + this.multiSelection.join(',#')).not(this.draggingOverRow);
 
     if ($rows.length == 0) {
         return;
     }
+
+    // add required descendants of dragged rows with rowtype.alwaysMoveChildren=true
+    var $rows = this.addRequiredChildrenToDraggedRows($rows);
 
     var fxAreOff = $.fx.off;
     if (($rows.length == 1 && !this.dragToreOffParent) || this.dragSelectedCollapsedRow) {
@@ -386,6 +389,7 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
         // out of parent)
         $.fx.off = true;
     }
+
 
     var thisObj = this;
     this.moveDraggedRowsAnimate($rows, this.draggingTo, this.draggingOverRow, function(moves) {
@@ -408,7 +412,7 @@ FancyTree.prototype.drawDragInsertBar = function(dragToPosition, targetElem, tar
     var top = offset.top;
     var width = targetElem.width();
     var height = targetElem.height();
-    console.log(dragToPosition, left, top, width, height, targetElem, targetRowType);
+    //DEBUG console.log(dragToPosition, left, top, width, height, targetElem, targetRowType);
     switch (dragToPosition) {
         case 'A':
             this.drawDragInsertBarAt(targetRowType, left, top - 1, width, 0);
@@ -426,7 +430,7 @@ FancyTree.prototype.drawDragInsertBarAt = function(targetRowType, left, top, wid
         bar = $('<div/>', { id: 'ftDragInsertBar' });
         $('body').append(bar);
     }
-    console.log('set bar css to: LTRB', left, top, width, height);
+    //DEBUG console.log('set bar css to: LTRB', left, top, width, height);
     bar.css({ left: left, top: top, width: width, height: height });
     bar.show();
 
@@ -450,14 +454,14 @@ FancyTree.prototype.moveDraggedRowsAnimate = function($rows, moveToPosition, $mo
         throw new Error('Nothing to move');
     }
 
-    console.log('dragmoving these', $rows);
+    //DEBUG console.log('dragmoving these', $rows);
 
     var defaultRowHeight = 0;
     $rows.each(function(i, e) {
         var height = $(e).children('.ftItemRow').height();
         if (height > defaultRowHeight) {
             defaultRowHeight = height;
-            console.log('SetDefaultHeight', height)
+            //DEBUG console.log('SetDefaultHeight', height)
         }
     });
 
@@ -481,6 +485,21 @@ FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow
     this.reconfigureDraggedRows([]); //this.root);//plan.$topParents);
     var $commonAncestor = $rows.parents().has($rows).first();
     return movesDone;
+};
+
+FancyTree.prototype.addRequiredChildrenToDraggedRows = function($rows) {
+    var $newrows = $();
+
+    for (var i = 0; i < $rows.length; i++) {
+        var $row = $($rows[i]);
+        var params = this.getRowTypeParams($row);
+        if (params.alwaysMoveChildren) {
+            // add all descendants of the row
+            $newrows = $newrows.add($row.find('.ftRowNode'));
+        }
+    }
+
+    return $rows.add($newrows); // will remove duplicates automagically
 };
 
 FancyTree.prototype.performMovingDraggedRows = function(moves) {
@@ -603,6 +622,7 @@ FancyTree.prototype.findNearestInsertPointAfter = function($row, $notIn) {
 
 FancyTree.prototype.planMovingDraggedRows = function($rows, relation, $toRow) {
     var initialRows = [];
+    var thisObj = this;
     $rows.each(function(i, e) {
         var $e = $(e);
         var $csp = $e.parent().closest($rows); // Closest Selected Parent
@@ -610,13 +630,13 @@ FancyTree.prototype.planMovingDraggedRows = function($rows, relation, $toRow) {
     });
 
     var insertPoint = [relation, $toRow];
-    console.log('requested insert point is', insertPoint[0], insertPoint[1].attr('id'));
+    //DEBUG console.log('requested insert point is', insertPoint[0], insertPoint[1].attr('id'));
     if ((relation == 'after' || relation == 'before') && $toRow.is($rows)) {
         // shift insert point to nearest unselected row before/after $toRow
         insertPoint = this.findNearestInsertPoint($toRow, $rows,
             (relation == 'after'));
     }
-    console.log('chosen insert point is', insertPoint[0], insertPoint[1].attr('id'));
+    //DEBUG console.log('chosen insert point is', insertPoint[0], insertPoint[1].attr('id'));
 
     var $lastCsp;
     var $lastCspChild;
@@ -683,11 +703,13 @@ FancyTree.prototype.planMovingDraggedRows = function($rows, relation, $toRow) {
         }
     }
 
+    var ids = [];
+    $rows.each(function(i, e) { ids.push(e.id); });
     console.log('plan results for',
-        '$rows', $rows,
+        '$rows', ids.join(', '),
         'relation', relation,
         '$toRow', $toRow.attr('id'));
-    console.log('results:');
+    //DEBUG console.log('results:');
     for (var i = 0; i < moves.length; i++) {
         var m = moves[i];
         console.log((1 + i) + '. ' + m.row.attr('id'), m.relation,
@@ -737,7 +759,7 @@ FancyTree.prototype.planMovingDraggedRowsX = function($rows, moveToPosition, $mo
         });
         var $closestUnselectedParent;
         var $selectedParentInClosestUnselectedParent;
-        console.log('unselected childrens', $childrenNotSelected);
+        //DEBUG console.log('unselected childrens', $childrenNotSelected);
 
         $childrenNotSelected.each(function(i, c) {
             var $child = $(c);
@@ -780,7 +802,7 @@ FancyTree.prototype.planMovingDraggedRowsX = function($rows, moveToPosition, $mo
 
         // move the row
         if ($parentsSelected.length == 0) {
-            console.log('none of my parents are selected');
+            //DEBUG console.log('none of my parents are selected');
             // no ancestors are selected; move row to dragged-to position
             if (moveToPosition == 'A') { // above
                 // moves.push(thisObj.moveRow($e, $moveToParent, $moveToRow, true, true));
@@ -843,7 +865,7 @@ FancyTree.prototype.planMovingDraggedRowsX = function($rows, moveToPosition, $mo
             return;
         }
 
-        console.log('move to closest selected ancestor');
+        //DEBUG console.log('move to closest selected ancestor');
         // not immediately under a selected parent; move to the closest
         // selected ancestor
         // TODO use .movePageRow here, or else stop using .movePageRow above and implement
