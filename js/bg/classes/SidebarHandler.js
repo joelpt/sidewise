@@ -223,7 +223,7 @@ SidebarHandler.prototype = {
             return;
         }
 
-        var thisObj = this;
+        var self = this;
 
         // restore position of existing dock window
         if (this.dockWindowId) {
@@ -233,36 +233,36 @@ SidebarHandler.prototype = {
         // redock to new dock window
         this.dockWindowId = windowId;
         chrome.windows.get(windowId, function(win) {
-            win = thisObj.fixMaximizedWinMetrics(win);
-            var metrics = thisObj.getGoalDockMetrics(win, thisObj.dockState, thisObj.targetWidth);
+            win = self.fixMaximizedWinMetrics(win);
+            var metrics = self.getGoalDockMetrics(win, self.dockState, self.targetWidth);
             log(metrics);
-            thisObj.lastDockWindowMetrics = {
+            self.lastDockWindowMetrics = {
                 state: win.state,
                 left: win.left,
                 top: win.top,
                 width: win.width,
                 height: win.height
             };
-            thisObj.currentDockWindowMetrics = {
+            self.currentDockWindowMetrics = {
                 state: 'normal',
                 left: metrics.dockWinLeft,
                 top: win.top,
                 width: metrics.dockWinWidth,
                 height: win.height
             };
-            positionWindow(thisObj.dockWindowId, thisObj.currentDockWindowMetrics);
+            positionWindow(self.dockWindowId, self.currentDockWindowMetrics);
 
             var newSidebarMetrics = {
                 left: metrics.sidebarLeft,
                 top: win.top,
-                width: thisObj.targetWidth,
+                width: self.targetWidth,
                 height: win.height };
-            thisObj.currentSidebarMetrics = newSidebarMetrics;
+            self.currentSidebarMetrics = newSidebarMetrics;
             log(newSidebarMetrics);
 
-            positionWindow(thisObj.windowId, newSidebarMetrics, function() {
-                chrome.windows.update(thisObj.windowId, { focused: true }, function() {
-                    chrome.windows.update(thisObj.dockWindowId, { focused: true }, function() {
+            positionWindow(self.windowId, newSidebarMetrics, function() {
+                chrome.windows.update(self.windowId, { focused: true }, function() {
+                    chrome.windows.update(self.dockWindowId, { focused: true }, function() {
                         if (onAfter) {
                           onAfter();
                       }

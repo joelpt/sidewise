@@ -33,7 +33,7 @@ FancyTree.prototype.setDraggableDroppable = function(row, rowTypeParams) {
 };
 
 FancyTree.prototype.getDraggableParams = function() {
-    var thisObj = this;
+    var self = this;
 
     return {
             axis: 'y',
@@ -43,7 +43,7 @@ FancyTree.prototype.getDraggableParams = function() {
             delay: 50,
             helper: function(e, ui)
             {
-                var multiSelectionFakeLength = (thisObj.multiSelection.length == 0 ? 1 : thisObj.multiSelection.length);
+                var multiSelectionFakeLength = (self.multiSelection.length == 0 ? 1 : self.multiSelection.length);
                 return '<div class="ftDragHelper">Moving ' + multiSelectionFakeLength + ' row' + (multiSelectionFakeLength == 1 ? '' : 's') + '</div>';
             },
             revert: 'invalid',
@@ -51,41 +51,41 @@ FancyTree.prototype.getDraggableParams = function() {
             scroll: true,
             start: function(evt, ui) {
                 var target = $(evt.target);
-                var row = thisObj.getParentRowNode(target);
-                var rowTypeParams = thisObj.getRowTypeParams(row);
+                var row = self.getParentRowNode(target);
+                var rowTypeParams = self.getRowTypeParams(row);
 
-                var droppableParams = thisObj.getGenericDroppableParams(); // TODO should not need a get() function for this; make it static
-                thisObj.root.find('.ftChildren').droppable(droppableParams);
+                var droppableParams = self.getGenericDroppableParams(); // TODO should not need a get() function for this; make it static
+                self.root.find('.ftChildren').droppable(droppableParams);
                 // TODO make .ftRoot (temporarily?) droppable during dragging and allow drops on it when we've gotten a drag-to object
                 // and make mouseover of it put at the *end* of the tree (topmost possible level at end of tree)
-                thisObj.hideTooltip.call(thisObj);
-                thisObj.dragging = true;
-                thisObj.dropping = false;
-                thisObj.draggingRow = thisObj.getParentRowNode(target);
-                thisObj.canAcceptDropTo = false;
-                thisObj.dragSelectedCollapsedRow = false;
+                self.hideTooltip.call(self);
+                self.dragging = true;
+                self.dropping = false;
+                self.draggingRow = self.getParentRowNode(target);
+                self.canAcceptDropTo = false;
+                self.dragSelectedCollapsedRow = false;
                 var isCollapsed = target.parent().hasClass('ftCollapsed');
                 var hiddenRowCount = 0;
                 var $lastAutoSelectedRow = null;
 
-                //DEBUG console.log('start drag, row being dragged', thisObj.draggingRow);
+                //DEBUG console.log('start drag, row being dragged', self.draggingRow);
                 if (evt.ctrlKey) {
-                    thisObj.clearMultiSelection.call(thisObj);
-                    thisObj.toggleMultiSelectionSingle.call(thisObj, row.attr('id'), true);
-                    thisObj.dragToreOffParent = true;
+                    self.clearMultiSelection.call(self);
+                    self.toggleMultiSelectionSingle.call(self, row.attr('id'), true);
+                    self.dragToreOffParent = true;
                 }
                 else {
-                    thisObj.dragToreOffParent = false;
-                    if (thisObj.multiSelection.length == 0 || !(target.parent().hasClass('ftSelected')))
+                    self.dragToreOffParent = false;
+                    if (self.multiSelection.length == 0 || !(target.parent().hasClass('ftSelected')))
                     {
                         //DEBUG console.log('resetting multiselection before dragging');
                         // pageRowClicked(row);
-                        thisObj.clearMultiSelection.call(thisObj);
-                        thisObj.toggleMultiSelectionSingle.call(thisObj, row.attr('id'), true);
+                        self.clearMultiSelection.call(self);
+                        self.toggleMultiSelectionSingle.call(self, row.attr('id'), true);
 
-                        thisObj.dragSelectedCollapsedRow = isCollapsed;
+                        self.dragSelectedCollapsedRow = isCollapsed;
 
-                        if (!isCollapsed && thisObj.autoSelectChildrenOnDrag && rowTypeParams.permitAutoSelectChildren) {
+                        if (!isCollapsed && self.autoSelectChildrenOnDrag && rowTypeParams.permitAutoSelectChildren) {
                             //DEBUG console.log('selecting children too');
                             // select every child too by default; holding ctrl and click+dragging will just grab the parent
                             row.children('.ftChildren').find('.ftRowNode').each(function(i, e) {
@@ -93,7 +93,7 @@ FancyTree.prototype.getDraggableParams = function() {
                                     if ($e.parents('.ftCollapsed').length > 0) {
                                         return;
                                     }
-                                    thisObj.toggleMultiSelectionSingle.call(thisObj, $e.attr('id'), true);
+                                    self.toggleMultiSelectionSingle.call(self, $e.attr('id'), true);
                                     $lastAutoSelectedRow = $e;
                                 });
                         }
@@ -106,18 +106,18 @@ FancyTree.prototype.getDraggableParams = function() {
 
                     if (evt.shiftKey) {
                         // ALL children should be autoselected
-                        var $children = $('#' + thisObj.multiSelection.join(',#')).find('.ftRowNode');
+                        var $children = $('#' + self.multiSelection.join(',#')).find('.ftRowNode');
                         $children.each(function(i, e) {
-                            thisObj.toggleMultiSelectionSingle.call(thisObj, e.attributes.id.value, true);
+                            self.toggleMultiSelectionSingle.call(self, e.attributes.id.value, true);
                         });
                     }
                     else if (rowTypeParams.autoselectChildrenOnDrag) {
                         // ensure all children of collapsed nodes are also selected
-                        var $collapsedRows = $('#' + thisObj.multiSelection.join('.ftCollapsed,#') + '.ftCollapsed');
+                        var $collapsedRows = $('#' + self.multiSelection.join('.ftCollapsed,#') + '.ftCollapsed');
                         var $collapsedUnselectedChildren = $collapsedRows.find('.ftRowNode:not(.ftSelected)');
                         //DEBUG console.log('selecting hidden (collapsed) children rows', $collapsedUnselectedChildren);
                         $collapsedUnselectedChildren.each(function(i, e) {
-                            thisObj.toggleMultiSelectionSingle.call(thisObj, e.attributes.id.value, true);
+                            self.toggleMultiSelectionSingle.call(self, e.attributes.id.value, true);
                         });
 
                         // count up collapsed+selected children (hidden rows)
@@ -134,7 +134,7 @@ FancyTree.prototype.getDraggableParams = function() {
                 else if (evt.shiftKey) {
                     helperTip = 'Autoselected children.';
                 }
-                else if (thisObj.autoSelectChildrenOnDrag) {
+                else if (self.autoSelectChildrenOnDrag) {
                     helperTip = 'Ctrl+drag: drag just the hovered row.' + helperTip;
                 }
                 else {
@@ -145,7 +145,7 @@ FancyTree.prototype.getDraggableParams = function() {
                 // + 'Ctrl/Shift+click: select multiple rows.'
 
                 $('.ftDragHelper').html(
-                    '<div class="ftDragHelperMessage">Moving ' + thisObj.multiSelection.length + ' row' + (thisObj.multiSelection.length == 1 ? '' : 's')
+                    '<div class="ftDragHelperMessage">Moving ' + self.multiSelection.length + ' row' + (self.multiSelection.length == 1 ? '' : 's')
                     + (hiddenRowCount > 0 ? ' (' + hiddenRowCount + ' hidden)' : '')
                     + '</div><div class="ftDragHelperFooter">'
                     + helperTip
@@ -160,48 +160,48 @@ FancyTree.prototype.getDraggableParams = function() {
                 // else
                 // {
                 //     // select kids of collapsed nodes automagically
-                //     thisObj.multiSelection.forEach(function(e) {
-                //         var $row = thisObj.getRow.call(thisObj, e);
+                //     self.multiSelection.forEach(function(e) {
+                //         var $row = self.getRow.call(self, e);
 
                 //         if (!($row.hasClass('ftCollapsed'))) {
                 //             return;
                 //         }
 
                 //         $row.find('.ftChildren > .ftRowNode').each(function(i, e) {
-                //             thisObj.toggleMultiSelectionSingle.call(thisObj, e.attributes.id.value);
+                //             self.toggleMultiSelectionSingle.call(self, e.attributes.id.value);
                 //         });
 
                 //     });
                 // }
             },
             stop: function(e, ui) {
-                thisObj.dragging = false;
-                thisObj.canAcceptDropTo = false;
-                thisObj.draggingOverRow = null;
-                thisObj.draggingTo = null;
+                self.dragging = false;
+                self.canAcceptDropTo = false;
+                self.draggingOverRow = null;
+                self.draggingTo = null;
                 $('.ftDragToChild').removeClass('ftDragToChild');
-                thisObj.hideDragInsertBar();
+                self.hideDragInsertBar();
                 // Finding this annoying
-                // if (thisObj.multiSelection.length == 1)
+                // if (self.multiSelection.length == 1)
                 // {
-                //     thisObj.clearMultiSelection.call(thisObj);
+                //     self.clearMultiSelection.call(self);
                 // }
             }
         };
 };
 
 FancyTree.prototype.getDroppableParams = function() {
-    var thisObj = this;
+    var self = this;
     return {
         tolerance: 'pointer',
         hoverClass: 'ftDragOver',
         accept: function(e) {
-            // //DEBUG console.log('accept:', thisObj.canAcceptDropTo);
-            return thisObj.canAcceptDropTo;
+            // //DEBUG console.log('accept:', self.canAcceptDropTo);
+            return self.canAcceptDropTo;
         },
         drop: function(evt, ui) {
             return;
-            thisObj.onItemRowDrop(evt, ui);
+            self.onItemRowDrop(evt, ui);
             evt.stopPropagation();
             return false;
         }
@@ -209,13 +209,13 @@ FancyTree.prototype.getDroppableParams = function() {
 };
 
 FancyTree.prototype.getGenericDroppableParams = function() {
-    var thisObj = this;
+    var self = this;
     return {
         accept: '*',
         tolerance: 'pointer',
         hoverClass: 'ftDragOver',
         drop: function(evt, ui) {
-            thisObj.onItemRowDrop(evt, ui);
+            self.onItemRowDrop(evt, ui);
             evt.stopPropagation();
             return false;
         }
@@ -391,13 +391,13 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
     }
 
 
-    var thisObj = this;
+    var self = this;
     this.moveDraggedRowsAnimate($rows, this.draggingTo, this.draggingOverRow, function(moves) {
         $.fx.off = fxAreOff;
-        if (thisObj.onDragDrop) {
-            thisObj.onDragDrop(moves);
+        if (self.onDragDrop) {
+            self.onDragDrop(moves);
         }
-        setTimeout(function() { thisObj.dropping = false; }, 1000);
+        setTimeout(function() { self.dropping = false; }, 1000);
     });
 };
 
@@ -448,7 +448,7 @@ FancyTree.prototype.hideDragInsertBar = function() {
 ///////////////////////////////////////////////////////////
 
 FancyTree.prototype.moveDraggedRowsAnimate = function($rows, moveToPosition, $moveToRow, onComplete) {
-    var thisObj = this;
+    var self = this;
 
     if ($rows.length == 0) {
         throw new Error('Nothing to move');
@@ -466,9 +466,9 @@ FancyTree.prototype.moveDraggedRowsAnimate = function($rows, moveToPosition, $mo
     });
 
     var moves;
-    thisObj.slideOutAndShrink.call(thisObj, $rows, defaultRowHeight, function(heights) {
-        moves = thisObj.moveDraggedRows.call(thisObj, $rows, moveToPosition, $moveToRow);
-        thisObj.growAndSlideIn.call(thisObj, $rows, heights, function() {
+    self.slideOutAndShrink.call(self, $rows, defaultRowHeight, function(heights) {
+        moves = self.moveDraggedRows.call(self, $rows, moveToPosition, $moveToRow);
+        self.growAndSlideIn.call(self, $rows, heights, function() {
             // TODO make it possible to pass moves to onComplete right after moveDraggedRows, and give
             // it a callback to call when IT is done with its operations; that callback would then
             // complete the animation after the function has had the time to do any move ops of its own
@@ -529,14 +529,14 @@ FancyTree.prototype.reconfigureDraggedRows = function($topParents) {
     }
 
     // reconfigure all possibly affected nodes in a moment
-    var thisObj = this;
+    var self = this;
     // setTimeout(function() {
         $fixups.each(function(i, e) {
             var $e = $(e);
-            thisObj.setDraggableDroppable.call(thisObj, $e);
-            thisObj.updateRowExpander.call(thisObj, $e);
-            thisObj.setRowButtonTooltips.call(thisObj, $e);
-            thisObj.formatRowTitle.call(thisObj, $e);
+            self.setDraggableDroppable.call(self, $e);
+            self.updateRowExpander.call(self, $e);
+            self.setRowButtonTooltips.call(self, $e);
+            self.formatRowTitle.call(self, $e);
         });
     // }, 10);
 };
@@ -622,7 +622,7 @@ FancyTree.prototype.findNearestInsertPointAfter = function($row, $notIn) {
 
 FancyTree.prototype.planMovingDraggedRows = function($rows, relation, $toRow) {
     var initialRows = [];
-    var thisObj = this;
+    var self = this;
     $rows.each(function(i, e) {
         var $e = $(e);
         var $csp = $e.parent().closest($rows); // Closest Selected Parent
@@ -720,8 +720,8 @@ FancyTree.prototype.planMovingDraggedRows = function($rows, relation, $toRow) {
 }
 
 FancyTree.prototype.planMovingDraggedRowsX = function($rows, moveToPosition, $moveToRow) {
-    var thisObj = this;
-    var $moveToChildren = thisObj.getChildrenContainer($moveToRow);
+    var self = this;
+    var $moveToChildren = self.getChildrenContainer($moveToRow);
     var moveToHasChildren = $moveToChildren.children().length > 0;
     var moveToIsCollapsed = $moveToRow.hasClass('.ftCollapsed');
     var moves = [];
@@ -754,7 +754,7 @@ FancyTree.prototype.planMovingDraggedRowsX = function($rows, moveToPosition, $mo
 
         // iterate through the children of each row in $rows, finding those rows that are not also in $rows
         // and moving them up the tree to their closest parent row which is not also in $rows
-        var $childrenNotSelected = thisObj.getChildrenContainer($e).children().filter(function(i, c) {
+        var $childrenNotSelected = self.getChildrenContainer($e).children().filter(function(i, c) {
             return !($(c).is($rows));
         });
         var $closestUnselectedParent;
@@ -776,12 +776,12 @@ FancyTree.prototype.planMovingDraggedRowsX = function($rows, moveToPosition, $mo
 
             if ($closestUnselectedParent) {
                 // move the unselected child up the tree
-                moves.push(thisObj.getMovePlanEntry(false, $child, $closestUnselectedParent, $selectedParentInClosestUnselectedParent, true));
+                moves.push(self.getMovePlanEntry(false, $child, $closestUnselectedParent, $selectedParentInClosestUnselectedParent, true));
             }
         });
 
 
-        var $childrenSelected = thisObj.getChildrenContainer($e).children().filter(function(i, c) {
+        var $childrenSelected = self.getChildrenContainer($e).children().filter(function(i, c) {
             return ($(c).is($rows));
         });
 
@@ -791,11 +791,11 @@ FancyTree.prototype.planMovingDraggedRowsX = function($rows, moveToPosition, $mo
             if ($beforeSibling.length == 0) {
                 $beforeSibling = undefined;
             }
-            moves.push(thisObj.getMovePlanEntry(true, $child, $e, $beforeSibling, true));
+            moves.push(self.getMovePlanEntry(true, $child, $e, $beforeSibling, true));
         });
 
         // determine parent row of move target
-        var $moveToParent = thisObj.getParentRowNode($moveToRow.parent());
+        var $moveToParent = self.getParentRowNode($moveToRow.parent());
         if ($moveToParent.length == 0) {
             $moveToParent = undefined; // no parent row, we'll just leave this blank so the tree's root acts as the parent
         }
@@ -805,8 +805,8 @@ FancyTree.prototype.planMovingDraggedRowsX = function($rows, moveToPosition, $mo
             //DEBUG console.log('none of my parents are selected');
             // no ancestors are selected; move row to dragged-to position
             if (moveToPosition == 'A') { // above
-                // moves.push(thisObj.moveRow($e, $moveToParent, $moveToRow, true, true));
-                moves.push(thisObj.getMovePlanEntry(false, $e, $moveToParent, $moveToRow, true));
+                // moves.push(self.moveRow($e, $moveToParent, $moveToRow, true, true));
+                moves.push(self.getMovePlanEntry(false, $e, $moveToParent, $moveToRow, true));
                 // $moveToRow.before($e);
                 return;
             }
@@ -823,8 +823,8 @@ FancyTree.prototype.planMovingDraggedRowsX = function($rows, moveToPosition, $mo
                         $moveToBeforeChild = undefined;
                     }
 
-                    moves.push(thisObj.getMovePlanEntry(false, $e, $moveToRow, $moveToBeforeChild, true));
-                    // moves.push(thisObj.moveRow($e, $moveToRow, $moveToBeforeChild, true, true));
+                    moves.push(self.getMovePlanEntry(false, $e, $moveToRow, $moveToBeforeChild, true));
+                    // moves.push(self.moveRow($e, $moveToRow, $moveToBeforeChild, true, true));
                     // $moveToChildren.prepend($e);
                     return;
                 }
@@ -839,15 +839,15 @@ FancyTree.prototype.planMovingDraggedRowsX = function($rows, moveToPosition, $mo
                     $moveToNextSibling = undefined;
                 }
 
-                moves.push(thisObj.getMovePlanEntry(false, $e, $moveToParent, $moveToNextSibling, true));
-                // moves.push(thisObj.moveRow($e, $moveToParent, $moveToNextSibling, true, true));
+                moves.push(self.getMovePlanEntry(false, $e, $moveToParent, $moveToNextSibling, true));
+                // moves.push(self.moveRow($e, $moveToParent, $moveToNextSibling, true, true));
                 // $moveToRow.after($e);
                 return;
             }
 
             if (moveToPosition == 'C') { // child of
-                // moves.push(thisObj.moveRow($e, $moveToRow, undefined, true, true));
-                moves.push(thisObj.getMovePlanEntry(false, $e, $moveToRow, undefined, true));
+                // moves.push(self.moveRow($e, $moveToRow, undefined, true, true));
+                moves.push(self.getMovePlanEntry(false, $e, $moveToRow, undefined, true));
                 // $moveToChildren.append($e);
                 return;
             }
@@ -861,7 +861,7 @@ FancyTree.prototype.planMovingDraggedRowsX = function($rows, moveToPosition, $mo
 
         if ($closestParent.is($parent)) {
             // already under my current and selected parent, do naught
-            // thisObj.setDraggableDroppable.call(thisObj, $e);
+            // self.setDraggableDroppable.call(self, $e);
             return;
         }
 
@@ -870,9 +870,9 @@ FancyTree.prototype.planMovingDraggedRowsX = function($rows, moveToPosition, $mo
         // selected ancestor
         // TODO use .movePageRow here, or else stop using .movePageRow above and implement
         // a move to hiddenDiv -> move to target scenario in this function instead
-        // moves.push(thisObj.moveRow($e, $closestParent, undefined, true, true));
-        moves.push(thisObj.getMovePlanEntry(false, $e, $closestParent, undefined, true));
-        // thisObj.getChildrenContainer.call(thisObj, $closestParent).children().append($e);
+        // moves.push(self.moveRow($e, $closestParent, undefined, true, true));
+        moves.push(self.getMovePlanEntry(false, $e, $closestParent, undefined, true));
+        // self.getChildrenContainer.call(self, $closestParent).children().append($e);
     });
 
     return { moves: moves, $topParents: $topParents };

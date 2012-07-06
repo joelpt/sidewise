@@ -13,7 +13,7 @@ FancyTree.prototype.getRowTypeParams = function(row) {
   * @param params   The row type's parameters; see FancyTree class header for details
   */
 FancyTree.prototype.addRowType = function(name, params) {
-    var thisObj = this;
+    var self = this;
     this.rowTypes[name] = params;
 
     // configure params
@@ -23,7 +23,7 @@ FancyTree.prototype.addRowType = function(name, params) {
     // configure title formatting handler
     var onFormatTitle = params.onFormatTitle || this.defaultFormatTitleHandler;
     params.onFormatTitle = function(row) {
-        onFormatTitle.call(thisObj, row, thisObj.getInnerRow(row).children('.ftItemText'));
+        onFormatTitle.call(self, row, self.getInnerRow(row).children('.ftItemText'));
     }
 
     // configure event handling

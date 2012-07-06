@@ -37,9 +37,9 @@ FancyTree.prototype.formatRowTitle = function(row) {
 
 // Call rowType.onFormatTitle() on the given row and all its parent rows
 FancyTree.prototype.formatLineageTitles = function(row) {
-    var thisObj = this;
+    var self = this;
     row.parents('.ftRowNode').add(row).each(function(i, e) {
         var $e = $(e);
-        thisObj.formatRowTitle.call(thisObj, row);
+        self.formatRowTitle.call(self, row);
     });
 };

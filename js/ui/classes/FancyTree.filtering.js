@@ -93,17 +93,17 @@ FancyTree.prototype.onFilterBoxModified = function(evt) {
 ///////////////////////////////////////////////////////////
 
 FancyTree.prototype.highlightMatches = function(elements, filter, words, advancedFilterUsed) {
-    var thisObj = this;
+    var self = this;
 
     elements.each(function(i, e) {
         var $e = $(e);
         var $textElem = $e.find('.ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText');
 
         if (advancedFilterUsed) {
-            thisObj.highlightMatchChars.call(this, $textElem, filter);
+            self.highlightMatchChars.call(this, $textElem, filter);
         }
         else {
-            thisObj.highlightMatchWords.call(this, $textElem, words);
+            self.highlightMatchWords.call(this, $textElem, words);
         }
 
     });

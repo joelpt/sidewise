@@ -36,9 +36,9 @@ FancyTree.prototype.onContextMenu = function(evt) {
 };
 
 FancyTree.prototype.buildContextMenuSelectionData = function(rowIds) {
-    var thisObj = this;
+    var self = this;
     var rows = rowIds.map(function(e) {
-        var row = thisObj.getRow(e);
+        var row = self.getRow(e);
         var bareRow = row.get(0);
         var attribs = bareRow.attributes;
         var r = { htmlElement: bareRow, jQueryElement: row };

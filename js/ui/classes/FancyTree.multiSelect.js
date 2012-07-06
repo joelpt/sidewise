@@ -81,11 +81,11 @@ FancyTree.prototype.addMultiSelectionBetween = function(fromId, toId) {
     }
 
     // add these to multiSelection
-    var thisObj = this;
+    var self = this;
     range.forEach(function(e) {
-        if (thisObj.multiSelection.indexOf(e) == -1) {
-            thisObj.multiSelection.push(e);
-            thisObj.addSelectionEffect(thisObj.getRow(e));
+        if (self.multiSelection.indexOf(e) == -1) {
+            self.multiSelection.push(e);
+            self.addSelectionEffect(self.getRow(e));
         }
     });
 
@@ -96,11 +96,11 @@ FancyTree.prototype.addMultiSelectionBetween = function(fromId, toId) {
 
 FancyTree.prototype.clearMultiSelection = function() {
     // remove visual selection effects
-    var thisObj = this;
+    var self = this;
     this.multiSelection.forEach(function(e) {
         try {
-            var row = thisObj.getRow(e);
-            thisObj.removeSelectionEffect(row);
+            var row = self.getRow(e);
+            self.removeSelectionEffect(row);
         }
         catch (ex) { }
     });

@@ -218,7 +218,7 @@ FancyTree.prototype.focusRow = function(idOrElem) {
 };
 
 FancyTree.prototype.expandRow = function(id) {
-    var thisObj = this;
+    var self = this;
     var row = this.getRow(id);
     var expanded = !(row.hasClass('ftCollapsed'));
 
@@ -235,7 +235,7 @@ FancyTree.prototype.expandRow = function(id) {
         row.removeClass('ftCollapsed');
 
         if (onExpanderClick) {
-            var evt = { data: { treeObj: thisObj, row: row, expanded: !expanded } };
+            var evt = { data: { treeObj: self, row: row, expanded: !expanded } };
             onExpanderClick(evt);
         }
         onFormatTitle(row);
@@ -245,7 +245,7 @@ FancyTree.prototype.expandRow = function(id) {
 };
 
 FancyTree.prototype.collapseRow = function(id) {
-    var thisObj = this;
+    var self = this;
     var row = this.getRow(id);
     var expanded = !(row.hasClass('ftCollapsed'));
 
@@ -262,7 +262,7 @@ FancyTree.prototype.collapseRow = function(id) {
         row.addClass('ftCollapsed');
 
         if (onExpanderClick) {
-            var evt = { data: { treeObj: thisObj, row: row, expanded: !expanded } };
+            var evt = { data: { treeObj: self, row: row, expanded: !expanded } };
             onExpanderClick(evt);
         }
         onFormatTitle(row);
@@ -277,7 +277,7 @@ FancyTree.prototype.collapseRow = function(id) {
   * @returns true if element is now expanded, false if now collapsed
   */
 FancyTree.prototype.toggleExpandRow = function(id) {
-    var thisObj = this;
+    var self = this;
     var row = this.getRow(id);
     var children = this.getChildrenContainer(row);
     var rowTypeParams = this.getRowTypeParams(row);
@@ -294,7 +294,7 @@ FancyTree.prototype.toggleExpandRow = function(id) {
         }
 
         if (onExpanderClick) {
-            var evt = { data: { treeObj: thisObj, row: row, expanded: !expanded } };
+            var evt = { data: { treeObj: self, row: row, expanded: !expanded } };
             onExpanderClick(evt);
         }
         onFormatTitle(row);

@@ -36,9 +36,9 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     this.onModifiedDelayedWaitMs = PAGETREE_ONMODIFIED_DELAY_ON_STARTUP_MS;
 
     // Update onModifiedDelay duration after startup period
-    var thisObj = this;
+    var self = this;
     setTimeout(function() {
-        thisObj.onModifiedDelayedWaitMs = PAGETREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS;
+        self.onModifiedDelayedWaitMs = PAGETREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS;
     }, PAGETREE_ONMODIFIED_STARTUP_DURATION_MS);
 };
 
@@ -302,10 +302,10 @@ PageTree.prototype = {
     ///////////////////////////////////////////////////////////
 
     awakenPageNodes: function(nodes, existingWindowNode, activateAfter) {
-        var thisObj = this;
+        var self = this;
 
         var urls = nodes.map(function(e) { return e.url; });
-        nodes.forEach(function(e) { thisObj.awakeningPages.push(e); });
+        nodes.forEach(function(e) { self.awakeningPages.push(e); });
 
         if (existingWindowNode.hibernated) {
             // need a new window to load page(s) into
@@ -353,20 +353,20 @@ PageTree.prototype = {
 
                 chrome.windows.update(win.id, newWinMetrics);
 
-                var newWinNode = thisObj.getNode('w' + win.id);
+                var newWinNode = self.getNode('w' + win.id);
                 log(newWinNode);
                 if (newWinNode) {
-                    thisObj.mergeNodes(newWinNode, existingWindowNode);
+                    self.mergeNodes(newWinNode, existingWindowNode);
                 }
 
-                thisObj.updateNode(existingWindowNode, {
+                self.updateNode(existingWindowNode, {
                     id: 'w' + win.id,
                     restored: true,
                     restorable: false,
                     hibernated: false,
                     title: WINDOW_DEFAULT_TITLE
                 });
-                thisObj.expandNode(existingWindowNode);
+                self.expandNode(existingWindowNode);
             });
             return;
         }
@@ -403,11 +403,11 @@ PageTree.prototype = {
         }
 
         // window node doesn't exist; create it, then add page to it
-        var thisObj = this;
+        var self = this;
         chrome.windows.get(tab.windowId, function(win) {
             var winNode = new WindowNode(win);
-            thisObj.addNode(winNode);
-            thisObj.addNode(pageNode, winNode);
+            self.addNode(winNode);
+            self.addNode(pageNode, winNode);
             if (onAdded) {
                 onAdded(pageNode, winNode);
             }

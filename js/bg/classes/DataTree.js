@@ -441,12 +441,12 @@ DataTree.prototype = {
     // the original nodes unaltered.
     mapTree: function(mapFn, inArray)
     {
-        var thisObj = this;
+        var self = this;
         var ary = inArray || this.tree;
         return ary.map(function(e) {
             var children = e.children;
             e = mapFn(e);
-            e.children = thisObj.mapTree(mapFn, children);
+            e.children = self.mapTree(mapFn, children);
             return e;
         });
     },
