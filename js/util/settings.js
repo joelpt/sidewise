@@ -93,7 +93,8 @@ Settings.prototype = {
             autoCollapseLastSessionWindows: true,
             rememberOpenPagesBetweenSessions: true,
             wakeHibernatedPagesOnClick: true,
-            animationEnabled: true
+            animationEnabled: true,
+            autoselectChildrenOnDrag: true
         };
 
         for (var setting in defaultSettings) {
