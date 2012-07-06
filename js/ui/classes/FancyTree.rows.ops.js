@@ -104,6 +104,75 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
     return { row: elem, parent: newParent, beforeSibling: sibling, keepChildren: keepChildren, oldAncestors: oldAncestors };
 };
 
+FancyTree.prototype.moveRowRel = function(id, relation, toId, skipElementReconfiguration) {
+    var row = this.getRow(id);
+    if (!row) {
+        throw new Error('Could not find row to move with id ' + JSON.stringify(id));
+    }
+    var to = this.getRow(toId);
+    if (!to) {
+        throw new Error('Could find row to move to with toId ' + JSON.stringify(toId));
+    }
+
+    var oldParent = this.getParentRowNode(row.parent());
+    var oldAncestors = row.parents('.ftRowNode');
+
+    this.removeRow(row, false, true); // prevents possible DOM_HIERARCHY exceptions
+
+    if (relation == 'before') {
+        to.before(row);
+    }
+    else if (relation == 'after') {
+        to.after(row);
+    }
+    else if (relation == 'prepend') {
+        to.children('.ftChildren').prepend(row);
+    }
+    else if (relation == 'append') {
+        to.children('.ftChildren').append(row);
+    }
+    else {
+        throw new Error('Unrecognized relation ' + relation);
+    }
+
+    var newParent = this.getParentRowNode(row.parent());
+    var newBeforeSibling = row.prev();
+    var newAfterSibling = row.next();
+
+    if (newBeforeSibling.length == 0) {
+        newBeforeSibling = undefined;
+    }
+
+    if (newAfterSibling.length == 0) {
+        newAfterSibling = undefined;
+    }
+
+    if (!skipElementReconfiguration) {
+        this.setRowButtonTooltips(row);
+        this.setDraggableDroppable(row);
+
+        this.updateRowExpander(oldParent);
+        this.updateRowExpander(newParent);
+        this.updateRowExpander(row);
+
+        this.formatLineageTitles(oldParent);
+        this.formatLineageTitles(newParent);
+    }
+
+    return {
+        $row: row,
+        relation: relation,
+        $to: to,
+        $newParent: newParent,
+        $newBeforeSibling: newBeforeSibling,
+        $newAfterSibling: newAfterSibling,
+        $oldAncestors: oldAncestors,
+        keepChildren: false,
+        staticMove: false
+    };
+    // return { row: row, parent: newParent, beforeSibling: sibling, keepChildren: keepChildren, oldAncestors: oldAncestors };
+};
+
 FancyTree.prototype.updateRow = function(id, details) {
     var row = this.getRow(id);
     var innerRow = this.getInnerRow(row);
