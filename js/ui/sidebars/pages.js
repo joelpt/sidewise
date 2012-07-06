@@ -243,14 +243,77 @@ function onRowDragDrop(moves) {
     console.log('MOVES', moves);
     for (var i = 0; i < moves.length; i++) {
         var move = moves[i];
-        var rowId = move.row.attr('id');
-        var parentId = move.parent.attr('id');
-        var beforeSiblingId = (move.beforeSibling
-            ? move.beforeSibling.attr('id')
-            : undefined
-        );
-        console.log('---- recording move ----', 'row', rowId, 'parent', parentId, 'beforeSibling', beforeSiblingId, 'keepChildren', move.keepChildren);
-        bg.tree.moveNode(rowId, parentId, beforeSiblingId, move.keepChildren, true);
+        var $row = move.$row;
+        var $to = move.$to;
+        var rowId = $row.attr('id');
+        var toId = $to ? $to.attr('id') : undefined;
+        console.log('---- move:', rowId, move.relation, toId);
+
+        if (move.relation != 'nomove') {
+            // record the move in bg.tree
+            bg.tree.moveNodeRel(rowId, move.relation, toId, true);
+        }
+
+        if ($row.attr('rowtype') == 'page') {
+            // moving a tab between windows
+            // TODO when moving tabs between windows we wont generate a move event for selected tabs
+            // which are direct children of other selected tabs; these come with due to keepChildren=true
+            // and therefore do not generate a move event. Move these properly.
+
+            // var $topParent = row.parents('.ftRowNode').last();
+
+            // var $moveTopParent = move.parent.parents('.ftRowNode').last();
+            var $moveTopParent = $to.parents('.ftRowNode').last();
+            // if ($moveTopParent.length == 0) {
+            //     $moveTopParent = $to.parent().closest('.ftRowNode');
+            // }
+
+            var $oldTopParent = move.$oldAncestors.last();
+
+            // if we are moving row to a branch with a different non hibernated window row at the top ...
+            if ($moveTopParent.attr('rowtype') == 'window'
+                && $moveTopParent.attr('hibernated') != 'true'
+                && !($moveTopParent.is($oldTopParent)))
+            {
+                // TODO enable reliable window-moving of subselected children nodes by issuing
+                // redundant 'moves' entries for selected>selected rows? or else sniff
+                // it all out right here ... SOLUTION: output a moves entry for each
+                // selected>selected row that is moved along with a boolean .staticMove=(true|false),
+                // onDragDrop listeners can check this bool to decide if they need to do
+                // something with a given move. In our case we will want to use non-staticMove
+                // moves entries to indicate when we should still try to move that one to a new window
+                // here
+
+                // && !($moveTopParent.is($topParent))) {
+                // The reason this isn't working is that by the time this code gets executed,
+                // the node has already been physically moved in the tree, so getting $topParent
+                // will always return the same node as $moveTopParent; we're already actually moved there.
+                // Solution: implement onDragDropBefore with blocking callback providing the proposed
+                // list of moves, and onDragDropAfter called once move is all done and animated.
+                // solution 2: in moves, add oldParent, oldBeforeSibling, then we could perform this
+                // comparison properly .... UNLESS oldParent/oldBeforeSibling get moved themselves.
+                // solution 3: in moves, add oldAncestors which is an array exactly describing the parents
+                // that a given node had prior to being moved (though they may have themselves moved);
+                // we could look at the top oldAncestor to find out if we've been switched between
+                // two windows
+
+                // TODO prevent doing moves to non-normal type windows via droppable:accept
+                // TODO figure out some way to block onTabAttached events re-sorting what the tree
+                // looks like: this is probably possible by verifying in onTabAttached that
+                // we're under a different window than the one that's reported as the moveto window,
+                // and do nothing if they're the same window
+                chrome.tabs.move(getRowNumericId($row),
+                    { windowId: getRowNumericId($moveTopParent), index: 9999 },
+                    function(tab) {
+
+                        // setTimeout(function() {
+                        //     bg.tree.moveNode(rowId, parentId, beforeSiblingId, move.keepChildren, true);
+                        // }, 1000);
+                    }
+                );
+                continue;
+            }
+        }
     }
 }
 
