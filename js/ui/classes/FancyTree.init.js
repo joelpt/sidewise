@@ -38,6 +38,8 @@
   *                                              // identifier 'ROOT' to permit dropping onto the root level
   *                                              // of the tree, e.g. ['bookmark', 'folder', 'ROOT']
   *              permitAutoSelectChildren: Bool, // if true, autoselect children of single dragged rows
+  *              alwaysMoveChildren: Boolean,    // if true, dragging a row of this type also moves all its children
+  *                                              // without a visual cue
   *              onClick: Function(evt),         // left single click event handler
   *              onDoubleClick: Function(evt),   // left double click event handler
   *              onMiddleClick: Function(evt),   // middle click event handler
