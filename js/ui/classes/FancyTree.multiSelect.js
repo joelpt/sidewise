@@ -3,10 +3,10 @@
 // Multiselection
 ///////////////////////////////////////////////////////////
 
-FancyTree.prototype.toggleMultiSelectionSingle = function(id) {
+FancyTree.prototype.toggleMultiSelectionSingle = function(id, forceOn) {
     var row = ft.getRow(id);
     var index = this.multiSelection.indexOf(id);
-    if (index > -1) {
+    if (index > -1 && !forceOn) {
         // already in selection so remove it
         this.multiSelection.splice(index, 1);
         this.removeSelectionEffect(row);
@@ -17,10 +17,12 @@ FancyTree.prototype.toggleMultiSelectionSingle = function(id) {
         return;
     }
 
-    // add to selection
-    this.multiSelection.push(id);
-    this.addSelectionEffect(row);
-    this.root.addClass('ftMultiselecting');
+    if (index == -1) {
+        // add to selection
+        this.multiSelection.push(id);
+        this.addSelectionEffect(row);
+        this.root.addClass('ftMultiselecting');
+    }
 };
 
 FancyTree.prototype.addMultiSelectionBetween = function(fromId, toId) {
