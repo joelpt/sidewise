@@ -94,7 +94,7 @@ Settings.prototype = {
             rememberOpenPagesBetweenSessions: true,
             wakeHibernatedPagesOnClick: true,
             animationEnabled: true,
-            autoselectChildrenOnDrag: true
+            autoSelectChildrenOnDrag: true
         };
 
         for (var setting in defaultSettings) {
@@ -149,6 +149,7 @@ Settings.prototype = {
                         // and call it here; SidebarPaneFancyTreeBinder can bind up the onSettingsChanged
                         // event to listen for settings changes and set java.fx appropriately
                         domWindow.ft.useAdvancedFiltering = this.get('useAdvancedTreeFiltering');
+                        domWindow.ft.autoSelectChildrenOnDrag = this.get('autoSelectChildrenOnDrag');
                     }
                     catch(ex) {}
 
