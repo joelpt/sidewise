@@ -1,6 +1,6 @@
 {
     "extName": { "message": "Sidewise Tree Style Tabs" },
-    "extDescription": { "message": "A persistent sidebar for Chrome with tree style tabs and much more." },
+    "extDescription": { "message": "A persistent sidebar for Chrome featuring tree style tabs and tab hibernation." },
 
 
     "sidebarTitle": { "message": "Sidewise" },
@@ -99,7 +99,7 @@
     "optionsHeadingMonitors": { "message": "Monitors" },
     "optionsHeadingMisc": { "message": "Advanced" },
     "optionsHeadingPages": { "message": "Pages sidebar"},
-    "optionsHeadingPageHibernation": { "message": "Page hibernation" },
+    "optionsHeadingPageHibernation": { "message": "Tab hibernation" },
 
     "option_openSidebarOnStartup": { "message": "Open sidebar on startup" },
     "option_keepSidebarOnTop": { "message": "Keep sidebar visible next to dock window" },
@@ -132,8 +132,8 @@
     "option_smartFocusPrefersCousins": { "message": "Smart focus prefers cousins before parents"},
     "option_smartFocusPrefersCousins_hint": { "message": "#When this option is enabled, smart focus will focus *later cousin tabs* before it focuses its own *parent tab*. //// For example, say you open two tabs, one to reddit.com and one to digg.com. You then middle-click some links on each of these tabs to open several child tabs underneath those two tabs. //// If *prefer cousins* is *disabled*, once you close the last child tab under reddit.com, the parent reddit.com tab will be focused. //// If *prefer cousins* is *enabled*, once you close the last child tab under reddit.com, the first child tab under digg.com (first cousin) will be focused instead. //// This option is desirable if you open lots of child tabs in this manner and prefer to 'browse forward' through all the child tabs before returning to the parents."},
 
-    "option_rememberOpenPagesBetweenSessions": { "message": "Remember open pages between browser sessions" },
-    "option_rememberOpenPagesBetweenSessions_hint": { "message": "#When enabled, Sidewise will remember the details of the pages you had open in your previous browser session(s) whenever you restart Chrome. //// In Chrome's [![settings](/images/favicon/settings.png)settings page](chrome://settings), if you use the 'Continue where I left off' option, you'll almost certainly want this enabled. //// Even if you don't use Chrome's 'Continue where I left off' option, you may still want this option enabled. In this case, the windows and pages from your previous browser sessions will show up in the Pages sidebar in hibernated 'Last Session' windows. By clicking on a 'Last Session' window, you can then restore those pages from the previous browser session. //// Enabling this option and *disabling* Chrome's 'Continue where I left off' option is actually one of the more powerful ways to use Sidewise's page hibernation feature, because it allows you to *optionally* restore previous sessions' pages just when you need to, instead of *always* restoring everything on browser launch." },
+    "option_rememberOpenPagesBetweenSessions": { "message": "Remember open tabs between browser sessions" },
+    "option_rememberOpenPagesBetweenSessions_hint": { "message": "#When enabled, Sidewise will remember the details of the tabs you had open in your previous browser session(s) whenever you restart Chrome. //// In Chrome's [![settings](/images/favicon/settings.png)settings page](chrome://settings), if you use the 'Continue where I left off' option, you'll almost certainly want this enabled. //// Even if you don't use Chrome's 'Continue where I left off' option, you may still want this option enabled. In this case, the windows and tabs from your previous browser sessions will show up in the Pages sidebar in hibernated 'Last Session' windows. By clicking on a 'Last Session' window, you can then restore those tabs from the previous browser session. //// Enabling this option and *disabling* Chrome's 'Continue where I left off' option is actually one of the more powerful ways to use Sidewise's tab hibernation feature, because it allows you to *optionally* restore previous session tabs just when you need to, instead of *always* restoring everything on browser launch." },
     "option_autoCollapseLastSessionWindows": { "message": "Automatically collapse Last Session windows on startup" },
     "option_autoCollapseLastSessionWindows_hint": { "message": "#When enabled, 'Last Session' windows will be automatically collapsed in the Pages tree when you launch Chrome. //// When disabled, 'Last Session' windows will retain the same expanded/collapsed state they had during the last Chrome session. //// Regardless of this setting, whenever pages are restored within a 'Last Session' window, that window will be automatically expanded in the page tree." },
     "option_wakeHibernatedPagesOnClick": { "message": "Wake hibernated page rows on click" },
