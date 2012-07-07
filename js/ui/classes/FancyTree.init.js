@@ -115,6 +115,7 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.permitTooltipHandler = options.permitTooltipHandler;
     this.useAdvancedFiltering = options.useAdvancedFiltering;
     this.scrollTargetElem = options.scrollTargetElem || $(document.body);
+    this.filterBoxShown = options.showFilterBox;
 
     this.focusedRow = null;
     this.hoveredRow = null;
@@ -184,6 +185,7 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
         .on('mouseup', '.ftContextMenuItem', data, this.onContextMenuItemClick)
         .on('mouseup', '.ftContextMenuSeparator', data, function() { return false; })
         .on('mouseup', 'body', data, this.onBodyMouseUp)
+        .on('keydown', data, this.onDocumentKeyDown)
         .on('mousemove', '.ftItemRow', data, this.onItemRowMouseMove);
 
     if (options.showFilterBox != false) {
@@ -191,7 +193,6 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
         $(document)
             .on('click', this.filterElem, data, this.onFilterBoxModified)
             .on('keyup', this.filterElem, data, this.onFilterBoxModified)
-            .on('click', '.ftFilterStatus', data, this.onFilterStatusClick)
-            .on('keydown', 'body', data, this.onBodyKeyDown);
+            .on('click', '.ftFilterStatus', data, this.onFilterStatusClick);
     }
 };
