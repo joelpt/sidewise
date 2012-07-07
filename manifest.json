@@ -1,12 +1,12 @@
 {
     "manifest_version": 2,
 	"name": "__MSG_extName__",
-	"version": "2012.7.6.0",
+	"version": "2012.7.6.1",
 	"description": "__MSG_extDescription__",
 	"icons": {
         "16": "images/sidewise_icon_16.png",
-        "48": "images/panty-pull-48.png",
-		"128": "images/panty-pull-128.png"
+        "48": "images/sidewise_icon_48.png",
+		"128": "images/sidewise_icon_128.png"
 	},
 	"background": {
         "page": "background.html"
