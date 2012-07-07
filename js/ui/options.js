@@ -19,8 +19,17 @@ $(document).ready(function() {
         .on('click', '#closeButton', onCloseButtonClick)
         .on('click', '#resetButton', resetAllSettings)
         .on('click', '#detectMonitorsButton', detectMonitors)
-        .on('click', 'a[href=chrome://settings]', function() {
-            chrome.tabs.create({ url: 'chrome://settings', active: true });
+        .on('click', 'a', function(evt) {
+            var $this = $(this);
+            if ($this.attr('href').match(/^chrome:\/\/.*settings/)) {
+                chrome.tabs.create({ url: 'chrome://settings', active: true });
+                return;
+            }
+            if ($this.attr('href') == '#') {
+                return true;
+            }
+            $this.attr('target', '_blank');
+            // alert(evt);
         });
 
     if (settings.get('alwaysShowAdvancedOptions')) {
@@ -65,7 +74,7 @@ function transformInputElements() {
                 hintClass = 'warningIcon';
             }
             var hintElem = $('<div/>', { class: hintClass, title: hint })
-                .tooltip({ position: 'top right', delay: 50 }).dynamic();
+                .tooltip({ position: 'top right', delay: 50, offset: [8, 0] }).dynamic();
         }
         else {
             var hintElem = $('');
