@@ -25,18 +25,26 @@ FancyTree.prototype.onBodyMouseUp = function(evt) {
     return true;
 };
 
-FancyTree.prototype.onBodyKeyDown = function(evt) {
+FancyTree.prototype.onDocumentKeyDown = function(evt) {
     var treeObj = evt.data.treeObj;
+    // console.log(evt.keyCode, evt);
 
-    if (evt.keyCode == 70 && evt.ctrlKey) { // Ctrl+F
+    if (treeObj.filterBoxShown && evt.keyCode == 70 && evt.ctrlKey) { // Ctrl+F
         // focus filter box
         treeObj.filterElem.children('.ftFilterInput').focus();
         return false;
     }
+
     if (evt.keyCode == 27) { // Esc
-        // clear filter box
-        treeObj.filterElem.children('.ftFilterInput').val('').trigger('keyup');
-        treeObj.filtering = false;
+        if (treeObj.filterBoxShown) {
+            // clear filter box
+            treeObj.filterElem.children('.ftFilterInput').val('').trigger('keyup');
+            treeObj.filtering = false;
+            if (treeObj.filterElem.children('.ftFilterInput').is(':focus')) {
+                treeObj.filterElem.children('.ftFilterInput').blur();
+                return true;
+            }
+        }
 
         // close context menu
         if (treeObj.contextMenuShown) {
@@ -59,5 +67,23 @@ FancyTree.prototype.onBodyKeyDown = function(evt) {
         }
         return false;
     }
+
+    if (evt.ctrlKey || evt.altKey) {
+        return true;
+    }
+
+    if (treeObj.filterBoxShown && evt.keyCode >= 48 && evt.keyCode <= 90) {
+        if (treeObj.filterElem.children('.ftFilterInput').is(':focus')) {
+            return true;
+        }
+        // focus filter box
+        setTimeout(function() {
+            treeObj.filterElem.children('.ftFilterInput')
+                .focus()
+                .val(String.fromCharCode(evt.keyCode).toLowerCase());
+        }, 5);
+        return true;
+    }
+
     return true;
 };
