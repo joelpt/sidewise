@@ -127,7 +127,7 @@ FancyTree.prototype.getDraggableParams = function() {
                 }
 
 
-                var helperTip = '<br/>' + 'Ctrl/Shift+click: select multiple rows.';
+                var helperTip;
                 if (evt.ctrlKey) {
                     helperTip = 'Dragging hovered row.';
                 }
@@ -135,11 +135,12 @@ FancyTree.prototype.getDraggableParams = function() {
                     helperTip = 'Autoselected children.';
                 }
                 else if (self.autoSelectChildrenOnDrag) {
-                    helperTip = 'Ctrl+drag: drag just the hovered row.' + helperTip;
+                    helperTip = 'Ctrl+drag: drag just the hovered row.';
                 }
                 else {
-                    helperTip = 'Shift+drag: also drag all children rows.' + helperTip;
+                    helperTip = 'Shift+drag: also drag all children rows.';
                 }
+                helperTip += '<br/>' + 'Esc: cancel drag.';
 
                 // + 'Ctrl+drag: drag only the hovered row.</br>'
                 // + 'Ctrl/Shift+click: select multiple rows.'
@@ -493,7 +494,8 @@ FancyTree.prototype.addRequiredChildrenToDraggedRows = function($rows) {
     for (var i = 0; i < $rows.length; i++) {
         var $row = $($rows[i]);
         var params = this.getRowTypeParams($row);
-        if (params.alwaysMoveChildren) {
+        var collapsed = $row.hasClass('ftCollapsed');
+        if (params.alwaysMoveChildren || collapsed) {
             // add all descendants of the row
             $newrows = $newrows.add($row.find('.ftRowNode'));
         }
