@@ -305,15 +305,7 @@ function onRowDragDrop(moves) {
                 // looks like: this is probably possible by verifying in onTabAttached that
                 // we're under a different window than the one that's reported as the moveto window,
                 // and do nothing if they're the same window
-                chrome.tabs.move(getRowNumericId($row),
-                    { windowId: getRowNumericId($moveTopParent), index: 9999 },
-                    function(tab) {
-
-                        // setTimeout(function() {
-                        //     bg.tree.moveNode(rowId, parentId, beforeSiblingId, move.keepChildren, true);
-                        // }, 1000);
-                    }
-                );
+                chrome.tabs.move(getRowNumericId($row), { windowId: getRowNumericId($moveTopParent), index: 9999 });
                 continue;
             }
         }
