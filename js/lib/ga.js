@@ -20,7 +20,6 @@ function reportEvent(category, action, label, intValue, nonInteraction) {
         // respect the user
         return;
     }
-    console.log(category, action, label);
     _gaq.push(['_trackEvent', category, action, label, intValue, nonInteraction || false]);
 }
 
