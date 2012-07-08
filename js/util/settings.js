@@ -94,7 +94,8 @@ Settings.prototype = {
             rememberOpenPagesBetweenSessions: true,
             wakeHibernatedPagesOnClick: true,
             animationEnabled: true,
-            autoSelectChildrenOnDrag: true
+            autoSelectChildrenOnDrag: true,
+            reportUsageStatistics: true
         };
 
         for (var setting in defaultSettings) {

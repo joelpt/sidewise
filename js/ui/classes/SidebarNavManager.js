@@ -73,7 +73,9 @@ SidebarNavManager.prototype = {
             var iframe = $('<iframe src="' + url + '"></iframe>');
             container.append(iframe);
         }
+
         container.css('visibility', 'visible');
+
         var oldSidebarId = this.currentSidebarId;
         var mgr = this;
         this.currentSidebarId = id;
@@ -82,6 +84,10 @@ SidebarNavManager.prototype = {
                 $('#sidebarContainer__' + oldSidebarId).css('visibility', 'hidden');
             }
         });
+
+        if (oldSidebarId != this.currentSidebarId) {
+            reportEvent('sidebar', 'switch_pane', id, undefined, true);
+        }
     },
 
     scrollToCurrentSidebarPane: function(instant, onAfter) {

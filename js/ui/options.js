@@ -183,6 +183,7 @@ function saveOneSetting(e) {
     }
 
     settings.set(name, storeValue);
+    reportEvent('set_option', name, storeValue.toString(), undefined, true);
     return true;
 }
 

@@ -152,6 +152,8 @@
     "option_sidebarTargetWidth": { "message": "Sidebar target width" },
     "option_sidebarTargetWidth_hint": { "message": "#You can drag the edges of the sidebar to adjust its width, but if you prefer you can specify an exact value here. //// Close and reopen the sidebar for this setting to take effect." },
     "option_alwaysShowAdvancedOptions": { "message": "Always show advanced options" },
+    "option_reportUsageStatistics": { "message": "Report anonymous usage statistics" },
+    "option_reportUsageStatistics_hint": { "message": "#When enabled, Sidewise will report anonymous usage statistics to Google Analytics. This allows the author to see how often the options page is viewed, how often different sidebar panes are accessed, etc. //// No personally identifiable information is collected or shared with the author. If you're still uncomfortable with this, you can disable this option." },
 
     "option_closeButton": { "message": "Close settings" },
     "option_resetButton": { "message": "Reset to defaults" },
