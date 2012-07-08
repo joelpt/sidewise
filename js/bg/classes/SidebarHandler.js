@@ -323,27 +323,25 @@ SidebarHandler.prototype = {
         var leftSysTaskbarWidth = monitors[currentMonitor].marginLeft;
         var rightSysTaskbarWidth = monitors[currentMonitor].marginRight;
 
-        console.log('beliefs about monitors:');
-        console.log(monitors);
-        console.log('current one', currentMonitor);
-        console.log('current one', monitors[currentMonitor]);
-        console.log('currentMonitorWidth', currentMonitorWidth);
-        console.log('primaryLeftOffset', primaryLeftOffset);
+        log('beliefs about monitors:', monitors);
+        log('current monitor', currentMonitor, monitors[currentMonitor]);
+        log('currentMonitorWidth', currentMonitorWidth);
+        log('primaryLeftOffset', primaryLeftOffset);
 
         // Calculate free space on the current monitor to the left/right of the dock-to window.
         var freeOnLeft = winLeft + primaryLeftOffset - currentMonitorLeftOffset - leftSysTaskbarWidth;
         var freeOnRight = Math.max(0,
             currentMonitorWidth - winWidth - freeOnLeft - leftSysTaskbarWidth - rightSysTaskbarWidth);
-        log('free on left ' + freeOnLeft);
-        log('free on right ' + freeOnRight);
+        log('free on left', freeOnLeft);
+        log('free on right', freeOnRight);
 
         var effectiveLeft = winLeft + primaryLeftOffset - currentMonitorLeftOffset - leftSysTaskbarWidth;
         var effectiveRight = effectiveLeft + winWidth;
         var effectiveMonitorWidth = currentMonitorWidth - leftSysTaskbarWidth - rightSysTaskbarWidth;
 
-        log('effectiveLeft ' + effectiveLeft);
-        log('effectiveRight ' + effectiveRight);
-        log('effectiveMonitorWidth ' + effectiveMonitorWidth);
+        log('effectiveLeft', effectiveLeft);
+        log('effectiveRight', effectiveRight);
+        log('effectiveMonitorWidth', effectiveMonitorWidth);
 
         // Work out how much the dock window should be left-shifted and width-shrunk
         // to ensure the new sidebar will fit on the available space on this monitor
@@ -376,18 +374,18 @@ SidebarHandler.prototype = {
             throw new Error('Unrecognized side parameter: ' + side);
         }
 
-        log('newLeft ' + newLeft);
-        log('newRight ' + newRight);
+        log('newLeft', newLeft);
+        log('newRight', newRight);
 
         var adjustWinLeft = newLeft - effectiveLeft;
         var adjustWinWidth = newRight - (effectiveRight + adjustWinLeft);
 
-        log('adjustWinLeft ' + adjustWinLeft);
-        log('adjustWinWidth ' + adjustWinWidth);
+        log('adjustWinLeft', adjustWinLeft);
+        log('adjustWinWidth', adjustWinWidth);
 
         var newWidth = winWidth + adjustWinWidth;
-        log('winWidth  ' + winWidth);
-        log('newWidth ' + newWidth);
+        log('winWidth', winWidth);
+        log('newWidth', newWidth);
 
         var sidebarLeft;
         if (side == 'left') {
