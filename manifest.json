@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
 	"name": "__MSG_extName__",
-	"version": "2012.7.7.2",
+	"version": "2012.7.7.8",
 	"description": "__MSG_extDescription__",
 	"icons": {
         "16": "images/sidewise_icon_16.png",
@@ -29,8 +29,7 @@
         "tabs",
         "webNavigation",
         "*://*/*",
-        "chrome://favicon/",
-        "background"
+        "chrome://favicon/"
     ],
     "web_accessible_resources": [
         "/sidebars/pages.html",
