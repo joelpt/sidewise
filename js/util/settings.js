@@ -79,7 +79,7 @@ Settings.prototype = {
         var defaultSettings = {
             openSidebarOnStartup: true,
             keepSidebarOnTop: false,
-            dockState: 'right',
+            dockState: 'left',
             browserActionButtonBehavior: 'show',
             useAdvancedTreeFiltering: false,
             pages_doubleClickAction: 'expand',
