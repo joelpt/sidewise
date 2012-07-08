@@ -250,11 +250,7 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
     }
     else if (deltaPct >= DRAG_TO_BELOW_SENSITIVITY_RATIO) {
         // to below position
-        if (children.length > 0 && isCollapsed) {
-            // to child (within)
-            drag = ['append', overItemRowContent];
-        }
-        else if (children.length > 0 && !isCollapsed)
+        if (children.length > 0 && !isCollapsed)
         {
             // insert before first child of hovered row
             drag = ['before', treeObj.getItemRowContent(children.first())];
@@ -273,7 +269,8 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
     else {
         // to middle position (middle of a row)
         if (children.length > 0 && !isCollapsed) {
-            drag = ['before', treeObj.getItemRowContent(children.first())];
+            //drag = ['before', treeObj.getItemRowContent(children.first())];
+            drag = ['prepend', overItemRowContent];
         }
         else {
             // to child (within)
