@@ -190,6 +190,13 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
 
 function PageTreeCallbackProxyListener(op, args)
 {
+    if (!window) {
+        // ignore proxy callback events when our hosting window has already been destroyed;
+        // this can happen when e.g. the background page destroys the sidebar and sends
+        // a proxy callback in quick succession
+        return;
+    }
+
     log(op, args);
     switch (op)
     {
