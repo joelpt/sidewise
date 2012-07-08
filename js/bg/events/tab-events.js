@@ -348,8 +348,9 @@ function onTabUpdated(tabId, changeInfo, tab)
         }, 1000);
     }
 
-    if (tab.openerTabId !== undefined) {
-        if (!page.placed) {
+    if (tab.openerTabId !== undefined && !page.placed) {
+        var pageEx = tree.getNodeEx(page);
+        if (getNumericId(pageEx.parent.id) !== tab.openerTabId) {
             log('moving page to parent by openerTabId', tab.openerTabId);
             tree.moveNode(page, 'p' + tab.openerTabId);
         }
