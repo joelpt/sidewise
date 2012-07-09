@@ -55,6 +55,8 @@ function postLoad() {
         }
     }
 
+    reportEvent('sidewise', 'loaded');
+
     monitorInfo = new MonitorInfo();
 
     if (monitorInfo.isKnown()) {

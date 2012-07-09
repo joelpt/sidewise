@@ -109,6 +109,14 @@ Settings.prototype = {
             }
         }
 
+        if (lastInitVersion === undefined) {
+            reportEvent('sidewise', 'installed', version);
+            reportPageView('/installed');
+        }
+        else {
+            reportEvent('sidewise', 'updated', version);
+        }
+
         this.set('lastInitializedVersion', version);
         console.log('Initialization of settings done, settings version now at', version);
     },
