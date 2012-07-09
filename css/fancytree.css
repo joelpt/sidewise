@@ -51,23 +51,21 @@
 .ftIconButton {
     -webkit-box-flex: 0.0;
     box-flex: 0.0;
-    /*border: 1px solid red;*/
     width: 16px;
-    overflow: hidden;
     height: 16px;
+    overflow: hidden;
+    margin-right: 4px;
 }
 
 
-/* .ftItemText, .ftItemLabel */
+/* .ftItemText, .ftItemLabel, .ftItemTextAffix */
 
 .ftItemText {
     -webkit-box-flex: 1.0;
     box-flex: 1.0;
-    /*border: 1px solid blue;*/
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    margin-left: 4px;
     margin-right: 2px;
     font-family: Verdana, sans-serif;
     font-size: 11px;
@@ -77,6 +75,17 @@
 
 .ftItemLabel {
     font-weight: bold;
+}
+
+.ftItemTextAffix {
+    -webkit-box-flex: 0;
+    box-flex: 0;
+    white-space: nowrap;
+    margin-right: 3px;
+    padding-top: 2px;
+    padding-bottom: 4px;
+    font-family: Verdana, sans-serif;
+    font-size: 11px;
 }
 
 

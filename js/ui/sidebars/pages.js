@@ -528,11 +528,12 @@ function handlePageRowAction(action, evt) {
 function onPageRowFormatTitle(row, itemTextElem) {
     var label = row.attr('label');
     var text = row.attr('text');
+    var textAffix = '';
 
     if (row.hasClass('ftCollapsed')) {
         var childCount = row.children('.ftChildren').find('.ftRowNode').length;
         if (childCount > 0) {
-            text = '(+' + childCount + ') ' + text;
+            textAffix = '(+' + childCount + ')';
         }
     }
 
@@ -542,6 +543,13 @@ function onPageRowFormatTitle(row, itemTextElem) {
 
     itemTextElem.children('.ftItemTitle').html(text);
     itemTextElem.children('.ftItemLabel').html(label + (text && label ? ': ' : ''));
+
+    if (textAffix) {
+        row.children('.ftItemRow').find('.ftItemTextAffix').html(textAffix).show();
+    }
+    else {
+        row.children('.ftItemRow').find('.ftItemTextAffix').html('').hide();
+    }
 
     var existingPin = itemTextElem.parent().children('.pinned');
     if (row.attr('pinned') == 'true') {
@@ -845,6 +853,10 @@ function getBigTooltipContent(header, icon, body) {
     if (body) {
         var bodyElem = $('<div class="ftBigTipBody">').html(body);
         td.append(bodyElem);
+
+        if (loggingEnabled) {
+            bodyElem.css('max-height', '999em');
+        }
     }
 
     table.append(tr);

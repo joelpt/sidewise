@@ -53,6 +53,7 @@ FancyTree.prototype.buildRowTypeElem = function(rowType) {
     var icon = $('<img/>', { class: 'ftIconButton ftRowIcon', src: icon });
     var itemText = $('<div/>', { class: 'ftItemText' });
     var itemLabel = $('<span/>', { class: 'ftItemLabel' });
+    var itemTextAffix = $('<div/>', { class: 'ftItemTextAffix' }).hide();
     var itemInnerTitle = $('<span/>', { class: 'ftItemTitle' });
     var buttons = $('<div/>', { class: 'ftButtons' });
     var children = $('<ul/>', { class: 'ftChildren' });
@@ -83,6 +84,7 @@ FancyTree.prototype.buildRowTypeElem = function(rowType) {
 
     innerRow
         .append(icon)
+        .append(itemTextAffix)
         .append(itemText);
 
     itemRowContent

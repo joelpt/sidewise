@@ -193,10 +193,6 @@ section#main:not(.debugEnabled) {
     border: 1px dashed rgb(0, 0, 0);
 }
 
-.ftRowNode[rowtype=page].ftCollapsed > .ftItemRow .ftItemTitle {
-    font-style: italic;
-}
-
 .ftRowNode[rowtype=page][hibernated=true] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
     -webkit-filter: grayscale(100%);
 }
@@ -223,16 +219,17 @@ section#main:not(.debugEnabled) {
     font-family: Consolas, "Lucida Console", monospace;
     font-size: 11px;
     line-height: 1.1em;
-    /*max-height: 4.8em;*/
+    max-height: 2.2em;
     overflow: hidden;
     color: #333;
- }
-
-#ftTooltip[rowtype=page] .ftBigTipHeader {
 }
 
+/*
+#ftTooltip[rowtype=page] .ftBigTipHeader {
+}
+*/
+
 #ftTooltip[rowtype=page] td:first-child {
-    /*background: -webkit-linear-gradient(top, rgba(156,180,208,0.66) 0%,rgba(208,223,234,0) 100%);*/
     border-right: 1px solid #ccc;
 }
 
