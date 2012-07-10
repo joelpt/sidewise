@@ -420,7 +420,9 @@ function onContextMenuShow(rows) {
     items.push({ id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
     items.push({ id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
     items.push({ separator: true });
-    items.push({ id: 'closeFolder', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemCloseFolders });
+    items.push({ id: 'moveToNewFolder', icon: '/images/folder.png', label: 'Put in new folder', callback: onContextMenuItemMoveToNewFolder, preserveSelectionAfter: true });
+    items.push({ separator: true });
+    items.push({ id: 'closeFolder', icon: '/images/close.png', label: 'Remove', callback: onContextMenuItemCloseFolders });
     return items;
 }
 
@@ -645,11 +647,9 @@ function onPageRowFormatTitle(row, itemTextElem) {
     var text = row.attr('text');
     var textAffix = '';
 
-    if (row.hasClass('ftCollapsed')) {
-        var childCount = row.children('.ftChildren').find('.ftRowNode').length;
-        if (childCount > 0) {
-            textAffix = '(' + childCount + ')';
-        }
+    var childCount = row.children('.ftChildren').find('.ftRowNode').length;
+    if (childCount > 0) {
+        textAffix = '(' + childCount + ')';
     }
 
     if (loggingEnabled) {
@@ -659,11 +659,16 @@ function onPageRowFormatTitle(row, itemTextElem) {
     itemTextElem.children('.ftItemTitle').html(text);
     itemTextElem.children('.ftItemLabel').html(label + (text && label ? ': ' : ''));
 
+    var itemTextAffix = row.children('.ftItemRow').find('.ftItemTextAffix');
     if (textAffix) {
-        row.children('.ftItemRow').find('.ftItemTextAffix').html(textAffix).show();
+        itemTextAffix.html(textAffix);
+        var buttonsShowing = row.children('.ftItemRow').find('.ftButtons').is(':visible');
+        if (!buttonsShowing) {
+            itemTextAffix.show();
+        }
     }
     else {
-        row.children('.ftItemRow').find('.ftItemTextAffix').html('').hide();
+        itemTextAffix.html('').hide();
     }
 
     var existingPin = itemTextElem.parent().children('.pinned');
