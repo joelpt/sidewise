@@ -102,8 +102,8 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             multiselectable: true,
             allowedDropTargets: ['window', 'page', 'folder'],
             // onClick: onPageRowClick,
-            // onDoubleClick: onPageRowDoubleClick,
-            // onMiddleClick: onPageRowMiddleClick,
+            onDoubleClick: onFolderRowDoubleClick,
+            onMiddleClick: onFolderRowMiddleClick,
             onExpanderClick: onRowExpanderClick,
             // onIconError: onPageRowIconError,
             onFormatTitle: onFolderRowFormatTitle,
@@ -446,7 +446,7 @@ function onContextMenuItemCloseFolders(rows) {
     console.log('CLOSE FOLDERS');
     for (var i = 0; i < rows.length; i++) {
         var row = rows[i];
-        bg.tree.removeNode(row.attr('id'));
+        bg.tree.removeNode($(row).attr('id'));
     }
 }
 
@@ -533,6 +533,37 @@ function onContextMenuItemMoveToNewFolder(rows) {
 ///////////////////////////////////////////////////////////
 // Folder rowtype handlers
 ///////////////////////////////////////////////////////////
+
+function onFolderRowDoubleClick(evt) {
+    var action = settings.get('pages_doubleClickAction');
+    handleFolderRowAction(action, evt);
+}
+
+function onFolderRowMiddleClick(evt) {
+    var action = settings.get('pages_middleClickAction');
+    handleFolderRowAction(action, evt);
+}
+
+function handleFolderRowAction(action, evt) {
+    switch (action) {
+        case 'close':
+            onFolderRowCloseButton(evt);
+            break;
+        // case 'hibernate':
+        //     var isFocused = evt.data.row.is(evt.data.treeObj.focusedRow);
+        //     togglePageRowHibernated(evt.data.row, 0, isFocused);
+        //     break;
+        case 'expand':
+            evt.data.treeObj.toggleExpandRow(evt.data.row);
+            break;
+        case 'setlabel':
+            setRowLabels(evt.data.row);
+            break;
+        case 'highlight':
+            setRowHighlight(evt.data.row, 0);
+            break;
+    }
+}
 
 function onFolderRowCloseButton(evt) {
     bg.tree.removeNode(evt.data.row.attr('id'));
