@@ -126,15 +126,16 @@ PageTree.prototype = {
         return r;
     },
 
-    moveNodeRel: function(movingMatcher, relation, toMatcher, blockCallback)
+    moveNodeRel: function(movingMatcher, relation, toMatcher, keepChildren, blockCallback)
     {
-        var r = this.$super('moveNodeRel')(movingMatcher, relation, toMatcher);
+        var r = this.$super('moveNodeRel')(movingMatcher, relation, toMatcher, keepChildren);
 
         if (r !== undefined && !blockCallback) {
-            this.callbackProxyFn('moveRel', {
-                moved: r[0],
-                relation: r[1],
-                to: r[2]
+            this.callbackProxyFn('move', {
+                element: r[0],
+                newParentId: r[1] ? r[1].id : undefined,
+                beforeSiblingId: r[2] ? r[2].id : undefined,
+                keepChildren: keepChildren || false
             });
         }
         return r;

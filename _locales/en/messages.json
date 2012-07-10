@@ -16,6 +16,7 @@
     "text_hibernated": { "message": "hibernated" },
     "text_hibernatedWindow": { "message": "Hibernated" },
     "text_LastSession": { "message": "Last Session" },
+    "text_NewFolder": { "message": "New Folder" },
 
     "tabTitle_Extensions": { "message": "Extensions" },
     "tabTitle_Settings": { "message": "Settings" },
@@ -50,6 +51,7 @@
     },
     "prompt_confirmResetOptions": { "message": "Are you sure you want to reset all options to the defaults?" },
     "prompt_setLabel": { "message": "Enter the desired label, or clear box for no label:" },
+    "prompt_setNewFolderName": { "message": "Enter the new folder's name:" },
 
     "sidebarLabel_Pages": { "message": "Pages" },
     "sidebarLabel_Notepad": { "message": "Notepad" },
@@ -67,6 +69,7 @@
     "pages_pageRowButtonTip_hibernateWake": { "message": "Hibernate/wake" },
     "pages_pageRowButtonTip_close": { "message": "Close" },
     "pages_pageRowButtonTip_unpin": { "message": "Unpin tab" },
+    "pages_folderRowButtonTip_close": { "message": "Remove" },
 
     "notepad_heading": { "message": "Notepad" },
     "notepad_hint": { "message": "Just start typing. Text is auto-saved." },

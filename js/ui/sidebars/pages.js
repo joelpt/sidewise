@@ -77,7 +77,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             permitAutoSelectChildren: true,
             alwaysMoveChildren: false,
             multiselectable: true,
-            allowedDropTargets: ['window', 'page'],
+            allowedDropTargets: ['window', 'page', 'folder'],
             onClick: onPageRowClick,
             onDoubleClick: onPageRowDoubleClick,
             onMiddleClick: onPageRowMiddleClick,
@@ -91,6 +91,27 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             buttons: [
                 {icon: '/images/hibernate_wake.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
                 {icon: '/images/close.png', tooltip: getMessage('pages_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
+            ]
+        },
+        'folder': {
+            allowAtTopLevel: false,
+            allowAtChildLevel: true,
+            autofocusOnClick: true,
+            permitAutoSelectChildren: true,
+            alwaysMoveChildren: false,
+            multiselectable: true,
+            allowedDropTargets: ['window', 'page', 'folder'],
+            // onClick: onPageRowClick,
+            onDoubleClick: onFolderRowDoubleClick,
+            onMiddleClick: onFolderRowMiddleClick,
+            onExpanderClick: onRowExpanderClick,
+            // onIconError: onPageRowIconError,
+            onFormatTitle: onFolderRowFormatTitle,
+            // onFormatTooltip: onPageRowFormatTooltip,
+            onResizeTooltip: onResizeTooltip,
+            tooltipMaxWidthPercent: 0.95,
+            buttons: [
+                {icon: '/images/close.png', tooltip: getMessage('pages_folderRowButtonTip_close'), onClick: onFolderRowCloseButton }
             ]
         },
         'window': {
@@ -118,7 +139,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     fancyTree = new FancyTree($(treeReplaceSelector), $(filterBoxReplaceSelector), {
         rowTypes: rowTypes,
         onContextMenuShow: onContextMenuShow,
-        onDragDrop: onRowDragDrop,
+        onRowsMoved: onRowsMoved,
         scrollTargetElem: $('#main'),
         showFilterBox: true,
         autoSelectChildrenOnDrag: settings.get('autoSelectChildrenOnDrag'),
@@ -171,6 +192,9 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
                 highlighted: node.highlighted,
             },
             node.collapsed);
+    }
+    else if (node instanceof bg.FolderNode) {
+        row = fancyTree.getNewRowElem('folder', node.id, '/images/folder.png', node.label, 'Folder', {}, node.collapsed);
     }
     else {
         throw new Error('Unknown node type');
@@ -249,8 +273,8 @@ function onRowExpanderClick(evt) {
     bg.tree.updateNode(evt.data.row.attr('id'), { collapsed: !(evt.data.expanded) });
 }
 
-function onRowDragDrop(moves) {
-    // console.log('MOVES', moves);
+function onRowsMoved(moves) {
+    console.log('MOVES', moves);
     for (var i = 0; i < moves.length; i++) {
         var move = moves[i];
         var $row = move.$row;
@@ -261,7 +285,7 @@ function onRowDragDrop(moves) {
 
         if (move.relation != 'nomove') {
             // record the move in bg.tree
-            bg.tree.moveNodeRel(rowId, move.relation, toId, true);
+            bg.tree.moveNodeRel(rowId, move.relation, toId, false, true);
         }
 
         if ($row.attr('rowtype') == 'page') {
@@ -289,7 +313,7 @@ function onRowDragDrop(moves) {
                 // redundant 'moves' entries for selected>selected rows? or else sniff
                 // it all out right here ... SOLUTION: output a moves entry for each
                 // selected>selected row that is moved along with a boolean .staticMove=(true|false),
-                // onDragDrop listeners can check this bool to decide if they need to do
+                // onRowsMoved listeners can check this bool to decide if they need to do
                 // something with a given move. In our case we will want to use non-staticMove
                 // moves entries to indicate when we should still try to move that one to a new window
                 // here
@@ -298,8 +322,8 @@ function onRowDragDrop(moves) {
                 // The reason this isn't working is that by the time this code gets executed,
                 // the node has already been physically moved in the tree, so getting $topParent
                 // will always return the same node as $moveTopParent; we're already actually moved there.
-                // Solution: implement onDragDropBefore with blocking callback providing the proposed
-                // list of moves, and onDragDropAfter called once move is all done and animated.
+                // Solution: implement onRowsMovedBefore with blocking callback providing the proposed
+                // list of moves, and onRowsMovedAfter called once move is all done and animated.
                 // solution 2: in moves, add oldParent, oldBeforeSibling, then we could perform this
                 // comparison properly .... UNLESS oldParent/oldBeforeSibling get moved themselves.
                 // solution 3: in moves, add oldAncestors which is an array exactly describing the parents
@@ -326,14 +350,14 @@ function onRowDragDrop(moves) {
 function onContextMenuShow(rows) {
     console.log(rows);
 
+    var items = [];
+
     if (rows[0].rowtype == 'window') {
         var $row = rows[0].jQueryElement;
         var $children = $row.find('.ftChildren > .ftRowNode');
 
         var hibernatedCount = $children.filter(function(i, e) { return $(e).attr('hibernated') == 'true' }).length;
         var awakeCount = $children.length - hibernatedCount;
-
-        var items = [];
 
         if (awakeCount)
             items.push({ id: 'hibernateWindow', icon: '/images/hibernate.png', label: 'Hibernate all tabs in window', callback: onContextMenuItemHibernateWindow });
@@ -347,41 +371,58 @@ function onContextMenuShow(rows) {
         items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
         items.push({ separator: true });
         items.push({ id: 'closeWindow', icon: '/images/close.png', label: 'Close window', callback: onContextMenuItemCloseWindow });
+
         return items;
     }
 
-    var hibernatedCount = rows.filter(function(e) { return e.rowtype == 'page' && e.hibernated; }).length;
-    var awakeCount = rows.length - hibernatedCount;
+    var pages = rows.filter(function(e) { return e.rowtype == 'page' });
 
-    var highlightedCount = rows.filter(function(e) { return e.rowtype == 'page' && e.highlighted; }).length;
-    var unhighlightedCount = rows.length - highlightedCount;
+    if (pages.length > 0) {
+        var hibernatedCount = pages.filter(function(e) { return e.hibernated; }).length;
+        var awakeCount = pages.length - hibernatedCount;
 
-    var items = [];
+        var highlightedCount = pages.filter(function(e) { return e.highlighted; }).length;
+        var unhighlightedCount = pages.length - highlightedCount;
 
-    if (awakeCount)
-        items.push({ id: 'hibernatePage', icon: '/images/hibernate.png', label: 'Hibernate', callback: onContextMenuItemHibernatePages });
+        if (awakeCount)
+           items.push({ id: 'hibernatePage', icon: '/images/hibernate.png', label: 'Hibernate', callback: onContextMenuItemHibernatePages });
 
-    if (hibernatedCount)
-        items.push({ id: 'awakenPage', icon: '/images/wake.png', label: 'Wake up', callback: onContextMenuItemWakePages });
+        if (hibernatedCount)
+           items.push({ id: 'awakenPage', icon: '/images/wake.png', label: 'Wake up', callback: onContextMenuItemWakePages });
 
-    if (awakeCount || hibernatedCount)
-        items.push({ separator: true });
+        if (awakeCount || hibernatedCount)
+           items.push({ separator: true });
 
-    items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
+        items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
 
-    if (unhighlightedCount)
-        items.push({ id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
+        if (unhighlightedCount)
+           items.push({ id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
 
-    if (highlightedCount)
+        if (highlightedCount)
         items.push({ id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
 
+        items.push({ separator: true });
+
+        items.push({ id: 'moveToNewFolder', icon: '/images/folder.png', label: 'Put in new folder', callback: onContextMenuItemMoveToNewFolder, preserveSelectionAfter: true });
+
+        items.push({ separator: true });
+
+        if (awakeCount)
+           items.push({ id: 'reloadPage', icon: '/images/reload.png', label: 'Reload', callback: onContextMenuItemReload, preserveSelectionAfter: true });
+
+        items.push({ id: 'closePage', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemClosePages });
+
+        return items;
+    }
+
+    // must only have folder nodes selected
+    items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
+    items.push({ id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
+    items.push({ id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
     items.push({ separator: true });
-
-    if (awakeCount)
-        items.push({ id: 'reloadPage', icon: '/images/reload.png', label: 'Reload', callback: onContextMenuItemReload, preserveSelectionAfter: true });
-
-    items.push({ id: 'closePage', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemClosePages });
-
+    items.push({ id: 'moveToNewFolder', icon: '/images/folder.png', label: 'Put in new folder', callback: onContextMenuItemMoveToNewFolder, preserveSelectionAfter: true });
+    items.push({ separator: true });
+    items.push({ id: 'closeFolder', icon: '/images/close.png', label: 'Remove', callback: onContextMenuItemCloseFolders });
     return items;
 }
 
@@ -394,10 +435,18 @@ function onContextMenuItemCloseWindow(rows) {
 }
 
 function onContextMenuItemClosePages(rows) {
-    console.log('CLOSE');
+console.log('CLOSE');
+for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    closePageRow(row.jQueryElement);
+}
+}
+
+function onContextMenuItemCloseFolders(rows) {
+    console.log('CLOSE FOLDERS');
     for (var i = 0; i < rows.length; i++) {
         var row = rows[i];
-        closePageRow(row.jQueryElement);
+        bg.tree.removeNode($(row).attr('id'));
     }
 }
 
@@ -458,6 +507,84 @@ function onContextMenuItemClearHighlight(rows) {
         setRowHighlight(row.jQueryElement, -1);
     }
 }
+
+function onContextMenuItemMoveToNewFolder(rows) {
+    var label = prompt(getMessage('prompt_setNewFolderName'), getMessage('text_NewFolder'));
+
+    if (!label) {
+        // user cancelled or entered no label
+        return;
+    }
+
+    var folder = new bg.FolderNode(label);
+    var ids = rows.map(function(e) { return e.id; });
+    var $rows = ft.root.find('#' + ids.join(',#'));
+
+    // TODO implement .addNodeRel
+    bg.tree.addNode(folder);
+    bg.tree.moveNodeRel(folder, 'before', $($rows[0]).attr('id'), false, false);
+
+    ft.moveRowSetAnimate($rows, 'append', ft.getRow(folder.id), function(moves) {
+            onRowsMoved(moves);
+    });
+}
+
+
+///////////////////////////////////////////////////////////
+// Folder rowtype handlers
+///////////////////////////////////////////////////////////
+
+function onFolderRowDoubleClick(evt) {
+    var action = settings.get('pages_doubleClickAction');
+    handleFolderRowAction(action, evt);
+}
+
+function onFolderRowMiddleClick(evt) {
+    var action = settings.get('pages_middleClickAction');
+    handleFolderRowAction(action, evt);
+}
+
+function handleFolderRowAction(action, evt) {
+    switch (action) {
+        case 'close':
+            onFolderRowCloseButton(evt);
+            break;
+        // case 'hibernate':
+        //     var isFocused = evt.data.row.is(evt.data.treeObj.focusedRow);
+        //     togglePageRowHibernated(evt.data.row, 0, isFocused);
+        //     break;
+        case 'expand':
+            evt.data.treeObj.toggleExpandRow(evt.data.row);
+            break;
+        case 'setlabel':
+            setRowLabels(evt.data.row);
+            break;
+        case 'highlight':
+            setRowHighlight(evt.data.row, 0);
+            break;
+    }
+}
+
+function onFolderRowCloseButton(evt) {
+    bg.tree.removeNode(evt.data.row.attr('id'));
+}
+
+function onFolderRowFormatTitle(row, itemTextElem) {
+    var label = row.attr('label');
+    var childCount = row.children('.ftChildren').find('.ftRowNode').length;
+
+    if (childCount > 0) {
+        var textAffix = '&nbsp;(' + childCount + ')';
+    }
+
+    if (loggingEnabled) {
+        label = row.attr('id').slice(0, 5) + (label ? ': ' : '') + label;
+    }
+
+    itemTextElem.children('.ftItemLabel').html(label);
+    itemTextElem.children('.ftItemTitle').html(textAffix).show();
+}
+
 
 ///////////////////////////////////////////////////////////
 // Page rowtype handlers
@@ -533,22 +660,27 @@ function onPageRowFormatTitle(row, itemTextElem) {
     if (row.hasClass('ftCollapsed')) {
         var childCount = row.children('.ftChildren').find('.ftRowNode').length;
         if (childCount > 0) {
-            textAffix = '(+' + childCount + ')';
+            textAffix = '(' + childCount + ')';
         }
     }
 
     if (loggingEnabled) {
-        label = row.attr('id').slice(0, 6) + (label ? ': ' : '') + label;
+        label = row.attr('id').slice(0, 5) + (label ? ': ' : '') + label;
     }
 
     itemTextElem.children('.ftItemTitle').html(text);
     itemTextElem.children('.ftItemLabel').html(label + (text && label ? ': ' : ''));
 
+    var itemTextAffix = row.children('.ftItemRow').find('.ftItemTextAffix');
     if (textAffix) {
-        row.children('.ftItemRow').find('.ftItemTextAffix').html(textAffix).show();
+        itemTextAffix.html(textAffix);
+        var buttonsShowing = row.children('.ftItemRow').find('.ftButtons').is(':visible');
+        if (!buttonsShowing) {
+            itemTextAffix.show();
+        }
     }
     else {
-        row.children('.ftItemRow').find('.ftItemTextAffix').html('').hide();
+        itemTextAffix.html('').hide();
     }
 
     var existingPin = itemTextElem.parent().children('.pinned');
@@ -736,7 +868,7 @@ function onWindowRowFormatTitle(row, itemTextElem) {
         + getMessage(childCount == 1 ? 'text_page' : 'text_pages') + ')';
 
     if (loggingEnabled) {
-        label = row.attr('id').slice(0, 6) + ': ' + label;
+        label = row.attr('id').slice(0, 5) + ': ' + label;
     }
 
     itemTextElem.children('.ftItemTitle').text(text);

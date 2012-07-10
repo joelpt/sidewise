@@ -84,8 +84,8 @@ FancyTree.prototype.buildRowTypeElem = function(rowType) {
 
     innerRow
         .append(icon)
-        .append(itemTextAffix)
-        .append(itemText);
+        .append(itemText)
+        .append(itemTextAffix);
 
     itemRowContent
         .append(innerRow)

@@ -59,23 +59,24 @@ FancyTree.prototype.rowMouseUpHandler = function(evt) {
         }
 
         // regular left click (no modifier keys)
+        if (treeObj.contextMenuShown) {
+            treeObj.clearMultiSelection.call(treeObj);
+            treeObj.disableContextMenu.call(treeObj);
+        }
+
+        // clear existing multiselection if any
+        treeObj.clearMultiSelection();
+
+        if (evt.data.autofocusOnClick !== false) {
+            // automatically set focus to clicked row
+            treeObj.focusRow(row);
+        }
+
         if (evt.data.onClick) {
-            if (treeObj.contextMenuShown) {
-                treeObj.clearMultiSelection.call(treeObj);
-                treeObj.disableContextMenu.call(treeObj);
-            }
-
-            // clear existing multiselection if any
-            treeObj.clearMultiSelection();
-
-            if (evt.data.autofocusOnClick !== false) {
-                // automatically set focus to clicked row
-                treeObj.focusRow(row);
-            }
-
             // handle left click
             evt.data.onClick(evt);
         }
+
         return;
     }
 };

@@ -244,15 +244,20 @@ DataTree.prototype = {
         return r;
     },
 
-    moveNodeRel: function(movingMatcher, relation, toMatcher)
+    moveNodeRel: function(movingMatcher, relation, toMatcher, keepChildren)
     {
         var moving = this.getNode(movingMatcher);
         if (!moving) {
             throw new Error('Could not find node matching movingMatcher');
         }
 
-        this.removeNode(moving, false);
-        moving.children = []; // remove all of its children
+        if (keepChildren) {
+            this.removeNode(moving, true);
+        }
+        else {
+            this.removeNode(moving, false);
+            moving.children = []; // remove all of its children
+        }
 
         var to = this.getNodeEx(toMatcher);
         if (!to) {
@@ -318,7 +323,8 @@ DataTree.prototype = {
     {
         var found = this.getNodeEx(matcher);
         if (found === undefined) {
-            throw new Error('Could not find requested element to remove matching: ' + matcher);
+            console.error(matcher);
+            throw new Error('Could not find requested element to remove matching above matcher');
         }
 
         this.updateLastModified();

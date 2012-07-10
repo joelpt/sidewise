@@ -108,7 +108,8 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
     var rememberOpenPagesBetweenSessions = settings.get('rememberOpenPagesBetweenSessions');
     var casts = {
         'window': WindowNode,
-        'page': PageNode
+        'page': PageNode,
+        'folder': FolderNode
     };
 
     tree.loadTree(storedPageTree, casts);
@@ -201,7 +202,9 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
             }
         });
         toRemove.forEach(function(e) {
-            tree.removeNode(e);
+            try {
+                tree.removeNode(e);
+            } catch(ex) { }
         });
 
         // rebuild the id index
