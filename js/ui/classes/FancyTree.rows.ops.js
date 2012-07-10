@@ -93,6 +93,13 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
 
         this.setDraggableDroppable(elem);
 
+        if (keepChildren) {
+            var self = this;
+            elem.find('.ftRowNode').each(function(i, e) {
+                self.setDraggableDroppable($(e));
+            });
+        }
+
         this.updateRowExpander(oldParent);
         this.updateRowExpander(newParent);
         this.updateRowExpander(elem);
