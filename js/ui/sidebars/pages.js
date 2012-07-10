@@ -527,29 +527,8 @@ function onContextMenuItemMoveToNewFolder(rows) {
     ft.moveRowSetAnimate($rows, 'append', ft.getRow(folder.id), function(moves) {
             onRowsMoved(moves);
     });
-
-//     var moves = ft.planMovingDraggedRows($rows, 'append', IT THAT WE DO NOT HAS?! ... $moveToRow);
-//     var movesDone = this.performMovingDraggedRows(moves);
-//     this.reconfigureDraggedRows([]); // TODO only reconfigure the rows affected
-//     // var $commonAncestor = $rows.parents().has($rows).first();
-//     return movesDone;
-
-//     ft.moveRowSet($rows, 'append', ft.getRow());
-
-// for (var i = $rows.length - 1; i >= 0; i--) {
-//         var $row = $($rows[i]);
-//         var $parent = ft.getParentRowNode($row.parent());
-//         if ($parent.is($rows)) {
-//             continue;
-//         }
-//             // bg.tree.moveNodeRel($row.attr('id'), 'append', $parent.attr('id'));
-//         // }
-//         // else {
-//             bg.tree.moveNodeRel($row.attr('id'), 'append', folder, true, false);
-//         // }
-//     }
-//     setRowLabels(ft.getRow(folder.id));
 }
+
 
 ///////////////////////////////////////////////////////////
 // Folder rowtype handlers
@@ -647,9 +626,11 @@ function onPageRowFormatTitle(row, itemTextElem) {
     var text = row.attr('text');
     var textAffix = '';
 
-    var childCount = row.children('.ftChildren').find('.ftRowNode').length;
-    if (childCount > 0) {
-        textAffix = '(' + childCount + ')';
+    if (row.hasClass('ftCollapsed')) {
+        var childCount = row.children('.ftChildren').find('.ftRowNode').length;
+        if (childCount > 0) {
+            textAffix = '(' + childCount + ')';
+        }
     }
 
     if (loggingEnabled) {
