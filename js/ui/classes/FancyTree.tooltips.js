@@ -80,7 +80,9 @@ FancyTree.prototype.showTooltip =  function(row, bodyWidth, evt) {
     };
 
     // append tooltip content
-    tooltip.append(onFormatTooltip(evt));
+    if (onFormatTooltip) {
+        tooltip.append(onFormatTooltip(evt));
+    }
 
     // adjust tooltip width
     var maxWidth = Math.min(typeParams.tooltipMaxWidthFixed || 9999,
