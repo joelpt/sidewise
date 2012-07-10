@@ -108,7 +108,8 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
     var rememberOpenPagesBetweenSessions = settings.get('rememberOpenPagesBetweenSessions');
     var casts = {
         'window': WindowNode,
-        'page': PageNode
+        'page': PageNode,
+        'folder': FolderNode
     };
 
     tree.loadTree(storedPageTree, casts);
