@@ -157,8 +157,8 @@ FancyTree.prototype.draggableStart = function(evt) {
             }
 
             if ($lastAutoSelectedRow) {
-                $lastAutoSelectedRow.addClass('ftDrawAttention');
-                setTimeout(function() { $lastAutoSelectedRow.removeClass('ftDrawAttention'); }, 200);
+                $lastAutoSelectedRow.parent().addClass('ftDrawAttention');
+                setTimeout(function() { $lastAutoSelectedRow.parent().removeClass('ftDrawAttention'); }, 150);
             }
         }
 
@@ -224,7 +224,10 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
     var isCollapsed = overRow.hasClass('ftCollapsed');
     var underRoot = overRow.parent().parent().hasClass('ftRoot');
 
-    if (deltaPct <= DRAG_TO_ABOVE_SENSITIVITY_RATIO) {
+    if (treeObj.multiSelection.indexOf(overRow.attr('id')) >= 0) {
+        drag = ['append', overItemRowContent];
+    }
+    else if (deltaPct <= DRAG_TO_ABOVE_SENSITIVITY_RATIO) {
         // to above position
         if (underRoot && draggingParams.allowAtTopLevel && allowedDropTargets.indexOf('ROOT') >= 0) {
             drag = ['before', overItemRow];
@@ -307,13 +310,13 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
         // animation if the ctrl key is held however, because this probably means a parent
         // was torn off with ctrl and those moves can be rather confusing (children popping
         // out of parent)
-        // TODO just call moveDraggedRows() (fix the bug we get when calling it first..?)
+        // TODO just call moveRowSet() (fix the bug we get when calling it first..?)
         $.fx.off = true;
     }
 
 
     var self = this;
-    this.moveDraggedRowsAnimate($rows, this.draggingTo, this.draggingOverRow, function(moves) {
+    this.moveRowSetAnimate($rows, this.draggingTo, this.draggingOverRow, function(moves) {
         $.fx.off = fxAreOff;
         if (self.onDragDrop) {
             self.onDragDrop(moves);
@@ -335,7 +338,7 @@ FancyTree.prototype.updateDragHelper = function(evt, hiddenRowCount) {
     else if (evt.shiftKey) {
         helperTip = 'Autoselected children.';
     }
-    else if (self.autoSelectChildrenOnDrag) {
+    else if (this.autoSelectChildrenOnDrag) {
         helperTip = 'Ctrl+drag: drag just the hovered row.';
     }
     else {
@@ -406,7 +409,7 @@ FancyTree.prototype.hideDragInsertBar = function() {
 // Moving dragged rows
 ///////////////////////////////////////////////////////////
 
-FancyTree.prototype.moveDraggedRowsAnimate = function($rows, moveToPosition, $moveToRow, onComplete) {
+FancyTree.prototype.moveRowSetAnimate = function($rows, moveToPosition, $moveToRow, onComplete) {
     var self = this;
 
     if ($rows.length == 0) {
@@ -423,9 +426,9 @@ FancyTree.prototype.moveDraggedRowsAnimate = function($rows, moveToPosition, $mo
 
     var moves;
     self.slideOutAndShrink.call(self, $rows, defaultRowHeight, function(heights) {
-        moves = self.moveDraggedRows.call(self, $rows, moveToPosition, $moveToRow);
+        moves = self.moveRowSet.call(self, $rows, moveToPosition, $moveToRow);
         self.growAndSlideIn.call(self, $rows, heights, function() {
-            // TODO make it possible to pass moves to onComplete right after moveDraggedRows, and give
+            // TODO make it possible to pass moves to onComplete right after moveRowSet, and give
             // it a callback to call when IT is done with its operations; that callback would then
             // complete the animation after the function has had the time to do any move ops of its own
             if (onComplete) {
@@ -435,11 +438,11 @@ FancyTree.prototype.moveDraggedRowsAnimate = function($rows, moveToPosition, $mo
     });
 };
 
-FancyTree.prototype.moveDraggedRows = function($rows, moveToPosition, $moveToRow) {
+FancyTree.prototype.moveRowSet = function($rows, moveToPosition, $moveToRow) {
     var moves = this.planMovingDraggedRows($rows, moveToPosition, $moveToRow);
     var movesDone = this.performMovingDraggedRows(moves);
     this.reconfigureDraggedRows([]); // TODO only reconfigure the rows affected
-    var $commonAncestor = $rows.parents().has($rows).first();
+    // var $commonAncestor = $rows.parents().has($rows).first();
     return movesDone;
 };
 
