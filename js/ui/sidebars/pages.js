@@ -77,7 +77,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             permitAutoSelectChildren: true,
             alwaysMoveChildren: false,
             multiselectable: true,
-            allowedDropTargets: ['window', 'page'],
+            allowedDropTargets: ['window', 'page', 'folder'],
             onClick: onPageRowClick,
             onDoubleClick: onPageRowDoubleClick,
             onMiddleClick: onPageRowMiddleClick,
@@ -91,6 +91,27 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             buttons: [
                 {icon: '/images/hibernate_wake.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
                 {icon: '/images/close.png', tooltip: getMessage('pages_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
+            ]
+        },
+        'folder': {
+            allowAtTopLevel: false,
+            allowAtChildLevel: true,
+            autofocusOnClick: true,
+            permitAutoSelectChildren: true,
+            alwaysMoveChildren: false,
+            multiselectable: true,
+            allowedDropTargets: ['window', 'page', 'folder'],
+            // onClick: onPageRowClick,
+            // onDoubleClick: onPageRowDoubleClick,
+            // onMiddleClick: onPageRowMiddleClick,
+            onExpanderClick: onRowExpanderClick,
+            // onIconError: onPageRowIconError,
+            onFormatTitle: onFolderRowFormatTitle,
+            // onFormatTooltip: onPageRowFormatTooltip,
+            onResizeTooltip: onResizeTooltip,
+            tooltipMaxWidthPercent: 0.95,
+            buttons: [
+                {icon: '/images/close.png', tooltip: getMessage('pages_folderRowButtonTip_close'), onClick: onFolderRowCloseButton }
             ]
         },
         'window': {
@@ -171,6 +192,9 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
                 highlighted: node.highlighted,
             },
             node.collapsed);
+    }
+    else if (node instanceof bg.FolderNode) {
+        row = fancyTree.getNewRowElem('folder', node.id, '/images/folder.png', node.label, 'Folder', {}, node.collapsed);
     }
     else {
         throw new Error('Unknown node type');
@@ -261,7 +285,7 @@ function onRowDragDrop(moves) {
 
         if (move.relation != 'nomove') {
             // record the move in bg.tree
-            bg.tree.moveNodeRel(rowId, move.relation, toId, true);
+            bg.tree.moveNodeRel(rowId, move.relation, toId, false, true);
         }
 
         if ($row.attr('rowtype') == 'page') {
@@ -326,14 +350,14 @@ function onRowDragDrop(moves) {
 function onContextMenuShow(rows) {
     console.log(rows);
 
+    var items = [];
+
     if (rows[0].rowtype == 'window') {
         var $row = rows[0].jQueryElement;
         var $children = $row.find('.ftChildren > .ftRowNode');
 
         var hibernatedCount = $children.filter(function(i, e) { return $(e).attr('hibernated') == 'true' }).length;
         var awakeCount = $children.length - hibernatedCount;
-
-        var items = [];
 
         if (awakeCount)
             items.push({ id: 'hibernateWindow', icon: '/images/hibernate.png', label: 'Hibernate all tabs in window', callback: onContextMenuItemHibernateWindow });
@@ -347,41 +371,56 @@ function onContextMenuShow(rows) {
         items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
         items.push({ separator: true });
         items.push({ id: 'closeWindow', icon: '/images/close.png', label: 'Close window', callback: onContextMenuItemCloseWindow });
+
         return items;
     }
 
-    var hibernatedCount = rows.filter(function(e) { return e.rowtype == 'page' && e.hibernated; }).length;
-    var awakeCount = rows.length - hibernatedCount;
+    var pages = rows.filter(function(e) { return e.rowtype == 'page' });
 
-    var highlightedCount = rows.filter(function(e) { return e.rowtype == 'page' && e.highlighted; }).length;
-    var unhighlightedCount = rows.length - highlightedCount;
+    if (pages.length > 0) {
+        var hibernatedCount = pages.filter(function(e) { return e.hibernated; }).length;
+        var awakeCount = pages.length - hibernatedCount;
 
-    var items = [];
+        var highlightedCount = pages.filter(function(e) { return e.highlighted; }).length;
+        var unhighlightedCount = pages.length - highlightedCount;
 
-    if (awakeCount)
-        items.push({ id: 'hibernatePage', icon: '/images/hibernate.png', label: 'Hibernate', callback: onContextMenuItemHibernatePages });
+        if (awakeCount)
+           items.push({ id: 'hibernatePage', icon: '/images/hibernate.png', label: 'Hibernate', callback: onContextMenuItemHibernatePages });
 
-    if (hibernatedCount)
-        items.push({ id: 'awakenPage', icon: '/images/wake.png', label: 'Wake up', callback: onContextMenuItemWakePages });
+        if (hibernatedCount)
+           items.push({ id: 'awakenPage', icon: '/images/wake.png', label: 'Wake up', callback: onContextMenuItemWakePages });
 
-    if (awakeCount || hibernatedCount)
-        items.push({ separator: true });
+        if (awakeCount || hibernatedCount)
+           items.push({ separator: true });
 
-    items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
+        items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
 
-    if (unhighlightedCount)
-        items.push({ id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
+        if (unhighlightedCount)
+           items.push({ id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
 
-    if (highlightedCount)
+        if (highlightedCount)
         items.push({ id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
 
+        items.push({ separator: true });
+
+        items.push({ id: 'moveToNewFolder', icon: '/images/folder.png', label: 'Put in new folder', callback: onContextMenuItemMoveToNewFolder, preserveSelectionAfter: true });
+
+        items.push({ separator: true });
+
+        if (awakeCount)
+           items.push({ id: 'reloadPage', icon: '/images/reload.png', label: 'Reload', callback: onContextMenuItemReload, preserveSelectionAfter: true });
+
+        items.push({ id: 'closePage', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemClosePages });
+
+        return items;
+    }
+
+    // must only have folder nodes selected
+    items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
+    items.push({ id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
+    items.push({ id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
     items.push({ separator: true });
-
-    if (awakeCount)
-        items.push({ id: 'reloadPage', icon: '/images/reload.png', label: 'Reload', callback: onContextMenuItemReload, preserveSelectionAfter: true });
-
-    items.push({ id: 'closePage', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemClosePages });
-
+    items.push({ id: 'closeFolder', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemCloseFolders });
     return items;
 }
 
@@ -394,10 +433,18 @@ function onContextMenuItemCloseWindow(rows) {
 }
 
 function onContextMenuItemClosePages(rows) {
-    console.log('CLOSE');
+console.log('CLOSE');
+for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    closePageRow(row.jQueryElement);
+}
+}
+
+function onContextMenuItemCloseFolders(rows) {
+    console.log('CLOSE FOLDERS');
     for (var i = 0; i < rows.length; i++) {
         var row = rows[i];
-        closePageRow(row.jQueryElement);
+        bg.tree.removeNode(row.attr('id'));
     }
 }
 
@@ -458,6 +505,74 @@ function onContextMenuItemClearHighlight(rows) {
         setRowHighlight(row.jQueryElement, -1);
     }
 }
+
+function onContextMenuItemMoveToNewFolder(rows) {
+    var label = prompt(getMessage('prompt_setNewFolderName'), getMessage('text_NewFolder'));
+
+    if (!label) {
+        // user cancelled or entered no label
+        return;
+    }
+
+    var folder = new bg.FolderNode(label);
+    var ids = rows.map(function(e) { return e.id; });
+    var $rows = ft.root.find('#' + ids.join(',#'));
+
+    // TODO implement .addNodeRel
+    bg.tree.addNode(folder);
+    bg.tree.moveNodeRel(folder, 'before', $($rows[0]).attr('id'), false, false);
+
+    ft.moveRowSetAnimate($rows, 'append', ft.getRow(folder.id), function(moves) {
+            onRowDragDrop(moves);
+    });
+
+//     var moves = ft.planMovingDraggedRows($rows, 'append', IT THAT WE DO NOT HAS?! ... $moveToRow);
+//     var movesDone = this.performMovingDraggedRows(moves);
+//     this.reconfigureDraggedRows([]); // TODO only reconfigure the rows affected
+//     // var $commonAncestor = $rows.parents().has($rows).first();
+//     return movesDone;
+
+//     ft.moveRowSet($rows, 'append', ft.getRow());
+
+// for (var i = $rows.length - 1; i >= 0; i--) {
+//         var $row = $($rows[i]);
+//         var $parent = ft.getParentRowNode($row.parent());
+//         if ($parent.is($rows)) {
+//             continue;
+//         }
+//             // bg.tree.moveNodeRel($row.attr('id'), 'append', $parent.attr('id'));
+//         // }
+//         // else {
+//             bg.tree.moveNodeRel($row.attr('id'), 'append', folder, true, false);
+//         // }
+//     }
+//     setRowLabels(ft.getRow(folder.id));
+}
+
+///////////////////////////////////////////////////////////
+// Folder rowtype handlers
+///////////////////////////////////////////////////////////
+
+function onFolderRowCloseButton(evt) {
+    bg.tree.removeNode(evt.data.row.attr('id'));
+}
+
+function onFolderRowFormatTitle(row, itemTextElem) {
+    var label = row.attr('label');
+    var childCount = row.children('.ftChildren').find('.ftRowNode').length;
+
+    if (childCount > 0) {
+        var textAffix = '&nbsp;(' + childCount + ')';
+    }
+
+    if (loggingEnabled) {
+        label = row.attr('id').slice(0, 5) + (label ? ': ' : '') + label;
+    }
+
+    itemTextElem.children('.ftItemLabel').html(label);
+    itemTextElem.children('.ftItemTitle').html(textAffix).show();
+}
+
 
 ///////////////////////////////////////////////////////////
 // Page rowtype handlers
@@ -533,12 +648,12 @@ function onPageRowFormatTitle(row, itemTextElem) {
     if (row.hasClass('ftCollapsed')) {
         var childCount = row.children('.ftChildren').find('.ftRowNode').length;
         if (childCount > 0) {
-            textAffix = '(+' + childCount + ')';
+            textAffix = '(' + childCount + ')';
         }
     }
 
     if (loggingEnabled) {
-        label = row.attr('id').slice(0, 6) + (label ? ': ' : '') + label;
+        label = row.attr('id').slice(0, 5) + (label ? ': ' : '') + label;
     }
 
     itemTextElem.children('.ftItemTitle').html(text);
@@ -736,7 +851,7 @@ function onWindowRowFormatTitle(row, itemTextElem) {
         + getMessage(childCount == 1 ? 'text_page' : 'text_pages') + ')';
 
     if (loggingEnabled) {
-        label = row.attr('id').slice(0, 6) + ': ' + label;
+        label = row.attr('id').slice(0, 5) + ': ' + label;
     }
 
     itemTextElem.children('.ftItemTitle').text(text);
