@@ -143,6 +143,13 @@ section#main:not(.debugEnabled) {
 }
 
 
+/* folder tree row states */
+
+.ftRowNode[rowtype=folder] > .ftItemRow .ftItemLabel {
+    /*font-style: italic;*/
+}
+
+
 /* page tree row states */
 
 .ftRowNode[rowtype=page][unread=true] > .ftItemRow {
@@ -157,40 +164,8 @@ section#main:not(.debugEnabled) {
     color: gray;
 }
 
-.ftRowNode[rowtype=page][highlighted=true]:not(.ftFocused):not(.ftSelected) > .ftItemRow > .ftItemRowContent {
-    background: hsl(59, 90%, 77%);
-}
-
-.ftRowNode[rowtype=page][highlighted=true]:not(.ftFocused):not(.ftSelected) > .ftItemRow:hover > .ftItemRowContent {
-    background: hsl(59, 100%, 79%);
-    border: 1px solid hsl(59, 90%, 48%);
-}
-
-.ftRowNode[rowtype=page][highlighted=true].ftFocused > .ftItemRow > .ftItemRowContent,
-.ftRowNode[rowtype=page][highlighted=true].ftSelected > .ftItemRow > .ftItemRowContent {
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(59, 90%, 55%)),color-stop(1, white));
-    border: 1px solid hsl(59, 90%, 35%);
-}
-
-.ftRowNode[rowtype=page][highlighted=true].ftFocused > .ftItemRow:hover > .ftItemRowContent,
-.ftRowNode[rowtype=page][highlighted=true].ftSelected > .ftItemRow:hover > .ftItemRowContent {
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(59, 90%, 49%)),color-stop(1, white));
-    border: 1px solid hsl(59, 90%, 25%);
-}
-
-.ftRowNode[rowtype=page][highlighted=true].ftFocused.ftSelected > .ftItemRow > .ftItemRowContent {
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(59, 100%, 42%)),color-stop(1, white));
-    border: 1px solid hsl(59, 90%, 0%);
-}
-
-.ftRowNode[rowtype=page][highlighted=true].ftFocused.ftSelected > .ftItemRow:hover > .ftItemRowContent {
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(59, 100%, 39%)),color-stop(1, white));
-    border: 1px solid hsl(59, 90%, 0%);
-}
-
-.ftMultiselecting .ftFocused[rowtype=page][highlighted=true]:not(.ftSelected) > .ftItemRow > .ftItemRowContent {
-    background: hsl(59, 90%, 90%);
-    border: 1px dashed rgb(0, 0, 0);
+.ftRowNode[rowtype=page] > .ftItemRow .ftItemTextAffix {
+    color: black;
 }
 
 .ftRowNode[rowtype=page][hibernated=true] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
@@ -205,6 +180,45 @@ section#main:not(.debugEnabled) {
 .ftRoot:not(.ftMultiselecting) .ftRowNode[rowtype=page][hibernated=true].ftFocused > .ftItemRow:hover > .ftItemRowContent {
     background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #cacaca),color-stop(1, white));
     border: 1px dotted rgb(0, 0, 0);
+}
+
+
+/* row highlighting */
+
+.ftRowNode[highlighted=true]:not(.ftFocused):not(.ftSelected) > .ftItemRow > .ftItemRowContent {
+    background: hsl(59, 90%, 77%);
+}
+
+.ftRowNode[highlighted=true]:not(.ftFocused):not(.ftSelected) > .ftItemRow:hover > .ftItemRowContent {
+    background: hsl(59, 100%, 79%);
+    border: 1px solid hsl(59, 90%, 48%);
+}
+
+.ftRowNode[highlighted=true].ftFocused > .ftItemRow > .ftItemRowContent,
+.ftRowNode[highlighted=true].ftSelected > .ftItemRow > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(59, 90%, 55%)),color-stop(1, white));
+    border: 1px solid hsl(59, 90%, 35%);
+}
+
+.ftRowNode[highlighted=true].ftFocused > .ftItemRow:hover > .ftItemRowContent,
+.ftRowNode[highlighted=true].ftSelected > .ftItemRow:hover > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(59, 90%, 49%)),color-stop(1, white));
+    border: 1px solid hsl(59, 90%, 25%);
+}
+
+.ftRowNode[highlighted=true].ftFocused.ftSelected > .ftItemRow > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(59, 100%, 42%)),color-stop(1, white));
+    border: 1px solid hsl(59, 90%, 0%);
+}
+
+.ftRowNode[highlighted=true].ftFocused.ftSelected > .ftItemRow:hover > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(59, 100%, 39%)),color-stop(1, white));
+    border: 1px solid hsl(59, 90%, 0%);
+}
+
+.ftMultiselecting .ftFocused[highlighted=true]:not(.ftSelected) > .ftItemRow > .ftItemRowContent {
+    background: hsl(59, 90%, 90%);
+    border: 1px dashed rgb(0, 0, 0);
 }
 
 
