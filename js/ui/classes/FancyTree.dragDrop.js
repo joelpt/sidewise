@@ -439,9 +439,9 @@ FancyTree.prototype.moveRowSetAnimate = function($rows, moveToPosition, $moveToR
 };
 
 FancyTree.prototype.moveRowSet = function($rows, moveToPosition, $moveToRow) {
-    var moves = this.planMovingDraggedRows($rows, moveToPosition, $moveToRow);
-    var movesDone = this.performMovingDraggedRows(moves);
-    this.reconfigureDraggedRows([]); // TODO only reconfigure the rows affected
+    var moves = this.planMoveRowSet($rows, moveToPosition, $moveToRow);
+    var movesDone = this.performMoveRowSet(moves);
+    this.reconfigureRowSetAfterMove([]); // TODO only reconfigure the rows affected
     // var $commonAncestor = $rows.parents().has($rows).first();
     return movesDone;
 };
@@ -462,7 +462,7 @@ FancyTree.prototype.addRequiredChildrenToDraggedRows = function($rows) {
     return $rows.add($newrows); // will remove duplicates automagically
 };
 
-FancyTree.prototype.performMovingDraggedRows = function(moves) {
+FancyTree.prototype.performMoveRowSet = function(moves) {
     var movesDone = [];
 
     for (var i = 0; i < moves.length; i++) {
@@ -478,7 +478,7 @@ FancyTree.prototype.performMovingDraggedRows = function(moves) {
     return movesDone;
 };
 
-FancyTree.prototype.reconfigureDraggedRows = function($topParents) {
+FancyTree.prototype.reconfigureRowSetAfterMove = function($topParents) {
     var $fixups;
     if ($topParents.length == 0) {
         // just moving to/from root level, update everybody
@@ -536,7 +536,7 @@ FancyTree.prototype.findNearestInsertPointAfter = function($row, $notIn) {
 };
 
 
-FancyTree.prototype.planMovingDraggedRows = function($rows, relation, $toRow) {
+FancyTree.prototype.planMoveRowSet = function($rows, relation, $toRow) {
     var initialRows = [];
     var self = this;
     $rows.each(function(i, e) {
