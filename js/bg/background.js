@@ -202,7 +202,9 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
             }
         });
         toRemove.forEach(function(e) {
-            tree.removeNode(e);
+            try {
+                tree.removeNode(e);
+            } catch(ex) { }
         });
 
         // rebuild the id index
