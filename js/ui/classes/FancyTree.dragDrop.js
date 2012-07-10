@@ -318,8 +318,8 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
     var self = this;
     this.moveRowSetAnimate($rows, this.draggingTo, this.draggingOverRow, function(moves) {
         $.fx.off = fxAreOff;
-        if (self.onDragDrop) {
-            self.onDragDrop(moves);
+        if (self.onRowsMoved) {
+            self.onRowsMoved(moves);
         }
         setTimeout(function() { self.dropping = false; }, 1000);
     });
@@ -468,6 +468,7 @@ FancyTree.prototype.performMovingDraggedRows = function(moves) {
     for (var i = 0; i < moves.length; i++) {
         var move = moves[i];
         if (move.relation == 'nomove') {
+            move.staticMove = true;
             movesDone.push(move);
             continue;
         }

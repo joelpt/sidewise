@@ -13,9 +13,20 @@
   *          scrollTargetElem: jQueryElem,       // the tree parent element that can scroll
   *          onContextMenuShow: Function(rows),  // passed a list of rows that are currently selected, this
   *                                              // should return an array of context menu items to show
-  *          onDragDrop: Function(moves)         // called when some rows have been moved as a result of drag & drop
-  *                                              // moves contains the movements performed as jQuery objects:
-  *                                              //     [{ movedRow, movedToParent, movedToBeforeSibling }, ...]
+  *          onRowsMoved: Function(moves)        // called when rows have been moved as a result of e.g. drag & drop
+  *                                              // moves is an array of objects with the following properties,
+  *                                              // describing the sequence of move actions performed:
+  *                                              //   [{ $row, relation, $to, keepChildren, staticMove,
+  *                                              //      $newParent, $newBeforeSibling, $newAfterSibling,
+  *                                              //      $oldAncestors }, ...]
+  *                                              //   All $named properties are jQuery objects.
+  *                                              //   relation is one of: "before" "after" "append" "prepend" "nomove"
+  *                                              //   staticMove is true when no actual move was performed.
+  *                                              //   keepChildren is true when children were kept with the moved $row;
+  *                                              //     if false, the $row's children were spliced into the tree in
+  *                                              //     $row's previous location.
+  *                                              //   $new* gives details about the $row's neighbors after the move.
+  *                                              //   $oldAncestors is the ancestry of $row prior to being moved.
   *          autoSelectChildrenOnDrag: Boolean,  // if true, permit autoselecting of children in dragged rows
   *                                              // if the row's rowType.permitAutoSelectChildren is also true
   *          showFilterBox: Boolean,             // if set to false, hide type-in filtering box above tree
@@ -131,7 +142,7 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.contextMenuShown = false;
     this.contextMenuTarget = null;
 
-    this.onDragDrop = options.onDragDrop;
+    this.onRowsMoved = options.onRowsMoved;
     this.autoSelectChildrenOnDrag = options.autoSelectChildrenOnDrag;
     this.dragging = false;
     this.draggingRow = null;

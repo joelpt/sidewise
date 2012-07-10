@@ -139,7 +139,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     fancyTree = new FancyTree($(treeReplaceSelector), $(filterBoxReplaceSelector), {
         rowTypes: rowTypes,
         onContextMenuShow: onContextMenuShow,
-        onDragDrop: onRowDragDrop,
+        onRowsMoved: onRowsMoved,
         scrollTargetElem: $('#main'),
         showFilterBox: true,
         autoSelectChildrenOnDrag: settings.get('autoSelectChildrenOnDrag'),
@@ -273,8 +273,8 @@ function onRowExpanderClick(evt) {
     bg.tree.updateNode(evt.data.row.attr('id'), { collapsed: !(evt.data.expanded) });
 }
 
-function onRowDragDrop(moves) {
-    // console.log('MOVES', moves);
+function onRowsMoved(moves) {
+    console.log('MOVES', moves);
     for (var i = 0; i < moves.length; i++) {
         var move = moves[i];
         var $row = move.$row;
@@ -313,7 +313,7 @@ function onRowDragDrop(moves) {
                 // redundant 'moves' entries for selected>selected rows? or else sniff
                 // it all out right here ... SOLUTION: output a moves entry for each
                 // selected>selected row that is moved along with a boolean .staticMove=(true|false),
-                // onDragDrop listeners can check this bool to decide if they need to do
+                // onRowsMoved listeners can check this bool to decide if they need to do
                 // something with a given move. In our case we will want to use non-staticMove
                 // moves entries to indicate when we should still try to move that one to a new window
                 // here
@@ -322,8 +322,8 @@ function onRowDragDrop(moves) {
                 // The reason this isn't working is that by the time this code gets executed,
                 // the node has already been physically moved in the tree, so getting $topParent
                 // will always return the same node as $moveTopParent; we're already actually moved there.
-                // Solution: implement onDragDropBefore with blocking callback providing the proposed
-                // list of moves, and onDragDropAfter called once move is all done and animated.
+                // Solution: implement onRowsMovedBefore with blocking callback providing the proposed
+                // list of moves, and onRowsMovedAfter called once move is all done and animated.
                 // solution 2: in moves, add oldParent, oldBeforeSibling, then we could perform this
                 // comparison properly .... UNLESS oldParent/oldBeforeSibling get moved themselves.
                 // solution 3: in moves, add oldAncestors which is an array exactly describing the parents
@@ -525,7 +525,7 @@ function onContextMenuItemMoveToNewFolder(rows) {
     bg.tree.moveNodeRel(folder, 'before', $($rows[0]).attr('id'), false, false);
 
     ft.moveRowSetAnimate($rows, 'append', ft.getRow(folder.id), function(moves) {
-            onRowDragDrop(moves);
+            onRowsMoved(moves);
     });
 
 //     var moves = ft.planMovingDraggedRows($rows, 'append', IT THAT WE DO NOT HAS?! ... $moveToRow);
