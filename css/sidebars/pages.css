@@ -164,10 +164,6 @@ section#main:not(.debugEnabled) {
     color: gray;
 }
 
-.ftRowNode[rowtype=page] > .ftItemRow .ftItemTextAffix {
-    color: black;
-}
-
 .ftRowNode[rowtype=page][hibernated=true] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
     -webkit-filter: grayscale(100%);
 }
