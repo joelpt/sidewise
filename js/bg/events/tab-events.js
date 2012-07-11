@@ -301,7 +301,8 @@ function onTabUpdated(tabId, changeInfo, tab)
     var title = getBestPageTitle(tab.title, url)
 
     var favicon;
-    if (!isStaticFavIconUrl(page.favicon)) {
+    var hasStaticFavicon = isStaticFavIconUrl(page.favicon);
+    if (!hasStaticFavicon) {
         // existing page element doesn't have a "good" favicon, try to replace it
         favicon = getBestFavIconUrl(tab.favIconUrl, url);
     }
@@ -310,9 +311,15 @@ function onTabUpdated(tabId, changeInfo, tab)
         favicon = getBestFavIconUrl(tab.favIconUrl, url);
     }
     else if (!isScriptableUrl(url)) {
-        // we will never get a tab.faviconUrl for unscriptable tabs, so
-        // just force-set one now from the favicon aliases catalog
-        favicon = getBestFavIconUrl('', url);
+        if (hasStaticFavicon) {
+            // keep the existing favicon
+            favicon = page.favicon;
+        }
+        else {
+            // we usually don't get a tab.faviconUrl for unscriptable tabs, so
+            // just force-set one now from the favicon aliases catalog
+            favicon = getBestFavIconUrl('', url);
+        }
     }
     else {
         var tabUrlDomain = splitUrl(url).domain;
