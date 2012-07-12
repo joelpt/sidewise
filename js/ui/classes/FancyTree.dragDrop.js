@@ -158,7 +158,7 @@ FancyTree.prototype.draggableStart = function(evt) {
 
             if ($lastAutoSelectedRow) {
                 $lastAutoSelectedRow.parent().addClass('ftDrawAttention');
-                setTimeout(function() { $lastAutoSelectedRow.parent().removeClass('ftDrawAttention'); }, 150);
+                setTimeout(function() { $lastAutoSelectedRow.parent().removeClass('ftDrawAttention'); }, 300);
             }
         }
 
