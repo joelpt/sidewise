@@ -164,6 +164,10 @@
 
 /* expanded/collapsed styles */
 
+.ftCollapsed > .ftItemRow .ftItemTitle {
+    font-style: italic;
+}
+
 .ftCollapsed > .ftChildren {
     display: none;
 }
