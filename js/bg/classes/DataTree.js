@@ -226,7 +226,7 @@ DataTree.prototype = {
             // don't allow move if parent is currently a child of moving (would create a cycle)
             var test = tree.getNodeEx(function(e) { return e === parent; }, moving.children);
             if (test !== undefined) {
-                console.log('Denying move; would have created a cycle');
+                log('Denying move; would have created a cycle');
                 return undefined;
             }
         }
