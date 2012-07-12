@@ -177,7 +177,8 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
             node.title,
             {
                 incognito: node.incognito,
-                hibernated: node.hibernated
+                hibernated: node.hibernated,
+                type: node.type
             },
             node.collapsed);
     }
@@ -190,6 +191,7 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
                 unread: node.unread,
                 hibernated: node.hibernated,
                 highlighted: node.highlighted,
+                incognito: node.incognito
             },
             node.collapsed);
     }
@@ -348,7 +350,7 @@ function onRowsMoved(moves) {
 ///////////////////////////////////////////////////////////
 
 function onContextMenuShow(rows) {
-    console.log(rows);
+    log(rows);
 
     var items = [];
 
