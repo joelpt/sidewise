@@ -110,7 +110,7 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
     return { row: $row, parent: $newParent, beforeSibling: $sibling, keepChildren: keepChildren, oldAncestors: $oldAncestors };
 };
 
-FancyTree.prototype.moveRowRel = function(id, relation, toId, skipRowReconfiguration) {
+FancyTree.prototype.moveRowRel = function(id, relation, toId, keepChildren, skipRowReconfiguration) {
     var $row = this.getRow(id);
     if (!$row) {
         throw new Error('Could not find row to move with id ' + JSON.stringify(id));
@@ -123,7 +123,7 @@ FancyTree.prototype.moveRowRel = function(id, relation, toId, skipRowReconfigura
     var $oldParent = this.getParentRowNode($row.parent());
     var $oldAncestors = $row.parents('.ftRowNode');
 
-    this.removeRow($row, false, true); // prevents possible DOM_HIERARCHY exceptions
+    this.removeRow($row, keepChildren, true); // prevents possible DOM_HIERARCHY exceptions
 
     if (relation == 'before') {
         $to.before($row);
@@ -173,7 +173,7 @@ FancyTree.prototype.moveRowRel = function(id, relation, toId, skipRowReconfigura
         $newBeforeSibling: $newBeforeSibling,
         $newAfterSibling: $newAfterSibling,
         $oldAncestors: $oldAncestors,
-        keepChildren: false,
+        keepChildren: keepChildren,
         staticMove: false
     };
 };
@@ -204,10 +204,9 @@ FancyTree.prototype.focusRow = function(idOrElem) {
     }
 
     if (this.multiSelection.length > 0) {
-        if (this.multiSelection.indexOf(id) == -1) {
-            this.clearMultiSelection();
-        }
+        this.clearMultiSelection();
     }
+
     this.lastMultiSelectedToId = id;
     this.lastMultiSelectedFromId = id;
 
