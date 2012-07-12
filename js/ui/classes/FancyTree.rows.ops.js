@@ -64,33 +64,32 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
     var $oldParent = $row.parent().parent();
     var $oldAncestors = $row.parents('.ftRowNode');
 
-    var newParent;
+    var $newParent;
     if (!newParentId) {
-        newParent = this.root;
+        $newParent = this.root;
     }
     else {
-        newParent = this.getRow(newParentId);
+        $newParent = this.getRow(newParentId);
     }
 
     this.removeRow(id, keepChildren, true); // prevents possible DOM_HIERARCHY exceptions
 
-    var newParentChildren = this.getChildrenContainer(newParent);
-    var sibling;
+    var $newParentChildren = this.getChildrenContainer($newParent);
+    var $sibling;
     if (beforeSiblingId) {
         var beforeSibling = this.getRow(beforeSiblingId);
-        sibling = newParentChildren.children('#' + beforeSibling.attr('id'));
-        if (sibling.length == 0) {
+        $sibling = $newParentChildren.children('#' + beforeSibling.attr('id'));
+        if ($sibling.length == 0) {
             throw new Error('Could not find sibling ' + beforeSiblingId);
         }
-        sibling.before($row);
+        $sibling.before($row);
     }
     else {
-        newParentChildren.append($row);
+        $newParentChildren.append($row);
     }
 
     if (!skipRowReconfiguration) {
         this.setRowButtonTooltips($row);
-
         this.setDraggableDroppable($row);
 
         if (keepChildren) {
@@ -101,14 +100,14 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
         }
 
         this.updateRowExpander($oldParent);
-        this.updateRowExpander(newParent);
+        this.updateRowExpander($newParent);
         this.updateRowExpander($row);
 
         this.formatLineageTitles($oldParent);
-        this.formatLineageTitles(newParent);
+        this.formatLineageTitles($newParent);
     }
 
-    return { row: $row, parent: newParent, beforeSibling: sibling, keepChildren: keepChildren, oldAncestors: $oldAncestors };
+    return { row: $row, parent: $newParent, beforeSibling: $sibling, keepChildren: keepChildren, oldAncestors: $oldAncestors };
 };
 
 FancyTree.prototype.moveRowRel = function(id, relation, toId, skipRowReconfiguration) {
