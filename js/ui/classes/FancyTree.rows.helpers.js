@@ -40,6 +40,6 @@ FancyTree.prototype.formatLineageTitles = function(row) {
     var self = this;
     row.parents('.ftRowNode').add(row).each(function(i, e) {
         var $e = $(e);
-        self.formatRowTitle.call(self, row);
+        self.formatRowTitle.call(self, $e);
     });
 };
