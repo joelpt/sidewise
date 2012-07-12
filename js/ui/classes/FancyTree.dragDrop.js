@@ -301,9 +301,6 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
         return;
     }
 
-    // add required descendants of dragged rows with rowtype.alwaysMoveChildren=true
-    var $rows = this.addRequiredChildrenToDraggedRows($rows);
-
     var fxAreOff = $.fx.off;
     if (($rows.length == 1 && !this.dragToreOffParent) || this.dragSelectedCollapsedRow) {
         // don't animate single row movements, it is just annoying; we'll still use normal
@@ -446,22 +443,6 @@ FancyTree.prototype.moveRowSet = function($rows, moveToPosition, $moveToRow) {
     return movesDone;
 };
 
-FancyTree.prototype.addRequiredChildrenToDraggedRows = function($rows) {
-    var $newrows = $();
-
-    for (var i = 0; i < $rows.length; i++) {
-        var $row = $($rows[i]);
-        var params = this.getRowTypeParams($row);
-        var collapsed = $row.hasClass('ftCollapsed');
-        if (params.alwaysMoveChildren || collapsed) {
-            // add all descendants of the row
-            $newrows = $newrows.add($row.find('.ftRowNode'));
-        }
-    }
-
-    return $rows.add($newrows); // will remove duplicates automagically
-};
-
 FancyTree.prototype.performMoveRowSet = function(moves) {
     var movesDone = [];
 
@@ -472,7 +453,7 @@ FancyTree.prototype.performMoveRowSet = function(moves) {
             movesDone.push(move);
             continue;
         }
-        movesDone.push(this.moveRowRel(move.row, move.relation, move.to, true));
+        movesDone.push(this.moveRowRel(move.row, move.relation, move.to, move.keepChildren, true));
     }
 
     return movesDone;
@@ -535,10 +516,26 @@ FancyTree.prototype.findNearestInsertPointAfter = function($row, $notIn) {
     return ['append', $parent];
 };
 
+// Removes rows from $rows which have parent rows that are
+// also in $rows and collapsed.
+FancyTree.prototype.stripHiddenCollapsedRowsFromRowSet = function($rows) {
+    return $rows.filter(function(i, e) {
+        var $e = $(e);
+        var $parents = $e.parents().filter(function(j, p) {
+            return $(p).is($rows) && $(p).hasClass('ftCollapsed');
+        });
+        return ($parents.length == 0);
+    });
+}
 
 FancyTree.prototype.planMoveRowSet = function($rows, relation, $toRow) {
     var initialRows = [];
     var self = this;
+
+    $rows = this.stripHiddenCollapsedRowsFromRowSet($rows);
+
+    // build a picture of the rows and their closest selected parents
+    // prior to any movements
     $rows.each(function(i, e) {
         var $e = $(e);
         var $csp = $e.parent().closest($rows); // Closest Selected Parent
@@ -563,25 +560,26 @@ FancyTree.prototype.planMoveRowSet = function($rows, relation, $toRow) {
         if ($row.is($toRow)) {
             if (relation == 'prepend' || relation == 'append') {
                 // trying to make row a child of itself; deny this
-                moves.push({ row: $row, relation: 'nomove' });
+                moves.push({ row: $row, relation: 'nomove', keepChildren: false });
                 continue;
             }
         }
 
+        var keepChildren = $row.hasClass('ftCollapsed');
         if ($csp.length == 0) {
             // no closest selected parent; insert at insertPoint
-            moves.push({ row: $row, relation: insertPoint[0], to: insertPoint[1] });
+            moves.push({ row: $row, relation: insertPoint[0], to: insertPoint[1], keepChildren: keepChildren });
         }
         else {
             // have a CSP; make us the first or last child of the CSP
             if ($lastCsp && $lastCsp.is($csp)) {
-                moves.push({ row: $row, relation: 'after', to: $lastCspChild });
+                moves.push({ row: $row, relation: 'after', to: $lastCspChild, keepChildren: keepChildren });
             }
             else if (relation == 'append') {
-                moves.push({ row: $row, relation: 'append', to: $csp });
+                moves.push({ row: $row, relation: 'append', to: $csp, keepChildren: keepChildren });
             }
             else {
-                moves.push({ row: $row, relation: 'prepend', to: $csp });
+                moves.push({ row: $row, relation: 'prepend', to: $csp, keepChildren: keepChildren });
             }
 
             $lastCsp = $csp;
@@ -605,7 +603,8 @@ FancyTree.prototype.planMoveRowSet = function($rows, relation, $toRow) {
     for (var i = 0; i < moves.length; i++) {
         var m = moves[i];
         console.log((1 + i) + '. ' + m.row.attr('id'), m.relation,
-            m.relation != 'nomove' ? m.to.attr('id') : '');
+            m.relation != 'nomove' ? m.to.attr('id') : '',
+            keepChildren ? ' KEEP CHILDREN' : '');
     }
 
     return moves;
