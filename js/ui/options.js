@@ -215,9 +215,9 @@ function resetAllSettings(evt) {
         return;
     }
 
-    initializeDefaultSettings(true);
+    settings.initializeDefaults(true);
     loadSettings();
-    updateStateFromSettings();
+    settings.updateStateFromSettings();
     showStatusMessage(getMessage('optionsResetAllSettings'));
 }
 

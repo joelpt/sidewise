@@ -15,8 +15,6 @@ var PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP = {
     highlighted: 'highlighted'
 };
 
-var MULTISELECTION_ACTION_CONFIRM_THRESHOLD = 2;
-
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -446,7 +444,7 @@ function onContextMenuItemClosePages($rows) {
 function onContextMenuItemCloseBranches($rows) {
     var $children = $rows.find('.ftRowNode');
     var childrenCount = $children.length;
-    if (childrenCount >= MULTISELECTION_ACTION_CONFIRM_THRESHOLD
+    if (childrenCount >= settings.get('multiSelectActionConfirmThreshold')
         && !confirm('This action will close ' + childrenCount + ' child row(s). Proceed?'))
     {
         return;
@@ -846,7 +844,7 @@ function onWindowRowCloseButton(evt) {
 function closeWindowRow(row) {
     var childCount = ft.getChildrenCount(row);
 
-    if (childCount >= MULTISELECTION_ACTION_CONFIRM_THRESHOLD) {
+    if (childCount >= settings.get('multiSelectActionConfirmThreshold')) {
         var msg = getMessage('prompt_closeWindow',
             [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
 

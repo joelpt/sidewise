@@ -46,10 +46,10 @@
             </select>
             <input type="checkbox" name="openSidebarOnStartup"/>
             <input type="checkbox" name="keepSidebarOnTop"/>
+            <input type="checkbox" name="allowAutoUnmaximize"/>
             <input type="checkbox" name="autoSelectChildrenOnDrag"/>
 
             <div class="advancedOptions">
-                <input type="checkbox" name="allowAutoUnmaximize"/>
                 <input type="checkbox" name="animationEnabled"/>
             </div>
 
@@ -70,6 +70,9 @@
                 <option value="setlabel" i18n="option_pages_specialClickAction_setLabel"/>
                 <option value="highlight" i18n="option_pages_specialClickAction_highlight"/>
             </select>
+            <div class="advancedOptions">
+                <input type="text" name="multiSelectActionConfirmThreshold" datatype="int" />
+            </div>
             <input type="checkbox" name="smartFocusOnClose"/>
             <div class="advancedOptions">
                 <blockquote>

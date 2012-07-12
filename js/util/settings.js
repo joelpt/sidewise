@@ -95,12 +95,13 @@ Settings.prototype = {
             wakeHibernatedPagesOnClick: true,
             animationEnabled: true,
             autoSelectChildrenOnDrag: true,
-            reportUsageStatistics: true
+            reportUsageStatistics: true,
+            multiSelectActionConfirmThreshold: 3
         };
 
         for (var setting in defaultSettings) {
             var oldValue = this.get(setting);
-            var newValue = (oldValue === undefined ? defaultSettings[setting] : oldValue);
+            var newValue = (oldValue === undefined || forceReset ? defaultSettings[setting] : oldValue);
 
             this.set(setting, newValue);
 
