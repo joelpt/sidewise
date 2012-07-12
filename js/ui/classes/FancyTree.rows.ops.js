@@ -30,12 +30,12 @@ FancyTree.prototype.addRow = function(elem, parentId) {
     this.formatLineageTitles(parent);
 };
 
-FancyTree.prototype.removeRow = function(id, removeChildren, skipElementReconfiguration) {
-    var elem = this.getRow(id);
-    var parent = elem.parent().parent();
+FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfiguration) {
+    var $row = this.getRow(id);
+    var $parent = $row.parent().parent();
 
     // ensure button tooltips don't popup after the row is removed, after the tips' predelay
-    this.getButtons(elem).each(function(i, e) {
+    this.getButtons($row).each(function(i, e) {
         var tooltipData = $(e).data('tooltip');
         if (tooltipData) {
             tooltipData.onShow(function() { this.hide(); });
@@ -43,26 +43,26 @@ FancyTree.prototype.removeRow = function(id, removeChildren, skipElementReconfig
     });
 
     if (removeChildren) {
-        elem.remove();
+        $row.remove();
     }
     else {
-        elem.replaceWith(elem.children('.ftChildren').children());
+        $row.replaceWith($row.children('.ftChildren').children());
     }
 
     this.hideTooltip();
 
-    if (skipElementReconfiguration) {
+    if (skipRowReconfiguration === true) {
         return;
     }
 
-    this.updateRowExpander(parent);
-    this.formatLineageTitles(parent);
+    this.updateRowExpander($parent);
+    this.formatLineageTitles($parent);
 };
 
-FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChildren, skipElementReconfiguration) {
-    var elem = this.getRow(id);
-    var oldParent = elem.parent().parent();
-    var oldAncestors = elem.parents('.ftRowNode');
+FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChildren, skipRowReconfiguration) {
+    var $row = this.getRow(id);
+    var $oldParent = $row.parent().parent();
+    var $oldAncestors = $row.parents('.ftRowNode');
 
     var newParent;
     if (!newParentId) {
@@ -82,36 +82,36 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
         if (sibling.length == 0) {
             throw new Error('Could not find sibling ' + beforeSiblingId);
         }
-        sibling.before(elem);
+        sibling.before($row);
     }
     else {
-        newParentChildren.append(elem);
+        newParentChildren.append($row);
     }
 
-    if (!skipElementReconfiguration) {
-        this.setRowButtonTooltips(elem);
+    if (!skipRowReconfiguration) {
+        this.setRowButtonTooltips($row);
 
-        this.setDraggableDroppable(elem);
+        this.setDraggableDroppable($row);
 
         if (keepChildren) {
             var self = this;
-            elem.find('.ftRowNode').each(function(i, e) {
+            $row.find('.ftRowNode').each(function(i, e) {
                 self.setDraggableDroppable($(e));
             });
         }
 
-        this.updateRowExpander(oldParent);
+        this.updateRowExpander($oldParent);
         this.updateRowExpander(newParent);
-        this.updateRowExpander(elem);
+        this.updateRowExpander($row);
 
-        this.formatLineageTitles(oldParent);
+        this.formatLineageTitles($oldParent);
         this.formatLineageTitles(newParent);
     }
 
-    return { row: elem, parent: newParent, beforeSibling: sibling, keepChildren: keepChildren, oldAncestors: oldAncestors };
+    return { row: $row, parent: newParent, beforeSibling: sibling, keepChildren: keepChildren, oldAncestors: $oldAncestors };
 };
 
-FancyTree.prototype.moveRowRel = function(id, relation, toId, skipElementReconfiguration) {
+FancyTree.prototype.moveRowRel = function(id, relation, toId, skipRowReconfiguration) {
     var row = this.getRow(id);
     if (!row) {
         throw new Error('Could not find row to move with id ' + JSON.stringify(id));
@@ -154,7 +154,7 @@ FancyTree.prototype.moveRowRel = function(id, relation, toId, skipElementReconfi
         newAfterSibling = undefined;
     }
 
-    if (!skipElementReconfiguration) {
+    if (!skipRowReconfiguration) {
         this.setRowButtonTooltips(row);
         this.setDraggableDroppable(row);
 
