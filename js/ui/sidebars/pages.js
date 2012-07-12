@@ -15,7 +15,7 @@ var PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP = {
     highlighted: 'highlighted'
 };
 
-var WINDOW_ACTION_CONFIRM_CHILDREN_THRESHOLD = 2;
+var MULTISELECTION_ACTION_CONFIRM_THRESHOLD = 2;
 
 
 ///////////////////////////////////////////////////////////
@@ -283,14 +283,14 @@ function onRowsMoved(moves) {
         var $to = move.$to;
         var rowId = $row.attr('id');
         var toId = $to ? $to.attr('id') : undefined;
-        console.log('---- move:', rowId, move.relation, toId);
+        console.log('---- move:', rowId, move.relation, toId, move.keepChildren ? 'KEEP CHILDREN' : '');
 
         if (move.relation != 'nomove') {
             // record the move in bg.tree
-            bg.tree.moveNodeRel(rowId, move.relation, toId, false, true);
+            bg.tree.moveNodeRel(rowId, move.relation, toId, move.keepChildren, true);
         }
 
-        if ($row.attr('rowtype') == 'page') {
+        if ($row.attr('rowtype') == 'page' && $row.attr('hibernated') != 'true') {
             // moving a tab between windows
             // TODO when moving tabs between windows we wont generate a move event for selected tabs
             // which are direct children of other selected tabs; these come with due to keepChildren=true
@@ -349,168 +349,159 @@ function onRowsMoved(moves) {
 // FancyTree context menu handlers
 ///////////////////////////////////////////////////////////
 
-function onContextMenuShow(rows) {
-    log(rows);
+function onContextMenuShow($rows) {
+    log($rows);
 
     var items = [];
 
-    if (rows[0].rowtype == 'window') {
-        var $row = rows[0].jQueryElement;
-        var $children = $row.find('.ftChildren > .ftRowNode');
+    var $firstRow = $rows.first();
+    if ($firstRow.attr('rowtype') == 'window') {
+        var $children = $firstRow.find('.ftChildren > .ftRowNode');
 
         var hibernatedCount = $children.filter(function(i, e) { return $(e).attr('hibernated') == 'true' }).length;
         var awakeCount = $children.length - hibernatedCount;
 
-        if (awakeCount)
-            items.push({ id: 'hibernateWindow', icon: '/images/hibernate.png', label: 'Hibernate all tabs in window', callback: onContextMenuItemHibernateWindow });
-
         if (hibernatedCount)
-            items.push({ id: 'awakenWindow', icon: '/images/wake.png', label: 'Wake all tabs in window', callback: onContextMenuItemWakeWindow });
+            items.push({ $rows: $firstRow, id: 'awakenWindow', icon: '/images/wake_branch.png', label: 'Wake all tabs in window', callback: onContextMenuItemWakeWindow });
+
+        if (awakeCount)
+            items.push({ $rows: $firstRow, id: 'hibernateWindow', icon: '/images/hibernate_branch.png', label: 'Hibernate all tabs in window', callback: onContextMenuItemHibernateWindow });
 
         if (awakeCount || hibernatedCount)
             items.push({ separator: true });
 
-        items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
+        items.push({ $rows: $firstRow, id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
         items.push({ separator: true });
-        items.push({ id: 'closeWindow', icon: '/images/close.png', label: 'Close window', callback: onContextMenuItemCloseWindow });
+        items.push({ $rows: $firstRow, id: 'closeWindow', icon: '/images/close.png', label: 'Close window', callback: onContextMenuItemCloseWindow });
 
         return items;
     }
 
-    var pages = rows.filter(function(e) { return e.rowtype == 'page' });
+    var $pages = $rows.filter(function(i, e) { return $(e).attr('rowtype') == 'page' });
+    var $branches = $rows.add($rows.find('.ftRowNode'));
+    var $branchesPages = $branches.filter(function(i, e) { return $(e).attr('rowtype') == 'page' });
 
-    if (pages.length > 0) {
-        var hibernatedCount = pages.filter(function(e) { return e.hibernated; }).length;
-        var awakeCount = pages.length - hibernatedCount;
+    var hibernatedCount = $pages.filter(function(i, e) { return $(e).attr('hibernated') == 'true'; }).length;
+    var awakeCount = $pages.length - hibernatedCount;
 
-        var highlightedCount = pages.filter(function(e) { return e.highlighted; }).length;
-        var unhighlightedCount = pages.length - highlightedCount;
+    var hibernatedBranchCount = $branchesPages.filter(function(i, e) { return $(e).attr('hibernated') == 'true'; }).length;
+    var awakeBranchCount = $branchesPages.length - hibernatedBranchCount;
 
-        if (awakeCount)
-           items.push({ id: 'hibernatePage', icon: '/images/hibernate.png', label: 'Hibernate', callback: onContextMenuItemHibernatePages });
+    var highlightedCount = $rows.filter(function(i, e) { return $(e).attr('highlighted') == 'true'; }).length;
+    var unhighlightedCount = $rows.length - highlightedCount;
 
-        if (hibernatedCount)
-           items.push({ id: 'awakenPage', icon: '/images/wake.png', label: 'Wake up', callback: onContextMenuItemWakePages });
+    if (hibernatedCount)
+        items.push({ $rows: $rows, id: 'awakenPage', icon: '/images/wake.png', label: 'Wake tab', callback: onContextMenuItemWakePages });
 
-        if (awakeCount || hibernatedCount)
-           items.push({ separator: true });
+    if (awakeCount)
+        items.push({ $rows: $rows, id: 'hibernatePage', icon: '/images/hibernate.png', label: 'Hibernate tab', callback: onContextMenuItemHibernatePages });
 
-        items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
+    if (hibernatedBranchCount && hibernatedBranchCount != hibernatedCount)
+        items.push({ $rows: $branchesPages, id: 'awakenBranch', icon: '/images/wake_branch.png', label: 'Wake branch', callback: onContextMenuItemWakePages });
 
-        if (unhighlightedCount)
-           items.push({ id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
+    if (awakeBranchCount && awakeBranchCount != awakeCount)
+        items.push({ $rows: $branchesPages, id: 'hibernateBranch', icon: '/images/hibernate_branch.png', label: 'Hibernate branch', callback: onContextMenuItemHibernatePages });
 
-        if (highlightedCount)
-        items.push({ id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
+    items.push({ separator: true });
 
-        items.push({ separator: true });
+    items.push({ $rows: $rows, id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
 
-        items.push({ id: 'moveToNewFolder', icon: '/images/folder.png', label: 'Put in new folder', callback: onContextMenuItemMoveToNewFolder, preserveSelectionAfter: true });
+    if (unhighlightedCount)
+       items.push({ $rows: $rows, id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
 
-        items.push({ separator: true });
+    if (highlightedCount)
+    items.push({ $rows: $rows, id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
 
-        if (awakeCount)
-           items.push({ id: 'reloadPage', icon: '/images/reload.png', label: 'Reload', callback: onContextMenuItemReload, preserveSelectionAfter: true });
+    items.push({ separator: true });
 
-        items.push({ id: 'closePage', icon: '/images/close.png', label: 'Close', callback: onContextMenuItemClosePages });
+    items.push({ $rows: $rows, id: 'moveToNewFolder', icon: '/images/folder.png', label: 'Put in new folder', callback: onContextMenuItemMoveToNewFolder, preserveSelectionAfter: true });
 
-        return items;
+    items.push({ separator: true });
+
+    if (awakeCount)
+       items.push({ $rows: $rows, id: 'reloadPage', icon: '/images/reload.png', label: 'Reload tab', callback: onContextMenuItemReload, preserveSelectionAfter: true });
+
+    if ($pages.length > 0) {
+        items.push({ $rows: $rows, id: 'closePage', icon: '/images/close.png', label: 'Close tab', callback: onContextMenuItemClosePages });
+        if ($rows.length != $branches.length) {
+            items.push({ separator: true });
+            items.push({ $rows: $rows, id: 'closeBranch', icon: '/images/close_branch.png', label: 'Close branch', callback: onContextMenuItemCloseBranches });
+        }
+    }
+    else {
+        items.push({ $rows: $rows, id: 'closeFolder', icon: '/images/close_branch.png', label: 'Remove folder', callback: onContextMenuItemCloseBranches });
     }
 
-    // must only have folder nodes selected
-    items.push({ id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
-    items.push({ id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
-    items.push({ id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
-    items.push({ separator: true });
-    items.push({ id: 'moveToNewFolder', icon: '/images/folder.png', label: 'Put in new folder', callback: onContextMenuItemMoveToNewFolder, preserveSelectionAfter: true });
-    items.push({ separator: true });
-    items.push({ id: 'closeFolder', icon: '/images/close.png', label: 'Remove', callback: onContextMenuItemCloseFolders });
     return items;
 }
 
-function onContextMenuItemCloseWindow(rows) {
-    var id = rows[0].id;
-    console.log('CLOSE WIN', id);
-    closeWindowRow(rows[0].jQueryElement);
-    // var $descendants = rows[0].jQueryElement.children('.ftChildren').find('.ftRowNode');
-    // $descendants.each(function(i, e) { closePageRow($(e)); });
+function onContextMenuItemCloseWindow($rows) {
+    closeWindowRow($rows.first());
 }
 
-function onContextMenuItemClosePages(rows) {
-console.log('CLOSE');
-for (var i = 0; i < rows.length; i++) {
-    var row = rows[i];
-    closePageRow(row.jQueryElement);
-}
+function onContextMenuItemClosePages($rows) {
+    $rows.each(function(i, e) { closeRow($(e)); });
 }
 
-function onContextMenuItemCloseFolders(rows) {
-    console.log('CLOSE FOLDERS');
-    for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        bg.tree.removeNode($(row).attr('id'));
+function onContextMenuItemCloseBranches($rows) {
+    var $children = $rows.find('.ftRowNode');
+    var childrenCount = $children.length;
+    if (childrenCount >= MULTISELECTION_ACTION_CONFIRM_THRESHOLD
+        && !confirm('This action will close ' + childrenCount + ' child row(s). Proceed?'))
+    {
+        return;
     }
+
+    $rows.add($children).each(function(i, e) { closeRow($(e)); });
 }
 
-function onContextMenuItemWakeWindow(rows) {
-    var id = rows[0].id;
-    console.log('WAKE WIN', id);
-    bg.tree.awakenWindow(id);
+function onContextMenuItemWakeWindow($rows) {
+    bg.tree.awakenWindow($rows.first().attr('id'));
 }
 
-function onContextMenuItemHibernateWindow(rows) {
-    var id = rows[0].id;
-    console.log('HIBERNATE WIN', id);
-    bg.tree.hibernateWindow(id);
+function onContextMenuItemHibernateWindow($rows) {
+    bg.tree.hibernateWindow($rows.first().attr('id'));
 }
 
-function onContextMenuItemHibernatePages(rows) {
-    console.log('HIBERNATE');
-    for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        togglePageRowHibernated(row.jQueryElement, -1);
-    }
+function onContextMenuItemHibernatePages($rows) {
+    $rows.each(function(i, e) { togglePageRowHibernated($(e), -1); });
 }
 
-function onContextMenuItemWakePages(rows) {
-    console.log('WAKIE');
-    for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        togglePageRowHibernated(row.jQueryElement, 1);
-    }
+function onContextMenuItemWakePages($rows) {
+    $rows.each(function(i, e) { togglePageRowHibernated($(e), 1); });
 }
 
-function onContextMenuItemReload(rows) {
-    console.log('RELOAD');
-    for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        if (row.hibernated) {
-            continue;
+function onContextMenuItemReload($rows) {
+    $rows.each(function(i, e) {
+        var $e = $(e);
+        if ($e.attr('rowtype') != 'page' || $e.attr('hibernated') == 'true') {
+            return;
         }
-        var chromeId = row.chromeId;
+        var chromeId = getRowNumericId($e);
         chrome.tabs.executeScript(chromeId, { code: "window.location.reload();" });
+    });
+}
+
+function onContextMenuItemSetLabel($rows) {
+    setRowLabels($rows);
+}
+
+function onContextMenuItemSetHighlight($rows) {
+    $rows.each(function(i, e) { setRowHighlight($(e), 1); });
+}
+
+function onContextMenuItemClearHighlight($rows) {
+    $rows.each(function(i, e) { setRowHighlight($(e), -1); });
+}
+
+function onContextMenuItemMoveToNewFolder($rows) {
+
+    var $branchesChildren = $rows.find('.ftRowNode').not($rows);
+
+    if ($branchesChildren.length > 0 && confirm('Move entire selected branches into new folder?\nPress Cancel to move just the selected rows.') ) {
+        $rows = $rows.add($branchesChildren);
     }
-}
 
-function onContextMenuItemSetLabel(rows) {
-    setRowLabels(rows.map(function(e) { return e.jQueryElement; }));
-}
-
-function onContextMenuItemSetHighlight(rows) {
-    for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        setRowHighlight(row.jQueryElement, 1);
-    }
-}
-
-function onContextMenuItemClearHighlight(rows) {
-    for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        setRowHighlight(row.jQueryElement, -1);
-    }
-}
-
-function onContextMenuItemMoveToNewFolder(rows) {
     var label = prompt(getMessage('prompt_setNewFolderName'), getMessage('text_NewFolder'));
 
     if (!label) {
@@ -519,15 +510,13 @@ function onContextMenuItemMoveToNewFolder(rows) {
     }
 
     var folder = new bg.FolderNode(label);
-    var ids = rows.map(function(e) { return e.id; });
-    var $rows = ft.root.find('#' + ids.join(',#'));
 
     // TODO implement .addNodeRel
     bg.tree.addNode(folder);
-    bg.tree.moveNodeRel(folder, 'before', $($rows[0]).attr('id'), false, false);
+    bg.tree.moveNodeRel(folder, 'before', $rows.first().attr('id'), false, false);
 
     ft.moveRowSetAnimate($rows, 'append', ft.getRow(folder.id), function(moves) {
-            onRowsMoved(moves);
+        onRowsMoved(moves);
     });
 }
 
@@ -575,8 +564,12 @@ function onFolderRowFormatTitle(row, itemTextElem) {
     var label = row.attr('label');
     var childCount = row.children('.ftChildren').find('.ftRowNode').length;
 
+    var textAffix;
     if (childCount > 0) {
-        var textAffix = '&nbsp;(' + childCount + ')';
+        textAffix = '&nbsp;(' + childCount + ')';
+    }
+    else {
+        textAffix = '';
     }
 
     if (loggingEnabled) {
@@ -744,7 +737,7 @@ function onPageRowIconError(evt) {
 }
 
 function onPageRowCloseButton(evt) {
-    closePageRow(evt.data.row);
+    closeRow(evt.data.row);
 }
 
 function onPageRowHibernateButton(evt) {
@@ -830,7 +823,7 @@ function onWindowRowCloseButton(evt) {
 function closeWindowRow(row) {
     var childCount = ft.getChildrenCount(row);
 
-    if (childCount >= WINDOW_ACTION_CONFIRM_CHILDREN_THRESHOLD) {
+    if (childCount >= MULTISELECTION_ACTION_CONFIRM_THRESHOLD) {
         var msg = getMessage('prompt_closeWindow',
             [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
 
@@ -892,16 +885,15 @@ function onWindowRowFormatTooltip(evt) {
 // Row action helper functions
 ///////////////////////////////////////////////////////////
 
-function closePageRow(row) {
-    if (row.attr('hibernated') == 'true' || row.hasClass('closing')) {
-        // page is hibernated so just remove it; don't actually try to close its
-        // (nonexistent) tab; or we were already trying to close this tab
-        bg.tree.removeNode(row.attr('id'));
+function closeRow($row) {
+    if ($row.attr('rowtype') != 'page' || $row.attr('hibernated') == 'true' || $row.hasClass('closing')) {
+        // row has no corresponding tab so just remove it from the tree
+        bg.tree.removeNode($row.attr('id'));
         return;
     }
 
-    row.addClass('closing'); // "about to close" styling
-    chrome.tabs.remove(getRowNumericId(row));
+    $row.addClass('closing'); // "about to close" styling
+    chrome.tabs.remove(getRowNumericId($row));
 }
 
 // hibernateAwakeState values:
