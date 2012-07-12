@@ -36,30 +36,7 @@ FancyTree.prototype.onContextMenu = function(evt) {
 };
 
 FancyTree.prototype.buildContextMenuSelectionData = function(rowIds) {
-    var self = this;
-    var rows = rowIds.map(function(e) {
-        var row = self.getRow(e);
-        var bareRow = row.get(0);
-        var attribs = bareRow.attributes;
-        var r = { htmlElement: bareRow, jQueryElement: row };
-        for (var i = 0; i < attribs.length; i++) {
-            var attrib = attribs[i];
-
-            try {
-                r[attrib.nodeName] = JSON.parse(attrib.nodeValue);
-            }
-            catch(ex) {
-                r[attrib.nodeName] = attrib.nodeValue;
-            }
-
-            // TODO don't do this here, it is not fancytree specific
-            if (attrib.nodeName == 'id' && attribs.hibernated != 'true') {
-                r.chromeId = parseInt(attrib.nodeValue.slice(1));
-            }
-        }
-        return r;
-    });
-    return rows;
+    return this.root.find('#' + rowIds.join(',#'));
 };
 
 FancyTree.prototype.onContextMenuItemClick = function(evt) {
@@ -67,7 +44,7 @@ FancyTree.prototype.onContextMenuItemClick = function(evt) {
     var id = this.attributes.contextMenuId.value;
     var contextMenuItem = treeObj.contextMenuItems[id];
     var callback = contextMenuItem.callback;
-    var rows = treeObj.contextMenuSelectionData;
+    var $rows = contextMenuItem.$rows;
 
     treeObj.disableContextMenu();
 
@@ -77,7 +54,7 @@ FancyTree.prototype.onContextMenuItemClick = function(evt) {
 
     // Perform context menu after a short delay to allow for sidebar to
     // do its visual updates first
-    setTimeout(function() { callback(rows); }, 50);
+    setTimeout(function() { callback($rows); }, 50);
 
     return false;
 };
