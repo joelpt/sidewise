@@ -565,7 +565,8 @@ FancyTree.prototype.planMoveRowSet = function($rows, relation, $toRow) {
             }
         }
 
-        var keepChildren = $row.hasClass('ftCollapsed');
+        var rowTypeParams = this.getRowTypeParams($row);
+        var keepChildren = $row.hasClass('ftCollapsed') || rowTypeParams.alwaysMoveChildren;
         if ($csp.length == 0) {
             // no closest selected parent; insert at insertPoint
             moves.push({ row: $row, relation: insertPoint[0], to: insertPoint[1], keepChildren: keepChildren });
