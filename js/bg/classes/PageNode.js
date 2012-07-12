@@ -22,6 +22,7 @@ var PageNode = function(tab, overrideStatus)
     this.smartFocusParentTabId = null;
     this.initialCreation = false;
     this.restored = false;
+    this.incognito = tab.incognito || false;
 };
 
 extendClass(PageNode, PageTreeNode, {});
