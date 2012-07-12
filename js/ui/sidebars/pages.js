@@ -496,13 +496,36 @@ function onContextMenuItemClearHighlight($rows) {
 
 function onContextMenuItemMoveToNewFolder($rows) {
 
-    var $branchesChildren = $rows.find('.ftRowNode').not($rows);
+    var $branchesChildren = $rows.not('.ftCollapsed').find('.ftRowNode').not($rows);
 
-    if ($branchesChildren.length > 0 && confirm('Move entire selected branches into new folder?\nPress Cancel to move just the selected rows.') ) {
+    if ($branchesChildren.length > 0 && confirm('Move entire branches of selected rows into new folder?\nPress Cancel to move just the selected rows.') ) {
         $rows = $rows.add($branchesChildren);
     }
 
-    var label = prompt(getMessage('prompt_setNewFolderName'), getMessage('text_NewFolder'));
+    var newFolderLabel;
+
+    // Guess at a new folder label if a majority of the pages have the same domain excluding subdomain and TLD
+    var domains = $rows.map(function(i, e) {
+        var $e = $(e);
+        var url = $e.attr('url');
+        if (url) {
+            try {
+                return splitUrl(url).domain.split('.')[0];
+            }
+            catch(ex) {
+                return undefined;
+            }
+        }
+    });
+    var guess = mostFrequent(domains);
+    if (guess.count >= domains.length / 2 && guess.val) {
+        newFolderLabel = guess.val;
+    }
+    else {
+        newFolderLabel = getMessage('text_NewFolder');
+    }
+
+    var label = prompt(getMessage('prompt_setNewFolderName'), newFolderLabel);
 
     if (!label) {
         // user cancelled or entered no label
