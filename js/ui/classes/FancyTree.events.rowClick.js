@@ -166,6 +166,10 @@ FancyTree.prototype.rowButtonClickHandler = function(evt) {
         return;
     }
 
+    if (treeObj.multiSelection.length > 0) {
+        treeObj.clearMultiSelection();
+    }
+
     $('#ftSimpleTip').hide();
     evt.data.row = $(this).closest('.ftRowNode');
     evt.data.onClick(evt);
