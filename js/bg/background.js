@@ -98,7 +98,8 @@ function createSidebarOnStartup() {
 function savePageTreeToLocalStorage() {
     if (tree.lastModified != tree.lastSaved) {
         log('saving tree to local storage');
-        settings.set('pageTree', tree.tree);
+        var saveTree = tree.tree.filter(function(e) { return !e.incognito; });
+        settings.set('pageTree', saveTree);
         tree.lastSaved = tree.lastModified;
     }
 }
@@ -280,7 +281,7 @@ function populatePages()
 }
 
 function findTabParents(tabs) {
-    console.log('entering findTabParents', tabs.length);
+    log('entering findTabParents', tabs.length);
     var tabsToRequery = [];
     for (var i in tabs) {
         var tab = tabs[i];
