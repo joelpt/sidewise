@@ -375,6 +375,20 @@ function first(array, matchFn) {
     }
 }
 
+function mostFrequent(arr) {
+    var uniqs = {};
+
+    for(var i = 0; i < arr.length; i++) {
+        uniqs[arr[i]] = (uniqs[arr[i]] || 0) + 1;
+    }
+
+    var max = { val: arr[0], count: 1 };
+    for(var u in uniqs) {
+        if(max.count < uniqs[u]) { max = { val: u, count: uniqs[u] }; }
+    }
+
+    return max;
+}
 
 ///////////////////////////////////////////////////////////
 // Numeric related
@@ -399,70 +413,3 @@ function generateGuid() {
 function guidS4() {
     return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
 }
-
-
-///////////////////////////////////////////////////////////
-// Namespaces (nonfunctioning as of yet)
-///////////////////////////////////////////////////////////
-
-// THIS PATTERN IS RECOGNIZED BY SCI
-var namespackle = function() {
-    var yang = function() {};
-    this.zang = function() {};
-
-};
-namespackle();
-
-namespackle.twang = function() {
-    return '';
-};
-
-namespackle.prototype = {
-    zing: function() {}
-};
-
-
-// failcakes in SCI
-
-// (function( coffeeMachine, $, undefined ) {
-//     //Private Property
-//     var coffeeGood = true;
-
-//     //Public Property
-//     coffeeMachine.bean = "Yirgacheffe";
-
-//     //Public Method
-//     coffeeMachine.brew = function() {
-//         clean();
-//         console.log( "Freshly brewed " + coffeeMachine.bean + " ready and waiting");
-//     }
-
-//     //Private Method
-//     function clean() {
-//         console.log( "Cleaning the coffee machine" );
-//     }
-// }( window.coffeeMachine = window.coffeeMachine || {}, jQuery ));
-
-
-
-
-// works in SCI, has private and publics
-//
-var DED = function() {
-    var private_var;
-    function private_method() {
-        console.log('hello world');
-        // do stuff here
-    }
-    return {
-        method_1 : function(n) {
-            // private method does not resolve here in SCI
-            // private_method();
-            // do stuff here
-        },
-        method_2 : function() {
-            // do stuff here
-        }
-    };
-}();
-
