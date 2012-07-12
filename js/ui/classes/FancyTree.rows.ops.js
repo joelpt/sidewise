@@ -8,26 +8,26 @@ FancyTree.prototype.getRow = function(idOrElem) {
         return idOrElem;
     }
 
-    var elem = $('#' + idOrElem);
-    // var elem = this.root.find('#' + idOrElem); // this method is ~5x slower
+    var $row = $('#' + idOrElem);
+    // var elem = this.root.find('#' + idOrElem); // this method is ~5x slower but 'safer'
 
-    if (elem.length == 0) {
+    if ($row.length == 0) {
         throw new Error('Could not find element with id ' + idOrElem);
     }
 
-    return elem;
+    return $row;
 };
 
-FancyTree.prototype.addRow = function(elem, parentId) {
+FancyTree.prototype.addRow = function($row, parentId) {
     if (!parentId) {
-        // When parentId is missing just add elem to the root level children
-        this.root.children('.ftChildren').append(elem);
+        // When parentId is missing just add $row to the root level children
+        this.root.children('.ftChildren').append($row);
         return;
     }
-    var parent = this.getRow(parentId);
-    parent.children('.ftChildren').append(elem);
-    this.updateRowExpander(parent);
-    this.formatLineageTitles(parent);
+    var $parent = this.getRow(parentId);
+    $parent.children('.ftChildren').append($row);
+    this.updateRowExpander($parent);
+    this.formatLineageTitles($parent);
 };
 
 FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfiguration) {
@@ -111,92 +111,91 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
 };
 
 FancyTree.prototype.moveRowRel = function(id, relation, toId, skipRowReconfiguration) {
-    var row = this.getRow(id);
-    if (!row) {
+    var $row = this.getRow(id);
+    if (!$row) {
         throw new Error('Could not find row to move with id ' + JSON.stringify(id));
     }
-    var to = this.getRow(toId);
-    if (!to) {
+    var $to = this.getRow(toId);
+    if (!$to) {
         throw new Error('Could find row to move to with toId ' + JSON.stringify(toId));
     }
 
-    var oldParent = this.getParentRowNode(row.parent());
-    var oldAncestors = row.parents('.ftRowNode');
+    var $oldParent = this.getParentRowNode($row.parent());
+    var $oldAncestors = $row.parents('.ftRowNode');
 
-    this.removeRow(row, false, true); // prevents possible DOM_HIERARCHY exceptions
+    this.removeRow($row, false, true); // prevents possible DOM_HIERARCHY exceptions
 
     if (relation == 'before') {
-        to.before(row);
+        $to.before($row);
     }
     else if (relation == 'after') {
-        to.after(row);
+        $to.after($row);
     }
     else if (relation == 'prepend') {
-        to.children('.ftChildren').prepend(row);
+        $to.children('.ftChildren').prepend($row);
     }
     else if (relation == 'append') {
-        to.children('.ftChildren').append(row);
+        $to.children('.ftChildren').append($row);
     }
     else {
         throw new Error('Unrecognized relation ' + relation);
     }
 
-    var newParent = this.getParentRowNode(row.parent());
-    var newBeforeSibling = row.prev();
-    var newAfterSibling = row.next();
+    var $newParent = this.getParentRowNode($row.parent());
+    var $newBeforeSibling = $row.prev();
+    var $newAfterSibling = $row.next();
 
-    if (newBeforeSibling.length == 0) {
-        newBeforeSibling = undefined;
+    if ($newBeforeSibling.length == 0) {
+        $newBeforeSibling = undefined;
     }
 
-    if (newAfterSibling.length == 0) {
-        newAfterSibling = undefined;
+    if ($newAfterSibling.length == 0) {
+        $newAfterSibling = undefined;
     }
 
     if (!skipRowReconfiguration) {
-        this.setRowButtonTooltips(row);
-        this.setDraggableDroppable(row);
+        this.setRowButtonTooltips($row);
+        this.setDraggableDroppable($row);
 
-        this.updateRowExpander(oldParent);
-        this.updateRowExpander(newParent);
-        this.updateRowExpander(row);
+        this.updateRowExpander($oldParent);
+        this.updateRowExpander($newParent);
+        this.updateRowExpander($row);
 
-        this.formatLineageTitles(oldParent);
-        this.formatLineageTitles(newParent);
+        this.formatLineageTitles($oldParent);
+        this.formatLineageTitles($newParent);
     }
 
     return {
-        $row: row,
+        $row: $row,
         relation: relation,
-        $to: to,
-        $newParent: newParent,
-        $newBeforeSibling: newBeforeSibling,
-        $newAfterSibling: newAfterSibling,
-        $oldAncestors: oldAncestors,
+        $to: $to,
+        $newParent: $newParent,
+        $newBeforeSibling: $newBeforeSibling,
+        $newAfterSibling: $newAfterSibling,
+        $oldAncestors: $oldAncestors,
         keepChildren: false,
         staticMove: false
     };
-    // return { row: row, parent: newParent, beforeSibling: sibling, keepChildren: keepChildren, oldAncestors: oldAncestors };
 };
 
 FancyTree.prototype.updateRow = function(id, details) {
-    var row = this.getRow(id);
-    var innerRow = this.getInnerRow(row);
+    var $row = this.getRow(id);
+    var $innerRow = this.getInnerRow($row);
 
-    row.attr(details);
+    $row.attr(details);
 
     if (details.icon) {
-        innerRow.children('.ftRowIcon').attr('src', details.icon);
+        $innerRow.children('.ftRowIcon').attr('src', details.icon);
     }
 
-    this.getRowTypeParams(row).onFormatTitle(row);
+    this.getRowTypeParams($row).onFormatTitle($row);
 };
 
 FancyTree.prototype.focusRow = function(idOrElem) {
-    var elem = this.getRow(idOrElem);
-    var id = elem.attr('id');
+    var $row = this.getRow(idOrElem);
+    var id = $row.attr('id');
 
-    if (this.focusedRow == elem) {
+    if (this.focusedRow == $row) {
         return;
     }
 
@@ -212,11 +211,11 @@ FancyTree.prototype.focusRow = function(idOrElem) {
     this.lastMultiSelectedToId = id;
     this.lastMultiSelectedFromId = id;
 
-    this.focusedRow = elem;
-    elem.addClass('ftFocused');
+    this.focusedRow = $row;
+    $row.addClass('ftFocused');
 
-    var innerRow = this.getInnerRow(elem);
-    var scrollDistance = this.scrollDistanceRequired(innerRow, this.root, this.scrollTargetElem);
+    var $innerRow = this.getInnerRow($row);
+    var scrollDistance = this.scrollDistanceRequired($innerRow, this.root, this.scrollTargetElem);
     if (scrollDistance) {
         var scrollParam = (scrollDistance > 0 ? '+' : '-') + '=' + (Math.abs(scrollDistance) + 2);
         this.scrollTargetElem.scrollTo(scrollParam, { duration: 200 });
@@ -225,26 +224,26 @@ FancyTree.prototype.focusRow = function(idOrElem) {
 
 FancyTree.prototype.expandRow = function(id) {
     var self = this;
-    var row = this.getRow(id);
-    var expanded = !(row.hasClass('ftCollapsed'));
+    var $row = this.getRow(id);
+    var expanded = !($row.hasClass('ftCollapsed'));
 
     if (expanded) {
         return false;
     }
 
-    var children = this.getChildrenContainer(row);
-    var rowTypeParams = this.getRowTypeParams(row);
+    var $children = this.getChildrenContainer($row);
+    var rowTypeParams = this.getRowTypeParams($row);
     var onExpanderClick = rowTypeParams.onExpanderClick;
     var onFormatTitle = rowTypeParams.onFormatTitle;
 
-    children.slideDown(100, function() {
-        row.removeClass('ftCollapsed');
+    $children.slideDown(100, function() {
+        $row.removeClass('ftCollapsed');
 
         if (onExpanderClick) {
-            var evt = { data: { treeObj: self, row: row, expanded: !expanded } };
+            var evt = { data: { treeObj: self, row: $row, expanded: !expanded } };
             onExpanderClick(evt);
         }
-        onFormatTitle(row);
+        onFormatTitle($row);
     });
 
     return true;
@@ -252,26 +251,26 @@ FancyTree.prototype.expandRow = function(id) {
 
 FancyTree.prototype.collapseRow = function(id) {
     var self = this;
-    var row = this.getRow(id);
-    var expanded = !(row.hasClass('ftCollapsed'));
+    var $row = this.getRow(id);
+    var expanded = !($row.hasClass('ftCollapsed'));
 
     if (!expanded) {
         return false;
     }
 
-    var children = this.getChildrenContainer(row);
-    var rowTypeParams = this.getRowTypeParams(row);
+    var $children = this.getChildrenContainer($row);
+    var rowTypeParams = this.getRowTypeParams($row);
     var onExpanderClick = rowTypeParams.onExpanderClick;
     var onFormatTitle = rowTypeParams.onFormatTitle;
 
-    children.slideUp(100, function() {
-        row.addClass('ftCollapsed');
+    $children.slideUp(100, function() {
+        $row.addClass('ftCollapsed');
 
         if (onExpanderClick) {
-            var evt = { data: { treeObj: self, row: row, expanded: !expanded } };
+            var evt = { data: { treeObj: self, row: $row, expanded: !expanded } };
             onExpanderClick(evt);
         }
-        onFormatTitle(row);
+        onFormatTitle($row);
     });
 
     return true;
@@ -284,42 +283,42 @@ FancyTree.prototype.collapseRow = function(id) {
   */
 FancyTree.prototype.toggleExpandRow = function(id) {
     var self = this;
-    var row = this.getRow(id);
-    var children = this.getChildrenContainer(row);
-    var rowTypeParams = this.getRowTypeParams(row);
+    var $row = this.getRow(id);
+    var $children = this.getChildrenContainer($row);
+    var rowTypeParams = this.getRowTypeParams($row);
     var onExpanderClick = rowTypeParams.onExpanderClick;
     var onFormatTitle = rowTypeParams.onFormatTitle;
 
-    var expanded = !(row.hasClass('ftCollapsed'));
-    children.slideToggle(100, function() {
+    var expanded = !($row.hasClass('ftCollapsed'));
+    $children.slideToggle(100, function() {
         if (expanded) {
-            row.addClass('ftCollapsed');
+            $row.addClass('ftCollapsed');
         }
         else {
-            row.removeClass('ftCollapsed');
+            $row.removeClass('ftCollapsed');
         }
 
         if (onExpanderClick) {
-            var evt = { data: { treeObj: self, row: row, expanded: !expanded } };
+            var evt = { data: { treeObj: self, row: $row, expanded: !expanded } };
             onExpanderClick(evt);
         }
-        onFormatTitle(row);
+        onFormatTitle($row);
     });
 
     return expanded;
 };
 
 FancyTree.prototype.mergeRows = function(fromId, toId) {
-    var from = this.getRow(fromId);
-    var to = this.getRow(toId);
+    var $from = this.getRow(fromId);
+    var $to = this.getRow(toId);
 
     // Append from's children to the end of to's children
-    to.append(this.getChildrenContainer(from).children());
+    $to.append(this.getChildrenContainer($from).children());
 
     // Destroy from node
-    from.remove();
+    $from.remove();
 
     // Update stuffs
-    this.updateRowExpander(to);
-    this.formatLineageTitles(to);
+    this.updateRowExpander($to);
+    this.formatLineageTitles($to);
 };
