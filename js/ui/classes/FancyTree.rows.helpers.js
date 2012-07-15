@@ -6,13 +6,16 @@
 FancyTree.prototype.setRowButtonTooltips = function(row) {
     var rowType = row.attr('rowtype');
     var buttons = this.getButtons(row);
+    var self = this;
 
     buttons.each(function(i, e) {
         var $e = $(e);
+        if ($e.data('tooltip')) {
+            return;
+        }
         $e.attr('title', $e.attr('tooltip'));
+        $e.tooltip(self.rowButtonTooltipParams);
     });
-
-    buttons.tooltip(this.rowButtonTooltipParams);
 };
 
 FancyTree.prototype.updateRowExpander = function(row) {
