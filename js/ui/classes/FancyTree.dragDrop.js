@@ -99,10 +99,17 @@ FancyTree.prototype.getGenericDroppableParams = function() {
 FancyTree.prototype.resetDragDropState = function() {
     this.dragging = false;
     this.canAcceptDropTo = false;
+    this.draggingRow = null;
     this.draggingOverRow = null;
     this.draggingTo = null;
+    this.dragToreOffParent = false;
+    this.dragSelectedCollapsedRow = false;
+
     $('.ftDragToChild').removeClass('ftDragToChild');
     this.hideDragInsertBar();
+
+    this.draggingJustCancelled = true;
+    $('.ui-draggable-dragging').trigger('mouseup');
 };
 
 
@@ -128,7 +135,6 @@ FancyTree.prototype.draggableStart = function(evt) {
 
     var isCollapsed = target.parent().hasClass('ftCollapsed');
     var hiddenRowCount = 0;
-    var $lastAutoSelectedRow = null;
 
     if (evt.ctrlKey) {
         self.clearMultiSelection.call(self);
@@ -152,14 +158,11 @@ FancyTree.prototype.draggableStart = function(evt) {
                             return;
                         }
                         self.toggleMultiSelectionSingle.call(self, $e.attr('id'), true);
-                        $lastAutoSelectedRow = $e;
                     });
             }
 
-            if ($lastAutoSelectedRow) {
-                $lastAutoSelectedRow.parent().addClass('ftDrawAttention');
-                setTimeout(function() { $lastAutoSelectedRow.parent().removeClass('ftDrawAttention'); }, 300);
-            }
+            row.children('.ftChildren').addClass('ftDrawAttention');
+            setTimeout(function() { row.children('.ftChildren').removeClass('ftDrawAttention'); }, 250);
         }
 
         if (evt.shiftKey) {
