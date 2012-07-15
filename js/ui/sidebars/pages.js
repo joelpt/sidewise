@@ -578,7 +578,17 @@ function handleFolderRowAction(action, evt) {
 }
 
 function onFolderRowCloseButton(evt) {
-    bg.tree.removeNode(evt.data.row.attr('id'));
+    var $rows = evt.data.row;
+    var $children = evt.data.row.children('.ftChildren').find('.ftRowNode');
+    var childCount = $children.length;
+
+    if (childCount > 0 && confirm('Also close ' + childCount + ' child row(s)?\nPress Cancel to remove the parent folder only.')) {
+        $rows = $rows.add($children);
+    }
+
+    $rows.each(function(i, e) {
+        closeRow($(e));
+    });
 }
 
 function onFolderRowFormatTitle(row, itemTextElem) {
@@ -758,7 +768,21 @@ function onPageRowIconError(evt) {
 }
 
 function onPageRowCloseButton(evt) {
-    closeRow(evt.data.row);
+    var $row = evt.data.row;
+    var $rows = $row;
+
+    if ($row.hasClass('ftCollapsed')) {
+        var $children = $row.children('.ftChildren').find('.ftRowNode');
+        var childCount = $children.length;
+
+        if (childCount > 0 && confirm('Also close ' + childCount + ' hidden child row(s)?\nPress Cancel to remove the parent row only.')) {
+            $rows = $rows.add($children);
+        }
+    }
+
+    $rows.each(function(i, e) {
+        closeRow($(e));
+    });
 }
 
 function onPageRowHibernateButton(evt) {
