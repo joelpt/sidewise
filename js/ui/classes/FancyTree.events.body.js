@@ -52,18 +52,8 @@ FancyTree.prototype.onDocumentKeyDown = function(evt) {
         }
 
         if (treeObj.dragging) {
-            // debugger;
-            // console.log(document.elementFromPoint(evt.clientX, evt.clientY));
-            // TODO move this stuff into a new func FT.resetDragState();
-            treeObj.dragToreOffParent = false;
-            treeObj.canAcceptDropTo = false;
-            treeObj.draggingRow = null;
-            treeObj.draggingOverRow = null;
-            treeObj.dragging = false;
-            treeObj.draggingJustCancelled = true;
             treeObj.ignoreNextRowMouseUpEvent = true;
-            $('.ui-draggable-dragging')
-                .trigger('mouseup');
+            treeObj.resetDragDropState();
         }
         return false;
     }
