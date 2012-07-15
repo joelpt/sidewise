@@ -157,7 +157,6 @@ section#main:not(.debugEnabled) {
 }
 
 .ftRowNode[rowtype=page].closing > .ftItemRow {
-    /*text-decoration: line-through;*/
     display: none;
 }
 
