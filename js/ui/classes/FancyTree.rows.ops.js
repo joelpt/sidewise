@@ -201,6 +201,7 @@ FancyTree.prototype.focusRow = function(idOrElem) {
 
     if (this.focusedRow) {
         this.focusedRow.removeClass('ftFocused');
+        this.root.find('.ftChildFocused').removeClass('ftChildFocused');
     }
 
     if (this.multiSelection.length > 0) {
@@ -212,6 +213,7 @@ FancyTree.prototype.focusRow = function(idOrElem) {
 
     this.focusedRow = $row;
     $row.addClass('ftFocused');
+    $row.parents('.ftRowNode').addClass('ftChildFocused');
 
     var $innerRow = this.getInnerRow($row);
     var scrollDistance = this.scrollDistanceRequired($innerRow, this.root, this.scrollTargetElem);

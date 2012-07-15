@@ -235,6 +235,9 @@
     border: 1px dashed blue;
 }
 
+.ftCollapsed.ftChildFocused > .ftItemRow > .ftItemRowContent {
+    border: 1px dashed rgb(125, 162, 206);
+}
 
 
 /* context menus */
