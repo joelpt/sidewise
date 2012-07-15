@@ -175,6 +175,5 @@ FancyTree.prototype.rowButtonClickHandler = function(evt) {
     evt.data.onClick(evt);
 
     treeObj.ignoreNextRowMouseUpEvent = true;
-    // evt.stopPropagation();
-    // return false;
+    treeObj.resetDragDropState();
 };
