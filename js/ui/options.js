@@ -240,7 +240,7 @@ function showErrorMessage(msg) {
 function detectMonitors() {
     bg.monitorInfo.retrieveMonitorMetrics(function(monitors, maxOffset) {
         bg.monitorInfo.saveToSettings();
-        updateStateFromSettings();
+        settings.updateStateFromSettings();
         setMonitorCountInfo(monitors.length, true);
         showStatusMessage(getMessage('prompt_detectMonitors_complete'));
     });
