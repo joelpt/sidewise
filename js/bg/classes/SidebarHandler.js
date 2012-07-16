@@ -82,11 +82,14 @@ SidebarHandler.prototype = {
                 height: win.height
             };
             positionWindow(handler.dockWindowId, handler.currentDockWindowMetrics);
-            var winSpec = { url: 'sidebar.html', type: 'popup',
+            var winSpec = {
+                url: 'sidebar.html',
+                type: 'popup',
                 left: metrics.sidebarLeft,
                 top: win.top,
                 width: handler.targetWidth,
-                height: win.height };
+                height: win.height
+            };
             log(winSpec);
             chrome.windows.create(winSpec, function(win) {
                 handler.onCreatedSidebarWindow.call(handler, win);
