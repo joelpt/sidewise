@@ -150,10 +150,17 @@ function onWindowFocusChanged(windowId)
     // Did Chrome just get focus back from another app, and sidebar is present, and keepSidebarOnTop is true?
     if (!wasFocused && sidebarHandler.sidebarExists() && settings.get('keepSidebarOnTop', false)) {
         // Chrome was not focused and just became focused; do sidebar+dockwin force-on-top handling
-        if (windowId == sidebarHandler.windowId && sidebarHandler.dockState != 'undocked') {
+        if (windowId == sidebarHandler.windowId) {
+            var raiseWindowId;
+            if (sidebarHandler.dockState == 'undocked') {
+                raiseWindowId = focusTracker.getFocused();
+            }
+            else {
+                raiseWindowId = sidebarHandler.dockWindowId;
+            }
             // Sidebar has been focused; raise the dock window too then refocus sidebar
             log('Sidebar has been focused; raising its dock window alongside it');
-            chrome.windows.update(sidebarHandler.dockWindowId, { focused: true }, function() {
+            chrome.windows.update(raiseWindowId, { focused: true }, function() {
                 chrome.windows.update(sidebarHandler.windowId, { focused: true });
             });
             return;
