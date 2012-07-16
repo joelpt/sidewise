@@ -28,8 +28,6 @@
 	"permissions": [
         "tabs",
         "webNavigation",
-        "webRequest",
-        "webRequestBlocking",
         "*://*/*",
         "chrome://favicon/",
         "https://ssl.google-analytics.com/ga.js"
