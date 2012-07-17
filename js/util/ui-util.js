@@ -14,12 +14,7 @@ function isScrolledIntoView(elem)
 }
 
 function copyTextToClipboard(text) {
-    var copyFrom = $('<textarea/>', {
-        style: 'height: 0px; width: 0px; position: fixed; left: -10000px; top: -10000px;',
-        id: 'copyFrom',
-        cols: 60,
-        rows: 5
-    });
+    var copyFrom = $('<textarea/>');
     copyFrom.text(text);
     $('body').append(copyFrom);
     copyFrom.select();
