@@ -34,7 +34,7 @@
     "prompt_filterActiveText": { "message": "Matches shown, click here to reset"},
     "prompt_detectMonitors": { "message": "Sidewise will detect your monitor(s) now." },
     "prompt_detectMonitors_complete": { "message": "Monitor detection complete." },
-    "prompt_detectMonitors_mac": { "message": "Sidewise will detect your monitor details now. // Unfortunately, Sidewise currently cannot detect multiple monitors properly on Mac OSX. Sidewise will assume you only have a single monitor." },
+    "prompt_detectMonitors_beta": { "message": "A word of warning to Mac/Linux users: // Mac/Linux support in Sidewise is currently rather flaky. Due to bugs in Chrome, Sidewise has a hard time working well on these OS's (especially Linux). // These issues will be addressed in a future release or when the Chrome team fixes the underlying bugs. // For best results on these OS's it is currently recommended that you set the 'dock sidebar to this side of the window' option to 'undocked' in Sidewise's options page." },
     "prompt_closeWindow": {
         "message": "Close window with $COUNT$ $PAGES$?",
         "placeholders": {

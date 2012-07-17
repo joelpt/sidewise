@@ -18,22 +18,16 @@ MonitorInfo.prototype = {
         var os = window.navigator.platform;
         var self = this;
 
-        if (os == 'MacPPC' || os == 'MacIntel') {
-            alert(getMessage('prompt_DetectMonitors_Mac'));
+        if (os.indexOf('Win') != 0) {
+            alert(getMessage('prompt_DetectMonitors_beta'));
 
-             // Detect single monitor
-             log('Detecting single monitor');
-             var monitor = [this.getPrimaryMonitorMetrics()];
-             this.detectingMonitors = true;
-             this.detectMaximizedOffset(true, function(maximizedOffset) {
-                log('detection window removed, in callback now');
-                self.detectingMonitors = false;
-                // alert(getMessage('prompt_DetectMonitors_complete'));
-                callback(monitor, maximizedOffset);
-             });
-
-             return;
-         }
+            // Make assumptions for Mac/Linux boxes
+            log('Detecting single monitor');
+            this.monitors = [this.getPrimaryMonitorMetrics()];
+            this.maximizedOffset = 0;
+            callback(this.monitors, this.maximizedOffset);
+            return;
+        }
 
         alert(getMessage('prompt_DetectMonitors'));
 
