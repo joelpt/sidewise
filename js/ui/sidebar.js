@@ -10,7 +10,6 @@ var sidebars = [
     // { id: 'twitter', url: 'sidebars/external-site.html#http://mobile.twitter.com', label: 'Twitter', icon: 'http://twitter.com/favicon.ico' },
 ];
 
-var initialSidebar = 'pages';
 var manager;
 var bg;
 var settings;
@@ -28,6 +27,7 @@ function onReady() {
     manager.addSidebarPanes(sidebars);
 
     // Set initial sidebar position
+    var initialSidebar = settings.get('lastSidebarPaneId', sidebars[0].id);
     manager.showSidebarPane(initialSidebar);
 
     // Defeat Chrome's possible attempt to set its own scroll position when sidebar is refreshed

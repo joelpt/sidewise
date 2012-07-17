@@ -87,6 +87,7 @@ SidebarNavManager.prototype = {
 
         if (oldSidebarId != this.currentSidebarId) {
             reportEvent('sidebar', 'switch_pane', id, undefined, true);
+            settings.set('lastSidebarPaneId', id);
         }
     },
 
