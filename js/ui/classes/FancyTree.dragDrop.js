@@ -65,14 +65,12 @@ FancyTree.prototype.getDroppableParams = function() {
         tolerance: 'pointer',
         hoverClass: 'ftDragOver',
         accept: function(e) {
-            // //DEBUG console.log('accept:', self.canAcceptDropTo);
             return self.canAcceptDropTo;
         },
         drop: function(evt, ui) {
+            // dropping will be handled by a containing .droppable element;
+            // see .getGenericDroppableParams.drop
             return;
-            self.onItemRowDrop(evt, ui);
-            evt.stopPropagation();
-            return false;
         }
     };
 };
