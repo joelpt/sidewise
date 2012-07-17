@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
 	"name": "__MSG_extName__",
-	"version": "2012.7.16.0",
+	"version": "2012.7.17.0",
 	"description": "__MSG_extDescription__",
 	"icons": {
         "16": "images/sidewise_icon_16.png",
@@ -30,7 +30,8 @@
         "webNavigation",
         "*://*/*",
         "chrome://favicon/",
-        "https://ssl.google-analytics.com/ga.js"
+        "https://ssl.google-analytics.com/ga.js",
+        "clipboardWrite"
     ],
     "web_accessible_resources": [
         "/sidebars/pages.html",
