@@ -389,10 +389,10 @@ function onContextMenuShow($rows) {
     var unhighlightedCount = $rows.length - highlightedCount;
 
     if (hibernatedCount)
-        items.push({ $rows: $rows, id: 'awakenPage', icon: '/images/wake.png', label: 'Wake tab', callback: onContextMenuItemWakePages });
+        items.push({ $rows: $pages, id: 'awakenPage', icon: '/images/wake.png', label: 'Wake tab', callback: onContextMenuItemWakePages });
 
     if (awakeCount)
-        items.push({ $rows: $rows, id: 'hibernatePage', icon: '/images/hibernate.png', label: 'Hibernate tab', callback: onContextMenuItemHibernatePages });
+        items.push({ $rows: $pages, id: 'hibernatePage', icon: '/images/hibernate.png', label: 'Hibernate tab', callback: onContextMenuItemHibernatePages });
 
     if (hibernatedBranchCount && hibernatedBranchCount != hibernatedCount)
         items.push({ $rows: $branchesPages, id: 'awakenBranch', icon: '/images/wake_branch.png', label: 'Wake branch', callback: onContextMenuItemWakePages });
