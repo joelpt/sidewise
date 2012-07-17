@@ -408,7 +408,10 @@ function onContextMenuShow($rows) {
        items.push({ $rows: $rows, id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
 
     if (highlightedCount)
-    items.push({ $rows: $rows, id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
+        items.push({ $rows: $rows, id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
+
+    if ($pages.length > 0)
+        items.push({ $rows: $rows, id: 'copyUrl', icon: '/images/copy_url.png', label: 'Copy URL', callback: onContextMenuItemCopyURL, preserveSelectionAfter: true });
 
     items.push({ separator: true });
 
@@ -490,6 +493,20 @@ function onContextMenuItemSetHighlight($rows) {
 
 function onContextMenuItemClearHighlight($rows) {
     $rows.each(function(i, e) { setRowHighlight($(e), -1); });
+}
+
+function onContextMenuItemCopyURL($rows) {
+    var urls = $rows.map(function(i, e) {
+        var $e = $(e);
+        if ($e.attr('rowtype') != 'page') {
+            return;
+        }
+        return $(e).attr('url');
+    });
+
+    copyTextToClipboard(urls.toArray().join('\n') + '\n');
+
+    alert(urls.length + ' URL(s) copied to clipboard.');
 }
 
 function onContextMenuItemMoveToNewFolder($rows) {
