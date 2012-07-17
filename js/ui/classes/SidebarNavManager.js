@@ -120,7 +120,7 @@ SidebarNavManager.prototype = {
     },
 
     _createSidebarButton: function(id, label, icon) {
-        var elem = $('<li/>', { class: 'sidebarButton', title: label, buttonid: id })
+        var elem = $('<li/>', { 'class': 'sidebarButton', 'title': label, 'buttonid': id })
             .append(
                 $('<div/>').append(
                     $('<img/>', { src: icon, draggable: false })
