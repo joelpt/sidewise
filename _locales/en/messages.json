@@ -164,5 +164,13 @@
 
     "option_closeButton": { "message": "Close settings" },
     "option_resetButton": { "message": "Reset to defaults" },
-    "optionsSaveNotNeeded": { "message": "Note: Settings are automatically saved as you change them." }
+    "optionsSaveNotNeeded": { "message": "Note: Settings are automatically saved as you change them." },
+
+    "donateLink_1": { "message": "Think Sidewise is awesome?" },
+    "donateLink_2": { "message": "Did you know this is my full-time job?" },
+    "donateLink_3": { "message": "Support Sidewise with a donation!" },
+    "donateLink_4": { "message": "Donations = Features. Please consider a donation!" },
+    "donateLink_5": { "message": "Sidewise is donation-powered." },
+
+    "donate_back": { "message": "&lt;- Back to options" }
 }

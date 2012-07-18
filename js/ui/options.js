@@ -1,14 +1,38 @@
+///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
+var CARD_SLIDE_DURATION_MS = 450;
+var DONATION_LINK_VARIETIES = 5;
+var DONATION_PAGE_VARIETIES = 5;
+
+///////////////////////////////////////////////////////////
+// Globals
+///////////////////////////////////////////////////////////
+
 var bg;
 var settings;
+var currentCardId;
+var donationLinkNumber;
+var donationPageNumber;
+
+///////////////////////////////////////////////////////////
+// Initialization
+///////////////////////////////////////////////////////////
 
 $(document).ready(function() {
     bg = chrome.extension.getBackgroundPage();
     settings = bg.settings;
 
+    reportEvent('options', 'viewed_options');
     setI18NText();
     transformInputElements();
+    initDonateElements();
     loadSettings();
     setCloudPlayState();
+    $.fx.off = !settings.get('animationEnabled');
+    initGooglePlusElement();
+    showCard('optionsCard');
 
     $('#version').text(getMessage('text_Version') + ' ' + getVersion());
     setMonitorCountInfo(settings.get('monitorMetrics').length, false);
@@ -19,18 +43,8 @@ $(document).ready(function() {
         .on('click', '#closeButton', onCloseButtonClick)
         .on('click', '#resetButton', resetAllSettings)
         .on('click', '#detectMonitorsButton', detectMonitors)
-        .on('click', 'a', function(evt) {
-            var $this = $(this);
-            if ($this.attr('href').match(/^chrome:\/\/.*settings/)) {
-                chrome.tabs.create({ url: 'chrome://settings', active: true });
-                return;
-            }
-            if ($this.attr('href') == '#') {
-                return true;
-            }
-            $this.attr('target', '_blank');
-            // alert(evt);
-        });
+        .on('click', 'a', onLinkClick)
+        .on('click', '.slideCard', onSlideCardClick);
 
     if (settings.get('alwaysShowAdvancedOptions')) {
         showAdvancedOptions(false);
@@ -42,10 +56,33 @@ $(document).ready(function() {
     }
 
     setTimeout(function() {
-        // delay to avoid F5 (reload) spuriously triggering this
+        // delay to avoid F5 (reload) spuriously triggering keyup
         $(document).on('keyup', 'input[type=text]', onSettingModified);
     }, 250);
+
 });
+
+function initDonateElements() {
+    var whichLink = Math.floor(1 + Math.random() * DONATION_LINK_VARIETIES);
+    var whichPage = Math.floor(1 + Math.random() * DONATION_PAGE_VARIETIES);
+
+    $('#donateLink').html(getMessage('donateLink_' + whichLink));
+    $('#donatePage').attr('src', 'http://sidewise.info/pay/?which=' + whichPage);
+
+    donationLinkNumber = whichLink;
+    donationPageNumber = whichPage;
+
+    reportEvent('donate', 'donate_link_shown', null, donationLinkNumber, true);
+    reportEvent('donate', 'donate_page_chosen', null, donationPageNumber, true);
+}
+
+function initGooglePlusElement() {
+    var po = document.createElement('script');
+    po.type = 'text/javascript';
+    po.async = true;
+    po.src = 'https://apis.google.com/js/plusone.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+}
 
 function transformInputElements() {
     var elems = $('input, select');
@@ -111,6 +148,107 @@ function transformInputElements() {
         $e.replaceWith(rep);
     });
 }
+
+function setCloudPlayState() {
+    $('#clouds > div').css('-webkit-animation-play-state', settings.get('animationEnabled') ? 'running' : 'paused');
+}
+
+
+///////////////////////////////////////////////////////////
+// Event handlers
+///////////////////////////////////////////////////////////
+
+function onSettingModified(evt) {
+    var target = evt.target;
+    var $target = $(target);
+    if (saveOneSetting(target)) {
+        $target.removeClass('invalid');
+        showStatusMessage(getMessage('optionsSuccessSavingSetting'));
+        settings.updateStateFromSettings();
+        setCloudPlayState();
+        $.fx.off = !settings.get('animationEnabled');
+        return;
+    }
+
+    $target.addClass('invalid');
+    showErrorMessage(getMessage('optionsErrorSavingSetting'));
+}
+
+function onCloseButtonClick() {
+    window.close();
+}
+
+function onSlideCardClick(evt) {
+    var newCardId = $(this).attr('to');
+    slideCard(newCardId);
+}
+
+function onLinkClick(evt) {
+    var $this = $(this);
+    if ($this.attr('href').match(/^chrome:\/\/.*settings/)) {
+        chrome.tabs.create({ url: 'chrome://settings', active: true });
+        return;
+    }
+    if ($this.attr('href') == '#') {
+        return true;
+    }
+    $this.attr('target', '_blank');
+    // alert(evt);
+}
+
+
+///////////////////////////////////////////////////////////
+// Card display
+///////////////////////////////////////////////////////////
+
+function showCard(id) {
+    $('#' + id).show();
+    currentCardId = id;
+}
+
+function slideCard(newCardId) {
+    var docWidth = $(document).width();
+
+    var currentCard = $('#' + currentCardId);
+    var currentCardLeft = currentCard.position().left;
+    var currentCardIndex = currentCard.index();
+
+    var newCard = $('#' + newCardId);
+    var newCardIndex = newCard.index();
+
+    var cardWidth = currentCard.width();
+    var padding = 100;
+
+    // ensure left property is actually set on current card prior to sliding it
+    currentCard.css('left', currentCardLeft);
+
+    if (currentCardIndex < newCardIndex) {
+        // current card is to the left of the new card, so slide cards to the left
+        currentCard.animate({ left: -cardWidth - padding }, CARD_SLIDE_DURATION_MS, function() {
+            currentCard.hide();
+        });
+
+        newCard.css('left', docWidth + padding);
+        newCard.show();
+        newCard.animate({ left: currentCardLeft }, CARD_SLIDE_DURATION_MS);
+    }
+    else {
+        // current card is to the right of the new card, so slide cards to the right
+        currentCard.animate({ left: docWidth + padding }, CARD_SLIDE_DURATION_MS, function() {
+            currentCard.hide();
+        });
+
+        newCard.css('left', -cardWidth - padding);
+        newCard.show();
+        newCard.animate({ left: currentCardLeft }, CARD_SLIDE_DURATION_MS);
+    }
+
+    currentCardId = newCardId;
+}
+
+///////////////////////////////////////////////////////////
+// Settings loading and saving
+///////////////////////////////////////////////////////////
 
 function loadSettings() {
     var elems = $('input, select');
@@ -187,29 +325,6 @@ function saveOneSetting(e) {
     return true;
 }
 
-function onSettingModified(evt) {
-    var target = evt.target;
-    var $target = $(target);
-    if (saveOneSetting(target)) {
-        $target.removeClass('invalid');
-        showStatusMessage(getMessage('optionsSuccessSavingSetting'));
-        settings.updateStateFromSettings();
-        setCloudPlayState();
-        return;
-    }
-
-    $target.addClass('invalid');
-    showErrorMessage(getMessage('optionsErrorSavingSetting'));
-}
-
-function setCloudPlayState() {
-    $('#clouds > div').css('-webkit-animation-play-state', settings.get('animationEnabled') ? 'running' : 'paused');
-}
-
-function onCloseButtonClick() {
-    window.close();
-}
-
 function resetAllSettings(evt) {
     if (!confirm(getMessage('prompt_confirmResetOptions'))) {
         return;
@@ -220,6 +335,11 @@ function resetAllSettings(evt) {
     settings.updateStateFromSettings();
     showStatusMessage(getMessage('optionsResetAllSettings'));
 }
+
+
+///////////////////////////////////////////////////////////
+// Status bar
+///////////////////////////////////////////////////////////
 
 function showStatusMessage(msg) {
     $('#statusBar').addClass('statusOK').removeClass('statusError')
@@ -236,6 +356,11 @@ function showErrorMessage(msg) {
     // $('#statusMessage').stop().animate({opacity:'100'});
     $('#statusMessage').text(msg).show();
 }
+
+
+///////////////////////////////////////////////////////////
+// Monitor detection
+///////////////////////////////////////////////////////////
 
 function detectMonitors() {
     bg.monitorInfo.retrieveMonitorMetrics(function(monitors, maxOffset) {
@@ -260,11 +385,21 @@ function setMonitorCountInfo(count, highlight) {
     }
 }
 
-function showAdvancedOptions(highlight) {
-    $('#advancedOptionsExpander').hide();
+
+///////////////////////////////////////////////////////////
+// Advanced options revelation
+///////////////////////////////////////////////////////////
+
+function showAdvancedOptions(revealing) {
     var $advOpts = $('.advancedOptions');
-    $advOpts.show()
-    if (highlight) {
-        $advOpts.css('background-color', 'hsl(60, 60%, 88%)');
+    if (revealing) {
+        $('#advancedOptionsExpander').slideUp();
+        $advOpts.slideDown(400, function() {
+            $advOpts.css('background-color', 'hsl(60, 60%, 88%)');
+        });
+    }
+    else {
+        $('#advancedOptionsExpander').hide();
+        $advOpts.show();
     }
 };
