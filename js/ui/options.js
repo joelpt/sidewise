@@ -44,7 +44,8 @@ $(document).ready(function() {
         .on('click', '#resetButton', resetAllSettings)
         .on('click', '#detectMonitorsButton', detectMonitors)
         .on('click', 'a', onLinkClick)
-        .on('click', '.slideCard', onSlideCardClick);
+        .on('click', '.slideCard', onSlideCardClick)
+        .on('click', '#donateLink', onDonateLinkClick);
 
     if (settings.get('alwaysShowAdvancedOptions')) {
         showAdvancedOptions(false);
@@ -61,6 +62,11 @@ $(document).ready(function() {
     }, 250);
 
 });
+
+function onDonateLinkClick(evt) {
+    reportEvent('donate', 'donate_link_clicked', null, donationLinkNumber);
+    reportEvent('donate', 'donate_page_viewed', null, donationPageNumber);
+}
 
 function initDonateElements() {
     var whichLink = Math.floor(1 + Math.random() * DONATION_LINK_VARIETIES);

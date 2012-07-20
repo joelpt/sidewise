@@ -108,8 +108,10 @@ blockquote {
     margin-left: 0.75em;
 }
 
-#donateLink {
+.slideCard, #advancedOptionsExpander {
     color: blue;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 #donateCard table {
