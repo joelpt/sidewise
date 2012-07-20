@@ -73,7 +73,7 @@ function initDonateElements() {
     var whichPage = Math.floor(1 + Math.random() * DONATION_PAGE_VARIETIES);
 
     $('#donateLink').html(getMessage('donateLink_' + whichLink));
-    $('#donatePage').attr('src', 'http://sidewise.info/pay/?which=' + whichPage);
+    $('#donatePage').attr('src', 'http://www.sidewise.info/pay/?embed=1&which=' + whichPage);
 
     donationLinkNumber = whichLink;
     donationPageNumber = whichPage;
