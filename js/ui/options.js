@@ -64,8 +64,8 @@ $(document).ready(function() {
 });
 
 function onDonateLinkClick(evt) {
-    reportEvent('donate', 'donate_link_clicked', null, donationLinkNumber);
-    reportEvent('donate', 'donate_page_viewed', null, donationPageNumber);
+    reportEvent('donate', 'donate_link_clicked', 'donate_link_' + donationLinkNumber);
+    reportEvent('donate', 'donate_page_viewed', 'donate_page_' + donationPageNumber);
 }
 
 function initDonateElements() {
@@ -73,13 +73,21 @@ function initDonateElements() {
     var whichPage = Math.floor(1 + Math.random() * DONATION_PAGE_VARIETIES);
 
     $('#donateLink').html(getMessage('donateLink_' + whichLink));
-    $('#donatePage').attr('src', 'http://www.sidewise.info/pay/?embed=1&which=' + whichPage);
+
+    var iframeUrl = 'http://www.sidewise.info/pay/?embed=1&which=' + whichPage + '&whichLink=' + whichLink;
+    $('#donatePage').attr('src', iframeUrl);
+
+    // _gaq.push(function() {
+    //   var pageTracker = _gat._getTrackerByName();
+    //   var iframe = document.getElementById('donatePage');
+    //   iframe.src = pageTracker._getLinkerUrl(iframeUrl);
+    // });
 
     donationLinkNumber = whichLink;
     donationPageNumber = whichPage;
 
-    reportEvent('donate', 'donate_link_shown', null, donationLinkNumber, true);
-    reportEvent('donate', 'donate_page_chosen', null, donationPageNumber, true);
+    reportEvent('donate', 'donate_link_shown', 'donate_link_' + donationLinkNumber, null, true);
+    reportEvent('donate', 'donate_page_chosen', 'donate_page_' + donationPageNumber, null, true);
 }
 
 function initGooglePlusElement() {
