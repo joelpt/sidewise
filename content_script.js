@@ -10,11 +10,26 @@ var LOGGING_ENABLED = true;
 ///////////////////////////////////////////////////////////
 
 var port;
+connectPort();
+notifySidewise();
 
 window.addEventListener('popstate', onLocationOrHistoryChanged);
+window.addEventListener('DOMContentLoaded', onDOMContentLoaded);
 
-connectPort();
-notifySidewiseMultiple();
+function onDOMContentLoaded() {
+    setUpTitleObserver();
+}
+
+function setUpTitleObserver() {
+    // set up an observer for the title element
+    var target = document.querySelector('head > title');
+    var observer = new window.WebKitMutationObserver(function(mutations) {
+        var mutation = mutations[0];
+        log('new page title:', mutation.target.textContent);
+        notifySidewise();
+    });
+    observer.observe(target, { subtree: true, characterData: true, childList: true });
+}
 
 
 ///////////////////////////////////////////////////////////
@@ -47,23 +62,7 @@ function connectPort() {
 
 function onLocationOrHistoryChanged(evt) {
     log(evt.type, evt);
-    notifySidewiseMultiple();
-}
-
-function notifySidewiseMultiple() {
     notifySidewise();
-
-    // Try again repeatedly in the near future because sometimes
-    // a page's JS changes the page title shortly after loading
-    // and we want to catch this. The repeated attempts are needed
-    // during times of heavy browser load, i.e. during session restore.
-    //
-    // Chrome should fire onTabUpdated when the page title is changed
-    // in this way but it does not.
-    setTimeout(notifySidewise, 500);
-    setTimeout(notifySidewise, 1500);
-    setTimeout(notifySidewise, 5000);
-    setTimeout(notifySidewise, 12000);
 }
 
 ///////////////////////////////////////////////////////////
