@@ -111,5 +111,5 @@ body {
     padding:2px 5px 4px 5px;
     font-size:12px;
     font-family: 'segoe ui', 'ms sans serif', sans-serif;
-    box-shadow: 2px 2px 11px #666;
+    box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
 }
