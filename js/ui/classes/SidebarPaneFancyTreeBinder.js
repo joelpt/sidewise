@@ -27,6 +27,9 @@ SidebarPaneFancyTreeBinder.prototype = {
     onChromeWindowFocusChanged: function(windowId) {
         // Hide the FancyTree row tooltip whenever Chrome switches window focus
         this.fancyTree.hideTooltip();
+
+        // Hide the context menu whenever Chrome switches window focus
+        this.fancyTree.disableContextMenu();
     }
 
 };
