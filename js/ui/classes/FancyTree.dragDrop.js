@@ -159,8 +159,10 @@ FancyTree.prototype.draggableStart = function(evt) {
                     });
             }
 
-            row.children('.ftChildren').addClass('ftDrawAttention');
-            setTimeout(function() { row.children('.ftChildren').removeClass('ftDrawAttention'); }, 250);
+            if (self.getChildrenCount(row) > 0) {
+                row.children('.ftChildren').addClass('ftDrawAttention');
+                setTimeout(function() { row.children('.ftChildren').removeClass('ftDrawAttention'); }, 250);
+            }
         }
 
         if (evt.shiftKey) {
