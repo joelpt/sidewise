@@ -236,13 +236,40 @@ PageTree.prototype = {
     },
 
     // hibernate a page
-    hibernatePage: function(id)
+    hibernatePage: function(id, skipLastTabCheck)
     {
         log(id);
         var tabId = getNumericId(id);
         this.updatePage(tabId, { hibernated: true, id: 'pH' + generateGuid(), status: 'complete' });
-        chrome.tabs.remove(tabId);
-        this.updateLastModified();
+
+        var self = this;
+        function removeAfterHibernate() {
+            chrome.tabs.remove(tabId);
+            self.updateLastModified();
+        }
+
+        if (skipLastTabCheck) {
+            removeAfterHibernate();
+            return;
+        }
+
+        chrome.tabs.query({ windowType: 'normal' }, function(tabs) {
+            tabs = tabs.filter(function(e) { return e.id != tabId });
+
+            if (tabs.length == 0) {
+                // open the New Tab page to prevent Chrome auto-exiting upon
+                // hibernating the last open tab
+                chrome.tabs.create({ url: 'chrome://newtab' }, function() {
+                    removeAfterHibernate();
+                    if (!settings.get('shown_prompt_hibernatingLastTab')) {
+                        alert(getMessage('prompt_hibernatingLastTab'));
+                        settings.set('shown_prompt_hibernatingLastTab', true);
+                    }
+                });
+                return;
+            }
+            removeAfterHibernate();
+        });
     },
 
     // awaken (unhibernate) a page
@@ -289,9 +316,33 @@ PageTree.prototype = {
             return e instanceof PageNode && !e.hibernated;
         }, winNode.children);
 
+        var hibernatingTabIds = hibernating.map(function(e) { return getNumericId(e.id); });
+
         var self = this;
-        hibernating.forEach(function(e) {
-            self.hibernatePage(e.id);
+        function hibernateWindowTabs() {
+            for (var i = 0; i < hibernating.length; i++) {
+                self.hibernatePage(hibernating[i].id, true);
+            }
+        }
+
+        chrome.tabs.query({ windowType: 'normal' }, function(tabs) {
+            tabs = tabs.filter(function(e) {
+                return hibernatingTabIds.indexOf(e.id) == -1;
+            });
+
+            if (tabs.length == 0) {
+                // open the New Tab page to prevent Chrome auto-exiting upon
+                // hibernating the last open tab
+                chrome.tabs.create({ url: 'chrome://newtab' }, function() {
+                    hibernateWindowTabs();
+                    if (!settings.get('shown_prompt_hibernatingLastTab')) {
+                        alert(getMessage('prompt_hibernatingLastTab'));
+                        settings.set('shown_prompt_hibernatingLastTab', true);
+                    }
+                });
+                return;
+            }
+            hibernateWindowTabs();
         });
 
         this.updateLastModified();
