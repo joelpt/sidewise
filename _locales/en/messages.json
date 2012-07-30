@@ -1,6 +1,6 @@
 {
     "extName": { "message": "Sidewise Tree Style Tabs" },
-    "extDescription": { "message": "A persistent sidebar for Chrome featuring tree style tabs and tab hibernation." },
+    "extDescription": { "message": "A dockable sidebar for Chrome featuring Tree Style Tabs and tab hibernation." },
 
 
     "sidebarTitle": { "message": "Sidewise" },
@@ -52,6 +52,7 @@
     "prompt_confirmResetOptions": { "message": "Are you sure you want to reset all options to the defaults?" },
     "prompt_setLabel": { "message": "Enter the desired label, or clear box for no label:" },
     "prompt_setNewFolderName": { "message": "Enter the new folder's name:" },
+    "prompt_hibernatingLastTab": { "message": "You just hibernated the last open tab in Chrome. // Since this would normally cause Chrome to automatically exit, Sidewise has created a New Tab tab to prevent it from doing so." },
 
     "sidebarLabel_Pages": { "message": "Pages" },
     "sidebarLabel_Notepad": { "message": "Notepad" },
