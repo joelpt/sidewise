@@ -45,9 +45,9 @@ SidebarHandler.prototype = {
                     url: 'sidebar.html',
                     type: 'popup',
                     width: handler.targetWidth,
-                    height: Math.min(600, focusWin.height - 100),
-                    left: focusWin.left + 100,
-                    top: focusWin.top + 100
+                    height: settings.get('undockedHeight', Math.min(600, focusWin.height - 100)),
+                    left: settings.get('undockedLeft', focusWin.left + 100),
+                    top: settings.get('undockedTop', focusWin.top + 100)
                 };
                 chrome.windows.create(winSpec, function(win) {
                     handler.onCreatedSidebarWindow.call(handler, win);
@@ -414,5 +414,12 @@ SidebarHandler.prototype = {
         this.tabId = win.tabs[0].id;
         this.currentSidebarMetrics = {left: win.left, top: win.top, width: win.width, height: win.height};
         this.creatingSidebar = false;
+
+        // Store undocked position metrics
+        if (this.dockState == 'undocked') {
+            settings.set('undockedTop', win.top);
+            settings.set('undockedLeft', win.left);
+            settings.set('undockedHeight', win.height);
+        }
     }
 }

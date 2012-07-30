@@ -1,4 +1,4 @@
-var WINDOW_UPDATE_CHECK_INTERVAL_SLOW_MS = 250;
+var WINDOW_UPDATE_CHECK_INTERVAL_SLOW_MS = 300;
 var WINDOW_UPDATE_CHECK_INTERVAL_FAST_MS = 50;
 var WINDOW_UPDATE_CHECK_INTERVAL_RATE_RESET_MS = 5000;
 
@@ -239,7 +239,40 @@ function onWindowUpdateCheckInterval() {
         return;
     }
 
-    if (!sidebarHandler.sidebarExists() || sidebarHandler.dockState == 'undocked' || !sidebarHandler.dockWindowId) {
+    if (!sidebarHandler.sidebarExists()) {
+        return;
+    }
+
+    if (sidebarHandler.dockState == 'undocked') {
+        chrome.windows.get(sidebarHandler.windowId, function(sidebar) {
+            if (!sidebar || sidebar.state == 'minimized') {
+                return;
+            }
+
+            // Update stored metrics for undocked sidebar as needed
+            if (sidebar.left != settings.get('undockedLeft')) {
+                settings.set('undockedLeft', sidebar.left);
+            }
+
+            if (sidebar.top != settings.get('undockedTop')) {
+                settings.set('undockedTop', sidebar.top);
+            }
+
+            if (sidebar.width != settings.get('sidebarTargetWidth')) {
+                settings.set('sidebarTargetWidth', sidebar.width);
+                sidebarHandler.targetWidth = sidebar.width;
+            }
+
+            if (sidebar.height != settings.get('undockedHeight')) {
+                settings.set('undockedHeight', sidebar.height);
+            }
+
+            return;
+        });
+        return;
+    }
+
+    if (!sidebarHandler.dockWindowId) {
         return;
     }
 
