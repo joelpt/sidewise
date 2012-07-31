@@ -29,7 +29,7 @@
   *                                              //   $oldAncestors is the ancestry of $row prior to being moved.
   *          autoSelectChildrenOnDrag: Boolean,  // if true, permit autoselecting of children in dragged rows
   *                                              // if the row's rowType.permitAutoSelectChildren is also true
-  *          allowDropHandler: Function(fromRows, toRow),
+  *          allowDropHandler: Function($fromRows, relation, $toRow),
   *                                              // if specified, this function must return true for a drop operation
   *                                              // to be permitted
   *          showFilterBox: Boolean,             // if set to false, hide type-in filtering box above tree

@@ -208,18 +208,6 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
         return;
     }
 
-    if (treeObj.allowDropHandler) {
-        if (!allowDropHandler(treeObj.multiSelection, overRow)) {
-            return;
-        }
-    }
-
-    treeObj.canAcceptDropTo = true;
-    treeObj.draggingOverRow = overRow;
-
-    $('.ftDragToChild').removeClass('ftDragToChild');
-    treeObj.hideDragInsertBar.call(treeObj);
-
     var overItemRow = treeObj.getItemRow(overRow);
     var overItemRowContent = treeObj.getItemRowContent(overRow);
 
@@ -291,6 +279,18 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
             drag = ['append', overItemRowContent];
         }
     }
+
+    if (treeObj.allowDropHandler) {
+        if (!allowDropHandler(treeObj.multiSelection, drag[0], treeObj.getParentRowNode(drag[1]))) {
+            return;
+        }
+    }
+
+    treeObj.canAcceptDropTo = true;
+    treeObj.draggingOverRow = overRow;
+
+    $('.ftDragToChild').removeClass('ftDragToChild');
+    treeObj.hideDragInsertBar.call(treeObj);
 
     treeObj.drawDragInsertBar.call(treeObj, drag[0], drag[1], treeObj.getParentRowNode(drag[1]).attr('rowtype'));
     treeObj.draggingTo = drag[0];
