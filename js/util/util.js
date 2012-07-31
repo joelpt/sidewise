@@ -113,13 +113,18 @@ function splitUrl(url)
         return r;
     }
 
-    // that didn't work, try about:foo format
-    m = url.match(/(.+):(.+)/)
-    {
-        r.protocol = 'about';
-        r.host = 'memory';
+    // that didn't work, try matching against a generic proto:remainder format
+    m = url.match(/(.+):(.+)/);
+    if (m) {
+        r.protocol = m[1];
+        r.host = m[2];
+        r.path = r.host;
+        r.domain = r.host;
         return r;
     }
+
+    // no match
+    return undefined;
 }
 
 function dropUrlHash(url)
