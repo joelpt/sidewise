@@ -275,14 +275,14 @@ function onRowExpanderClick(evt) {
 }
 
 function onRowsMoved(moves) {
-    console.log('MOVES', moves);
+    // console.log('MOVES', moves);
     for (var i = 0; i < moves.length; i++) {
         var move = moves[i];
         var $row = move.$row;
         var $to = move.$to;
         var rowId = $row.attr('id');
         var toId = $to ? $to.attr('id') : undefined;
-        console.log('---- move:', rowId, move.relation, toId, move.keepChildren ? 'KEEP CHILDREN' : '');
+        // console.log('---- move:', rowId, move.relation, toId, move.keepChildren ? 'KEEP CHILDREN' : '');
 
         if (move.relation != 'nomove') {
             // record the move in bg.tree
@@ -345,7 +345,7 @@ function onRowsMoved(moves) {
 }
 
 function allowDropHandler($fromRows, relation, $toRow) {
-    console.log('from', $fromRows, relation, 'to', $toRow);
+    // console.log('from', $fromRows, relation, 'to', $toRow);
 
     // allow window nodes to be dropped anywhere they normally can be
     if ($fromRows.is('[rowtype=window]')) {
@@ -539,8 +539,9 @@ function onContextMenuItemCopyURL($rows) {
 }
 
 function onContextMenuItemMoveToNewFolder($rows) {
-
-    var $branchesChildren = $rows.not('.ftCollapsed').find('.ftRowNode').not($rows);
+    var $branchesChildren = $rows.not('.ftCollapsed').find('.ftRowNode').not($rows).not(function() {
+        return $(this).parents('.ftCollapsed').length != 0;
+    });
 
     if ($branchesChildren.length > 0 && confirm('Move entire branches of selected rows into new folder?\nPress Cancel to move just the selected rows.') ) {
         $rows = $rows.add($branchesChildren);
