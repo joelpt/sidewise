@@ -555,7 +555,7 @@ function onContextMenuItemMoveToNewFolder($rows) {
         var url = $e.attr('url');
         if (url) {
             try {
-                return splitUrl(url).domain.split('.')[0];
+                return splitUrl(url).domain.replace('www.', '').split('.')[0];
             }
             catch(ex) {
                 return undefined;
