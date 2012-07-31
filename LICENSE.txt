@@ -4,8 +4,10 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-The Software or any software derived from it may not be published via the Chrome Web Store at https://chrome.google.com/webstore without specific prior written permission.
+The Software and any software derived from it may not be published via the Chrome Web Store at https://chrome.google.com/webstore without specific prior written permission.
 
-The Software or any software derived from it may not be sold without specific prior written permission.
+The Software and any software derived from it may not be sold without specific prior written permission.
+
+In the event the Software has not been updated for 365 days on its Chrome Web Store page at https://chrome.google.com/webstore/detail/biiammgklaefagjclmnlialkmaemifgo as defined by the 'Updated' date shown on that page, this license and the Software's copyright are considered immediately expired and entirely negated, and the Software in its entirety is permanently assigned to the public domain.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
