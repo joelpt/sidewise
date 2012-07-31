@@ -138,6 +138,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
         rowTypes: rowTypes,
         onContextMenuShow: onContextMenuShow,
         onRowsMoved: onRowsMoved,
+        allowDropHandler: allowDropHandler,
         scrollTargetElem: $('#main'),
         showFilterBox: true,
         autoSelectChildrenOnDrag: settings.get('autoSelectChildrenOnDrag'),
@@ -342,6 +343,34 @@ function onRowsMoved(moves) {
         }
     }
 }
+
+function allowDropHandler($fromRows, relation, $toRow) {
+    console.log('from', $fromRows, relation, 'to', $toRow);
+
+    // allow window nodes to be dropped anywhere they normally can be
+    if ($fromRows.is('[rowtype=window]')) {
+        return true;
+    }
+
+    // don't allow drag-dropping of any rows into or out of a popup window
+    if ($fromRows.parents('[rowtype=window][type=popup]').length > 0) {
+        return false;
+    }
+    if ($toRow.add($toRow.parents()).is('[rowtype=window][type=popup]')) {
+        return false;
+    }
+
+    // don't allow dropping an incognito row into a non-incognito window or vice versa
+    var fromIncognito = $fromRows.add($fromRows.parents()).is('[incognito=true]');
+    var toIncognito = $toRow.add($toRow.parents()).is('[incognito=true]');
+    if (fromIncognito != toIncognito) {
+        return false;
+    }
+
+    // allow any other type of drop
+    return true;
+}
+
 
 ///////////////////////////////////////////////////////////
 // FancyTree context menu handlers
