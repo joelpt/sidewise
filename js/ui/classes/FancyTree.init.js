@@ -29,6 +29,9 @@
   *                                              //   $oldAncestors is the ancestry of $row prior to being moved.
   *          autoSelectChildrenOnDrag: Boolean,  // if true, permit autoselecting of children in dragged rows
   *                                              // if the row's rowType.permitAutoSelectChildren is also true
+  *          allowDropHandler: Function(fromRows, toRow),
+  *                                              // if specified, this function must return true for a drop operation
+  *                                              // to be permitted
   *          showFilterBox: Boolean,             // if set to false, hide type-in filtering box above tree
   *          filterPlaceholderText: String,      // text to show in filter box when otherwise empty
   *          filterActiveText: String,           // text to show below filter box when filtering is active
@@ -134,7 +137,8 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.ignoreNextRowMouseUpEvent = false;
 
     this.onContextMenuShow = options.onContextMenuShow;
-    this.multiSelection = [];
+    this.multiSelection = $();
+    this.multiSelectableRowTypes = [];
     this.lastMultiSelectedFromId = null;
     this.lastMultiSelectedToId = null;
     this.contextMenuSelectionData = null;
@@ -144,6 +148,7 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
 
     this.onRowsMoved = options.onRowsMoved;
     this.autoSelectChildrenOnDrag = options.autoSelectChildrenOnDrag;
+    this.allowDropHandler = options.allowDropHandler;
     this.dragging = false;
     this.draggingRow = null;
     this.draggingTo = null;

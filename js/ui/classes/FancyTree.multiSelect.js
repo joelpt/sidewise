@@ -3,13 +3,13 @@
 // Multiselection
 ///////////////////////////////////////////////////////////
 
-FancyTree.prototype.toggleMultiSelectionSingle = function(id, forceOn) {
-    var row = ft.getRow(id);
-    var index = this.multiSelection.indexOf(id);
-    if (index > -1 && !forceOn) {
+FancyTree.prototype.toggleMultiSelectionSingle = function($row, forceOn) {
+    var exists = this.multiSelection.is($row);
+
+    if (exists && !forceOn) {
         // already in selection so remove it
-        this.multiSelection.splice(index, 1);
-        this.removeSelectionEffect(row);
+        this.multiSelection = this.multiSelection.not($row);
+        this.removeSelectionEffect($row);
 
         if (this.multiSelection.length == 0) {
             this.clearMultiSelection();
@@ -17,53 +17,52 @@ FancyTree.prototype.toggleMultiSelectionSingle = function(id, forceOn) {
         return;
     }
 
-    if (index == -1) {
+    if (!exists) {
         // add to selection
-        this.multiSelection.push(id);
-        this.addSelectionEffect(row);
+        this.multiSelection = this.multiSelection.add($row);
+        this.addSelectionEffect($row);
         this.root.addClass('ftMultiselecting');
     }
 };
 
-FancyTree.prototype.addMultiSelectionBetween = function(fromId, toId) {
-    // if fromId and toId are the same, just do a single selection
-    if (fromId == toId) {
-        this.toggleMultiSelectionSingle(fromId);
+FancyTree.prototype.addMultiSelectionBetween = function($fromRow, $toRow) {
+    // if from and to are the same, just do a single selection
+    if ($fromRow.is($toRow)) {
+        this.toggleMultiSelectionSingle($fromRow);
         return;
     }
 
 
-    var rows;
+    var $rows;
     if (this.filtering) {
         // when tree is filtered, only select pages which match the filter
-        rows = this.root.find('.ftFilteredIn');
+        $rows = this.root.find('.ftFilteredIn');
     }
     else {
         // select from all pages
-        // TODO handle pages that are not visible due to
-        // parent branch being collapsed
-        rows = this.root.find('.ftRowNode');
+        $rows = this.root.find('.ftRowNode');
     }
 
-    // build a list of rowtypes which may be multiselected
-    var multiselectableRowTypes = mapObjectProps(this.rowTypes, function(k, v) {
-        return (v.multiselectable === false ? undefined : k);
+    // filter out rows that are not visible because they are children of a collapsed row
+    $rows = $rows.not(function() {
+        return $(this).parents('.ftCollapsed').length > 0;
     });
 
     // filter out non-multiselectable rows
-    rows = rows.filter(function(i, e) {
-        return (multiselectableRowTypes.indexOf(e.attributes.rowtype.value) >= 0);
+    var self = this;
+    $rows = $rows.filter(function(i, e) {
+        return (self.multiSelectableRowTypes.indexOf(e.attributes.rowtype.value) >= 0);
     });
 
-    // flatten the tree to get the ids in the visible page order disregarding nesting
-    var flattened = rows.map(function(i, e) { return e.id; }).toArray();
+    // flatten selectable node branches to get the ids in the visible page order disregarding nesting
+    var flattened = $rows.map(function(i, e) { return e.id; }).toArray();
 
     // find index of start and end tabs
-    var start = flattened.indexOf(fromId);
-    var end = flattened.indexOf(toId);
+    var start = flattened.indexOf($fromRow.attr('id'));
+    var end = flattened.indexOf($toRow.attr('id'));
 
     if (start == -1 || end == -1) {
-        throw new Error('Could not find both start and end indices ' + fromId + ', ' + toId);
+        throw new Error('Could not find both start and end rows', $fromRow, $toRow);
     }
 
     // switch start and end around if start doesn't precede end
@@ -83,9 +82,10 @@ FancyTree.prototype.addMultiSelectionBetween = function(fromId, toId) {
     // add these to multiSelection
     var self = this;
     range.forEach(function(e) {
-        if (self.multiSelection.indexOf(e) == -1) {
-            self.multiSelection.push(e);
-            self.addSelectionEffect(self.getRow(e));
+        var $row = $rows.filter('#' + e);
+        if (!self.multiSelection.is($row)) {
+            self.multiSelection = self.multiSelection.add($row);
+            self.addSelectionEffect($row);
         }
     });
 
@@ -97,29 +97,29 @@ FancyTree.prototype.addMultiSelectionBetween = function(fromId, toId) {
 FancyTree.prototype.clearMultiSelection = function() {
     // remove visual selection effects
     var self = this;
-    this.multiSelection.forEach(function(e) {
-        try {
-            var row = self.getRow(e);
-            self.removeSelectionEffect(row);
-        }
-        catch (ex) { }
+    this.multiSelection.each(function(i, e) {
+        var $e = $(e);
+        // try {
+            self.removeSelectionEffect($e);
+        // }
+        // catch (ex) { }
     });
     this.root.removeClass('ftMultiselecting');
 
     // reset multiSelection variables
-    this.multiSelection = [];
+    this.multiSelection = $();
     this.lastMultiSelectedFromId = null;
     this.lastMultiSelectedToId = null;
 };
 
-FancyTree.prototype.addSelectionEffect = function(row) {
-    var rowTypeParams = this.getRowTypeParams(row);
+FancyTree.prototype.addSelectionEffect = function($row) {
+    var rowTypeParams = this.getRowTypeParams($row);
     if (!rowTypeParams.multiselectable) {
         return;
     }
-    row.addClass('ftSelected');
+    $row.addClass('ftSelected');
 };
 
-FancyTree.prototype.removeSelectionEffect = function(row) {
-    row.removeClass('ftSelected');
+FancyTree.prototype.removeSelectionEffect = function($row) {
+    $row.removeClass('ftSelected');
 };

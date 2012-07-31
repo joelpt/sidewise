@@ -26,17 +26,13 @@ FancyTree.prototype.onContextMenu = function(evt) {
 
     if (treeObj.multiSelection.length == 0 || !row.hasClass('ftSelected')) {
         treeObj.clearMultiSelection.call(treeObj);
-        treeObj.toggleMultiSelectionSingle.call(treeObj, row.attr('id'));
+        treeObj.toggleMultiSelectionSingle.call(treeObj, row);
     }
 
-    treeObj.contextMenuSelectionData = treeObj.buildContextMenuSelectionData(treeObj.multiSelection);
+    treeObj.contextMenuSelectionData = treeObj.multiSelection;
 
     treeObj.enableContextMenu.call(treeObj, evt.pageX, evt.pageY);
     return false;
-};
-
-FancyTree.prototype.buildContextMenuSelectionData = function(rowIds) {
-    return this.root.find('#' + rowIds.join(',#'));
 };
 
 FancyTree.prototype.onContextMenuItemClick = function(evt) {

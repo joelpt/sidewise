@@ -93,11 +93,14 @@ FancyTree.prototype.rowMultiSelectionClickHandler = function(evt) {
     var fromId = treeObj.lastMultiSelectedToId || focusedId;
     var id = row.attr('id');
 
+    var $fromRow = treeObj.getRow(fromId);
+    var $toRow = treeObj.getRow(id);
+
     if (evt.ctrlKey) {
         treeObj.lastMultiSelectedFromId = null; // prevent shift+selection from expanding selection chain
         if (evt.shiftKey) {
             // Ctrl+Shift: Incrementally add spanned range of rows to current multiselection
-            treeObj.addMultiSelectionBetween(fromId, id);
+            treeObj.addMultiSelectionBetween($fromRow, $toRow);
         }
         else {
             // Ctrl: Un/select a single row
@@ -111,10 +114,10 @@ FancyTree.prototype.rowMultiSelectionClickHandler = function(evt) {
                     return;
                 }
                 // turn on selection of focused row
-                treeObj.toggleMultiSelectionSingle(focusedId);
+                treeObj.toggleMultiSelectionSingle(treeObj.focusedRow);
             }
             // toggle selection ctrl+clicked row
-            treeObj.toggleMultiSelectionSingle(id);
+            treeObj.toggleMultiSelectionSingle($toRow);
         }
         treeObj.lastMultiSelectedToId = id;
         return;
@@ -127,7 +130,7 @@ FancyTree.prototype.rowMultiSelectionClickHandler = function(evt) {
             treeObj.clearMultiSelection();
         }
         // select range of rows
-        treeObj.addMultiSelectionBetween(fromId, id);
+        treeObj.addMultiSelectionBetween($fromRow, $toRow);
         treeObj.lastMultiSelectedFromId = fromId;
         treeObj.lastMultiSelectedToId = id;
         return;

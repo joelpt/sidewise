@@ -53,4 +53,9 @@ FancyTree.prototype.addRowType = function(name, params) {
     // configure draggable and droppable parameters
     params.draggableParams = this.getDraggableParams();
     params.droppableParams = this.getDroppableParams(params.allowedDropTargets);
+
+    if (params.multiselectable !== false) {
+        this.multiSelectableRowTypes.push(name);
+    }
+
 };

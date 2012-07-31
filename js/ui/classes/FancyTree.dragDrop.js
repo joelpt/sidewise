@@ -136,7 +136,7 @@ FancyTree.prototype.draggableStart = function(evt) {
 
     if (evt.ctrlKey) {
         self.clearMultiSelection.call(self);
-        self.toggleMultiSelectionSingle.call(self, row.attr('id'), true);
+        self.toggleMultiSelectionSingle.call(self, row, true);
         self.dragToreOffParent = true;
     }
     else {
@@ -144,7 +144,7 @@ FancyTree.prototype.draggableStart = function(evt) {
         if (self.multiSelection.length == 0 || !(target.parent().hasClass('ftSelected')))
         {
             self.clearMultiSelection.call(self);
-            self.toggleMultiSelectionSingle.call(self, row.attr('id'), true);
+            self.toggleMultiSelectionSingle.call(self, row, true);
 
             self.dragSelectedCollapsedRow = isCollapsed;
 
@@ -155,7 +155,7 @@ FancyTree.prototype.draggableStart = function(evt) {
                         if ($e.parents('.ftCollapsed').length > 0) {
                             return;
                         }
-                        self.toggleMultiSelectionSingle.call(self, $e.attr('id'), true);
+                        self.toggleMultiSelectionSingle.call(self, $e, true);
                     });
             }
 
@@ -167,17 +167,17 @@ FancyTree.prototype.draggableStart = function(evt) {
 
         if (evt.shiftKey) {
             // ALL children should be autoselected
-            var $children = $('#' + self.multiSelection.join(',#')).find('.ftRowNode');
+            var $children = self.multiSelection.find('.ftRowNode');
             $children.each(function(i, e) {
-                self.toggleMultiSelectionSingle.call(self, e.attributes.id.value, true);
+                self.toggleMultiSelectionSingle.call(self, $(e), true);
             });
         }
         else if (rowTypeParams.autoselectChildrenOnDrag) {
             // ensure all children of collapsed nodes are also selected
-            var $collapsedRows = $('#' + self.multiSelection.join('.ftCollapsed,#') + '.ftCollapsed');
+            var $collapsedRows = self.multiSelection.filter(function(i, e) { return $(e).hasClass('ftCollapsed'); });
             var $collapsedUnselectedChildren = $collapsedRows.find('.ftRowNode:not(.ftSelected)');
             $collapsedUnselectedChildren.each(function(i, e) {
-                self.toggleMultiSelectionSingle.call(self, e.attributes.id.value, true);
+                self.toggleMultiSelectionSingle.call(self, $(e), true);
             });
 
             // count up collapsed+selected children (hidden rows)
@@ -203,8 +203,15 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
     var draggingToRowType = overRow.attr('rowtype');
 
     var canAcceptDropTo = (allowedDropTargets.indexOf(draggingToRowType) >= 0);
+
     if (!canAcceptDropTo) {
         return;
+    }
+
+    if (treeObj.allowDropHandler) {
+        if (!allowDropHandler(treeObj.multiSelection, overRow)) {
+            return;
+        }
     }
 
     treeObj.canAcceptDropTo = true;
@@ -227,7 +234,8 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
     var isCollapsed = overRow.hasClass('ftCollapsed');
     var underRoot = overRow.parent().parent().hasClass('ftRoot');
 
-    if (treeObj.multiSelection.indexOf(overRow.attr('id')) >= 0) {
+    if (treeObj.multiSelection.is(overRow)) {
+        // dropping on the row we dragged from; just append to it
         drag = ['append', overItemRowContent];
     }
     else if (deltaPct <= DRAG_TO_ABOVE_SENSITIVITY_RATIO) {
@@ -298,7 +306,7 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
     }
 
     this.dropping = true;
-    var $rows = this.root.find('#' + this.multiSelection.join(',#')).not(this.draggingOverRow);
+    var $rows = this.multiSelection.not(this.draggingOverRow);
 
     if ($rows.length == 0) {
         return;
