@@ -18,6 +18,7 @@ SidebarHandler.prototype = {
         this.creatingSidebar = false;
         this.resizingDockWindow = false;
         this.resizingSidebar = false;
+        this.matchingMinimizedStates = false;
         this.removeInProgress = false;
         this.resetResizingDockWindowTimeout = false;
         this.sidebarPanes = {};
@@ -412,7 +413,7 @@ SidebarHandler.prototype = {
         // Store state info about newly created sidebar
         this.windowId = win.id;
         this.tabId = win.tabs[0].id;
-        this.currentSidebarMetrics = {left: win.left, top: win.top, width: win.width, height: win.height};
+        this.currentSidebarMetrics = { left: win.left, top: win.top, width: win.width, height: win.height, state: 'normal' };
         this.creatingSidebar = false;
 
         // Store undocked position metrics
@@ -421,5 +422,80 @@ SidebarHandler.prototype = {
             settings.set('undockedLeft', win.left);
             settings.set('undockedHeight', win.height);
         }
+    },
+
+    // Ensure sidebar and dock window's minimized states are the same.
+    matchSidebarDockMinimizedStates: function() {
+        if (this.dockState == 'undocked') {
+            return;
+        }
+
+        if (this.matchingMinimizedStates) {
+            return;
+        }
+
+        var lastSidebarState = this.currentSidebarMetrics.state;
+        var lastDockState = this.currentDockWindowMetrics.state;
+
+        var self = this;
+        setTimeout(function() {
+            chrome.windows.get(self.dockWindowId, function(dock) {
+                chrome.windows.get(self.windowId, function(sidebar) {
+                    if (!dock || !sidebar) {
+                        return;
+                    }
+
+                    if (self.matchingMinimizedStates) {
+                        return;
+                    }
+
+                    self.currentSidebarMetrics.state = sidebar.state;
+                    self.currentDockWindowMetrics.state = dock.state;
+
+                    if (sidebar.state == 'minimized' && lastSidebarState != 'minimized' && lastDockState != 'minimized') {
+                        // sidebar has been minimized but dock is not; minimize dock
+                        self.matchingMinimizedStates = true;
+                        chrome.windows.update(dock.id, { state: 'minimized' }, function() {
+                            self.currentDockWindowMetrics.state = 'minimized';
+                            self.matchingMinimizedStates = false;
+                        });
+                        return;
+                    }
+
+                    if (sidebar.state != 'minimized' && lastSidebarState == 'minimized' && lastDockState == 'minimized') {
+                        // sidebar has been unminimized but dock is minimized; restore dock
+                        self.matchingMinimizedStates = true;
+                        chrome.windows.update(dock.id, { state: 'normal' }, function() {
+                            self.currentDockWindowMetrics.state = 'normal';
+                            self.matchingMinimizedStates = false;
+                        });
+                        return;
+                    }
+
+                    if (dock.state == 'minimized' && lastDockState != 'minimized' && lastSidebarState != 'minimized') {
+                        // dock has been minimized but sidebar is not; minimize sidebar
+                        self.matchingMinimizedStates = true;
+                        chrome.windows.update(sidebar.id, { state: 'minimized' }, function() {
+                            self.currentSidebarMetrics.state = 'minimized';
+                            self.matchingMinimizedStates = false;
+                        });
+                        return;
+                    }
+
+                    if (dock.state != 'minimized' && lastDockState == 'minimized' && lastSidebarState == 'minimized') {
+                        // dock has been unminimized but sidebar is minimized; restore sidebar then refocus dock
+                        self.matchingMinimizedStates = true;
+                        chrome.windows.update(sidebar.id, { state: 'normal' }, function() {
+                            chrome.windows.update(dock.id, { focused: true }, function() {
+                                self.currentSidebarMetrics.state = 'normal';
+                                self.matchingMinimizedStates = false;
+                            });
+                        });
+                        return;
+                    }
+
+                });
+            });
+        }, 50);
     }
 }

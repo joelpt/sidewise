@@ -147,8 +147,10 @@ function onWindowFocusChanged(windowId)
     var wasFocused = focusTracker.chromeHasFocus;
     focusTracker.chromeHasFocus = true;
 
+    sidebarHandler.matchSidebarDockMinimizedStates();
+
     // Did Chrome just get focus back from another app, and sidebar is present, and keepSidebarOnTop is true?
-    if (!wasFocused && sidebarHandler.sidebarExists() && settings.get('keepSidebarOnTop', false)) {
+    if (!wasFocused && sidebarHandler.sidebarExists() && settings.get('keepSidebarOnTop')) {
         // Chrome was not focused and just became focused; do sidebar+dockwin force-on-top handling
         if (windowId == sidebarHandler.windowId) {
             var raiseWindowId;
@@ -196,36 +198,52 @@ function onWindowFocusChanged(windowId)
     }
 
     // Was the sidebar focused (or in the process of being created)?
-    if (windowId == sidebarHandler.windowId || sidebarHandler.creatingSidebar)
-    {
-        // sidebar has been focused; check if the last regular Chrome window that was focused
-        // is non-minimized
-        chrome.windows.get(focusTracker.getFocused(), function(win) {
-            if (win.state != 'minimized') {
-                // this was just a normal window focus switch from a regular window to the sidebar
-                // -- do nothing
-                log('Sidebar received focus and previously focused window is not minimized; doing nothing');
-                return;
-            }
-
-            // last regular Chrome window that had focus is now minimized meaning we assume
-            // the reason the sidebar has received focus is because of that minimization;
-            // find the next-most-recently-focused Chrome window that isn't currently minimized
-            // and focus that instead of the sidebar
-            focusTracker.getTopFocusableWindow(function(focusableWin) {
-                if (!focusableWin) {
-                    // there is no other non-sidebar Chrome window that isn't minimized, so
-                    // we leave the focus with the sidebar
-                    log('No window other than sidebar we can focus due to last-win being minimized');
-                    return;
-                }
-
-                log('Set focus to most recently focused non-minimized window', focusableWin.id);
-                chrome.windows.update(focusableWin.id, { focused: true });
-            });
-        });
-        return;
+    if (windowId == sidebarHandler.windowId) {
+        if (sidebarHandler.creatingSidebar) {
+            return;
+        }
+        // sidebarHandler.matchSidebarDockMinimizedStates();
     }
+    // {
+        // chrome.windows.get(windowId, function(sidebar) {
+        //     if (sidebarHandler.dockState != 'undocked' && sidebar.state == 'minimized') {
+        //         chrome.windows.get(sidebarHandler.dockWindowId, function(dock) {
+        //             if (dock.state != 'minimized') {
+        //                 chrome.windows.update(dock.id, { state: 'minimized' });
+        //             }
+        //         });
+        //     }
+        // });
+        // sidebarHandler.matchSidebarDockMinimizedStates();
+        // return;
+        // // sidebar has been focused; check if the last regular Chrome window that was focused
+        // // is non-minimized
+        // chrome.windows.get(focusTracker.getFocused(), function(win) {
+        //     if (win.state != 'minimized') {
+        //         // this was just a normal window focus switch from a regular window to the sidebar
+        //         // -- do nothing
+        //         log('Sidebar received focus and previously focused window is not minimized; doing nothing');
+        //         return;
+        //     }
+
+        //     // last regular Chrome window that had focus is now minimized meaning we assume
+        //     // the reason the sidebar has received focus is because of that minimization;
+        //     // find the next-most-recently-focused Chrome window that isn't currently minimized
+        //     // and focus that instead of the sidebar
+        //     focusTracker.getTopFocusableWindow(function(focusableWin) {
+        //         if (!focusableWin) {
+        //             // there is no other non-sidebar Chrome window that isn't minimized, so
+        //             // we leave the focus with the sidebar
+        //             log('No window other than sidebar we can focus due to last-win being minimized');
+        //             return;
+        //         }
+
+        //         log('Set focus to most recently focused non-minimized window', focusableWin.id);
+        //         chrome.windows.update(focusableWin.id, { focused: true });
+        //     });
+        // });
+        // return;
+    // }
 
     // Sidebar wasn't just focused and we don't need to force-raise either the sidebar or
     // the dock-window; so we just set the tracked focus to the now-focused window
@@ -236,6 +254,10 @@ function onWindowFocusChanged(windowId)
 
 function onWindowUpdateCheckInterval() {
     if (sidebarHandler.resizingDockWindow) {
+        return;
+    }
+
+    if (sidebarHandler.matchingMinimizedStates) {
         return;
     }
 
@@ -288,27 +310,24 @@ function onWindowUpdateCheckInterval() {
         var dockDims = sidebarHandler.currentDockWindowMetrics;
         var allowAutoUnmaximize = settings.get('allowAutoUnmaximize');
 
-        // TODO remember last dock window minimized state and only do sidebar un/minimization
-        // when the state changes; this would permit sidebar to be minimized independently
-        // of the dock window though arguably we should not support that
-        //
-        // Ensure sidebar minimized state is the same as the dock window's.
-        chrome.windows.get(sidebarHandler.windowId, function(sidebar) {
-            if (!sidebar) {
-                return;
-            }
+        // sidebarHandler.matchSidebarDockMinimizedStates();
+        // // Ensure sidebar minimized state is the same as the dock window's.
+        // chrome.windows.get(sidebarHandler.windowId, function(sidebar) {
+        //     if (!sidebar) {
+        //         return;
+        //     }
 
-            if (sidebar.state == 'minimized' && dock.state != 'minimized') {
-                chrome.windows.update(sidebar.id, { state: 'normal' }, function() {
-                    chrome.windows.update(dock.id, { focused: true });
-                });
-                return;
-            }
-            if (sidebar.state != 'minimized' && dock.state == 'minimized') {
-                chrome.windows.update(sidebar.id, { state: 'minimized' });
-                return;
-            }
-        });
+        //     if (sidebar.state == 'minimized' && dock.state != 'minimized') {
+        //         chrome.windows.update(sidebar.id, { state: 'normal' }, function() {
+        //             chrome.windows.update(dock.id, { focused: true });
+        //         });
+        //         return;
+        //     }
+        //     if (sidebar.state != 'minimized' && dock.state == 'minimized') {
+        //         chrome.windows.update(sidebar.id, { state: 'minimized' });
+        //         return;
+        //     }
+        // });
 
         // TODO add an option to let sidewise unmaximize dock window
         var offset = monitorInfo.maximizedOffset;
