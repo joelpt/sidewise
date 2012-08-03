@@ -40,6 +40,9 @@ ChromeWindowFocusTracker.prototype = {
     },
 
     setFocused: function(windowId) {
+        if (windowId == sidebarHandler.windowId) {
+            return;
+        }
         this.remove(windowId);
         this.windowIds.push(windowId);
         log(windowId, this.windowIds);

@@ -147,95 +147,78 @@ function onWindowFocusChanged(windowId)
     var wasFocused = focusTracker.chromeHasFocus;
     focusTracker.chromeHasFocus = true;
 
-    // Did Chrome just get focus back from another app, and sidebar is present, and keepSidebarOnTop is true?
-    if (!wasFocused && sidebarHandler.sidebarExists() && settings.get('keepSidebarOnTop', false)) {
-        // Chrome was not focused and just became focused; do sidebar+dockwin force-on-top handling
-        if (windowId == sidebarHandler.windowId) {
-            var raiseWindowId;
-            if (sidebarHandler.dockState == 'undocked') {
-                raiseWindowId = focusTracker.getFocused();
+    sidebarHandler.matchSidebarDockMinimizedStates(function(performedMinimizeOrRestore) {
+        if (performedMinimizeOrRestore) {
+            return;
+        }
+
+        // Did Chrome just get focus back from another app, and sidebar is present, and keepSidebarOnTop is true?
+        if (!wasFocused && sidebarHandler.sidebarExists() && settings.get('keepSidebarOnTop')) {
+            // Chrome was not focused and just became focused; do sidebar+dockwin force-on-top handling
+            if (windowId == sidebarHandler.windowId) {
+                var raiseWindowId;
+                if (sidebarHandler.dockState == 'undocked') {
+                    raiseWindowId = focusTracker.getFocused();
+                }
+                else {
+                    raiseWindowId = sidebarHandler.dockWindowId;
+                }
+                // Sidebar has been focused; raise the dock window too then refocus sidebar
+                log('Sidebar has been focused; raising its dock window alongside it');
+                chrome.windows.update(raiseWindowId, { focused: true }, function() {
+                    chrome.windows.update(sidebarHandler.windowId, { focused: true });
+                });
+                return;
             }
-            else {
-                raiseWindowId = sidebarHandler.dockWindowId;
-            }
-            // Sidebar has been focused; raise the dock window too then refocus sidebar
-            log('Sidebar has been focused; raising its dock window alongside it');
-            chrome.windows.update(raiseWindowId, { focused: true }, function() {
-                chrome.windows.update(sidebarHandler.windowId, { focused: true });
+
+            // Chrome window other than sidebar received the focus; raise the sidebar then refocus
+            // said window
+            focusTracker.setFocused(windowId);
+            chrome.tabs.query({ windowId: windowId, active: true }, function(tabs) {
+                var tab = tabs[0];
+                if (!isScriptableUrl(tab.url)) {
+                    // if tab doesn't have a scriptable url we assume that the tab will not be in HTML5
+                    // fullscreen mode either here
+                    log('Non-sidebar Chrome window got focused; its current tab is non scriptable so raising sidebar now');
+                    // focus the sidebar window ...
+                    chrome.windows.update(sidebarHandler.windowId, { focused: true }, function() {
+                        // ... then focus the window that the user really focused.
+                        chrome.windows.update(windowId, { focused: true });
+                    });
+
+                    // update focused tab in sidebar
+                    focusCurrentTabInPageTree();
+                    return;
+                }
+                // tab's url is scriptable, so ask it whether it is in HTML5 fullscreen mode;
+                // in onGetIsFullScreenMessage() if we discover it is not in fullscreen we'll
+                // raise the sidebar window (focus it) then refocus the window that brought us
+                // here.
+                log('Non-sidebar Chrome window got focused; check its fullscreen state and possibly raise the sidebar after');
+                getIsFullScreen(tab);
             });
             return;
         }
 
-        // Chrome window other than sidebar received the focus; raise the sidebar then refocus
-        // said window
+        // Was the sidebar focused (or in the process of being created)?
+        if (windowId == sidebarHandler.windowId && sidebarHandler.creatingSidebar) {
+            return;
+        }
+
+        // Sidebar wasn't just focused and we don't need to force-raise either the sidebar or
+        // the dock-window; so we just set the tracked focus to the now-focused window
+        log('Recording focus as the now-focused window tab', windowId);
         focusTracker.setFocused(windowId);
-        chrome.tabs.query({ windowId: windowId, active: true }, function(tabs) {
-            var tab = tabs[0];
-            if (!isScriptableUrl(tab.url)) {
-                // if tab doesn't have a scriptable url we assume that the tab will not be in HTML5
-                // fullscreen mode either here
-                log('Non-sidebar Chrome window got focused; its current tab is non scriptable so raising sidebar now');
-                // focus the sidebar window ...
-                chrome.windows.update(sidebarHandler.windowId, { focused: true }, function() {
-                    // ... then focus the window that the user really focused.
-                    chrome.windows.update(windowId, { focused: true });
-                });
-
-                // update focused tab in sidebar
-                focusCurrentTabInPageTree();
-                return;
-            }
-            // tab's url is scriptable, so ask it whether it is in HTML5 fullscreen mode;
-            // in onGetIsFullScreenMessage() if we discover it is not in fullscreen we'll
-            // raise the sidebar window (focus it) then refocus the window that brought us
-            // here.
-            log('Non-sidebar Chrome window got focused; check its fullscreen state and possibly raise the sidebar after');
-            getIsFullScreen(tab);
-        });
-        return;
-    }
-
-    // Was the sidebar focused (or in the process of being created)?
-    if (windowId == sidebarHandler.windowId || sidebarHandler.creatingSidebar)
-    {
-        // sidebar has been focused; check if the last regular Chrome window that was focused
-        // is non-minimized
-        chrome.windows.get(focusTracker.getFocused(), function(win) {
-            if (win.state != 'minimized') {
-                // this was just a normal window focus switch from a regular window to the sidebar
-                // -- do nothing
-                log('Sidebar received focus and previously focused window is not minimized; doing nothing');
-                return;
-            }
-
-            // last regular Chrome window that had focus is now minimized meaning we assume
-            // the reason the sidebar has received focus is because of that minimization;
-            // find the next-most-recently-focused Chrome window that isn't currently minimized
-            // and focus that instead of the sidebar
-            focusTracker.getTopFocusableWindow(function(focusableWin) {
-                if (!focusableWin) {
-                    // there is no other non-sidebar Chrome window that isn't minimized, so
-                    // we leave the focus with the sidebar
-                    log('No window other than sidebar we can focus due to last-win being minimized');
-                    return;
-                }
-
-                log('Set focus to most recently focused non-minimized window', focusableWin.id);
-                chrome.windows.update(focusableWin.id, { focused: true });
-            });
-        });
-        return;
-    }
-
-    // Sidebar wasn't just focused and we don't need to force-raise either the sidebar or
-    // the dock-window; so we just set the tracked focus to the now-focused window
-    log('Recording focus as the now-focused window tab', windowId);
-    focusTracker.setFocused(windowId);
-    focusCurrentTabInPageTree();
+        focusCurrentTabInPageTree();
+    });
 }
 
 function onWindowUpdateCheckInterval() {
     if (sidebarHandler.resizingDockWindow) {
+        return;
+    }
+
+    if (sidebarHandler.matchingMinimizedStates) {
         return;
     }
 
@@ -293,17 +276,6 @@ function onWindowUpdateCheckInterval() {
                 return;
             }
 
-            // Ensure sidebar minimized state is the same as the dock window's.
-            if (sidebar.state == 'minimized' && dock.state != 'minimized') {
-                chrome.windows.update(sidebar.id, { state: 'normal' }, function() {
-                    chrome.windows.update(dock.id, { focused: true });
-                });
-                return;
-            }
-            if (sidebar.state != 'minimized' && dock.state == 'minimized') {
-                chrome.windows.update(sidebar.id, { state: 'minimized' });
-                return;
-            }
             // Handle sidebar getting maximized
             if (sidebar.state == 'maximized') {
                 //make dock+sidebar completely fill the screen
