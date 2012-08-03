@@ -171,8 +171,7 @@ function onWindowFocusChanged(windowId)
                 return;
             }
 
-            // Chrome window other than sidebar received the focus; raise the sidebar then refocus
-            // said window
+            // Chrome window other than sidebar received the focus; raise the sidebar then refocus said window
             focusTracker.setFocused(windowId);
             chrome.tabs.query({ windowId: windowId, active: true }, function(tabs) {
                 var tab = tabs[0];
