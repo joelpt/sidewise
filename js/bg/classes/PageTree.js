@@ -377,12 +377,15 @@ PageTree.prototype = {
                 };
             }
 
-            var newWinCreateDetails = { type: 'normal', url: urls };
+            var newWinCreateDetails = clone(newWinMetrics);
+            newWinCreateDetails.type = 'normal';
+            newWinCreateDetails.url = urls;
 
             // look for a New Tab tab that is all alone in a window; if we find one,
             // adopt it to the new window
             var winNodeWithOneNewTabPage = first(tree.tree, function(e) {
                 return e instanceof WindowNode
+                    && e.type == 'normal'
                     && !(e.hibernated)
                     && e.children.length == 1
                     && e.children[0].children.length == 0
@@ -390,8 +393,9 @@ PageTree.prototype = {
                     && !(e.children[0].hibernated);
             });
 
-            var adoptTabId;
+            var adoptTabId, adoptWinId;
             if (winNodeWithOneNewTabPage) {
+                adoptWinId = getNumericId(winNodeWithOneNewTabPage[1].id);
                 adoptTabId = getNumericId(winNodeWithOneNewTabPage[1].children[0].id);
                 newWinCreateDetails.tabId = adoptTabId;
             }
@@ -400,7 +404,15 @@ PageTree.prototype = {
             chrome.windows.create(newWinCreateDetails, function(win) {
                 // if we adopted a New Tab tab, destroy that tab now
                 if (adoptTabId) {
-                    chrome.tabs.remove(adoptTabId);
+                    chrome.tabs.remove(adoptTabId, function() {
+                        // update docked-to window id if needed
+                        if (sidebarHandler.dockState == 'undocked') {
+                            return;
+                        }
+                        if (!sidebarHandler.dockWindowId || sidebarHandler.dockWindowId == adoptWinId) {
+                            sidebarHandler.dockWindowId = win.id;
+                        }
+                    });
                 }
 
                 chrome.windows.update(win.id, newWinMetrics);
