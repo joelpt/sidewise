@@ -133,6 +133,15 @@ function onTabCreated(tab)
             return;
         }
     }
+    else if (tab.url == 'chrome://newtab/') {
+        // New Tab pages always get put at the top level of the tree since they are
+        // created via Ctrl+T or the New Tab button in the tab bar.
+        log('Setting New Tab page as child of its hosting window', page, tab.windowId);
+        tree.addTabToWindow(tab, function(pageNode, winNode) {
+            tree.updateNode(pageNode, { placed: true });
+        });
+        return;
+    }
     else if (!isScriptableUrl(tab.url)) {
         // Non scriptable tab; attempt to associate it with a restorable page node
         // even though it's possible the user just created this tab freshly. We do this
@@ -155,23 +164,7 @@ function onTabCreated(tab)
 
     // Make page a child of its hosting window
     log('Setting page as child of its hosting window', page, tab.windowId);
-    var winNode = tree.getNode('w' + tab.windowId);
-    if (!winNode) {
-        chrome.windows.get(tab.windowId, function(win) {
-            // Check if window node exists again before creating one, since we're
-            // in an async call and it could have happened in the meantime
-            var winNode = tree.getNode('w' + tab.windowId);
-            if (!winNode) {
-                // Still doesn't exist so create one now
-                winNode = new WindowNode(win);
-                tree.addNode(winNode);
-            }
-            tree.addNode(page, winNode);
-            return;
-        });
-        return;
-    }
-    tree.addNode(page, winNode);
+    tree.addTabToWindow(tab);
 }
 
 function onTabRemoved(tabId, removeInfo)
