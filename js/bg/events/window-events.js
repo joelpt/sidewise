@@ -288,16 +288,12 @@ function onWindowUpdateCheckInterval() {
         var dockDims = sidebarHandler.currentDockWindowMetrics;
         var allowAutoUnmaximize = settings.get('allowAutoUnmaximize');
 
-        // TODO remember last dock window minimized state and only do sidebar un/minimization
-        // when the state changes; this would permit sidebar to be minimized independently
-        // of the dock window though arguably we should not support that
-        //
-        // Ensure sidebar minimized state is the same as the dock window's.
         chrome.windows.get(sidebarHandler.windowId, function(sidebar) {
             if (!sidebar) {
                 return;
             }
 
+            // Ensure sidebar minimized state is the same as the dock window's.
             if (sidebar.state == 'minimized' && dock.state != 'minimized') {
                 chrome.windows.update(sidebar.id, { state: 'normal' }, function() {
                     chrome.windows.update(dock.id, { focused: true });
@@ -308,9 +304,34 @@ function onWindowUpdateCheckInterval() {
                 chrome.windows.update(sidebar.id, { state: 'minimized' });
                 return;
             }
+            // Handle sidebar getting maximized
+            if (sidebar.state == 'maximized') {
+                //make dock+sidebar completely fill the screen
+                var newDockDims = {
+                    left: sidebar.left + offset,
+                    top: sidebar.top + offset,
+                    width: sidebar.width - 2 * offset,
+                    height: sidebar.height - 2 * offset
+                };
+
+                // discard remembered (pre-sidebar) dock metrics; we'll reinstate them
+                // after redock
+                var memory = clone(sidebarHandler.lastDockWindowMetrics);
+                sidebarHandler.lastDockWindowMetrics = {};
+
+                // unmaximize the dock window, then set its size to "the whole screen",
+                // then do a sidebar redock to fit the sidebar in
+                positionWindow(sidebar.id, { state: 'normal' }, function() {
+                    positionWindow(dock.id, newDockDims, function() {
+                        sidebarHandler.redock(dock.id, function() {
+                            sidebarHandler.lastDockWindowMetrics = memory;
+                        });
+                    });
+                });
+                return;
+            }
         });
 
-        // TODO add an option to let sidewise unmaximize dock window
         var offset = monitorInfo.maximizedOffset;
         if (dock.state == 'maximized' && allowAutoUnmaximize) {
             // compute the dimensions we want the dock window to have
