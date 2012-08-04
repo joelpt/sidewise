@@ -137,7 +137,7 @@ function onTabCreated(tab)
         // New Tab pages always get put at the top level of the tree since they are
         // created via Ctrl+T or the New Tab button in the tab bar.
         log('Setting New Tab page as child of its hosting window', page, tab.windowId);
-        tree.addTabToWindow(tab, function(pageNode, winNode) {
+        tree.addTabToWindow(tab, page, function(pageNode, winNode) {
             tree.updateNode(pageNode, { placed: true });
         });
         return;
@@ -164,7 +164,7 @@ function onTabCreated(tab)
 
     // Make page a child of its hosting window
     log('Setting page as child of its hosting window', page, tab.windowId);
-    tree.addTabToWindow(tab);
+    tree.addTabToWindow(tab, page);
 }
 
 function onTabRemoved(tabId, removeInfo)

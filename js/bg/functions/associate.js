@@ -314,7 +314,7 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
     if (!match) {
         // apparently a new tab to us
         log('no matching PageNode found, adding to a new window', tab.id, tab);
-        tree.addTabToWindow(tab, function(page, win) {
+        tree.addTabToWindow(tab, undefined, function(page, win) {
             tree.updateNode(page, { referrer: referrer || '', historylength: historylength || 1 });
 
             // set focus to this page if it and its window have the current focus

@@ -453,8 +453,11 @@ PageTree.prototype = {
     // Chrome tab convenience functions
     ///////////////////////////////////////////////////////////
 
-    addTabToWindow: function(tab, onAdded) {
-        var pageNode = new PageNode(tab);
+    // @param tab {Chrome.Tab} to add under window node
+    // @param pageNode {PageNode} if given, use this instead of creating a new PageNode from tab
+    // @param onAdded {Function(pageNode, winNode)} if given, call this after performing addition(s)
+    addTabToWindow: function(tab, pageNode, onAdded) {
+        var pageNode = pageNode || new PageNode(tab);
         var winNode = this.getNode('w' + tab.windowId);
 
         if (winNode) {
