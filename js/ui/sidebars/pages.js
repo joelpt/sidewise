@@ -476,7 +476,8 @@ function onContextMenuItemClosePages($rows) {
 function onContextMenuItemCloseBranches($rows) {
     var $children = $rows.find('.ftRowNode');
     var childrenCount = $children.length;
-    if (childrenCount >= settings.get('multiSelectActionConfirmThreshold')
+    var threshold = settings.get('multiSelectActionConfirmThreshold');
+    if (threshold > 0 && childrenCount >= threshold
         && !confirm('This action will close ' + childrenCount + ' child row(s). Proceed?'))
     {
         return;
@@ -915,7 +916,8 @@ function onWindowRowCloseButton(evt) {
 function closeWindowRow(row) {
     var childCount = ft.getChildrenCount(row);
 
-    if (childCount >= settings.get('multiSelectActionConfirmThreshold')) {
+    var threshold = settings.get('multiSelectActionConfirmThreshold');
+    if (threshold > 0 && childCount >= threshold) {
         var msg = getMessage('prompt_closeWindow',
             [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
 
