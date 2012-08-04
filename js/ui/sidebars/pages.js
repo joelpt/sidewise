@@ -276,6 +276,8 @@ function onRowExpanderClick(evt) {
 
 function onRowsMoved(moves) {
     // console.log('MOVES', moves);
+    var windowToWindowMoves = {};
+    var windowToWindowMovesCount = 0;
     for (var i = 0; i < moves.length; i++) {
         var move = moves[i];
         var $row = move.$row;
@@ -294,15 +296,7 @@ function onRowsMoved(moves) {
             // TODO when moving tabs between windows we wont generate a move event for selected tabs
             // which are direct children of other selected tabs; these come with due to keepChildren=true
             // and therefore do not generate a move event. Move these properly.
-
-            // var $topParent = row.parents('.ftRowNode').last();
-
-            // var $moveTopParent = move.parent.parents('.ftRowNode').last();
             var $moveTopParent = $to.parents('.ftRowNode').last();
-            // if ($moveTopParent.length == 0) {
-            //     $moveTopParent = $to.parent().closest('.ftRowNode');
-            // }
-
             var $oldTopParent = move.$oldAncestors.last();
 
             // if we are moving row to a branch with a different non hibernated window row at the top ...
@@ -310,38 +304,68 @@ function onRowsMoved(moves) {
                 && $moveTopParent.attr('hibernated') != 'true'
                 && !($moveTopParent.is($oldTopParent)))
             {
-                // TODO enable reliable window-moving of subselected children nodes by issuing
-                // redundant 'moves' entries for selected>selected rows? or else sniff
-                // it all out right here ... SOLUTION: output a moves entry for each
-                // selected>selected row that is moved along with a boolean .staticMove=(true|false),
-                // onRowsMoved listeners can check this bool to decide if they need to do
-                // something with a given move. In our case we will want to use non-staticMove
-                // moves entries to indicate when we should still try to move that one to a new window
-                // here
-
-                // && !($moveTopParent.is($topParent))) {
-                // The reason this isn't working is that by the time this code gets executed,
-                // the node has already been physically moved in the tree, so getting $topParent
-                // will always return the same node as $moveTopParent; we're already actually moved there.
-                // Solution: implement onRowsMovedBefore with blocking callback providing the proposed
-                // list of moves, and onRowsMovedAfter called once move is all done and animated.
-                // solution 2: in moves, add oldParent, oldBeforeSibling, then we could perform this
-                // comparison properly .... UNLESS oldParent/oldBeforeSibling get moved themselves.
-                // solution 3: in moves, add oldAncestors which is an array exactly describing the parents
-                // that a given node had prior to being moved (though they may have themselves moved);
-                // we could look at the top oldAncestor to find out if we've been switched between
-                // two windows
-
-                // TODO prevent doing moves to non-normal type windows via droppable:accept
-                // TODO figure out some way to block onTabAttached events re-sorting what the tree
-                // looks like: this is probably possible by verifying in onTabAttached that
-                // we're under a different window than the one that's reported as the moveto window,
-                // and do nothing if they're the same window
-                chrome.tabs.move(getRowNumericId($row), { windowId: getRowNumericId($moveTopParent), index: 9999 });
+                // ... accumulate the list of window-to-window moves we'll perform after this loop
+                var fromWindowId = getRowNumericId($oldTopParent);
+                var toWindowId = getRowNumericId($moveTopParent);
+                var movingTabId = getRowNumericId($row);
+                if (windowToWindowMoves[fromWindowId] === undefined) {
+                    windowToWindowMoves[fromWindowId] = [];
+                    windowToWindowMovesCount++;
+                }
+                windowToWindowMoves[fromWindowId].push([toWindowId, movingTabId]);
                 continue;
             }
         }
     }
+    if (windowToWindowMovesCount > 0) {
+        // perform window-to-window moves
+        for (var fromWindowId in windowToWindowMoves) {
+            if (!windowToWindowMoves.hasOwnProperty(fromWindowId)) {
+                continue;
+            }
+            moveTabsBetweenWindows(parseInt(fromWindowId), windowToWindowMoves[fromWindowId]);
+        }
+    }
+}
+
+function moveTabsBetweenWindows(fromWindowId, moves) {
+    chrome.tabs.query({ windowId: fromWindowId }, function(fromWinTabs) {
+        if (fromWinTabs.length > moves.length) {
+            var afterFn = function() { };
+            for (var i in moves) {
+                var toWindowId = moves[i][0];
+                var movingTabId = moves[i][1];
+                moveTabToWindow(movingTabId, toWindowId, afterFn);
+            }
+            return;
+        }
+
+        // This is just a hack around a Chrome bug.
+        // We have to create a temporary about:blank tab in the moving-from window in the case where the from-window will
+        // get removed by moving its last tab to another window; if we do not do this, the tabs that get moved to the new
+        // window show up in the new window with no actual content (Chrome just shows an empty gray window for the tab/s).
+        chrome.tabs.create({ url: 'about:blank', windowId: fromWindowId }, function(tempTab) {
+            for (var i in moves) {
+                var toWindowId = moves[i][0];
+                var movingTabId = moves[i][1];
+                var afterFn;
+                console.log(i, moves.length - 1);
+                if (i == moves.length - 1) {
+                    afterFn = function() { chrome.tabs.remove(tempTab.id); };
+                }
+                else {
+                    afterFn = function() { };
+                }
+                moveTabToWindow(movingTabId, toWindowId, afterFn);
+            }
+        });
+    });
+}
+
+function moveTabToWindow(movingTabId, toWindowId, afterFn) {
+    chrome.tabs.move(movingTabId, { windowId: toWindowId, index: -1 }, function() {
+        chrome.tabs.update(movingTabId, { active: true }, afterFn);
+    });
 }
 
 function allowDropHandler($fromRows, relation, $toRow) {
