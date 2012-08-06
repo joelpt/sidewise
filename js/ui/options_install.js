@@ -1,4 +1,5 @@
 $(document).ready(function() {
+    reportEvent('install', 'viewed_first_time_install');
     initOptionsPage();
     showCard('optionsCard');
     $('#version').text(getMessage('text_Version') + ' ' + getVersion());

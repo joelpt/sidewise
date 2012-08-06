@@ -1,4 +1,5 @@
 $(document).ready(function() {
+    reportEvent('options', 'viewed_options');
     initOptionsPage();
 
     showCard('optionsCard');
@@ -21,5 +22,4 @@ $(document).ready(function() {
     $('#version').text(getMessage('text_Version') + ' ' + getVersion());
     setMonitorCountInfo(settings.get('monitorMetrics').length, false);
     initGooglePlusElement();
-
 });
