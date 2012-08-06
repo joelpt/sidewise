@@ -61,6 +61,10 @@ h1 {
     text-shadow: 3px 3px 3px rgba(0, 0, 0, 0.25);
 }
 
+h1 > p {
+    vertical-align: top;
+}
+
 header > h1 {
     margin-top: 0.125em;
 }
@@ -108,7 +112,7 @@ blockquote {
     margin-left: 0.75em;
 }
 
-.slideCard, #advancedOptionsExpander {
+.link {
     color: blue;
     text-decoration: underline;
     cursor: pointer;
@@ -304,6 +308,51 @@ input.invalid {
 
 .tooltip p+p {
     margin-top: 0.65em;
+}
+
+.navButton > img {
+    width: 16px;
+    height: 16px;
+    margin: 3px 5px;
+}
+
+.navButton {
+    display: inline-block;
+    background: -webkit-linear-gradient(top, rgba(196,203,212,1) 0%,rgba(155,164,171,1) 73%);
+    border-radius: 5px;
+    border: 1px solid #666;
+    height: 22px;
+    width: 26px;
+    text-decoration: none;
+    color: black;
+    font-family: sans-serif;
+    font-size: 14px;
+    margin-top: -4px;
+    box-shadow: -1px -1px 2px 1px rgba(0, 0, 0, 0.15) inset, 1px 1px 2px 1px rgba(255, 255, 255, 0.15) inset;
+}
+
+#installIndicatorArrow {
+    position: absolute;
+    left: -10000px;
+    z-index: -1;
+    width: 136px;
+    height: 101px;
+    color: white;
+    font-weight: bold;
+    padding-top: 43px;
+    text-align: right;
+    background-image: url('/images/install_indicator_arrow.png');
+    background-repeat: no-repeat;
+    background-position: 5px 5px;
+    overflow: visible;
+}
+
+#installIndicatorArrowContent {
+    padding-right: 15px;
+}
+
+#installDoneButton {
+    zoom: 1.5;
 }
 
 #clouds {

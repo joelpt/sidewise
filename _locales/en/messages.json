@@ -160,12 +160,19 @@
     "option_sidebarTargetWidth_units": { "message": "pixels" },
     "option_sidebarTargetWidth_hint": { "message": "#You can drag the edges of the sidebar to adjust its width, but if you prefer you can specify an exact value here. //// Close and reopen the sidebar for this setting to take effect." },
     "option_alwaysShowAdvancedOptions": { "message": "Always show advanced options" },
-    "option_reportUsageStatistics": { "message": "Report anonymous usage statistics" },
-    "option_reportUsageStatistics_hint": { "message": "#When enabled, Sidewise will report anonymous usage statistics to Google Analytics. This allows the author to see how often the options page is viewed, how often different sidebar panes are accessed, etc. //// No personally identifiable information is collected or shared with the author. If you're still uncomfortable with this, you can disable this option." },
+    "option_reportUsageStatistics": { "message": "Allow reporting to Google Analytics" },
+    "option_reportUsageStatistics_hint": { "message": "#Like many websites and other Chrome extensions, Sidewise uses Google Analytics to track usage levels of different parts of the extension. This tracking is [anonymized](https://developers.google.com/analytics/devguides/collection/gajs/methods/gaJSApi_gat#_gat._anonymizeIp) and no personal information is collected. //// If you'd rather not have Sidewise use Google Analytics tracking you can disable this option. //// To opt-out of all Google Analytics tracking browser-wide, install Google's [opt-out extension](https://chrome.google.com/webstore/detail/fllaojicojecljbmefodhfapmkghcbnh/details)." },
 
     "option_closeButton": { "message": "Close settings" },
     "option_resetButton": { "message": "Reset to defaults" },
     "optionsSaveNotNeeded": { "message": "Note: Settings are automatically saved as you change them." },
+
+    "installPageTitle": { "message": "Welcome to Sidewise" },
+    "installPageHeading": { "message": "# ![test](/images/sidewise_icon_48.png) Welcome to Sidewise!" },
+    "installInfoIntroduction": { "message": "#Thanks for installing Sidewise, the first real sidebar for Chrome! //// To the left you should see the sidebar, currently showing a **Tree Style Tabs** view of your open tabs. The buttons along the top can be used to view other sidebar panes. //// Sidewise has many options which can be accessed via the sidebar's options button ![options](/images/nav/settings.png), but here's one setting that you may want to change right away:" },
+    "installInfoPostIntroduction": { "message": "#That's it for now! If you'd like to make your Sidewise experience even better, here are a couple other extensions that work well with Sidewise: //// * [Lazarus](https://chrome.google.com/webstore/detail/loljledaigphbcpfhfmgopdkppkifgno): remembers what you typed into forms even if you close or hibernate a tab. // * [Open Selected Links](https://chrome.google.com/webstore/detail/adnafknofhipknicoghcmjhnoejbidnp): Open multiple selected links on a page via the context menu. Designed to work with Sidewise. ////" },
+    "installIndicatorArrowText": { "message": "Sidewise!" },
+    "option_installDoneButton": { "message": "Awesome! What now?" },
 
     "donateLink_1": { "message": "Think Sidewise is awesome?" },
     "donateLink_2": { "message": "Did you know this is my full-time job?" },

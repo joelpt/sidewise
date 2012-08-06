@@ -20,48 +20,28 @@ var donationPageNumber;
 // Initialization
 ///////////////////////////////////////////////////////////
 
-$(document).ready(function() {
+function initOptionsPage() {
     bg = chrome.extension.getBackgroundPage();
     settings = bg.settings;
 
-    reportEvent('options', 'viewed_options');
     setI18NText();
     transformInputElements();
     initDonateElements();
     loadSettings();
     setCloudPlayState();
     $.fx.off = !settings.get('animationEnabled');
-    initGooglePlusElement();
-    showCard('optionsCard');
-
-    $('#version').text(getMessage('text_Version') + ' ' + getVersion());
-    setMonitorCountInfo(settings.get('monitorMetrics').length, false);
 
     $(document)
         .on('change', 'input[type=text], select', onSettingModified)
         .on('click', 'input[type=checkbox]', onSettingModified)
-        .on('click', '#closeButton', onCloseButtonClick)
-        .on('click', '#resetButton', resetAllSettings)
-        .on('click', '#detectMonitorsButton', detectMonitors)
         .on('click', 'a', onLinkClick)
-        .on('click', '.slideCard', onSlideCardClick)
-        .on('click', '#donateLink', onDonateLinkClick);
-
-    if (settings.get('alwaysShowAdvancedOptions')) {
-        showAdvancedOptions(false);
-    }
-    else {
-        $(document).on('click', '#advancedOptionsExpander', function() {
-            showAdvancedOptions(true);
-        });
-    }
+        .on('click', '.slideCard', onSlideCardClick);
 
     setTimeout(function() {
         // delay to avoid F5 (reload) spuriously triggering keyup
         $(document).on('keyup', 'input[type=text]', onSettingModified);
     }, 250);
-
-});
+}
 
 function onDonateLinkClick(evt) {
     reportEvent('donate', 'donate_link_clicked', 'donate_link_' + donationLinkNumber);
@@ -69,8 +49,15 @@ function onDonateLinkClick(evt) {
 }
 
 function initDonateElements() {
-    var whichLink = Math.floor(1 + Math.random() * DONATION_LINK_VARIETIES);
     var whichPage = Math.floor(1 + Math.random() * DONATION_PAGE_VARIETIES);
+    var whichLink;
+
+    if (location.pathname == '/options_install.html') {
+        whichLink = 'install';
+    }
+    else {
+        whichLink = Math.floor(1 + Math.random() * DONATION_LINK_VARIETIES);
+    }
 
     $('#donateLink').html(getMessage('donateLink_' + whichLink));
 

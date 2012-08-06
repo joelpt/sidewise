@@ -88,7 +88,7 @@ Settings.prototype = {
             smartFocusPrefersCousins: false,
             loggingEnabled: false,
             alwaysShowAdvancedOptions: false,
-            sidebarTargetWidth: 300,
+            sidebarTargetWidth: 275,
             allowAutoUnmaximize: true,
             autoCollapseLastSessionWindows: true,
             rememberOpenPagesBetweenSessions: true,

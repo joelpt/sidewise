@@ -88,6 +88,15 @@ function createSidebarOnStartup() {
     sidebarHandler.monitorMetrics = monitorInfo.detectedMonitors;
     sidebarHandler.maximizedOffset = monitorInfo.detectedMaxMonitorOffset;
     sidebarHandler.createWithDockState(settings.get('dockState', 'right'));
+
+    if (!settings.get('firstTimeInstallShown')) {
+        settings.set('firstTimeInstallShown', true);
+        setTimeout(function() {
+            chrome.tabs.create({ 'url': '/options_install.html' }, function(tab) {
+                tree.updatePage(tab.id, { status: 'loaded' });
+            });
+        }, 1500);
+    }
 }
 
 

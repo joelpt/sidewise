@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title i18n="installPageTitle"></title>
+
+    <link type="text/css" rel="stylesheet" href="/css/reset.css"/>
+    <link type="text/css" rel="stylesheet" href="/css/options.css"/>
+    <link rel="shortcut icon" href="images/sidewise_icon_16.png"/>
+
+    <script type="text/javascript" src="/js/lib/ga.js"></script>
+
+    <script type="text/javascript" src="/js/jquery/jquery-1.7.2.min.js"></script>
+    <script type='text/javascript' src='/js/jquery/jquery.highlight.js'></script>
+    <script type='text/javascript' src='/js/jquery/jquery.easing.js'></script>
+
+    <script type="text/javascript" src="/js/util/marked.js"></script>
+    <script type="text/javascript" src="/js/util/i18n.js"></script>
+    <script type="text/javascript" src="/js/util/logging.js"></script>
+    <script type="text/javascript" src="/js/util/chrome-functions.js"></script>
+
+    <script type="text/javascript" src="/js/ui/options.js"></script>
+    <script type="text/javascript" src="/js/ui/options_install.js"></script>
+</head>
+<body>
+<div id="top">
+    <div id="cardHolder">
+        <div class="card" id="optionsCard">
+            <header style="padding-top: 0.5em;">
+                <h1 i18n="installPageHeading"></h1>
+            </header>
+
+
+            <div id="optionsContainer" style="margin-right: 1em;">
+                <div class="optionsRow">
+                    <div class="info" i18n="installInfoIntroduction"></div>
+                </div>
+
+                <b>
+                    <select name="dockState">
+                        <option value="left" i18n="option_dockState_left"/>
+                        <option value="right" i18n="option_dockState_right"/>
+                        <option value="undocked" i18n="option_dockState_undocked"/>
+                    </select>
+                </b>
+
+                <div class="optionsRow">
+                    <div class="info" i18n="installInfoPostIntroduction"></div>
+                </div>
+
+                <div align="right">
+                    <input type="button" class="slideCard" to="donateCard" i18n="installDoneButton" id="installDoneButton" name="installDoneButton"/>
+                </div>
+
+            </div>
+        </div>
+        <div class="card" id="donateCard">
+            <table>
+                <tr>
+                    <td id="donatePageHolder">
+                        <iframe id="donatePage" src=""></iframe>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<img id="installIndicatorArrow" src="/images/install_indicator_arrow.png">
+
+<div id="clouds">
+    <div id="clouds_1"></div>
+    <div id="clouds_2"></div>
+    <div id="clouds_3"></div>
+    <div id="clouds_4"></div>
+</div>
+
+</body>
+</html>
