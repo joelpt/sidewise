@@ -118,6 +118,12 @@ blockquote {
     cursor: pointer;
 }
 
+.tinyLinks {
+    font-size: 10px;
+    margin-top: 2px;
+    margin-bottom: 6px;
+}
+
 #donateCard table {
     width: 100%;
     height: 100%;
