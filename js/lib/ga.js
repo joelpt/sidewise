@@ -17,6 +17,7 @@ if (localStorage['reportUsageStatistics'] != 'false') {
 function initGA() {
     // initialize google analytics object
     _gaq.push(['_setAccount', 'UA-33231974-1']);
+    _gaq.push(['_gat._anonymizeIp']);
 
     (function() {
         var ga = document.createElement('script'); ga.type = 'text/javascript';
