@@ -39,8 +39,8 @@ function log() {
     catch(e) {
         stack = new CallStack(e.stack);
 
-        // discard calls to log*() from top of stack
-        while (stack.stack[0].indexOf('log') == 0) {
+        // discard unwanted calls from top of stack
+        while (stack.stack[0].indexOf('log') == 0 || stack.stack[0].indexOf('Error (unknown source)') == 0) {
             stack.stack.shift(1);
         }
     }
@@ -80,10 +80,12 @@ function log_brief() {
 
 
 function CallStack(stack) {
-    this.stack = (stack + '\n').replace(/^\S[^\(]+?[\n$]/gm, '')
-      .replace(/^\s+(at eval )?at\s+/gm, '')
-      .replace(/^([^\(]+?)([\n$])/gm, '{anonymous}()@$1$2')
-      .replace(/^Object.<anonymous>\s*\(([^\)]+)\)/gm, '{anonymous}()@$1')
-      .replace(/chrome\-extension\:\/\/(.+?)\//g, '/')
-      .split('\n');
+    this.stack = (stack + '\n')
+        .replace(/^\S[^\(]+?[\n$]/gm, '')
+        .replace(/^\s+(at eval )?at\s+/gm, '')
+        .replace(/^([^\(]+?)([\n$])/gm, '{anonymous}()@$1$2')
+        .replace(/^Object.<anonymous>\s*\(([^\)]+)\)/gm, '{anonymous}()@$1')
+        .replace(/chrome\-extension\:\/\/(.+?)\//g, '/')
+        .replace(/\n$/gm, '')
+        .split('\n');
 }
