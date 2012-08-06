@@ -900,7 +900,7 @@ function onWindowRowClick(evt) {
         return;
     }
 
-    setTimeout(function() { bg.tree.awakenWindow(row.attr('id')); }, 100);
+    setTimeout(function() { bg.tree.awakenWindow(row.attr('id')); }, 400);
 }
 
 function onWindowRowDoubleClick(evt) {
