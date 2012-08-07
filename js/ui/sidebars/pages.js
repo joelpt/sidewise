@@ -960,10 +960,11 @@ function closeWindowRow(row) {
 
     chrome.windows.get(windowId, function(win) {
         if (win) {
-            chrome.windows.remove(windowId);
+            chrome.windows.remove(windowId, function() {
+                bg.tree.removeNode(id, true);
+            });
             return;
         }
-        bg.tree.removeNode(id, true);
     });
 }
 
