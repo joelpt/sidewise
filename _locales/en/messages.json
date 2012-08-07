@@ -173,7 +173,7 @@
     "installInfoIntroduction": { "message": "#Thanks for installing Sidewise, the first real sidebar for Chrome! //// To the left you should see the sidebar, currently showing a **Tree Style Tabs** view of your open tabs. The buttons along the top can be used to view other sidebar panes. //// Sidewise has many options which can be accessed via the sidebar's options button ![options](/images/nav/settings.png), but here's one setting that you may want to change right away:" },
     "installInfoPostIntroduction": { "message": "#That's it for now! If you'd like to make your Sidewise experience even better, here are a couple other extensions that work well with Sidewise: //// * [Lazarus](https://chrome.google.com/webstore/detail/loljledaigphbcpfhfmgopdkppkifgno): remembers what you typed into forms even if you close or hibernate a tab. // * [Open Selected Links](https://chrome.google.com/webstore/detail/adnafknofhipknicoghcmjhnoejbidnp): Open multiple selected links on a page via the context menu. Designed to work with Sidewise. ////" },
     "installIndicatorArrowText": { "message": "Sidewise!" },
-    "option_installDoneButton": { "message": "Awesome! What now?" },
+    "option_installDoneButton": { "message": "Awesome! What now? -->" },
 
     "donateLink_1": { "message": "Think Sidewise is awesome?" },
     "donateLink_2": { "message": "Did you know this is my full-time job?" },
