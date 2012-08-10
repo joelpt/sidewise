@@ -2,7 +2,7 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-var LOGGING_ENABLED = true;
+var LOGGING_ENABLED = false;
 
 
 ///////////////////////////////////////////////////////////
@@ -23,6 +23,10 @@ function onDOMContentLoaded() {
 function setUpTitleObserver() {
     // set up an observer for the title element
     var target = document.querySelector('head > title');
+    if (!target) {
+        log('Page does not have head > title element');
+        return;
+    }
     var observer = new window.WebKitMutationObserver(function(mutations) {
         var mutation = mutations[0];
         log('new page title:', mutation.target.textContent);
