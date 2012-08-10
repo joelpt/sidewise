@@ -4,6 +4,7 @@ var MonitorInfo = function() {
     this.detectOnComplete = null;
     this.detectingMonitors = false;
     this.lastDetectionWindowId = null;
+    this.detectionDOMWindow = null;
 }
 
 MonitorInfo.prototype = {
@@ -18,16 +19,16 @@ MonitorInfo.prototype = {
         var os = window.navigator.platform;
         var self = this;
 
-        if (os.indexOf('Win') != 0) {
-            alert(getMessage('prompt_DetectMonitors_beta'));
+        // if (os.indexOf('Win') != 0) {
+        //     alert(getMessage('prompt_DetectMonitors_beta'));
 
-            // Make assumptions for Mac/Linux boxes
-            log('Detecting single monitor');
-            this.monitors = [this.getPrimaryMonitorMetrics()];
-            this.maximizedOffset = 0;
-            callback(this.monitors, this.maximizedOffset);
-            return;
-        }
+        //     // Make assumptions for Mac/Linux boxes
+        //     log('Detecting single monitor');
+        //     this.monitors = [this.getPrimaryMonitorMetrics()];
+        //     this.maximizedOffset = 0;
+        //     callback(this.monitors, this.maximizedOffset);
+        //     return;
+        // }
 
         alert(getMessage('prompt_DetectMonitors'));
 
@@ -52,43 +53,77 @@ MonitorInfo.prototype = {
     },
 
     getPrimaryMonitorMetrics: function() {
-         // ascertain the primary monitor's metrics using background page screen object
-        var mon = {
-            detectedLeft: screen.availLeft,
-            availWidth: screen.availWidth,
-            marginLeft: screen.availLeft,
-            marginRight: screen.width - screen.availWidth - screen.availLeft,
-            left: 0,
-            width: screen.width,
-            height: screen.height,
-            top: screen.top,
-            availHeight: screen.availHeight
-        };
+        // ascertain the primary monitor's metrics using background page screen object
+        var mon = this.buildMetricsFromDOMWindow(window);
+        mon.primaryMonitor = true;
         return mon;
     },
 
-    detectMaximizedOffset: function(closeTestWindowAfter, callback) {
-        // create window used for monitor metric detection
-        var self = this;
-        chrome.windows.create(
-            { url: '/detect-monitor.html', left: screen.availLeft, top: screen.availTop, width: 500, height: 200 },
-            function(win) {
-                log('Created detection window', win.id);
-                self.lastDetectionWindowId = win.id;
+    // build metrics object from a given Screen object and provided left/top values
+    buildMetricsFromScreen: function(screenObject, left, top) {
+        return {
+            left: left,
+            top: top,
+            width: screenObject.width,
+            height: screenObject.height,
+            availWidth: screenObject.availWidth,
+            availHeight: screenObject.availHeight,
+            marginLeft: screenObject.availLeft - left,
+            marginRight: left + screenObject.width - screenObject.availWidth - screenObject.availLeft
+        };
+    },
 
-                // ascertain maximizedOffset
-                self.detectMonitorMetrics(win.id, 0, function(winId, testedAtLeft, left, top, width, height) {
-                    self.maximizedOffset = screen.availTop - top;
-                    if (closeTestWindowAfter) {
-                        chrome.windows.remove(win.id, function() {
-                            callback(self.maximizedOffset, undefined);
-                        });
-                        return;
-                    }
-                    callback(self.maximizedOffset, win);
-                });
+    buildMetricsFromDOMWindow: function(domWindow) {
+        return this.buildMetricsFromScreen(domWindow.screen, domWindow.screenLeft, domWindow.screenTop);
+    },
+
+    // create window used for monitor metric detection
+    createDetectionWindow: function(left, top, callback)  {
+        var self = this;
+        this.detectingMonitors = true;
+        chrome.windows.create(
+            { url: '/detect-monitor.html', type: 'popup', left: left, top: top, width: 500, height: 200 },
+            function(win) {
+                setTimeout(function() {
+                    log('Created detection window', win.id);
+                    self.lastDetectionWindowId = win.id;
+                    var views = chrome.extension.getViews();
+                    var domWindow = views.filter(function(e) {
+                        return e.location.pathname == '/detect-monitor.html';
+                    })[0];
+                    self.detectionDOMWindow = domWindow;
+                    callback(win);
+                }, 200);
             }
         );
+    },
+
+    // destroy detection window
+    destroyDetectionWindow: function(callback) {
+        var self = this;
+        chrome.windows.remove(this.lastDetectionWindowId, function() {
+            self.detectionDOMWindow = null;
+            self.detectingMonitors = false;
+            callback();
+        });
+    },
+
+    // detect how much the OS causes windows to hang over the edge when they're maximized
+    detectMaximizedOffset: function(callback) {
+        var self = this;
+        this.createDetectionWindow(screen.availLeft, screen.availTop, function() {
+            var winId = self.lastDetectionWindowId;
+            chrome.windows.update(winId, { state: 'normal' }, function(winBefore) {
+                var topBefore = winBefore.top;
+                chrome.windows.update(winId, { state: 'maximized' }, function(winAfter) {
+                    var topAfter = winAfter.top;
+                    self.destroyDetectionWindow.call(self, function() {
+                        self.maximizedOffset = topBefore - topAfter;
+                        callback();
+                    });
+                });
+            });
+        });
     },
 
     detectAllMonitorMetrics: function(onComplete) {
@@ -99,13 +134,61 @@ MonitorInfo.prototype = {
         this.monitors.push(mon);
 
         var self = this;
-        this.detectMaximizedOffset(false, function(maximizedOffset, win) {
-            log('detection window id', win.id);
-            this.maximizedOffset = maximizedOffset;
+        this.detectMaximizedOffset.call(self, function() {
+            self.detectRightMonitors.call(self, mon.left + mon.width, mon.top, function() {
+                self.detectLeftMonitors.call(self, mon.left, mon.top, function() {
+                    onComplete();
+                });
+            });
+        });
+    },
 
-            // detect additional monitors
-            self.detectMonitorMetrics(win.id, mon.width, function() {
-                self.onDetectingMonitorToRight.apply(self, arguments);
+    detectRightMonitors: function(left, top, callback) {
+        var self = this;
+        this.createDetectionWindow(left + 10, top + 10, function(win) {
+            var exists = false;
+            var mon;
+            if (win.left > left) {
+                // monitor exists at given left position
+                var exists = true;
+                var dom = self.detectionDOMWindow;
+                var s = dom.screen;
+                mon = self.buildMetricsFromScreen.call(self, s, left, top);
+                self.monitors.push(mon);
+            }
+            self.destroyDetectionWindow.call(self, function() {
+                if (exists) {
+                    // look for monitors further to the right
+                    self.detectRightMonitors.call(self, left + mon.width, top, callback);
+                    return;
+                }
+                // monitor was not found at given left position; we're done here
+                callback();
+            });
+        });
+    },
+
+    detectLeftMonitors: function(left, top, callback) {
+        var self = this;
+        this.createDetectionWindow(left - 510, top + 10, function(win) {
+            var exists = false;
+            var mon;
+            if (win.left < left) {
+                // monitor exists at given left position
+                var exists = true;
+                var dom = self.detectionDOMWindow;
+                var s = dom.screen;
+                mon = self.buildMetricsFromScreen.call(self, s, left - s.width, top);
+                self.monitors.push(mon);
+            }
+            self.destroyDetectionWindow.call(self, function() {
+                if (exists) {
+                    // look for monitors further to the right
+                    self.detectLeftMonitors.call(self, left - mon.width, top, callback);
+                    return;
+                }
+                // monitor was not found at given left position; we're done here
+                callback();
             });
         });
     },
