@@ -64,7 +64,7 @@ function postLoad() {
     }
     else {
         // We don't know monitor metrics, so obtain them, save them, then create sidebar on startup
-        monitorInfo.retrieveMonitorMetrics(function(monitors, maxOffset) {
+        monitorInfo.retrieveMonitorMetrics(function() {
             monitorInfo.saveToSettings();
             createSidebarOnStartup();
         });
