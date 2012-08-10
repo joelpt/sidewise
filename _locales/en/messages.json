@@ -1,6 +1,6 @@
 {
     "extName": { "message": "Sidewise Tree Style Tabs" },
-    "extDescription": { "message": "A dockable sidebar for Chrome featuring Tree Style Tabs and tab hibernation." },
+    "extDescription": { "message": "A dockable sidebar for Chrome featuring vertical Tree Style Tabs, Tab Hibernation, and much more." },
 
 
     "sidebarTitle": { "message": "Sidewise" },
@@ -180,6 +180,7 @@
     "donateLink_3": { "message": "Support Sidewise with a donation!" },
     "donateLink_4": { "message": "Donations = Features. Please consider a donation!" },
     "donateLink_5": { "message": "Sidewise is donation-powered." },
+    "donateLink_6": { "message": "Wizard needs food, badly!" },
 
     "donate_back": { "message": "&lt;- Back to options" }
 }
