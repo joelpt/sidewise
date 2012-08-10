@@ -3,7 +3,7 @@
 ///////////////////////////////////////////////////////////
 
 var CARD_SLIDE_DURATION_MS = 450;
-var DONATION_LINK_VARIETIES = 5;
+var DONATION_LINK_VARIETIES = 6;
 var DONATION_PAGE_VARIETIES = 5;
 
 ///////////////////////////////////////////////////////////
@@ -49,7 +49,8 @@ function onDonateLinkClick(evt) {
 }
 
 function initDonateElements() {
-    var whichPage = Math.floor(1 + Math.random() * DONATION_PAGE_VARIETIES);
+    // var whichPage = Math.floor(1 + Math.random() * DONATION_PAGE_VARIETIES);
+    var whichPage = 1;
     var whichLink;
 
     if (location.pathname == '/options_install.html') {
