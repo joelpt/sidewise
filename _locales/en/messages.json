@@ -147,7 +147,7 @@
     "option_wakeHibernatedPagesOnClick": { "message": "Wake hibernated page rows on click" },
     "option_wakeHibernatedPagesOnClick_hint": { "message": "If disabled, you can wake hibernated page rows using the hibernate/wake button at the right end of the row." },
 
-    "optionsInfoMonitorDetection": { "message": "#Whenever you change your monitor configuration, *reload Chrome*, then come here and click 'Detect all monitors now' below. //// This should be done whenever you add or remove monitors, change monitor resolutions, reposition monitors in your OS settings, or change the location/size of your system taskbars. //// Monitor detection functionality should be [improving](http://code.google.com/p/chromium/issues/detail?id=126586) [soon](http://code.google.com/p/chromium/issues/detail?id=129398)."},
+    "optionsInfoMonitorDetection": { "message": "#Whenever you change your monitor configuration, *restart Chrome*, then come here and click 'Detect all monitors now' below. //// This should be done whenever you add or remove monitors, change monitor resolutions, reposition monitors in your OS settings, or change the location/size of your system taskbars."},
     "optionsInfoMonitorsOnYourSystem": { "message": "#Sidewise currently believes you have **$1** $2 connected to your system." },
     "option_maximizedOffset": { "message": "Maximized window screen-edge overhang" },
     "option_maximizedOffset_units": { "message": "pixels" },
