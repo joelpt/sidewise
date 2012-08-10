@@ -364,10 +364,10 @@ function showErrorMessage(msg) {
 ///////////////////////////////////////////////////////////
 
 function detectMonitors() {
-    bg.monitorInfo.retrieveMonitorMetrics(function(monitors, maxOffset) {
+    bg.monitorInfo.retrieveMonitorMetrics(function() {
         bg.monitorInfo.saveToSettings();
         settings.updateStateFromSettings();
-        setMonitorCountInfo(monitors.length, true);
+        setMonitorCountInfo(bg.monitorInfo.monitors.length, true);
         showStatusMessage(getMessage('prompt_detectMonitors_complete'));
     });
 }
