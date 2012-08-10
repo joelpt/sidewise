@@ -205,7 +205,7 @@ function onTabRemoved(tabId, removeInfo)
             nextTabId = page.smartFocusParentTabId;
         }
         else {
-            nextTabId = findNextTabToFocus(tabId, settings.get('smartFocusPrefersCousins'));
+            nextTabId = findNextTabToFocus(page.id, settings.get('smartFocusPrefersCousins'));
             if (nextTabId) {
                 nextTabId = parseInt(nextTabId.slice(1));
             }
@@ -230,34 +230,62 @@ function onTabRemoved(tabId, removeInfo)
     tree.removeNode(page);
 }
 
-function findNextTabToFocus(tabId, preferCousins) {
+function findNextTabToFocus(id, preferCousins) {
         // identify the next tab we would like to navigate to
-        var found = tree.getPageEx(tabId);
+        var found = tree.getNodeEx(id);
 
-        if (found.node.children.length > 0) {
-            // first child
-            return found.node.children[0].id;
+        // first valid descendant
+        for (var i = 0; i < found.node.children.length; i++) {
+            var id = testNodeForFocus(found.node.children[i], true);
+            if (id) return id;
         }
+
+        // next valid sibling or sibling-descendant
         if (found.siblings.length > found.index + 1) {
-            // next sibling
-            return found.siblings[found.index + 1].id;
+            var id = testNodeForFocus(found.siblings[found.index + 1], true);
+            if (id) return id;
         }
+
+        // preceding valid sibling
         if (found.index > 0) {
-            // preceding sibling
-            return found.siblings[found.index - 1].id;
+            for (var i = found.index - 1; i >= 0; i--) {
+                var id = testNodeForFocus(found.siblings[i], true);
+                if (id) return id;
+            }
         }
+
+        // look for a later cousin before traversing up to found.node's parent
         if (preferCousins) {
-            // look for a later cousin before going to found.node's parent
             for (var i = found.parentIndex + 1; i < found.parentSiblings.length; i++) {
                 if (found.parentSiblings[i].children.length > 0) {
-                    return found.parentSiblings[i].children[0].id;
+                    var id = testNodeForFocus(found.parentSiblings[i].children[0], true);
+                    if (id) return id;
                 }
             }
         }
-        if (found.parent.elemType == 'page') {
-            // use direct parent
-            return found.parent.id;
+
+        // use direct parent
+        var id = testNodeForFocus(found.parent, false);
+        if (id) return id;
+
+        // nothing suitable found
+        return undefined;
+}
+
+function testNodeForFocus(node, testDescendants)
+{
+    if (node instanceof PageNode && !node.hibernated) {
+        return node.id;
+    }
+
+    if (testDescendants) {
+        for (var i = 0; i < node.children.length; i++) {
+            var id = testNodeForFocus(node.children[i], true);
+            if (id) return id;
         }
+    }
+
+    return undefined;
 }
 
 function onTabUpdated(tabId, changeInfo, tab)
