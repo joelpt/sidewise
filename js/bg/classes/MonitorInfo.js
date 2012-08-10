@@ -1,3 +1,11 @@
+///////////////////////////////////////////////////////////
+// Multiple-monitor metrics detection
+///////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////
+// Initialization of MonitorInfo class
+///////////////////////////////////////////////////////////
+
 var MonitorInfo = function() {
     this.monitors = settings.get('monitorMetrics') || [];
     this.maximizedOffset = settings.get('maximizedOffset') || 0;
@@ -9,9 +17,22 @@ var MonitorInfo = function() {
 
 MonitorInfo.prototype = {
 
+    ///////////////////////////////////////////////////////////
+    // Status getters
+    ///////////////////////////////////////////////////////////
+
     isKnown: function() {
         return (this.monitors.length > 0);
     },
+
+    isDetecting: function() {
+        return this.detectingMonitors;
+    },
+
+
+    ///////////////////////////////////////////////////////////
+    // Main UI entry point for monitor detection routine
+    ///////////////////////////////////////////////////////////
 
     retrieveMonitorMetrics: function(callback) {
         var monitors;
@@ -42,90 +63,12 @@ MonitorInfo.prototype = {
         });
     },
 
-    saveToSettings: function() {
-        log(this.monitors, this.maximizedOffset);
-        settings.set('monitorMetrics', this.monitors);
-        settings.set('maximizedOffset', this.maximizedOffset);
-    },
 
-    isDetecting: function() {
-        return this.detectingMonitors;
-    },
+    ///////////////////////////////////////////////////////////
+    // Detection routines
+    ///////////////////////////////////////////////////////////
 
-    getPrimaryMonitorMetrics: function() {
-        // ascertain the primary monitor's metrics using background page screen object
-        var mon = this.buildMetricsFromDOMWindow(window);
-        mon.primaryMonitor = true;
-        return mon;
-    },
-
-    // build metrics object from a given Screen object and provided left/top values
-    buildMetricsFromScreen: function(screenObject, left, top) {
-        return {
-            left: left,
-            top: top,
-            width: screenObject.width,
-            height: screenObject.height,
-            availWidth: screenObject.availWidth,
-            availHeight: screenObject.availHeight,
-            marginLeft: screenObject.availLeft - left,
-            marginRight: left + screenObject.width - screenObject.availWidth - screenObject.availLeft
-        };
-    },
-
-    buildMetricsFromDOMWindow: function(domWindow) {
-        return this.buildMetricsFromScreen(domWindow.screen, domWindow.screenLeft, domWindow.screenTop);
-    },
-
-    // create window used for monitor metric detection
-    createDetectionWindow: function(left, top, callback)  {
-        var self = this;
-        this.detectingMonitors = true;
-        chrome.windows.create(
-            { url: '/detect-monitor.html', type: 'popup', left: left, top: top, width: 500, height: 200 },
-            function(win) {
-                setTimeout(function() {
-                    log('Created detection window', win.id);
-                    self.lastDetectionWindowId = win.id;
-                    var views = chrome.extension.getViews();
-                    var domWindow = views.filter(function(e) {
-                        return e.location.pathname == '/detect-monitor.html';
-                    })[0];
-                    self.detectionDOMWindow = domWindow;
-                    callback(win);
-                }, 200);
-            }
-        );
-    },
-
-    // destroy detection window
-    destroyDetectionWindow: function(callback) {
-        var self = this;
-        chrome.windows.remove(this.lastDetectionWindowId, function() {
-            self.detectionDOMWindow = null;
-            self.detectingMonitors = false;
-            callback();
-        });
-    },
-
-    // detect how much the OS causes windows to hang over the edge when they're maximized
-    detectMaximizedOffset: function(callback) {
-        var self = this;
-        this.createDetectionWindow(screen.availLeft, screen.availTop, function() {
-            var winId = self.lastDetectionWindowId;
-            chrome.windows.update(winId, { state: 'normal' }, function(winBefore) {
-                var topBefore = winBefore.top;
-                chrome.windows.update(winId, { state: 'maximized' }, function(winAfter) {
-                    var topAfter = winAfter.top;
-                    self.destroyDetectionWindow.call(self, function() {
-                        self.maximizedOffset = topBefore - topAfter;
-                        callback();
-                    });
-                });
-            });
-        });
-    },
-
+    // Perform detection routines to find maximized offset and all monitors' metrics
     detectAllMonitorMetrics: function(onComplete) {
         this.monitors = [];
         this.detectOnComplete = onComplete;
@@ -143,6 +86,25 @@ MonitorInfo.prototype = {
         });
     },
 
+    // Detect how much the OS causes windows to hang over the edge when they're maximized
+    detectMaximizedOffset: function(callback) {
+        var self = this;
+        this.createDetectionWindow(screen.availLeft, screen.availTop, function() {
+            var winId = self.lastDetectionWindowId;
+            chrome.windows.update(winId, { state: 'normal' }, function(winBefore) {
+                var topBefore = winBefore.top;
+                chrome.windows.update(winId, { state: 'maximized' }, function(winAfter) {
+                    var topAfter = winAfter.top;
+                    self.destroyDetectionWindow.call(self, function() {
+                        self.maximizedOffset = topBefore - topAfter;
+                        callback();
+                    });
+                });
+            });
+        });
+    },
+
+    // Detect monitor at (left, top) and any monitors further to the right of that
     detectRightMonitors: function(left, top, callback) {
         var self = this;
         this.createDetectionWindow(left + 10, top + 10, function(win) {
@@ -168,6 +130,7 @@ MonitorInfo.prototype = {
         });
     },
 
+    // Detect all monitors to the left of the monitor at (left, top)
     detectLeftMonitors: function(left, top, callback) {
         var self = this;
         this.createDetectionWindow(left - 510, top + 10, function(win) {
@@ -183,7 +146,7 @@ MonitorInfo.prototype = {
             }
             self.destroyDetectionWindow.call(self, function() {
                 if (exists) {
-                    // look for monitors further to the right
+                    // look for monitors further to the left
                     self.detectLeftMonitors.call(self, left - mon.width, top, callback);
                     return;
                 }
@@ -193,91 +156,82 @@ MonitorInfo.prototype = {
         });
     },
 
-    detectMonitorMetrics: function(winId, atLeft, callback) {
-        chrome.windows.update(winId, { state: 'normal', left: atLeft, top: 0, width: 500, height: 200 },
-            function(w) {
-                chrome.windows.update(winId, { state: 'maximized' }, function(w) {
-                    callback(winId, atLeft, w.left, w.top, w.width, w.height);
-                });
+
+    ///////////////////////////////////////////////////////////
+    // Detection window creation and destruction
+    ///////////////////////////////////////////////////////////
+
+    // Create window used for monitor metric detection
+    createDetectionWindow: function(left, top, callback)  {
+        var self = this;
+        this.detectingMonitors = true;
+        chrome.windows.create(
+            { url: '/detect-monitor.html', type: 'popup', left: left, top: top, width: 500, height: 200 },
+            function(win) {
+                setTimeout(function() {
+                    log('Created detection window', win.id);
+                    self.lastDetectionWindowId = win.id;
+                    var views = chrome.extension.getViews();
+                    var domWindow = views.filter(function(e) {
+                        return e.location.pathname == '/detect-monitor.html';
+                    })[0];
+                    self.detectionDOMWindow = domWindow;
+                    callback(win);
+                }, 200);
             }
         );
     },
 
-    onDetectingMonitorToRight: function(winId, testedAtLeft, left, top, width, height) {
-        // do we already know about this monitor?
-        // if so it actually means there are no more monitors to the right to be found
+    // Destroy detection window
+    destroyDetectionWindow: function(callback) {
         var self = this;
-        var matching = this.monitors.filter(function(m) {
-            return m.detectedLeft == left + self.maximizedOffset;
-        });
-
-        if (matching.length == 0) {
-            // don't know about this monitor yet, record it
-            var mon = {
-                detectedLeft: left + this.maximizedOffset,
-                availWidth: width - 2 * this.maximizedOffset,
-                marginLeft: left - testedAtLeft + this.maximizedOffset,
-                marginRight: 0, // TODO figure out a way to actually determine this
-                left: testedAtLeft,
-                top: top,
-                height: height,
-                availHeight: height
-            };
-            mon.width = mon.marginLeft + mon.availWidth + mon.marginRight;
-
-            this.monitors.push(mon);
-
-            // and continue looking for monitors to the right
-            this.detectMonitorMetrics(winId, testedAtLeft + mon.width, function() {
-                self.onDetectingMonitorToRight.apply(self, arguments);
-            });
-            return;
-        }
-
-        // TODO MAC OSX
-        // if returned value for left is less than testedAtLeft, we did not succeed in finding
-        // another monitor (Chrome put the test window back onto the same monitor)
-
-        // now try to detect monitors to the left of the first one
-        this.detectMonitorMetrics(winId, -600, function() {
-            self.onDetectingMonitorToLeft.apply(self, arguments);
+        chrome.windows.remove(this.lastDetectionWindowId, function() {
+            self.detectionDOMWindow = null;
+            self.detectingMonitors = false;
+            callback();
         });
     },
 
-    onDetectingMonitorToLeft: function(winId, testedAtLeft, left, top, width, height) {
-        // do we already know about this monitor?
-        // if so it actually means there are no more monitors to the left to be found
-        var self = this;
-        var matching = this.monitors.filter(function(m) {
-            return m.detectedLeft >= left + self.maximizedOffset;
-        });
-        if (matching.length == 0) {
-            // don't know about this monitor yet, record it
-            var mon = {
-                detectedLeft: left + this.maximizedOffset,
-                availWidth: width - 2 * this.maximizedOffset,
-                marginLeft: 0, // TODO puzzle out a way to get these values
-                marginRight: 0,
-                left: left + this.maximizedOffset,
-                top: top,
-                height: height,
-                availHeight: height
-            };
-            mon.width = mon.marginLeft + mon.availWidth + mon.marginRight;
 
-            this.monitors.splice(0, 0, mon);
+    ///////////////////////////////////////////////////////////
+    // Metrics object construction
+    ///////////////////////////////////////////////////////////
 
-            // and continue looking for monitors to the left
-            this.detectMonitorMetrics(winId, mon.left - 600, function() {
-                self.onDetectingMonitorToLeft.apply(self, arguments);
-            });
-            return;
-        }
+    // Ascertain the primary monitor's metrics using background page's DOM window
+    getPrimaryMonitorMetrics: function() {
+        var mon = this.buildMetricsFromDOMWindow(window);
+        mon.primaryMonitor = true;
+        return mon;
+    },
 
-        // all done, close the detection window
-        chrome.windows.remove(winId, function() {
-            self.detectOnComplete(self.monitors, self.maximizedOffset);
-        });
+    // Build metrics object from a given Screen object and provided left/top values
+    buildMetricsFromScreen: function(screenObject, left, top) {
+        return {
+            left: left,
+            top: top,
+            width: screenObject.width,
+            height: screenObject.height,
+            availWidth: screenObject.availWidth,
+            availHeight: screenObject.availHeight,
+            marginLeft: screenObject.availLeft - left,
+            marginRight: left + screenObject.width - screenObject.availWidth - screenObject.availLeft
+        };
+    },
+
+    // Build metrics object from a given Window (DOM window) object
+    buildMetricsFromDOMWindow: function(domWindow) {
+        return this.buildMetricsFromScreen(domWindow.screen, domWindow.screenLeft, domWindow.screenTop);
+    },
+
+
+    ///////////////////////////////////////////////////////////
+    // Settings-saving helper
+    ///////////////////////////////////////////////////////////
+
+    // Persist this.(monitors,maximizedOffset) to settings
+    saveToSettings: function() {
+        log(this.monitors, this.maximizedOffset);
+        settings.set('monitorMetrics', this.monitors);
+        settings.set('maximizedOffset', this.maximizedOffset);
     }
-
 };
