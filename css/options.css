@@ -112,6 +112,10 @@ blockquote {
     margin-left: 0.75em;
 }
 
+#donateLink {
+    font-size: 120%;
+}
+
 .link {
     color: blue;
     text-decoration: underline;
@@ -138,6 +142,11 @@ blockquote {
 #donatePageHolder {
     width: 100%;
     height: 100%;
+}
+
+#donateCardBackLink {
+    font-size: 80%;
+    color: gray;
 }
 
 #statusBar {
