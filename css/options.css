@@ -58,6 +58,7 @@ h1 {
     font-weight: bold;
     font-size: 49px;
     margin-left: 6px;
+    padding-top: 2px;
     text-shadow: 3px 3px 3px rgba(0, 0, 0, 0.25);
 }
 
@@ -126,6 +127,16 @@ blockquote {
     font-size: 10px;
     margin-top: 2px;
     margin-bottom: 6px;
+}
+
+.likeButton {
+    position: relative;
+    top: 1px;
+}
+
+.likeButton:hover {
+    -webkit-filter: brightness(0.12);
+    cursor: pointer;
 }
 
 #donateCard table {
