@@ -2,6 +2,11 @@ $(document).ready(function() {
     reportEvent('options', 'viewed_options');
     initOptionsPage();
 
+    // hide this option on Macs, for which we ignore it anyway
+    if (PLATFORM == 'Mac') {
+        $('#allowAutoUnmaximize').parents('.optionsRow').first().hide();
+    }
+
     showCard('optionsCard');
 
     if (settings.get('alwaysShowAdvancedOptions')) {
