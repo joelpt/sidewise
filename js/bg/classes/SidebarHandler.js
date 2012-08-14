@@ -67,7 +67,7 @@ SidebarHandler.prototype = {
         chrome.windows.get(handler.dockWindowId, function(win) {
             win = handler.fixMaximizedWinMetrics(win);
             var metrics = handler.getGoalDockMetrics(win, handler.dockState, handler.targetWidth);
-            log(metrics);
+            log('dock window metrics before creating sidebar', 'targets', metrics, 'win', win);
             handler.lastDockWindowMetrics = {
                 state: win.state,
                 left: win.left,
@@ -93,10 +93,17 @@ SidebarHandler.prototype = {
             };
             log(winSpec);
             chrome.windows.create(winSpec, function(win) {
-                handler.onCreatedSidebarWindow.call(handler, win);
-                if (onCreated) {
-                    onCreated(win);
-                }
+                // Ensure sidebar is in fact sized as we requested; for example on Mac, Chrome
+                // doesn't strictly obey our initial sizing parameters
+                chrome.windows.update(win.id,
+                    { top: winSpec.top, height: winSpec.height, left: winSpec.left, width: winSpec.width },
+                    function() {
+                        handler.onCreatedSidebarWindow.call(handler, win);
+                        if (onCreated) {
+                            onCreated(win);
+                        }
+                    }
+                );
             });
         });
     },
@@ -150,7 +157,7 @@ SidebarHandler.prototype = {
 
         var handler = this;
         chrome.windows.get(handler.windowId, function(sidebar) {
-            if (handler.resizingSidebar || sidebar.state == 'maximized') {
+            if (handler.resizingSidebar || (sidebar.state == 'maximized' && PLATFORM != 'Mac')) {
                 return;
             }
 
@@ -238,7 +245,9 @@ SidebarHandler.prototype = {
         // redock to new dock window
         this.dockWindowId = windowId;
         chrome.windows.get(windowId, function(win) {
-            win = self.fixMaximizedWinMetrics(win);
+            if (PLATFORM != 'Mac') {
+                win = self.fixMaximizedWinMetrics(win);
+            }
             var metrics = self.getGoalDockMetrics(win, self.dockState, self.targetWidth);
             log(metrics);
             self.lastDockWindowMetrics = {
@@ -281,7 +290,7 @@ SidebarHandler.prototype = {
     // (has its edges going off the edge of the screen)
     fixMaximizedWinMetrics: function(win)
     {
-        if (win.state == 'maximized') {
+        if (win.state == 'maximized' && PLATFORM != 'Mac') {
             // The dock-to window will be unmaximized after this process.
             // Therefore adjust its dimensions here for what we expect them to be unmaxed.
             win.left += monitorInfo.maximizedOffset;
@@ -427,7 +436,7 @@ SidebarHandler.prototype = {
 
     // Ensure sidebar and dock window's minimized states are the same.
     matchSidebarDockMinimizedStates: function(callback) {
-        if (this.dockState == 'undocked') {
+        if (this.dockState == 'undocked' || !this.dockWindowId || !this.windowId) {
             return;
         }
 
