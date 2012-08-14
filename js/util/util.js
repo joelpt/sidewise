@@ -37,6 +37,8 @@ var URL_TITLE_REPLACEMENTS = {
     'chrome://newtab/': getMessage('tabTitle_NewTab')
 };
 
+var PLATFORM = identifyPlatform();
+
 
 ///////////////////////////////////////////////////////////
 // URL related functions
@@ -215,6 +217,26 @@ function includeScripts(scriptUrls) {
 function getNumericId(id)
 {
     return parseInt(id.slice(1));
+}
+
+
+///////////////////////////////////////////////////////////
+// Platform detection
+///////////////////////////////////////////////////////////
+
+function identifyPlatform()
+{
+    var platform = navigator.platform;
+
+    if (platform == 'MacIntel' || platform == 'MacPPC') {
+        return 'Mac';
+    }
+
+    if (platform == 'Win32' || platform == 'WinNT') {
+        return 'Win';
+    }
+
+    return 'Unix'; // probably a bit optimistic
 }
 
 
