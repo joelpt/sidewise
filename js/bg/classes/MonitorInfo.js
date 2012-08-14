@@ -40,17 +40,6 @@ MonitorInfo.prototype = {
         var os = window.navigator.platform;
         var self = this;
 
-        // if (os.indexOf('Win') != 0) {
-        //     alert(getMessage('prompt_DetectMonitors_beta'));
-
-        //     // Make assumptions for Mac/Linux boxes
-        //     log('Detecting single monitor');
-        //     this.monitors = [this.getPrimaryMonitorMetrics()];
-        //     this.maximizedOffset = 0;
-        //     callback(this.monitors, this.maximizedOffset);
-        //     return;
-        // }
-
         alert(getMessage('prompt_DetectMonitors'));
 
         // Detect multiple monitors
@@ -88,6 +77,12 @@ MonitorInfo.prototype = {
 
     // Detect how much the OS causes windows to hang over the edge when they're maximized
     detectMaximizedOffset: function(callback) {
+        if (PLATFORM == 'Mac') {
+            this.maximizedOffset = 0;
+            callback();
+            return;
+        }
+
         var self = this;
         this.createDetectionWindow(screen.availLeft, screen.availTop, function() {
             var winId = self.lastDetectionWindowId;
