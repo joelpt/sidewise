@@ -268,7 +268,7 @@ function onWindowUpdateCheckInterval() {
         }
 
         var dockDims = sidebarHandler.currentDockWindowMetrics;
-        var allowAutoUnmaximize = settings.get('allowAutoUnmaximize');
+        var allowAutoUnmaximize = (PLATFORM == 'Mac' ? false : settings.get('allowAutoUnmaximize'));
 
         chrome.windows.get(sidebarHandler.windowId, function(sidebar) {
             if (!sidebar) {
@@ -276,7 +276,7 @@ function onWindowUpdateCheckInterval() {
             }
 
             // Handle sidebar getting maximized
-            if (sidebar.state == 'maximized') {
+            if (sidebar.state == 'maximized' && PLATFORM != 'Mac') {
                 //make dock+sidebar completely fill the screen
                 var newDockDims = {
                     left: sidebar.left + offset,
@@ -304,7 +304,7 @@ function onWindowUpdateCheckInterval() {
         });
 
         var offset = monitorInfo.maximizedOffset;
-        if (dock.state == 'maximized' && allowAutoUnmaximize) {
+        if (dock.state == 'maximized' && allowAutoUnmaximize && PLATFORM != 'Mac') {
             // compute the dimensions we want the dock window to have
             // after unmaximizing it
             var newDockDims = {
@@ -339,7 +339,7 @@ function onWindowUpdateCheckInterval() {
         var newDims = {};
         var needAdjustment = false;
 
-        if (dock.state == 'maximized') {
+        if (dock.state == 'maximized' && PLATFORM != 'Mac') {
             // dock window is currently maximized, so ensure sidebar is next to it
             // (presumably onto a second monitor)
             if (sidebarDims.left != dock.left + dock.width - offset) {
