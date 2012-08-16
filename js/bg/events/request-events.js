@@ -167,7 +167,7 @@ function onGetPageDetailsMessage(tab, msg) {
                 log('Page not in tree, probably because Chrome is just preloading it');
                 return;
             }
-            var details = { referrer: msg.referrer, historylength: msg.historylength };
+            var details = { referrer: msg.referrer, historylength: msg.historylength, sessionGuid: msg.sessionGuid };
             if (msg.title) {
                 details.title = msg.title;
             }
@@ -201,7 +201,7 @@ function onGetPageDetailsMessage(tab, msg) {
                 tree.moveNode(page, parent);
             }
 
-            var details = { placed: true, referrer: msg.referrer, historylength: msg.historylength };
+            var details = { placed: true, referrer: msg.referrer, historylength: msg.historylength, sessionGuid: msg.sessionGuid };
             if (msg.title) {
                 details.title = msg.title;
             }
