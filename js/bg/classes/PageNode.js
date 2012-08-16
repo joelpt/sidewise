@@ -23,6 +23,7 @@ var PageNode = function(tab, overrideStatus)
     this.initialCreation = false;
     this.restored = false;
     this.incognito = tab.incognito || false;
+    this.sessionGuid = null;
 };
 
 extendClass(PageNode, PageTreeNode, {});
