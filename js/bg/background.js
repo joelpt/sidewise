@@ -20,7 +20,9 @@ function onLoad()
     chrome.tabs.getCurrent(function() {
         // Early initialization
         settings = new Settings();
-        tree = new PageTree(PageTreeCallbackProxy, savePageTreeToLocalStorage);
+        tree = new PageTree(PageTreeCallbackProxy, function() {
+            savePageTreeToLocalStorage(tree, 'pageTree', true);
+        });
         sidebarHandler = new SidebarHandler();
 
         // Call postLoad() after focusTracker initializes to do remaining initialization
@@ -104,11 +106,17 @@ function createSidebarOnStartup() {
 // PageTree related
 ///////////////////////////////////////////////////////////
 
-function savePageTreeToLocalStorage() {
+function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
     if (tree.lastModified != tree.lastSaved) {
         log('saving tree to local storage');
-        var saveTree = tree.tree.filter(function(e) { return !e.incognito; });
-        settings.set('pageTree', saveTree);
+        var saveTree;
+        if (excludeIncognitoNodes) {
+            saveTree = tree.tree.filter(function(e) { return !e.incognito; });
+        }
+        else {
+            saveTree = tree;
+        }
+        settings.set(settingName, saveTree);
         tree.lastSaved = tree.lastModified;
     }
 }
