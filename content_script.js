@@ -69,8 +69,9 @@ function onLocationOrHistoryChanged(evt) {
     notifySidewise();
 }
 
+
 ///////////////////////////////////////////////////////////
-// Extension communication functions
+// Background page communication
 ///////////////////////////////////////////////////////////
 
 function notifySidewise() {
