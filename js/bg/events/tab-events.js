@@ -278,7 +278,7 @@ function testNodeForFocus(node, testDescendants)
         return node.id;
     }
 
-    if (testDescendants) {
+    if (testDescendants && !node.collapsed) {
         for (var i = 0; i < node.children.length; i++) {
             var id = testNodeForFocus(node.children[i], true);
             if (id) return id;
