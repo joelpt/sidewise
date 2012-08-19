@@ -60,7 +60,6 @@
     "sidebarLabel_GlobalHistory": { "message": "Browser history" },
     "sidebarLabel_TabHistory": { "message": "Tab history" },
     "sidebarLabel_ClosedPages": { "message": "Closed pages" },
-    "sidebarLabel_Reddit": { "message": "Reddit" },
 
 
     "pages_hibernatedHint": { "message": "Hibernated page" },
