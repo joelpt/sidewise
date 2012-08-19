@@ -33,7 +33,7 @@ function onWindowRemoved(windowId)
             // Already handling the window removal elsewhere, don't do it twice
             return;
         }
-        savePageTreeToLocalStorage();
+        savePageTreeToLocalStorage(tree, 'pageTree', true);
         sidebarHandler.onRemoved();
         return;
     }
