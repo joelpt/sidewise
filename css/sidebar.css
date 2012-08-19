@@ -104,12 +104,12 @@ body {
 }
 
 .tooltip {
-    display:none;
+    display: none;
     background: -webkit-linear-gradient(top, rgba(242,245,246,1) 0%,rgba(227,234,237,1) 100%);
-    border:1px solid #333;
+    border: 1px solid #333;
     border-radius: 3px;
-    padding:2px 5px 4px 5px;
-    font-size:12px;
+    padding: 3px 5px 3px 5px;
+    font-size: 12px;
     font-family: 'segoe ui', 'ms sans serif', sans-serif;
     box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
 }
