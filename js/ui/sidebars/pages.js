@@ -519,11 +519,11 @@ function onContextMenuItemHibernateWindow($rows) {
 }
 
 function onContextMenuItemHibernatePages($rows) {
-    $rows.each(function(i, e) { togglePageRowHibernated($(e), -1); });
+    togglePageRowsHibernated($rows, -1);
 }
 
 function onContextMenuItemWakePages($rows) {
-    $rows.each(function(i, e) { togglePageRowHibernated($(e), 1); });
+    togglePageRowsHibernated($rows, 1);
 }
 
 function onContextMenuItemReload($rows) {
@@ -633,10 +633,13 @@ function handleFolderRowAction(action, evt) {
         case 'close':
             onFolderRowCloseButton(evt);
             break;
-        // case 'hibernate':
-        //     var isFocused = evt.data.row.is(evt.data.treeObj.focusedRow);
-        //     togglePageRowHibernated(evt.data.row, 0, isFocused);
-        //     break;
+        case 'hibernate':
+            var rowChildrenContainer = ft.getChildrenContainer(evt.data.row);
+            var firstChild = rowChildrenContainer.children().first();
+            var hibernate = firstChild.attr('hibernated') == 'true' ? 1 : -1;
+            var targets = rowChildrenContainer.find('.ftRowNode[rowtype=page]');
+            togglePageRowsHibernated(targets, hibernate, false);
+            break;
         case 'expand':
             evt.data.treeObj.toggleExpandRow(evt.data.row);
             break;
@@ -699,7 +702,7 @@ function onPageRowClick(evt) {
 
         if (settings.get('wakeHibernatedPagesOnClick')) {
             // also wake it up
-            bg.tree.awakenPage(row.attr('id'), true);
+            bg.tree.awakenPages([row.attr('id')], true);
         }
         return;
     }
@@ -736,7 +739,7 @@ function handlePageRowAction(action, evt) {
             break;
         case 'hibernate':
             var isFocused = evt.data.row.is(evt.data.treeObj.focusedRow);
-            togglePageRowHibernated(evt.data.row, 0, isFocused);
+            togglePageRowsHibernated([evt.data.row], 0, isFocused);
             break;
         case 'expand':
             evt.data.treeObj.toggleExpandRow(evt.data.row);
@@ -858,7 +861,7 @@ function onPageRowCloseButton(evt) {
 }
 
 function onPageRowHibernateButton(evt) {
-    togglePageRowHibernated(evt.data.row);
+    togglePageRowsHibernated(evt.data.row);
 }
 
 function onRowPinMouseUp(evt) {
@@ -1016,23 +1019,27 @@ function closeRow($row) {
 }
 
 // hibernateAwakeState values:
-//   1: awaken page row
+//   1: awaken page rows
 //   0: toggle hibernate/awake
-//  -1: hibernate page row
-function togglePageRowHibernated(row, hibernateAwakeState, activateAfterWaking) {
+//  -1: hibernate page rows
+function togglePageRowsHibernated($rows, hibernateAwakeState, activateAfterWaking) {
+    var $hibernatedRows = $rows.filter(function(i, e) { return $(e).attr('hibernated') == 'true'; });
+    var $awakeRows = $rows.not($hibernatedRows);
+
     hibernateAwakeState = hibernateAwakeState || 0;
 
-    var hibernated = (row.attr('hibernated') == 'true');
-    if (hibernated && hibernateAwakeState >= 0) {
-        bg.tree.awakenPage(row.attr('id'), activateAfterWaking || false);
+    if (hibernateAwakeState >= 0 && $hibernatedRows.length > 0) {
+        var ids = $hibernatedRows.map(function(i, e) { return $(e).attr('id'); });
+        bg.tree.awakenPages(ids, activateAfterWaking || false);
         return;
     }
 
-    if (hibernateAwakeState == 1 || hibernated) {
+    if (hibernateAwakeState == 1 || $awakeRows.length == 0) {
         return;
     }
 
-    bg.tree.hibernatePage(row.attr('id'));
+    var ids = $awakeRows.map(function(i, e) { return $(e).attr('id'); });
+    bg.tree.hibernatePages(ids);
 }
 
 function setPageRowPinnedState(row, pinned) {

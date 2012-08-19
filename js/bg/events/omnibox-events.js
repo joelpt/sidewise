@@ -71,7 +71,7 @@ function onOmniboxInputEntered(text) {
     // alert('You just typed "' + text + '"');
     var page = tree.getNode(text);
     if (page.hibernated) {
-        tree.awakenPage(getNumericId(text), true);
+        tree.awakenPages([getNumericId(text)], true);
         return;
     }
     chrome.tabs.update(getNumericId(text), { active: true });

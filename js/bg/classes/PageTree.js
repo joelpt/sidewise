@@ -235,10 +235,18 @@ PageTree.prototype = {
         return page;
     },
 
-    // hibernate a page
+    // hibernate pages
+    hibernatePages: function(pageNodeIds, skipLastTabCheck)
+    {
+        log(pageNodeIds);
+        for (var i = pageNodeIds.length - 1; i >= 0; i--) {
+            this.hibernatePage(pageNodeIds[i], skipLastTabCheck);
+        };
+    },
+
+    // hibernate a single page
     hibernatePage: function(id, skipLastTabCheck)
     {
-        log(id);
         var tabId = getNumericId(id);
         this.updatePage(tabId, { hibernated: true, id: 'pH' + generateGuid(), status: 'complete' });
 
@@ -262,28 +270,51 @@ PageTree.prototype = {
                 chrome.tabs.create({ url: 'chrome://newtab' }, function() {
                     removeAfterHibernate();
                     if (!settings.get('shown_prompt_hibernatingLastTab')) {
-                        alert(getMessage('prompt_hibernatingLastTab'));
                         settings.set('shown_prompt_hibernatingLastTab', true);
+                        alert(getMessage('prompt_hibernatingLastTab'));
                     }
                 });
                 return;
             }
             removeAfterHibernate();
         });
+
     },
 
-    // awaken (unhibernate) a page
-    awakenPage: function(id, activateAfter)
+    // awaken (unhibernate) pages
+    awakenPages: function(pageNodeIds, activateAfter)
     {
-        log(id);
-        var found = this.getNodeEx(id);
+        log(pageNodeIds);
 
-        var topParent = found.ancestors[0];
-        if (!(topParent instanceof WindowNode)) {
-            throw new Error('Tried to awakenPage() but page is not contained under a WindowNode');
+        var windows = {};
+        var cnt = 0;
+
+        // build a hash of {windowNodeId: { windowNode, pageNodes: [pageNode, ..] }, ..}
+        for (var i = pageNodeIds.length - 1; i >= 0; i--) {
+            var id = pageNodeIds[i];
+            var found = this.getNodeEx(id);
+            var topParent = found.ancestors[0];
+            if (!(topParent instanceof WindowNode)) {
+                throw new Error('Tried to awakenPages() but page is not contained under a WindowNode');
+            }
+            if (!windows[topParent.id]) {
+                windows[topParent.id] = {windowNode: topParent, pageNodes: []};
+                cnt++;
+            }
+            windows[topParent.id].pageNodes.push(found.node);
+        };
+
+        // awaken pages in groups by their window nodes
+        var i = 0;
+        for (var winId in windows) {
+            if (!windows.hasOwnProperty(winId)) {
+                continue;
+            }
+            this.awakenPageNodes(windows[winId].pageNodes, windows[winId].windowNode,
+                i == 0 ? activateAfter : false);
+            i++;
         }
 
-        this.awakenPageNodes([found.node], topParent, activateAfter);
         this.updateLastModified();
     },
 
