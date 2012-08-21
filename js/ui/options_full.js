@@ -24,6 +24,8 @@ $(document).ready(function() {
         .on('click', '#detectMonitorsButton', detectMonitors)
         .on('click', '#donateLink', onDonateLinkClick);
 
+    initPaneGrid();
+
     $('#version').text(getMessage('text_Version') + ' ' + getVersion());
     setMonitorCountInfo(settings.get('monitorMetrics').length, false);
     initGooglePlusElement();

@@ -444,3 +444,10 @@ input.invalid {
     to { left: -50%; }
 }
 
+.ui-corner-all {
+    border-radius: 0px;
+}
+
+.ui-jqgrid-view {
+    line-height: 2em;
+}
