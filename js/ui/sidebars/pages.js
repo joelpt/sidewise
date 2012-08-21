@@ -739,7 +739,7 @@ function handlePageRowAction(action, evt) {
             break;
         case 'hibernate':
             var isFocused = evt.data.row.is(evt.data.treeObj.focusedRow);
-            togglePageRowsHibernated([evt.data.row], 0, isFocused);
+            togglePageRowsHibernated(evt.data.row, 0, isFocused);
             break;
         case 'expand':
             evt.data.treeObj.toggleExpandRow(evt.data.row);
