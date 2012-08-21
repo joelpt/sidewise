@@ -82,7 +82,7 @@ Settings.prototype = {
             dockState: 'left',
             browserActionButtonBehavior: 'show',
             useAdvancedTreeFiltering: false,
-            pages_doubleClickAction: 'expand',
+            pages_doubleClickAction: 'hibernate',
             pages_middleClickAction: 'none',
             smartFocusOnClose: false,
             smartFocusPrefersCousins: false,
