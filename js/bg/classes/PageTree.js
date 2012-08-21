@@ -196,8 +196,8 @@ PageTree.prototype = {
     },
 
     // retrieve a page from the tree given its tabId, and return additional details
-    getPageEx: function(tabId) {
-        return this.getNodeEx('p' + tabId);
+    getPageEx: function(tabId, inArray) {
+        return this.getNodeEx('p' + tabId, inArray);
     },
 
     focusPage: function(tabId)
@@ -233,6 +233,51 @@ PageTree.prototype = {
 
         this.updateNode(page, details);
         return page;
+    },
+
+    updatePageIndex: function(tabId, windowId, fromIndex, toIndex)
+    {
+        if (fromIndex == toIndex) {
+            log('fromIndex == toIndex, doing nothing');
+            return;
+        }
+
+        var from = this.getPageEx(tabId);
+        var winNode = this.getNode('w' + windowId);
+
+        var self = this;
+        chrome.tabs.query({ windowId: windowId }, function(tabs) {
+            var moved = false;
+            for (var i = 0; i < tabs.length; i++) {
+                var tab = tabs[i];
+                var page = self.getPage(tab.id);
+                var existingIndex = page.index;
+                if (existingIndex != tab.index) {
+                    self.updateNode(page, { index: tab.index });
+                }
+
+                if (moved) {
+                    continue;
+                }
+
+                if (page === from.node) {
+                    continue;
+                }
+
+                if (from.siblings.indexOf(page) == -1) {
+                    continue;
+                }
+
+                if (toIndex < tab.index) {
+                    self.moveNodeRel(from.node, 'before', page, true, false);
+                    moved = true;
+                }
+            }
+
+            if (!moved) {
+                self.moveNodeRel(from.node, 'append', from.parent, true, false);
+            }
+        });
     },
 
     // hibernate pages
