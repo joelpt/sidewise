@@ -17,6 +17,7 @@ function registerTabEvents()
     chrome.tabs.onMoved.addListener(onTabMoved);
     chrome.tabs.onActivated.addListener(onTabActivated);
     chrome.tabs.onAttached.addListener(onTabAttached);
+    chrome.tabs.onHighlighted.addListener(onTabHighlighted);
 }
 
 
@@ -399,9 +400,6 @@ function onTabUpdated(tabId, changeInfo, tab)
 
 function onTabMoved(tabId, moveInfo) {
     tree.updatePageIndex(tabId, moveInfo.windowId, moveInfo.fromIndex, moveInfo.toIndex);
-    // var page = tree.getPage(tabId);
-    // tree.updatePage(page, { index: moveInfo.toIndex });
-    // tree.moveNodeByIndex(page);
 }
 
 function onTabActivated(activeInfo) {
@@ -442,3 +440,9 @@ function onTabAttached(tabId, attachInfo) {
 
     tree.moveNode(moving.node, tree.getNode('w' + attachInfo.newWindowId));
 }
+
+function onTabHighlighted(highlightInfo) {
+    log(highlightInfo);
+    PageTreeCallbackProxy('multiSelectInWindow', highlightInfo);
+}
+
