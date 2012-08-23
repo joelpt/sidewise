@@ -242,42 +242,55 @@ PageTree.prototype = {
             return;
         }
 
+        log('Updating page index', 'tabId', tabId, 'windowId', windowId, 'fromIndex', fromIndex + '', 'toIndex', toIndex + '');
         var from = this.getPageEx(tabId);
         var winNode = this.getNode('w' + windowId);
 
-        var self = this;
-        chrome.tabs.query({ windowId: windowId }, function(tabs) {
-            var moved = false;
-            for (var i = 0; i < tabs.length; i++) {
-                var tab = tabs[i];
-                var page = self.getPage(tab.id);
-                var existingIndex = page.index;
-                if (existingIndex != tab.index) {
-                    self.updateNode(page, { index: tab.index });
-                }
+        if (toIndex > fromIndex) {
+            var to = this.getNodeEx(function(e) { return e instanceof PageNode && !e.hibernated && e.index == toIndex + 1; }, winNode.children);
 
-                if (moved) {
-                    continue;
-                }
+            if (to) {
+                this.moveNodeRel(from.node, 'before', to.node, false, false);
+            }
+            else {
+                this.moveNodeRel(from.node, 'append', winNode, false, false);
+            }
+        }
+        else {
+            var to = this.getNodeEx(function(e) { return e instanceof PageNode && !e.hibernated && e.index == toIndex - 1; }, winNode.children);
 
-                if (page === from.node) {
-                    continue;
+            if (to) {
+                if (to.node.children.length > 0) {
+                    this.moveNodeRel(from.node, 'prepend', to.node, false, false);
                 }
-
-                if (from.siblings.indexOf(page) == -1) {
-                    continue;
-                }
-
-                if (toIndex < tab.index) {
-                    self.moveNodeRel(from.node, 'before', page, true, false);
-                    moved = true;
+                else {
+                    var to = this.getNodeEx(function(e) { return e instanceof PageNode && !e.hibernated && e.index == toIndex; }, winNode.children);
+                    if (to) {
+                        this.moveNodeRel(from.node, 'before', to.node, false, false);
+                    }
+                    else {
+                        this.moveNodeRel(from.node, 'append', winNode, false, false);
+                    }
                 }
             }
-
-            if (!moved) {
-                self.moveNodeRel(from.node, 'append', from.parent, true, false);
+            else {
+                this.moveNodeRel(from.node, 'prepend', winNode, false, false);
             }
-        });
+        }
+
+        var minIndex = Math.min(fromIndex, toIndex);
+        var maxIndex = Math.max(fromIndex, toIndex);
+        var affectedNodes = this.filter(function(e) {
+            return e instanceof PageNode && !e.hibernated && e.index >= minIndex && e.index <= maxIndex;
+        }, winNode.children);
+        console.log('affecting', affectedNodes);
+        var newIndex = minIndex;
+        for (var i = 0; i < affectedNodes.length; i++) {
+            var node = affectedNodes[i];
+            node.index = newIndex++;
+        }
+
+        this.updateLastModified();
     },
 
     // hibernate pages
