@@ -25,6 +25,22 @@ FancyTree.prototype.toggleMultiSelectionSingle = function($row, forceOn) {
     }
 };
 
+FancyTree.prototype.removeMultiSelectionSingle = function($row) {
+    var exists = this.multiSelection.is($row);
+
+    if (!exists) {
+        return false;
+    }
+
+    this.multiSelection = this.multiSelection.not($row);
+    this.removeSelectionEffect($row);
+
+    if (this.multiSelection.length == 0) {
+        this.clearMultiSelection();
+    }
+    return true;
+};
+
 FancyTree.prototype.addMultiSelectionBetween = function($fromRow, $toRow) {
     // if from and to are the same, just do a single selection
     if ($fromRow.is($toRow)) {
@@ -111,6 +127,21 @@ FancyTree.prototype.clearMultiSelection = function() {
     this.lastMultiSelectedFromId = null;
     this.lastMultiSelectedToId = null;
 };
+
+FancyTree.prototype.setMultiSelectedChildrenUnderRow = function($underRow, $newSelections) {
+    var $oldSelections = this.multiSelection.filter(function(i, e) {
+        return $(e).parents($underRow).length > 0;
+    }).not($newSelections);
+
+    var self = this;
+    $oldSelections.each(function(i, e) { self.removeMultiSelectionSingle($(e)); });
+
+    if ($newSelections.length == 1 && this.multiSelection.length == 0) {
+        return;
+    }
+
+    $newSelections.each(function(i, e) { self.toggleMultiSelectionSingle($(e), true); });
+}
 
 FancyTree.prototype.addSelectionEffect = function($row) {
     var rowTypeParams = this.getRowTypeParams($row);
