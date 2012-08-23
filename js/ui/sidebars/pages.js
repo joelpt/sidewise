@@ -259,7 +259,7 @@ function PageTreeCallbackProxyListener(op, args)
         case 'multiSelectInWindow':
             var $win = ft.getRow('w' + args.windowId);
             var $kids = $('#p' + args.tabIds.join(',#p'));
-            ft.setMultiSelectedChildrenUnderRow($win, $kids);
+            ft.setMultiSelectedChildrenUnderRow($win, $kids, '[rowtype=page][hibernated=false]');
             break;
     }
 }

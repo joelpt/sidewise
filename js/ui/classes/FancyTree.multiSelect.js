@@ -128,13 +128,17 @@ FancyTree.prototype.clearMultiSelection = function() {
     this.lastMultiSelectedToId = null;
 };
 
-FancyTree.prototype.setMultiSelectedChildrenUnderRow = function($underRow, $newSelections) {
+FancyTree.prototype.setMultiSelectedChildrenUnderRow = function($underRow, $newSelections, removalFilter) {
     var $oldSelections = this.multiSelection.filter(function(i, e) {
         return $(e).parents($underRow).length > 0;
     });
 
     var $removes = $oldSelections.not($newSelections);
     var $adds = $newSelections.not($oldSelections);
+
+    if (removalFilter) {
+        $removes = $removes.filter(removalFilter);
+    }
 
     var self = this;
     $removes.each(function(i, e) { self.removeMultiSelectionSingle($(e)); });
