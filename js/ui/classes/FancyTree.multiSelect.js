@@ -131,16 +131,19 @@ FancyTree.prototype.clearMultiSelection = function() {
 FancyTree.prototype.setMultiSelectedChildrenUnderRow = function($underRow, $newSelections) {
     var $oldSelections = this.multiSelection.filter(function(i, e) {
         return $(e).parents($underRow).length > 0;
-    }).not($newSelections);
+    });
+
+    var $removes = $oldSelections.not($newSelections);
+    var $adds = $newSelections.not($oldSelections);
 
     var self = this;
-    $oldSelections.each(function(i, e) { self.removeMultiSelectionSingle($(e)); });
+    $removes.each(function(i, e) { self.removeMultiSelectionSingle($(e)); });
 
-    if ($newSelections.length == 1 && this.multiSelection.length == 0) {
+    if ($adds.length == 1 && this.multiSelection.length == 0) {
         return;
     }
 
-    $newSelections.each(function(i, e) { self.toggleMultiSelectionSingle($(e), true); });
+    $adds.each(function(i, e) { self.toggleMultiSelectionSingle($(e), true); });
 }
 
 FancyTree.prototype.addSelectionEffect = function($row) {
