@@ -129,9 +129,7 @@ FancyTree.prototype.clearMultiSelection = function() {
 };
 
 FancyTree.prototype.setMultiSelectedChildrenUnderRow = function($underRow, $newSelections, removalFilter) {
-    var $oldSelections = this.multiSelection.filter(function(i, e) {
-        return $(e).parents($underRow).length > 0;
-    });
+    var $oldSelections = $underRow.find(this.multiSelection);
 
     var $removes = $oldSelections.not($newSelections);
     var $adds = $newSelections.not($oldSelections);
