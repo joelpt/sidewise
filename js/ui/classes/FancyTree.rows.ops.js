@@ -204,9 +204,9 @@ FancyTree.prototype.focusRow = function(idOrElem) {
         this.root.find('.ftChildFocused').removeClass('ftChildFocused');
     }
 
-    if (this.multiSelection.length > 0) {
-        this.clearMultiSelection();
-    }
+    // if (this.multiSelection.length > 0) {
+    //     this.clearMultiSelection();
+    // }
 
     this.lastMultiSelectedToId = id;
     this.lastMultiSelectedFromId = id;
