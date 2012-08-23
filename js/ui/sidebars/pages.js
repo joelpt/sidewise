@@ -256,6 +256,11 @@ function PageTreeCallbackProxyListener(op, args)
         case 'collapse':
             ft.collapseRow(args.id);
             break;
+        case 'multiSelectInWindow':
+            var $win = ft.getRow('w' + args.windowId);
+            var $kids = $('#p' + args.tabIds.join(',#p'));
+            ft.setMultiSelectedChildrenUnderRow($win, $kids);
+            break;
     }
 }
 
