@@ -28,6 +28,7 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     this.$base();
     this.callbackProxyFn = callbackProxyFn; // callback proxy function for page/window functions
     this.focusedTabId = null;
+    this.tabIndexes = {};
     this.onModified = this._onPageTreeModified;
     this.awakeningPages = [];
     this.onModifiedDelayed = onModifiedDelayed;
@@ -61,12 +62,62 @@ PageTree.prototype = {
     addNode: function(node, parentMatcher, beforeSiblingMatcher)
     {
         var r = this.$super('addNode')(node, parentMatcher, beforeSiblingMatcher);
+
+        var parentId = r[1] ? r[1].id : undefined;
+
         this.callbackProxyFn('add', {
             element: node,
             parentId: r[1] ? r[1].id : undefined,
             beforeSiblingId: r[2] ? r[2].id : undefined
         });
+
+        this.addToTabIndex(node);
+
         return r;
+    },
+
+    addToTabIndex: function(node) {
+        if (!(node instanceof PageNode) || node.hibernated) {
+            return;
+        }
+
+        var found = this.getNodeEx(node);
+        var topParent = found.ancestors[0];
+
+        if (!(topParent instanceof WindowNode)) {
+            return;
+        }
+
+        if (!this.tabIndexes[topParent.id]) {
+            this.tabIndexes[topParent.id] = [];
+        }
+
+        var index = node.index;
+        if (index >= this.tabIndexes[topParent.id].length) {
+            this.tabIndexes[topParent.id].push(node);
+            return;
+        }
+        this.tabIndexes[topParent.id].splice(index, 0, node);
+    },
+
+    removeFromTabIndex: function(node) {
+        if (!(node instanceof PageNode) || node.hibernated) {
+            return;
+        }
+
+        var found = this.getNodeEx(node);
+        var topParent = found.ancestors[0];
+
+        if (!(topParent instanceof WindowNode)) {
+            return;
+        }
+
+        if (!this.tabIndexes[topParent.id]) {
+            return;
+        }
+
+        var index = this.tabIndexes[topParent.id].indexOf(node);
+        this.tabIndexes[topParent.id].splice(index, 1);
     },
 
     // update an existing node matching matcher with given details
@@ -91,17 +142,57 @@ PageTree.prototype = {
     // remove the element matching matcher
     removeNode: function(matcher, removeChildren)
     {
-        var found = this.getNodeEx(matcher);
-        var r = this.$super('removeNode')(found.node, removeChildren);
-        this.callbackProxyFn('remove', { element: r, removeChildren: removeChildren || false });
+        // var found = this.getNodeEx(matcher);
+        // var index = found.node.index;
+        var node = this.getNode(matcher);
 
-        var topParent = found.ancestors[0];
-        if (topParent instanceof WindowNode && topParent.hibernated && topParent.children.length == 0) {
-            var removedParent = this.$super('removeNode')(topParent, false);
-            this.callbackProxyFn('remove', { element: removedParent });
+        if (!node) {
+            throw new Error('Node not found to remove');
         }
 
+        this.removeFromTabIndex(node);
+
+        var r = this.$super('removeNode')(node, removeChildren);
+        this.callbackProxyFn('remove', { element: r, removeChildren: removeChildren || false });
+
+        // var topParent = found.ancestors[0];
+        // if (topParent instanceof WindowNode) {
+        //     if (topParent.children.length == 0) {
+        //         var removedParent = this.$super('removeNode')(topParent, false);
+        //         this.callbackProxyFn('remove', { element: removedParent });
+        //         return r;
+        //     }
+
+        //     this.updatePageNodeIndexes(topParent.children, -1, index);
+        //     return r;
+        // }
+
         return r;
+    },
+
+    // update indexes of page nodes by adjustBy in given range under given node array inArray and any descendants
+    updatePageNodeIndexes: function(inArray, adjustBy, startIndex, endIndex, excludeNode) {
+        startIndex = startIndex || 0;
+        endIndex = endIndex || 99999;
+
+        if (startIndex > endIndex) {
+            var swap = endIndex;
+            startIndex = endIndex;
+            endIndex = swap;
+        }
+
+        var updates = this.filter(function(e) {
+            return e instanceof PageNode
+                && !e.hibernated
+                && e.index >= startIndex
+                && e.index <= endIndex
+                && (excludeNode === undefined || excludeNode !== e);
+        }, inArray);
+
+        for (var i = updates.length - 1; i >= 0; i--) {
+            updates[i].index = updates[i].index + adjustBy;
+        };
+
     },
 
     // Move the node matching movingMatcher to reside under the node matching parentMatcher.
@@ -236,6 +327,14 @@ PageTree.prototype = {
     },
 
     updatePageIndex: function(tabId, windowId, fromIndex, toIndex)
+    {
+        var moving = this.getPage(tabId);
+        windowId = 'w' + windowId;
+
+        var to = this.tabIndexes[windowId][toIndex];
+    },
+
+    updatePageIndexOLD: function(tabId, windowId, fromIndex, toIndex)
     {
         if (fromIndex == toIndex) {
             log('fromIndex == toIndex, doing nothing');
@@ -575,6 +674,20 @@ PageTree.prototype = {
     // Miscellaneous functions
     ///////////////////////////////////////////////////////////
 
+    // rebuild the tab index
+    rebuildTabIndex: function() {
+        this.tabIndexes = this.groupBy(function(e) {
+            if (e instanceof PageNode && !e.hibernated) {
+                return e.windowId;
+            }
+        });
+    },
+
+    clear: function() {
+        this.$super('clear')();
+        this.tabIndexes = {};
+    },
+
     // Returns contents of tree formatted as a string. Used for debugging.
     dump: function()
     {
@@ -586,7 +699,8 @@ PageTree.prototype = {
                 + ' +' + e.children.length + ''
                 + (e.placed ? ' P' : ' -')
                 + ' R:' + e.referrer
-                + '@' + e.historylength;
+                + '@' + e.historylength
+                + ' #' + e.index;
         }
         return this.reduce(dumpFn, '');
     },

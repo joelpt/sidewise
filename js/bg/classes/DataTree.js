@@ -428,6 +428,21 @@ DataTree.prototype = {
         }, [], inArray);
     },
 
+    groupBy: function(groupByFn, inArray)
+    {
+        return this.reduce(function(l, e) {
+            var groupVar = groupByFn(e);
+            if (!groupVar) {
+                return l;
+            }
+            if (!l[groupVar]) {
+                l[groupVar] = [];
+            }
+            l[groupVar].push(e);
+            return l;
+        }, {}, inArray);
+    },
+
     /**
       * Map all nodes in the tree from one value to another value, returning a flattened array.
       * @param mapFn Function(node): Receives each node and should return the desired mapped value.
