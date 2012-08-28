@@ -225,6 +225,7 @@ PageTree.prototype = {
             var newIndex = this.tabIndexes[topParent.id].indexOf(r[0]);
             chrome.tabs.get(getNumericId(r[0].id), function(tab) {
                 if (tab.index != newIndex) {
+                    expectingTabMoves.push(tab.id);
                     chrome.tabs.move(getNumericId(r[0].id), { index: newIndex });
                 }
             });
