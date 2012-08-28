@@ -202,7 +202,7 @@ PageTree.prototype = {
     // If blockCallback is true, don't call the callback.
     //
     // Returns [moved, newParent, beforeSibling] if a move was actually performed, or undefined if not.
-    moveNode: function(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren, blockCallback)
+    moveNode: function(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren, blockCallback, updateChromeTabIndex)
     {
         var r = this.$super('moveNode')(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren);
 
@@ -214,13 +214,31 @@ PageTree.prototype = {
                 keepChildren: keepChildren || false
             });
         }
+
+        if (r[0] instanceof PageNode && !r[0].hibernated) {
+            this.rebuildTabIndex();
+            var topParent = this.getNodeEx(r[0]).ancestors[0];
+            if (!(topParent instanceof WindowNode)) {
+                return r;
+            }
+
+            var newIndex = this.tabIndexes[topParent.id].indexOf(r[0]);
+            chrome.tabs.get(getNumericId(r[0].id), function(tab) {
+                if (tab.index != newIndex) {
+                    chrome.tabs.move(getNumericId(r[0].id), { index: newIndex });
+                }
+            });
+        }
+
         return r;
     },
 
     moveNodeRel: function(movingMatcher, relation, toMatcher, keepChildren, blockCallback)
     {
-        var r = this.$super('moveNodeRel')(movingMatcher, relation, toMatcher, keepChildren);
-
+        var moving = this.getNode(movingMatcher);
+        this.removeFromTabIndex(moving);
+        var r = this.$super('moveNodeRel')(moving, relation, toMatcher, keepChildren);
+        this.addToTabIndex(moving);
         if (r !== undefined && !blockCallback) {
             this.callbackProxyFn('move', {
                 element: r[0],
@@ -328,10 +346,27 @@ PageTree.prototype = {
 
     updatePageIndex: function(tabId, windowId, fromIndex, toIndex)
     {
+        var to;
         var moving = this.getPage(tabId);
         windowId = 'w' + windowId;
 
-        var to = this.tabIndexes[windowId][toIndex];
+        if (toIndex < fromIndex) {
+            // moving tab to the left
+            moving.index = toIndex;
+            to = this.tabIndexes[windowId][toIndex];
+        }
+        else {
+            // moving tab to the right
+            moving.index = toIndex;
+            to = this.tabIndexes[windowId][toIndex + 1];
+        }
+
+        if (to) {
+            this.moveNodeRel(moving, 'before', to, false, false);
+            return;
+        }
+
+        this.moveNodeRel(moving, 'append', this.getNode(windowId), false, false);
     },
 
     updatePageIndexOLD: function(tabId, windowId, fromIndex, toIndex)
@@ -678,7 +713,7 @@ PageTree.prototype = {
     rebuildTabIndex: function() {
         this.tabIndexes = this.groupBy(function(e) {
             if (e instanceof PageNode && !e.hibernated) {
-                return e.windowId;
+                return 'w' + e.windowId;
             }
         });
     },
@@ -691,16 +726,33 @@ PageTree.prototype = {
     // Returns contents of tree formatted as a string. Used for debugging.
     dump: function()
     {
+        var self = this;
         var dumpFn = function(lastValue, e, depth) {
+            var topParent = self.getNodeEx(e).ancestors[0];
+            var indexes = self.tabIndexes[topParent.id];
+            if (indexes) {
+                var index = indexes.indexOf(e);
+                if (index == -1) {
+                    index = '---';
+                }
+                else {
+                    index = '   ' + index;
+                    index = index.slice(index.length - 3);
+                }
+            }
+            else {
+                var index = '---';
+            }
+
             return lastValue + '\n'
+                + index + '|'
                 + Array(-4 + 1 + (1 + depth) * 4).join(' ')
                 + e.id + ': '
                 + (e.id[0] == 'p' ? e.title : 'window ' + e.type + (e.incognito ? ' incognito' : ''))
                 + ' +' + e.children.length + ''
                 + (e.placed ? ' P' : ' -')
                 + ' R:' + e.referrer
-                + '@' + e.historylength
-                + ' #' + e.index;
+                + '@' + e.historylength;
         }
         return this.reduce(dumpFn, '');
     },
