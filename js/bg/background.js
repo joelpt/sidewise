@@ -225,8 +225,9 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
             } catch(ex) { }
         });
 
-        // rebuild the id index
+        // rebuild the indexes
         tree.rebuildIdIndex();
+        tree.rebuildTabIndex();
 
         // set modified state
         tree.updateLastModified();
@@ -293,7 +294,6 @@ function populatePages()
 
         }
         setTimeout(function() { findTabParents(tabsToQuery); }, 1500); // give content scripts a moment to get going
-
     });
 }
 
