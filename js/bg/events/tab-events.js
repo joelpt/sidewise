@@ -402,7 +402,7 @@ function onTabUpdated(tabId, changeInfo, tab)
 function onTabMoved(tabId, moveInfo) {
     var expectingTabMovesIndex = expectingTabMoves.indexOf(tabId);
     if (expectingTabMovesIndex > -1) {
-        expectingTabMovesIndex.splice(expectingTabMovesIndex, 1);
+        expectingTabMoves.splice(expectingTabMovesIndex, 1);
         return;
     }
     tree.updatePageIndex(tabId, moveInfo.windowId, moveInfo.fromIndex, moveInfo.toIndex);
