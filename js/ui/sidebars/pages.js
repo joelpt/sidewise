@@ -164,7 +164,7 @@ function populateFancyTreeFromPageTree(fancyTree, pageTree) {
     });
 }
 
-function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
+function addPageTreeNodeToFancyTree(fancyTree, node, parentId, beforeSiblingId)
 {
     var row;
     if (node instanceof bg.WindowNode) {
@@ -201,7 +201,7 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
         throw new Error('Unknown node type');
     }
 
-    fancyTree.addRow(row, parentId);
+    fancyTree.addRow(row, parentId, beforeSiblingId);
 
     setTimeout(function() {
         fancyTree.updateRow.call(fancyTree, row, { icon: node.favicon });
@@ -226,7 +226,7 @@ function PageTreeCallbackProxyListener(op, args)
     switch (op)
     {
         case 'add':
-            addPageTreeNodeToFancyTree(ft, args.element, args.parentId);
+            addPageTreeNodeToFancyTree(ft, args.element, args.parentId, args.beforeSiblingId);
             break;
         case 'remove':
             ft.removeRow(args.element.id, args.removeChildren);
@@ -293,7 +293,7 @@ function onRowsMoved(moves) {
 
         if (move.relation != 'nomove') {
             // record the move in bg.tree
-            bg.tree.moveNodeRel(rowId, move.relation, toId, move.keepChildren, true);
+            bg.tree.moveNodeRel(rowId, move.relation, toId, move.keepChildren, true, true);
         }
 
         if ($row.attr('rowtype') == 'page' && $row.attr('hibernated') != 'true') {
