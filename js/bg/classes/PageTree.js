@@ -617,42 +617,57 @@ PageTree.prototype = {
 
     // conform a given page node's tab index within Chrome to match
     // the page node's vertically ordered position within the tree
-    conformChromeTabIndexForPageNode: function(node, conformDescendants) {
-        if (!node instanceof PageNode || node.hibernated) {
-            if (conformDescendants) {
-                this.conformChromeTabIndexForNodeArray(node.children, true);
-            }
-            return;
-        }
-
-        var topParent = this.getNodeEx(node).ancestors[0];
-        if (!(topParent instanceof WindowNode)) {
-            if (conformDescendants) {
-                this.conformChromeTabIndexForNodeArray(node.children, true);
-            }
-            return;
-        }
-
-        var self = this;
-        chrome.tabs.get(getNumericId(node.id), function(tab) {
-            self.rebuildTabIndex();
-            var newIndex = self.tabIndexes[topParent.id].indexOf(node);
-            if (tab.index != newIndex) {
-                expectingTabMoves.push(tab.id);
-                chrome.tabs.move(tab.id, { index: newIndex }, function() {
-                    if (conformDescendants) {
-                        self.conformChromeTabIndexForNodeArray.call(self, node.children, true);
+    conformChromeTabIndexForPageNode: function(node, conformDescendants, skipIndexRebuild) {
+        if (node instanceof PageNode && !node.hibernated) {
+            var topParent = this.getNodeEx(node).ancestors[0];
+            if (topParent instanceof WindowNode) {
+                var self = this;
+                chrome.tabs.get(getNumericId(node.id), function(tab) {
+                    if (!skipIndexRebuild) {
+                        self.rebuildTabIndex();
+                    }
+                    var newIndex = self.tabIndexes[topParent.id].indexOf(node);
+                    if (tab.index != newIndex) {
+                        log('Conforming chrome tab index', 'id', tab.id, 'tab.index', tab.index, 'target index', newIndex);
+                        expectingTabMoves.push(tab.id);
+                        chrome.tabs.move(tab.id, { index: newIndex }, function() {
+                        });
+                    }
+                    else {
+                        log('Not conforming chrome tab index', 'id', tab.id, 'tab.index', tab.index, 'target index', newIndex);
                     }
                 });
             }
-        });
+        }
+        if (conformDescendants) {
+            this.conformChromeTabIndexForNodeArray(node.children, true, skipIndexRebuild);
+        }
+
     },
 
     // conform tab indexes of page nodes in given array and optionally all descendant page nodes
-    conformChromeTabIndexForNodeArray: function(nodeArray, conformDescendants) {
+    conformChromeTabIndexForNodeArray: function(nodeArray, conformDescendants, skipIndexRebuild) {
+        if (!skipIndexRebuild) {
+            this.rebuildTabIndex();
+        }
         for (var i = 0; i < nodeArray.length; i++) {
             var node = nodeArray[i];
-            this.conformChromeTabIndexForPageNode(node, conformDescendants);
+            log('Conforming from array', node.id, conformDescendants);
+            this.conformChromeTabIndexForPageNode(node, conformDescendants, true);
+        }
+    },
+
+    // conform tab indexes of all page nodes
+    conformAllChromeTabIndexes: function() {
+        this.rebuildTabIndex();
+
+        var windows = this.tree.filter(function(e) {
+            return e instanceof WindowNode && !e.hiberanted;
+        });
+
+        for (var i = 0; i < windows.length; i++) {
+            var win = windows[i];
+            this.conformChromeTabIndexForNodeArray(win.children, true, true);
         }
     },
 

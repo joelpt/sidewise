@@ -293,7 +293,7 @@ function onRowsMoved(moves) {
 
         if (move.relation != 'nomove') {
             // record the move in bg.tree
-            bg.tree.moveNodeRel(rowId, move.relation, toId, move.keepChildren, true, true);
+            bg.tree.moveNodeRel(rowId, move.relation, toId, move.keepChildren, true, false);
         }
 
         if ($row.attr('rowtype') == 'page' && $row.attr('hibernated') != 'true') {
@@ -322,6 +322,9 @@ function onRowsMoved(moves) {
             }
         }
     }
+
+    bg.tree.conformAllChromeTabIndexes();
+
     if (windowToWindowMovesCount > 0) {
         // perform window-to-window moves
         for (var fromWindowId in windowToWindowMoves) {
