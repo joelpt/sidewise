@@ -198,7 +198,7 @@ function onGetPageDetailsMessage(tab, msg) {
 
             if (parent) {
                 log('making ' + tabId + ' a child of ' + parent.id);
-                tree.moveNode(page, parent);
+                tree.moveNode(page, parent, undefined, true);
             }
 
             var details = { placed: true, referrer: msg.referrer, historylength: msg.historylength, sessionGuid: msg.sessionGuid };
