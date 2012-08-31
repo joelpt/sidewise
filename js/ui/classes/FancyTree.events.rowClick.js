@@ -148,8 +148,13 @@ FancyTree.prototype.rowDoubleClickHandler = function(evt) {
         return;
     }
 
-    var $this = $(this);
     var treeObj = evt.data.treeObj;
+
+    if (treeObj.ignoreDoubleClickEvent) {
+        return;
+    }
+
+    var $this = $(this);
     var row = treeObj.getParentRowNode($this);
 
     treeObj.hideTooltip();
@@ -179,4 +184,11 @@ FancyTree.prototype.rowButtonClickHandler = function(evt) {
 
     treeObj.ignoreNextRowMouseUpEvent = true;
     treeObj.resetDragDropState();
+    treeObj.ignoreDoubleClickEvent = true;
+
+    if (treeObj.ignoreDoubleClickEventResetTimer) {
+        clearTimeout(treeObj.ignoreDoubleClickEventResetTimer);
+    }
+
+    treeObj.ignoreDoubleClickEventResetTimer = setTimeout(function() { treeObj.ignoreDoubleClickEvent = false; }, 500);
 };
