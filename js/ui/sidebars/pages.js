@@ -418,10 +418,10 @@ function onContextMenuShow($rows) {
         var awakeCount = $children.length - hibernatedCount;
 
         if (hibernatedCount)
-            items.push({ $rows: $firstRow, id: 'awakenWindow', icon: '/images/wake_branch.png', label: 'Wake all tabs in window', callback: onContextMenuItemWakeWindow });
+            items.push({ $rows: $firstRow, id: 'awakenWindow', icon: '/images/wake_branch.png', label: 'Wake tabs in window', callback: onContextMenuItemWakeWindow });
 
         if (awakeCount)
-            items.push({ $rows: $firstRow, id: 'hibernateWindow', icon: '/images/hibernate_branch.png', label: 'Hibernate all tabs in window', callback: onContextMenuItemHibernateWindow });
+            items.push({ $rows: $firstRow, id: 'hibernateWindow', icon: '/images/hibernate_branch.png', label: 'Hibernate tabs in window', callback: onContextMenuItemHibernateWindow });
 
         if (awakeCount || hibernatedCount)
             items.push({ separator: true });

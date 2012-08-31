@@ -135,6 +135,8 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.hoveredRow = null;
     this.filtering = false;
     this.ignoreNextRowMouseUpEvent = false;
+    this.ignoreDoubleClickEvent = false;
+    this.ignoreDoubleClickEventResetTimer = null;
 
     this.onContextMenuShow = options.onContextMenuShow;
     this.multiSelection = $();
