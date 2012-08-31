@@ -52,7 +52,7 @@ DataTree.prototype = {
                 throw new Error('Could not find element matching beforeSiblingMatcher');
             }
 
-            if (beforeSibling.parent !== parent) {
+            if (parent && beforeSibling.parent !== parent) {
                 throw new Error('Specified sibling is not a child of specified parent');
             }
         }
@@ -67,7 +67,7 @@ DataTree.prototype = {
         }
         else {
             if (beforeSibling) {
-                this.tree.splice(beforeSibling.index, 0, node);
+                beforeSibling.siblings.splice(beforeSibling.index, 0, node);
             }
             else {
                 this.tree.push(node);
