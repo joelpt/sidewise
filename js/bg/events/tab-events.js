@@ -167,7 +167,7 @@ function onTabCreated(tab)
 
     // Make page a child of its hosting window
     log('Setting page as child of its hosting window', page, tab.windowId);
-    tree.addTabToWindow(tab, page);
+    tree.addTabToWindow(tab, page, undefined, true);
 }
 
 function onTabRemoved(tabId, removeInfo)
@@ -381,6 +381,9 @@ function onTabUpdated(tabId, changeInfo, tab)
 
     if (tab.openerTabId !== undefined && !page.placed) {
         var pageEx = tree.getNodeEx(page);
+        if (!pageEx.parent) {
+            debugger;
+        }
         if (getNumericId(pageEx.parent.id) !== tab.openerTabId) {
             log('moving page to parent by openerTabId', tab.openerTabId);
             tree.moveNode(page, 'p' + tab.openerTabId);
