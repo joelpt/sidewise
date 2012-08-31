@@ -161,9 +161,9 @@ section#main:not(.debugEnabled) {
 }
 
 .ftRowNode[rowtype=page][hibernated=true] > .ftItemRow > .ftItemRowContent {
-    color: gray;
+    color: hsl(0, 0%, 47%);
     font-style: italic;
-    background: hsl(0, 0%, 95%);
+    background: hsl(0, 0%, 96%);
 }
 
 .ftRowNode[rowtype=page][hibernated=true] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
