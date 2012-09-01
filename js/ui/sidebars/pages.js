@@ -149,7 +149,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
 
     $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));
     $(document)
-        .on('mouseup', '.pinned', onRowPinMouseUp)
+        .on('click', '.pinned', onRowPinClick)
         .on('mouseleave', '.pinned', onRowPinMouseLeave);
 
     populateFancyTreeFromPageTree(fancyTree, pageTree);
@@ -441,6 +441,9 @@ function onContextMenuShow($rows) {
     var highlightedCount = $rows.filter(function(i, e) { return $(e).attr('highlighted') == 'true'; }).length;
     var unhighlightedCount = $rows.length - highlightedCount;
 
+    var pinnedCount = $rows.filter(function(i, e) { return $(e).attr('pinned') == 'true'; }).length;
+    var unpinnedCount = $rows.length - pinnedCount;
+
     if (hibernatedCount)
         items.push({ $rows: $pages, id: 'awakenPage', icon: '/images/wake.png', label: 'Wake tab', callback: onContextMenuItemWakePages });
 
@@ -462,6 +465,12 @@ function onContextMenuShow($rows) {
 
     if (highlightedCount)
         items.push({ $rows: $rows, id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
+
+    if (unpinnedCount)
+        items.push({ $rows: $pages, id: 'pinPage', icon: '/images/pinned.png', label: 'Pin tab', callback: onContextMenuItemPinPages, preserveSelectionAfter: true });
+
+    if (pinnedCount)
+        items.push({ $rows: $pages, id: 'unpinPage', icon: '/images/unpin.png', label: 'Unpin tab', callback: onContextMenuItemUnpinPages, preserveSelectionAfter: true });
 
     if ($pages.length > 0)
         items.push({ $rows: $rows, id: 'copyUrl', icon: '/images/copy_url.png', label: 'Copy URL', callback: onContextMenuItemCopyURL, preserveSelectionAfter: true });
@@ -611,6 +620,18 @@ function onContextMenuItemMoveToNewFolder($rows) {
     ft.moveRowSetAnimate($rows, 'append', ft.getRow(folder.id), function(moves) {
         onRowsMoved(moves);
     });
+}
+
+function onContextMenuItemUnpinPages($rows) {
+    $rows
+        .filter(function(i, e) { $e = $(e); return $e.attr('pinned') == 'true'; })
+        .each(function(i, e) { setPageRowPinnedState($(e), false); });
+}
+
+function onContextMenuItemPinPages($rows) {
+    $rows
+        .filter(function(i, e) { $e = $(e); return $e.attr('pinned') == 'false'; })
+        .each(function(i, e) { setPageRowPinnedState($(e), true); });
 }
 
 
@@ -864,14 +885,14 @@ function onPageRowHibernateButton(evt) {
     togglePageRowsHibernated(evt.data.row);
 }
 
-function onRowPinMouseUp(evt) {
+function onRowPinClick(evt) {
     var row = $(this).closest('.ftRowNode');
     setPageRowPinnedState(row, false);
-    evt.stopPropagation();
 }
 
 function onRowPinMouseLeave(evt) {
     var row = $(this).closest('.ftItemRow');
+    ft.hideTooltip();
     row.trigger('mouseenter');
 }
 
@@ -1043,6 +1064,11 @@ function togglePageRowsHibernated($rows, hibernateAwakeState, activateAfterWakin
 }
 
 function setPageRowPinnedState(row, pinned) {
+    if (row.attr('hibernated') == 'true') {
+        bg.tree.updateNode(row.attr('id'), { pinned: pinned });
+        return;
+    }
+
     chrome.tabs.update(getRowNumericId(row), { pinned: pinned });
 }
 
