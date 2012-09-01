@@ -81,6 +81,7 @@ function onTabCreated(tab)
         log('associating waking tab to existing hibernated page element', tab, wakingPage);
         tree.updatePage(wakingPage, { id: 'p' + tab.id, hibernated: false, unread: true, status: 'preload' });
         tree.awakeningPages.splice(wakingIndex, 1); // remove matched element
+        tree.conformChromeTabIndexForPageNode(wakingPage, true);
         return;
     }
 
@@ -400,12 +401,20 @@ function onTabUpdated(tabId, changeInfo, tab)
 }
 
 function onTabMoved(tabId, moveInfo) {
-    var expectingTabMovesIndex = expectingTabMoves.indexOf(tabId);
-    if (expectingTabMovesIndex > -1) {
-        expectingTabMoves.splice(expectingTabMovesIndex, 1);
+    log(tabId, moveInfo);
+    if (removeFromExpectingTabMoves(tabId)) {
         return;
     }
     tree.updatePageIndex(tabId, moveInfo.windowId, moveInfo.fromIndex, moveInfo.toIndex);
+}
+
+function removeFromExpectingTabMoves(tabId) {
+    var expectingTabMovesIndex = expectingTabMoves.indexOf(tabId);
+    if (expectingTabMovesIndex > -1) {
+        expectingTabMoves.splice(expectingTabMovesIndex, 1);
+        return true;
+    }
+    return false;
 }
 
 function onTabActivated(activeInfo) {
