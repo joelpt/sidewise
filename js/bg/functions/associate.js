@@ -204,7 +204,6 @@ function associateExistingToRestorablePageNode(tab, referrer, historylength) {
         mustBeHibernated: true,
         mustBeRestorable: true,
         url: tab.url,
-        pinned: tab.pinned,
         referrer: referrer,
         historylength: historylength
     });
@@ -306,7 +305,6 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         mustBeRestorable: true,
         topParentMustBeRealOrRestorableWindow: true,
         url: tab.url,
-        pinned: tab.pinned,
         referrer: referrer,
         historylength: historylength
     });
@@ -357,7 +355,6 @@ function restoreParentWindowViaUniqueChildPageNode(parentWindowNode, childPageNo
     // as childPageNode?
     var otherMatch = findPageNodeForAssociation({
         url: childPageNode.url,
-        pinned: childPageNode.pinned,
         referrer: childPageNode.referrer,
         historylength: childPageNode.historylength,
         notMatchingNode: childPageNode
@@ -400,7 +397,6 @@ function findPageNodeForAssociation(params) {
             && (!params.mustBeHibernated || node.hibernated === true)
             && (!params.mustBeRestorable || node.restorable === true)
             && node.url == params.url
-            && node.pinned == params.pinned
             && (params.historylength === undefined || node.historylength == params.historylength)
             && (params.notMatchingNode === undefined || node !== params.notMatchingNode);
 
