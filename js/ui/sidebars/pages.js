@@ -129,6 +129,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onResizeTooltip: onResizeTooltip,
             tooltipMaxWidthPercent: 0.95,
             buttons: [
+                {icon: '/images/create_tab.png', tooltip: getMessage('pages_windowRowButtonTip_createTab'), onClick: onWindowRowCreateTabButton },
                 {icon: '/images/close.png', tooltip: getMessage('pages_windowRowButtonTip_close'), onClick: onWindowRowCloseButton }
             ]
         }
@@ -149,7 +150,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
 
     $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));
     $(document)
-        .on('mouseup', '.pinned', onRowPinMouseUp)
+        .on('click', '.pinned', onRowPinClick)
         .on('mouseleave', '.pinned', onRowPinMouseLeave);
 
     populateFancyTreeFromPageTree(fancyTree, pageTree);
@@ -168,7 +169,20 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId, beforeSiblingId)
 {
     var row;
     if (node instanceof bg.WindowNode) {
-        var img = (node.incognito ? '/images/incognito-16.png' : '/images/tab-stack-16.png');
+        var incognito = node.incognito;
+        var popup = (node.type == 'popup');
+
+        var img;
+        if (incognito) {
+            img = '/images/incognito-16.png';
+        }
+        else if (popup) {
+            img ='/images/tab-single-16.png';
+        }
+        else {
+            img = '/images/tab-stack-16.png';
+        }
+
         row = fancyTree.getNewRowElem('window',
             node.id,
             img,
@@ -449,6 +463,9 @@ function onContextMenuShow($rows) {
     var highlightedCount = $rows.filter(function(i, e) { return $(e).attr('highlighted') == 'true'; }).length;
     var unhighlightedCount = $rows.length - highlightedCount;
 
+    var pinnedCount = $rows.filter(function(i, e) { return $(e).attr('pinned') == 'true'; }).length;
+    var unpinnedCount = $rows.length - pinnedCount;
+
     if (hibernatedCount)
         items.push({ $rows: $pages, id: 'awakenPage', icon: '/images/wake.png', label: 'Wake tab', callback: onContextMenuItemWakePages });
 
@@ -470,6 +487,12 @@ function onContextMenuShow($rows) {
 
     if (highlightedCount)
         items.push({ $rows: $rows, id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
+
+    if (unpinnedCount)
+        items.push({ $rows: $pages, id: 'pinPage', icon: '/images/pinned.png', label: 'Pin tab', callback: onContextMenuItemPinPages, preserveSelectionAfter: true });
+
+    if (pinnedCount)
+        items.push({ $rows: $pages, id: 'unpinPage', icon: '/images/unpin.png', label: 'Unpin tab', callback: onContextMenuItemUnpinPages, preserveSelectionAfter: true });
 
     if ($pages.length > 0)
         items.push({ $rows: $rows, id: 'copyUrl', icon: '/images/copy_url.png', label: 'Copy URL', callback: onContextMenuItemCopyURL, preserveSelectionAfter: true });
@@ -619,6 +642,18 @@ function onContextMenuItemMoveToNewFolder($rows) {
     ft.moveRowSetAnimate($rows, 'append', ft.getRow(folder.id), function(moves) {
         onRowsMoved(moves);
     });
+}
+
+function onContextMenuItemUnpinPages($rows) {
+    $rows
+        .filter(function(i, e) { $e = $(e); return $e.attr('pinned') == 'true'; })
+        .each(function(i, e) { setPageRowPinnedState($(e), false); });
+}
+
+function onContextMenuItemPinPages($rows) {
+    $rows
+        .filter(function(i, e) { $e = $(e); return $e.attr('pinned') == 'false'; })
+        .each(function(i, e) { setPageRowPinnedState($(e), true); });
 }
 
 
@@ -872,14 +907,14 @@ function onPageRowHibernateButton(evt) {
     togglePageRowsHibernated(evt.data.row);
 }
 
-function onRowPinMouseUp(evt) {
+function onRowPinClick(evt) {
     var row = $(this).closest('.ftRowNode');
     setPageRowPinnedState(row, false);
-    evt.stopPropagation();
 }
 
 function onRowPinMouseLeave(evt) {
     var row = $(this).closest('.ftItemRow');
+    ft.hideTooltip();
     row.trigger('mouseenter');
 }
 
@@ -948,6 +983,21 @@ function onWindowRowCloseButton(evt) {
     closeWindowRow(row);
 }
 
+function onWindowRowCreateTabButton(evt) {
+    var treeObj = evt.data.treeObj;
+    var row = evt.data.row;
+
+    chrome.tabs.create({ windowId: getRowNumericId(row) }, function(tab) {
+        // ensure the new tab and window have focus after a short delay to compensate for Sidewise
+        // potentially doing window-switching when Chrome is unfocused and "Create new tab"
+        // button is clicked, and the "Keep sidebar visible next to dock window" option is on
+        setTimeout(function() {
+            chrome.windows.update(tab.windowId, { focused: true });
+            chrome.tabs.update(tab.id, { active: true });
+        }, 50);
+    });
+}
+
 function closeWindowRow(row) {
     var childCount = ft.getChildrenCount(row);
 
@@ -1002,8 +1052,20 @@ function onWindowRowFormatTitle(row, itemTextElem) {
 
 function onWindowRowFormatTooltip(evt) {
     var incognito = (evt.data.row.attr('incognito') == 'true');
+    var popup = (evt.data.row.attr('type') == 'popup');
     var childCount = evt.data.treeObj.getChildrenCount(evt.data.row);
-    var img = (incognito ? '/images/incognito-32.png' : '/images/tab-stack-32.png');
+
+    var img;
+    if (incognito) {
+        img = '/images/incognito-32.png';
+    }
+    else if (popup) {
+        img ='/images/tab-single-32.png';
+    }
+    else {
+        img = '/images/tab-stack-32.png';
+    }
+
     var body = childCount + ' '
         + (incognito ? 'incognito' + ' ' : '')
         + (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'));
@@ -1051,6 +1113,11 @@ function togglePageRowsHibernated($rows, hibernateAwakeState, activateAfterWakin
 }
 
 function setPageRowPinnedState(row, pinned) {
+    if (row.attr('hibernated') == 'true') {
+        bg.tree.updateNode(row.attr('id'), { pinned: pinned });
+        return;
+    }
+
     chrome.tabs.update(getRowNumericId(row), { pinned: pinned });
 }
 
