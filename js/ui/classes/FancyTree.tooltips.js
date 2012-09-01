@@ -9,13 +9,17 @@ FancyTree.prototype.startTooltipTimer =  function(row, evt, afterDelay) {
         return;
     }
 
-    var treeObj = this;
+    if (this.tooltipShowTimer) {
+        clearTimeout(this.tooltipShowTimer);
+    }
+
+    var self = this;
     this.tooltipShowTimer = setTimeout(function() {
         // obtain and pass bodyWidth here due to some oddness where within showTooltip,
         // document.body.clientWidth always returns the body width as it was when
         // the FancyTree object was created, even if window has since been resized
         var bodyWidth = document.body.clientWidth;
-        treeObj.showTooltip.call(treeObj, row, bodyWidth, evt);
+        self.showTooltip.call(self, row, bodyWidth, evt);
     }, (afterDelay >= 0 ? afterDelay : ROW_TOOLTIP_SHOW_DELAY_MS));
 };
 
