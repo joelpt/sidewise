@@ -109,12 +109,9 @@ function createSidebarOnStartup() {
 function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
     if (tree.lastModified != tree.lastSaved) {
         log('saving tree to local storage');
-        var saveTree;
+        var saveTree = clone(tree.tree, ['parent']);
         if (excludeIncognitoNodes) {
-            saveTree = tree.tree.filter(function(e) { return !e.incognito; });
-        }
-        else {
-            saveTree = tree;
+            saveTree = saveTree.filter(function(e) { return !e.incognito; });
         }
         settings.set(settingName, saveTree);
         tree.lastSaved = tree.lastModified;
@@ -228,6 +225,7 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
         // rebuild the indexes
         tree.rebuildIdIndex();
         tree.rebuildTabIndex();
+        tree.rebuildParents();
 
         // set modified state
         tree.updateLastModified();

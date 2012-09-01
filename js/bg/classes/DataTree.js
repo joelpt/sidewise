@@ -64,13 +64,16 @@ DataTree.prototype = {
             else {
                 parent.children.push(node);
             }
+            node.parent = parent;
         }
         else {
             if (beforeSibling) {
                 beforeSibling.siblings.splice(beforeSibling.index, 0, node);
+                node.parent = beforeSibling.parent;
             }
             else {
                 this.tree.push(node);
+                node.parent = null;
             }
         }
 
@@ -371,6 +374,22 @@ DataTree.prototype = {
         }, {});
     },
 
+    // rebuild .parent relations
+    rebuildParents: function(startingParent) {
+        var children;
+        if (!startingParent) {
+            startingParent = null;
+            children = this.tree;
+        }
+        else {
+            children = startingParent.children;
+        }
+
+        for (var i = children.length - 1; i >= 0; i--) {
+            children[i].parent = startingParent;
+            this.rebuildParents(children[i]);
+        };
+    },
 
     ///////////////////////////////////////////////////////////
     // Comprehension style operations
