@@ -125,6 +125,7 @@
     font-family: 'segoe ui', 'ms sans serif', sans-serif;
     box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
     word-wrap: none;
+    white-space: nowrap;
 }
 
 #ftSimpleTip {
