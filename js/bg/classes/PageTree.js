@@ -291,11 +291,12 @@ PageTree.prototype = {
     hibernatePage: function(id, skipLastTabCheck)
     {
         var tabId = getNumericId(id);
-        this.updatePage(tabId, { hibernated: true, id: 'pH' + generateGuid(), status: 'complete' });
+        var page = this.updatePage(tabId, { hibernated: true, id: 'pH' + generateGuid(), status: 'complete' });
 
         var self = this;
         function removeAfterHibernate() {
             chrome.tabs.remove(tabId);
+            tree.removeFromTabIndex(page);
             self.updateLastModified();
         }
 
@@ -587,7 +588,7 @@ PageTree.prototype = {
 
     // Remove the given node from the tab index
     removeFromTabIndex: function(node) {
-        if (!(node instanceof PageNode) || node.hibernated) {
+        if (!(node instanceof PageNode)) {
             return;
         }
 
@@ -603,7 +604,9 @@ PageTree.prototype = {
         }
 
         var index = this.tabIndexes[topParent.id].indexOf(node);
-        this.tabIndexes[topParent.id].splice(index, 1);
+        if (index > -1) {
+            this.tabIndexes[topParent.id].splice(index, 1);
+        }
     },
 
     // rebuild the tab index
@@ -631,6 +634,7 @@ PageTree.prototype = {
                         log('Conforming chrome tab index', 'id', tab.id, 'tab.index', tab.index, 'target index', newIndex);
                         expectingTabMoves.push(tab.id);
                         chrome.tabs.move(tab.id, { index: newIndex }, function() {
+                            setTimeout(function() { removeFromExpectingTabMoves(tab.id); }, 250);
                         });
                     }
                     else {
@@ -676,6 +680,7 @@ PageTree.prototype = {
     {
         var to;
         var moving = this.getPage(tabId);
+        tree.updateNode(moving, { windowId: windowId });
         windowId = 'w' + windowId;
 
         if (toIndex < fromIndex) {
