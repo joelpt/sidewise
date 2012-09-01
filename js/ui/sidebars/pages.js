@@ -129,6 +129,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onResizeTooltip: onResizeTooltip,
             tooltipMaxWidthPercent: 0.95,
             buttons: [
+                {icon: '/images/create_tab.png', tooltip: getMessage('pages_windowRowButtonTip_createTab'), onClick: onWindowRowCreateTabButton },
                 {icon: '/images/close.png', tooltip: getMessage('pages_windowRowButtonTip_close'), onClick: onWindowRowCloseButton }
             ]
         }
@@ -959,6 +960,13 @@ function onWindowRowCloseButton(evt) {
     var row = evt.data.row;
 
     closeWindowRow(row);
+}
+
+function onWindowRowCreateTabButton(evt) {
+    var treeObj = evt.data.treeObj;
+    var row = evt.data.row;
+
+    chrome.tabs.create({ windowId: getRowNumericId(row) });
 }
 
 function closeWindowRow(row) {

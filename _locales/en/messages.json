@@ -65,6 +65,7 @@
     "pages_hibernatedHint": { "message": "Hibernated page" },
     "pages_omniboxTip": { "message": "Tip: You can type \"sw sometext\" into Chrome's address bar to find pages in Sidewise." },
 
+    "pages_windowRowButtonTip_createTab": { "message": "Create new tab" },
     "pages_windowRowButtonTip_close": { "message": "Close window" },
     "pages_pageRowButtonTip_hibernateWake": { "message": "Hibernate/wake" },
     "pages_pageRowButtonTip_close": { "message": "Close" },
