@@ -169,7 +169,20 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
 {
     var row;
     if (node instanceof bg.WindowNode) {
-        var img = (node.incognito ? '/images/incognito-16.png' : '/images/tab-stack-16.png');
+        var incognito = node.incognito;
+        var popup = (node.type == 'popup');
+
+        var img;
+        if (incognito) {
+            img = '/images/incognito-16.png';
+        }
+        else if (popup) {
+            img ='/images/tab-single-16.png';
+        }
+        else {
+            img = '/images/tab-stack-16.png';
+        }
+
         row = fancyTree.getNewRowElem('window',
             node.id,
             img,
@@ -966,7 +979,15 @@ function onWindowRowCreateTabButton(evt) {
     var treeObj = evt.data.treeObj;
     var row = evt.data.row;
 
-    chrome.tabs.create({ windowId: getRowNumericId(row) });
+    chrome.tabs.create({ windowId: getRowNumericId(row) }, function(tab) {
+        // ensure the new tab and window have focus after a short delay to compensate for Sidewise
+        // potentially doing window-switching when Chrome is unfocused and "Create new tab"
+        // button is clicked, and the "Keep sidebar visible next to dock window" option is on
+        setTimeout(function() {
+            chrome.windows.update(tab.windowId, { focused: true });
+            chrome.tabs.update(tab.id, { active: true });
+        }, 50);
+    });
 }
 
 function closeWindowRow(row) {
@@ -1023,8 +1044,20 @@ function onWindowRowFormatTitle(row, itemTextElem) {
 
 function onWindowRowFormatTooltip(evt) {
     var incognito = (evt.data.row.attr('incognito') == 'true');
+    var popup = (evt.data.row.attr('type') == 'popup');
     var childCount = evt.data.treeObj.getChildrenCount(evt.data.row);
-    var img = (incognito ? '/images/incognito-32.png' : '/images/tab-stack-32.png');
+
+    var img;
+    if (incognito) {
+        img = '/images/incognito-32.png';
+    }
+    else if (popup) {
+        img ='/images/tab-single-32.png';
+    }
+    else {
+        img = '/images/tab-stack-32.png';
+    }
+
     var body = childCount + ' '
         + (incognito ? 'incognito' + ' ' : '')
         + (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'));
