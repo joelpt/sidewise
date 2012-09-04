@@ -61,16 +61,23 @@ PageTree.prototype = {
       */
     addNode: function(node, parentMatcher, beforeSiblingMatcher, useChromeTabIndex)
     {
+        var parent;
+        if (parentMatcher) {
+            parent = this.getNode(parentMatcher);
+        }
+
         if (useChromeTabIndex && !beforeSiblingMatcher && node instanceof PageNode && !node.hibernated) {
             var index = node.index;
             var nextByIndex = this.tabIndexes['w' + node.windowId][index];
             if (nextByIndex) {
-                beforeSiblingMatcher = nextByIndex;
-                parentMatcher = undefined;
+                if (!parentMatcher || parent === nextByIndex.parent) {
+                    beforeSiblingMatcher = nextByIndex;
+                    parent = undefined;
+                }
             }
         }
 
-        var r = this.$super('addNode')(node, parentMatcher, beforeSiblingMatcher);
+        var r = this.$super('addNode')(node, parent, beforeSiblingMatcher);
 
         var parentId = r[1] ? r[1].id : undefined;
 
@@ -117,6 +124,13 @@ PageTree.prototype = {
 
         this.removeFromTabIndex(node);
 
+        if (removeChildren) {
+            var descendants = this.filter(function(e) { return e; }, node.children);
+            for (var i = descendants.length - 1; i >= 0; i--) {
+                this.removeFromTabIndex(descendants[i]);
+            };
+        }
+
         var r = this.$super('removeNode')(node, removeChildren);
         this.callbackProxyFn('remove', { element: r, removeChildren: removeChildren || false });
 
@@ -133,17 +147,28 @@ PageTree.prototype = {
     moveNode: function(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren, blockCallback, preferChromeTabIndex)
     {
         var moving = this.getNode(movingMatcher);
+        var parent = this.getNode(parentMatcher);
 
         if (preferChromeTabIndex && !beforeSiblingMatcher && moving instanceof PageNode && !moving.hibernated) {
             var index = moving.index;
             var nextByIndex = this.tabIndexes['w' + moving.windowId][index];
             if (nextByIndex) {
-                beforeSiblingMatcher = nextByIndex;
+                if (nextByIndex === moving) {
+                    log('moveNode would move node to same position after compensating for preferChromeTabIndex, doing nothing', movingMatcher, parentMatcher);
+                    return;
+                }
+                var ex = this.getNodeEx(nextByIndex);
+                if (ex.parent === parent) {
+                    beforeSiblingMatcher = nextByIndex;
+                }
             }
         }
 
-        var r = this.$super('moveNode')(moving, parentMatcher, beforeSiblingMatcher, keepChildren);
-
+        log('moving node', 'moving', moving, 'parent', parent, 'beforeSiblingMatcher', beforeSiblingMatcher, 'keepChildren', keepChildren, 'preferChromeTabIndex', preferChromeTabIndex);
+        var r = this.$super('moveNode')(moving, parent, beforeSiblingMatcher, keepChildren);
+        if (r === undefined) {
+            log('$super.move returned undefined');
+        }
         if (r !== undefined && !blockCallback) {
             this.callbackProxyFn('move', {
                 element: r[0],
@@ -614,6 +639,23 @@ PageTree.prototype = {
         this.tabIndexes = this.groupBy(function(e) {
             if (e instanceof PageNode && !e.hibernated) {
                 return 'w' + e.windowId;
+            }
+        });
+    },
+
+    // rebuild window ids on page nodes
+    rebuildPageNodeWindowIds: function(onComplete) {
+        var self = this;
+        chrome.tabs.query({ }, function(tabs) {
+            for (var i in tabs) {
+                var tab = tabs[i];
+                var page = self.getPage(tab.id);
+                if (page) {
+                    self.updateNode(page, { windowId: tab.windowId });
+                }
+            }
+            if (onComplete) {
+                onComplete();
             }
         });
     },
