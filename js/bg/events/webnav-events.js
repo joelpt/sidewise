@@ -56,10 +56,10 @@ function onCreatedNavigationTarget(details)
     if (monitorInfo.isDetecting()) {
         return;
     }
-    log(details);
+    log('Making page a child in onCreatedNavigationTarget', details.tabId, details.sourceTabId, details);
 
     var page = tree.getPage(details.tabId);
-    tree.moveNode(page, 'p' + details.sourceTabId);
+    tree.moveNode(page, 'p' + details.sourceTabId, undefined, false, false, true);
     tree.updateNode(page, { placed: true });
 }
 
