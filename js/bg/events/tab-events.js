@@ -146,12 +146,13 @@ function onTabCreated(tab)
         });
         return;
     }
-    else if (!isScriptableUrl(tab.url)) {
+    else if (tab.url && !isScriptableUrl(tab.url)) {
         // Non scriptable tab; attempt to associate it with a restorable page node
         // even though it's possible the user just created this tab freshly. We do this
         // because onCommitted never fires for non scriptable tabs and therefore
         // we'll never be able to detect if this tab's transitionType=='reload' which
         // is how we normally detect that a tab is being restored rather than created anew
+        log('Adding non scriptable tab to tree via association attempt', tab.id, tab, tab.url);
         tree.addNode(page, 'w' + tab.windowId);
         associateExistingToRestorablePageNode(tab);
         return;
@@ -162,10 +163,9 @@ function onTabCreated(tab)
     if (tab.openerTabId) {
         // Make page a child of its opener tab; this may be overriden later in webnav-events.js
         log('Tentatively setting page as child of its opener tab', page.id, tab.openerTabId);
-        tree.addNode(page, 'p' + tab.openerTabId);
+        tree.addNode(page, 'p' + tab.openerTabId, undefined, true);
         return;
     }
-
     // Make page a child of its hosting window
     log('Setting page as child of its hosting window', page, tab.windowId);
     tree.addTabToWindow(tab, page, undefined, true);
