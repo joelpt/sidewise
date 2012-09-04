@@ -11,7 +11,8 @@ var DataTree = function() {
     // Intialization
     /////////////////////////////////////////////////////
 
-    this.tree = []; // primary internal data structure's top level of children
+    this.root = new DataTreeRootNode(this);
+    this.tree = this.root.children; // root level children
     this.lastModified = null;
     this.onModified = null;
     this.idIndex = {};
@@ -73,10 +74,11 @@ DataTree.prototype = {
             }
             else {
                 this.tree.push(node);
-                node.parent = null;
+                node.parent = this.root;
             }
         }
 
+        node.root = this.root;
         this.idIndex[node.id] = node;
         this.updateLastModified();
         return [node, parent, beforeSibling ? beforeSibling.node : undefined];
@@ -330,15 +332,18 @@ DataTree.prototype = {
             throw new Error('Could not find requested element to remove matching above matcher');
         }
 
-        this.updateLastModified();
         if (removeChildren) {
             // remove all children
             found.siblings.splice(found.index, 1);
         }
         else {
+            found.node.children.forEach(function(e) { e.parent = found.parent; });
             Array.prototype.splice.apply(found.siblings, [found.index, 1].concat(found.node.children));
         }
+
         delete this.idIndex[found.node.id];
+
+        this.updateLastModified();
         return found.node;
     },
 
@@ -355,7 +360,16 @@ DataTree.prototype = {
             casts = { 'node': DataTreeNode }
         };
 
-        this.tree = this.mapTree(function(e) {
+        var newRootNode = new DataTreeRootNode(this);
+
+        if (treeData instanceof Array) {
+            newRootNode.children = treeData;
+        }
+        else {
+            treeData = treeData.children;
+        }
+
+        treeData = this.mapTree(function(e) {
             var castTo = casts[e.elemType];
             if (castTo) {
                 // pseudocast: doesn't actually change the object's type, but
@@ -364,6 +378,10 @@ DataTree.prototype = {
             }
             return e;
         }, treeData);
+
+        newRootNode.children = treeData;
+        this.root = newRootNode;
+        this.tree = this.root.children;
     },
 
     // rebuild the id index
@@ -387,6 +405,7 @@ DataTree.prototype = {
 
         for (var i = children.length - 1; i >= 0; i--) {
             children[i].parent = startingParent;
+            children[i].root = this.root;
             this.rebuildParents(children[i]);
         };
     },
@@ -553,7 +572,8 @@ DataTree.prototype = {
 
     // Empties the tree.
     clear: function() {
-        this.tree = [];
+        this.root = new DataTreeRootNode(this);
+        this.tree = this.root.children;
         this.idIndex = [];
         this.updateLastModified();
     },
