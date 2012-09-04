@@ -207,6 +207,9 @@ function onGetPageDetailsMessage(tab, msg) {
             }
             log('find_parent updating page node', page.id, 'page', page, 'new details', details);
             tree.updateNode(page, details);
+
+            TimeoutManager.reset('conformAfterFindParents', function() { tree.conformAllChromeTabIndexes(); }, 500);
+            TimeoutManager.reset('conformAfterFindParents2', function() { tree.conformAllChromeTabIndexes(); }, 2500);
             break;
 
         default:
