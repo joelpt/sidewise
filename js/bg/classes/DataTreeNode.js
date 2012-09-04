@@ -10,6 +10,32 @@ var DataTreeNode = function()
     this.elemType = 'node';
     this.children = [];
     this.UUID = generateGuid();
+    this.parent = null;
 };
 
-extendClass(DataTreeNode, Object, {});
+DataTreeNode.prototype = {
+
+    parents: function() {
+        var parents = [];
+        var parent = this.parent;
+        while (parent) {
+            parents.push(parent);
+            parent = parent.parent;
+        }
+        return parents;
+    },
+
+    topParent: function() {
+        var top = this;
+        while (top.parent) {
+            top = top.parent;
+        }
+        if (top === this) {
+            return null;
+        }
+        return top;
+    }
+
+};
+
+extendClass(DataTreeNode, Object, DataTreeNode.prototype);
