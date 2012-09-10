@@ -28,7 +28,7 @@ function registerTabEvents()
 
 function onTabCreated(tab)
 {
-    log(tab);
+    log(tab, tab.id);
     if (monitorInfo.isDetecting()) {
         return;
     }
@@ -45,7 +45,8 @@ function onTabCreated(tab)
             log('Swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id);
             tree.updatePage(expectingNavigationOldTabId, {
                 id: 'p' + tab.id,
-                url: tab.url
+                url: tab.url,
+                windowId: tab.windowId
             });
             resetExpectingNavigation();
             return;
@@ -59,7 +60,8 @@ function onTabCreated(tab)
             log('Fallback approach - swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id);
             tree.updatePage(expectingNavigationOldTabId, {
                 id: 'p' + tab.id,
-                url: tab.url
+                url: tab.url,
+                windowId: tab.windowId
             });
             resetExpectingNavigation();
             return;
@@ -79,7 +81,13 @@ function onTabCreated(tab)
         var wakingIndex = waking[0];
         var wakingPage = waking[1];
         log('associating waking tab to existing hibernated page element', tab, wakingPage);
-        tree.updatePage(wakingPage, { id: 'p' + tab.id, hibernated: false, unread: true, status: 'preload' });
+        tree.updatePage(wakingPage, {
+            id: 'p' + tab.id,
+            windowId: tab.windowId,
+            hibernated: false,
+            unread: true,
+            status: 'preload'
+        });
         tree.awakeningPages.splice(wakingIndex, 1); // remove matched element
         tree.conformChromeTabIndexForPageNode(wakingPage, true);
         return;
@@ -161,14 +169,52 @@ function onTabCreated(tab)
     page.initialCreation = true;
 
     if (tab.openerTabId) {
-        // Make page a child of its opener tab; this may be overriden later in webnav-events.js
-        log('Tentatively setting page as child of its opener tab', page.id, tab.openerTabId);
-        tree.addNode(page, 'p' + tab.openerTabId, undefined, true);
-        return;
+        var opener = tree.getNode('p' + tab.openerTabId);
+        if (opener) {
+            if (opener.windowId != tab.windowId) {
+                // Chrome claims opener tab which is not in the same window as the created tab
+                // so just create the new tab in its own (possibly new) window
+                log('Created tab does not belong to same window as its openerTab, putting into new window');
+                tree.addTabToWindow(tab, page, undefined, true, true);
+                return;
+            }
+            var openerIndex = tree.getTabIndex(opener);
+            var tabIndex = tab.index;
+
+            if (openerIndex == tabIndex - 1) {
+                // Created tab was inserted by Chrome immediately following its opener tab
+                // so tentatively assume opener is its proper parent
+                log('Created tab inserted by Chrome immediately after its openerTab; assuming parent-child relationship');
+                tree.addNode(page, opener, undefined, true);
+                return;
+            }
+
+            var winTabs = tree.getWindowTabIndexArray('w' + tab.windowId);
+            if (winTabs && winTabs.length == tab.index) {
+                // Chrome inserted the created tab at the end of its window's tabs
+                log('Created tab inserted by Chrome at end of its window\'s tabs; mimicking this');
+                page.placed = true;
+                tree.addTabToWindow(tab, page, undefined, false, false);
+                return;
+            }
+
+            // Chrome inserted the created tab somewhere in the middle of its window's tabs
+            var prevByIndex = winTabs[tabIndex - 1];
+            if (prevByIndex.parent === opener || prevByIndex.parent === opener) {
+                log('Created tab inserted in the middle of its window\'s tabs and appears to be a child of its openerTab');
+                tree.addNode(page, opener, undefined, true);
+                return;
+            }
+
+            log('Created tab inserted in the middle of its window\'s tabs; mimicking this');
+            tree.addTabToWindow(tab, page, undefined, true, true);
+            return;
+        }
     }
+
     // Make page a child of its hosting window
-    log('Setting page as child of its hosting window', page, tab.windowId);
-    tree.addTabToWindow(tab, page, undefined, true);
+    log('Created tab has no opener specified, setting page as child of its hosting window by index', page, tab.windowId);
+    tree.addTabToWindow(tab, page, undefined, true, true);
 }
 
 function onTabRemoved(tabId, removeInfo)
