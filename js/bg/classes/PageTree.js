@@ -59,8 +59,12 @@ PageTree.prototype = {
       *                             node that matches beforeSiblingMatcher.
       * @returns [node, parent, beforeSibling], where parent/beforeSibling may be undefined
       */
-    addNode: function(node, parentMatcher, beforeSiblingMatcher, useChromeTabIndex)
+    addNode: function(node, parentMatcher, beforeSiblingMatcher, useChromeTabIndex, forceUseChromeTabIndex)
     {
+        if (node instanceof WindowNode) {
+            this.tabIndexes[node.windowId] = [];
+        }
+
         var parent;
         if (parentMatcher) {
             parent = this.getNode(parentMatcher);
@@ -68,11 +72,23 @@ PageTree.prototype = {
 
         if (useChromeTabIndex && !beforeSiblingMatcher && node instanceof PageNode && !node.hibernated) {
             var index = node.index;
-            var nextByIndex = this.tabIndexes['w' + node.windowId][index];
-            if (nextByIndex) {
-                if (!parentMatcher || parent === nextByIndex.parent) {
-                    beforeSiblingMatcher = nextByIndex;
-                    parent = undefined;
+            var indexes = this.getWindowTabIndexArray('w' + node.windowId);
+            if (indexes) {
+                var nextByIndex = indexes[index];
+                if (nextByIndex) {
+                    if (!parentMatcher || parent === nextByIndex.parent) {
+                        beforeSiblingMatcher = nextByIndex;
+                        parent = undefined;
+                    }
+                    else if (forceUseChromeTabIndex) {
+                        // if (nextByIndex.parent === nextByIndex.preceding()
+                        //     || nextByIndex.parent === nextByIndex.preceding().parent)
+                        // {
+                            beforeSiblingMatcher = nextByIndex;
+                            parent = undefined;
+                        // }
+                        // else {
+                    }
                 }
             }
         }
@@ -270,7 +286,7 @@ PageTree.prototype = {
 
     focusPage: function(tabId)
     {
-        log(tabId);
+        // log(tabId);
 
         var page = this.getPage(tabId);
 
@@ -536,14 +552,21 @@ PageTree.prototype = {
         }
 
         // existingWindowNode is not hibernated (its Chrome window already exists)
+        var self = this;
         var windowId = getNumericId(existingWindowNode.id);
         nodes.forEach(function(e) {
-            log('awakening', e.url, 'windowId', windowId);
+            var index;
+            var next = e.following(function(e) { return e instanceof PageNode && !e.hibernated; });
+            if (next) {
+                index = self.getTabIndex(next);
+            }
+            log('awakening', e.url, 'windowId', windowId, 'index', index);
             chrome.tabs.create({
                 url: e.url,
                 windowId: windowId,
                 active: activateAfter || false,
-                pinned: e.pinned
+                pinned: e.pinned,
+                index: index
             });
         });
     },
@@ -556,13 +579,13 @@ PageTree.prototype = {
     // @param tab {Chrome.Tab} to add under window node
     // @param pageNode {PageNode} if given, use this instead of creating a new PageNode from tab
     // @param onAdded {Function(pageNode, winNode)} if given, call this after performing addition(s)
-    addTabToWindow: function(tab, pageNode, onAdded, useChromeTabIndex) {
+    addTabToWindow: function(tab, pageNode, onAdded, useChromeTabIndex, forceUseChromeTabIndex) {
         var pageNode = pageNode || new PageNode(tab);
         var winNode = this.getNode('w' + tab.windowId);
 
         if (winNode) {
             // window node exists, add page to it
-            this.addNode(pageNode, winNode, undefined, useChromeTabIndex);
+            this.addNode(pageNode, winNode, undefined, useChromeTabIndex, forceUseChromeTabIndex);
             if (onAdded) {
                 onAdded(pageNode, winNode);
             }
@@ -574,7 +597,7 @@ PageTree.prototype = {
         chrome.windows.get(tab.windowId, function(win) {
             var winNode = new WindowNode(win);
             self.addNode(winNode);
-            self.addNode(pageNode, winNode, undefined, useChromeTabIndex);
+            self.addNode(pageNode, winNode, undefined, useChromeTabIndex, forceUseChromeTabIndex);
             if (onAdded) {
                 onAdded(pageNode, winNode);
             }
@@ -585,6 +608,15 @@ PageTree.prototype = {
     ///////////////////////////////////////////////////////////
     // Tab index maintenance
     ///////////////////////////////////////////////////////////
+
+    getTabIndex: function(node) {
+        var winId = 'w' + node.windowId;
+        return this.getWindowTabIndexArray(winId).indexOf(node);
+    },
+
+    getWindowTabIndexArray: function(windowNodeId) {
+        return this.tabIndexes[windowNodeId];
+    },
 
     // Add the given node to the tab index based on its .index
     addToTabIndex: function(node) {
