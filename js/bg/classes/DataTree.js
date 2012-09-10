@@ -313,6 +313,9 @@ DataTree.prototype = {
         var fromId = fromNodeEx.node.id;
         var toId = toNode.id;
 
+        // Update parents of children about to be moved
+        fromNodeEx.node.children.forEach(function(e) { e.parent = toNode; });
+
         // Merge children
         toNode.children = toNode.children.concat(fromNodeEx.node.children);
 
