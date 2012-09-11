@@ -36,8 +36,17 @@ FancyTree.prototype.onMouseLeaveButtons = function(evt) {
 FancyTree.prototype.onItemRowMouseEnter = function(evt) {
     var treeObj = evt.data.treeObj;
     var row = treeObj.getParentRowNode($(this));
+    var rowTypeParams = treeObj.getRowTypeParams(row);
+    var buttons = treeObj.getButtons(row);
 
-    treeObj.getButtons(row).parent().show();
+    if (rowTypeParams.onShowButtons) {
+        var show = rowTypeParams.onShowButtons(row, rowTypeParams.buttons);
+        var showClasses = show.map(function(e) { return '.ftButton__' + rowTypeParams.name + '_' + e.id; }).join(',');
+        buttons.filter(showClasses).show();
+        buttons.not(showClasses).hide();
+    }
+
+    buttons.parent().show();
     treeObj.getInnerRow(row).children('.ftItemTextAffix').hide();
     treeObj.hoveredRow = row;
     treeObj.startTooltipTimer(row, evt);

@@ -87,8 +87,8 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             filterByExtraParams: ['url'],
             tooltipMaxWidthPercent: 0.95,
             buttons: [
-                {icon: '/images/hibernate_wake.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
-                {icon: '/images/close.png', tooltip: getMessage('pages_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
+                {id: 'hibernate', icon: '/images/hibernate_wake.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
+                {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
             ]
         },
         'folder': {
@@ -109,7 +109,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onResizeTooltip: onResizeTooltip,
             tooltipMaxWidthPercent: 0.95,
             buttons: [
-                {icon: '/images/close.png', tooltip: getMessage('pages_folderRowButtonTip_close'), onClick: onFolderRowCloseButton }
+                {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_folderRowButtonTip_close'), onClick: onFolderRowCloseButton }
             ]
         },
         'window': {
@@ -129,9 +129,10 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onResizeTooltip: onResizeTooltip,
             tooltipMaxWidthPercent: 0.95,
             buttons: [
-                {icon: '/images/create_tab.png', tooltip: getMessage('pages_windowRowButtonTip_createTab'), onClick: onWindowRowCreateTabButton },
-                {icon: '/images/close.png', tooltip: getMessage('pages_windowRowButtonTip_close'), onClick: onWindowRowCloseButton }
-            ]
+                {id: 'createTab', icon: '/images/create_tab.png', tooltip: getMessage('pages_windowRowButtonTip_createTab'), onClick: onWindowRowCreateTabButton },
+                {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_windowRowButtonTip_close'), onClick: onWindowRowCloseButton }
+            ],
+            onShowButtons: onWindowShowButtons
         }
     };
 
@@ -976,6 +977,24 @@ function handleWindowRowAction(action, evt) {
     }
 }
 
+function onWindowShowButtons(row, buttons) {
+    var show = [];
+
+    for (var i = 0; i < buttons.length; i++) {
+        var button = buttons[i];
+        if (button.id == 'close') {
+            show.push(button);
+            continue;
+        }
+        if (button.id == 'createTab' && row.attr('hibernated') == 'false' && row.attr('type') == 'normal') {
+            show.push(button);
+            continue;
+        }
+    };
+
+    return show;
+}
+
 function onWindowRowCloseButton(evt) {
     var treeObj = evt.data.treeObj;
     var row = evt.data.row;
@@ -987,7 +1006,7 @@ function onWindowRowCreateTabButton(evt) {
     var treeObj = evt.data.treeObj;
     var row = evt.data.row;
 
-    chrome.tabs.create({ windowId: getRowNumericId(row) }, function(tab) {
+    chrome.tabs.create({ windowId: getRowNumericId(row) || undefined }, function(tab) {
         // ensure the new tab and window have focus after a short delay to compensate for Sidewise
         // potentially doing window-switching when Chrome is unfocused and "Create new tab"
         // button is clicked, and the "Keep sidebar visible next to dock window" option is on
