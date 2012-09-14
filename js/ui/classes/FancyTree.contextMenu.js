@@ -48,9 +48,11 @@ FancyTree.prototype.onContextMenuItemClick = function(evt) {
         treeObj.clearMultiSelection();
     }
 
-    // Perform context menu after a short delay to allow for sidebar to
-    // do its visual updates first
-    setTimeout(function() { callback($rows); }, 50);
+    treeObj.resetDragDropState(function() {
+        // Perform context menu after a short delay to allow for sidebar to
+        // do its visual updates first
+        setTimeout(function() { callback($rows); }, 50);
+    });
 
     return false;
 };

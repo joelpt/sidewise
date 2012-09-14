@@ -74,7 +74,12 @@ FancyTree.prototype.rowMouseUpHandler = function(evt) {
 
         if (evt.data.onClick) {
             // handle left click
-            evt.data.onClick(evt);
+            var evtdata = evt.data;
+            var onComplete = function() {
+                evt.data = evtdata;
+                evt.data.onClick(evt);
+            };
+            treeObj.resetDragDropState(onComplete);
         }
 
         return;

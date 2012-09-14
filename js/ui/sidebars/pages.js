@@ -524,8 +524,9 @@ function onContextMenuItemCloseBranches($rows) {
     var $children = $rows.find('.ftRowNode');
     var childrenCount = $children.length;
     var threshold = settings.get('multiSelectActionConfirmThreshold');
-    if (threshold > 0 && childrenCount >= threshold
-        && !confirm('This action will close ' + childrenCount + ' child row(s). Proceed?'))
+
+    if (threshold > 0 && childrenCount >= threshold &&
+        !confirm('This action will close ' + childrenCount + ' child row(s). Proceed?'))
     {
         return;
     }
@@ -583,7 +584,9 @@ function onContextMenuItemCopyURL($rows) {
 
     copyTextToClipboard(urls.toArray().join('\n') + '\n');
 
-    alert(urls.length + ' URL(s) copied to clipboard.');
+    ft.resetDragDropState(function() {
+        alert(urls.length + ' URL(s) copied to clipboard.');
+    });
 }
 
 function onContextMenuItemMoveToNewFolder($rows) {
@@ -692,12 +695,14 @@ function onFolderRowCloseButton(evt) {
     var $children = evt.data.row.children('.ftChildren').find('.ftRowNode');
     var childCount = $children.length;
 
-    if (childCount > 0 && confirm('Also close ' + childCount + ' child row(s)?\nPress Cancel to remove the parent folder only.')) {
-        $rows = $rows.add($children);
-    }
+    ft.resetDragDropState(function() {
+        if (childCount > 0 && confirm('Also close ' + childCount + ' child row(s)?\nPress Cancel to remove the parent folder only.')) {
+            $rows = $rows.add($children);
+        }
 
-    $rows.each(function(i, e) {
-        closeRow($(e));
+        $rows.each(function(i, e) {
+            closeRow($(e));
+        });
     });
 }
 
@@ -881,17 +886,19 @@ function onPageRowCloseButton(evt) {
     var $row = evt.data.row;
     var $rows = $row;
 
-    if ($row.hasClass('ftCollapsed')) {
-        var $children = $row.children('.ftChildren').find('.ftRowNode');
-        var childCount = $children.length;
+    ft.resetDragDropState(function() {
+        if ($row.hasClass('ftCollapsed')) {
+            var $children = $row.children('.ftChildren').find('.ftRowNode');
+            var childCount = $children.length;
 
-        if (childCount > 0 && confirm('Also close ' + childCount + ' hidden child row(s)?\nPress Cancel to remove the parent row only.')) {
-            $rows = $rows.add($children);
+            if (childCount > 0 && confirm('Also close ' + childCount + ' hidden child row(s)?\nPress Cancel to remove the parent row only.')) {
+                $rows = $rows.add($children);
+            }
         }
-    }
 
-    $rows.each(function(i, e) {
-        closeRow($(e));
+        $rows.each(function(i, e) {
+            closeRow($(e));
+        });
     });
 }
 
@@ -918,6 +925,7 @@ function onRowPinMouseLeave(evt) {
 function onWindowRowClick(evt) {
     var row = evt.data.row;
     var treeObj = evt.data.treeObj;
+
     var windowId = getRowNumericId(row);
 
     if (windowId) {
@@ -938,7 +946,7 @@ function onWindowRowClick(evt) {
         return;
     }
 
-    setTimeout(function() { bg.tree.awakenWindow(row.attr('id')); }, 400);
+    bg.tree.awakenWindow(row.attr('id'));
 }
 
 function onWindowRowDoubleClick(evt) {
@@ -991,33 +999,34 @@ function onWindowRowCreateTabButton(evt) {
 }
 
 function closeWindowRow(row) {
-    var childCount = ft.getChildrenCount(row);
+    ft.resetDragDropState(function() {
+        var childCount = ft.getChildrenCount(row);
 
-    var threshold = settings.get('multiSelectActionConfirmThreshold');
-    if (threshold > 0 && childCount >= threshold) {
-        var msg = getMessage('prompt_closeWindow',
-            [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
+        var threshold = settings.get('multiSelectActionConfirmThreshold');
+        if (threshold > 0 && childCount >= threshold) {
+            var msg = getMessage('prompt_closeWindow',
+                [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
+            if (!confirm(msg)) {
+                return;
+            }
+        }
 
-        if (!confirm(msg)) {
+        var id = row.attr('id');
+        var windowId = getRowNumericId(row);
+
+        if (row.attr('hibernated') == 'true' || !windowId) {
+            bg.tree.removeNode(id, true);
             return;
         }
-    }
 
-    var id = row.attr('id');
-    var windowId = getRowNumericId(row);
-
-    if (row.attr('hibernated') == 'true' || !windowId) {
-        bg.tree.removeNode(id, true);
-        return;
-    }
-
-    chrome.windows.get(windowId, function(win) {
-        if (win) {
-            chrome.windows.remove(windowId, function() {
-                bg.tree.removeNode(id, true);
-            });
-            return;
-        }
+        chrome.windows.get(windowId, function(win) {
+            if (win) {
+                chrome.windows.remove(windowId, function() {
+                    bg.tree.removeNode(id, true);
+                });
+                return;
+            }
+        });
     });
 }
 

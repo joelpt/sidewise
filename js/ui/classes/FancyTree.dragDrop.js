@@ -94,7 +94,7 @@ FancyTree.prototype.getGenericDroppableParams = function() {
 // State management
 ///////////////////////////////////////////////////////////
 
-FancyTree.prototype.resetDragDropState = function() {
+FancyTree.prototype.resetDragDropState = function(onComplete) {
     this.dragging = false;
     this.canAcceptDropTo = false;
     this.draggingRow = null;
@@ -108,6 +108,10 @@ FancyTree.prototype.resetDragDropState = function() {
 
     this.draggingJustCancelled = true;
     $('.ui-draggable-dragging').trigger('mouseup');
+
+    if (onComplete) {
+        setTimeout(onComplete, 0);
+    }
 };
 
 
