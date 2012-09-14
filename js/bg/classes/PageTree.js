@@ -76,18 +76,9 @@ PageTree.prototype = {
             if (indexes) {
                 var nextByIndex = indexes[index];
                 if (nextByIndex) {
-                    if (!parentMatcher || parent === nextByIndex.parent) {
+                    if (forceUseChromeTabIndex || !parent || parent === nextByIndex.parent) {
                         beforeSiblingMatcher = nextByIndex;
                         parent = undefined;
-                    }
-                    else if (forceUseChromeTabIndex) {
-                        // if (nextByIndex.parent === nextByIndex.preceding()
-                        //     || nextByIndex.parent === nextByIndex.preceding().parent)
-                        // {
-                            beforeSiblingMatcher = nextByIndex;
-                            parent = undefined;
-                        // }
-                        // else {
                     }
                 }
             }
@@ -111,7 +102,7 @@ PageTree.prototype = {
     // update an existing node matching matcher with given details
     updateNode: function(matcher, details)
     {
-        log(matcher, details);
+        // log(matcher, details);
 
         var page = this.getNode(matcher);
 
@@ -306,7 +297,7 @@ PageTree.prototype = {
     // update an existing page with given details
     updatePage: function(tabIdOrElem, details)
     {
-        log(tabIdOrElem, details);
+        // log(tabIdOrElem, details);
 
         if (typeof(tabIdOrElem) == 'number') {
             var page = this.getNode('p' + tabIdOrElem);
