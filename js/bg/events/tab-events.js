@@ -178,37 +178,43 @@ function onTabCreated(tab)
                 tree.addTabToWindow(tab, page, undefined, true, true);
                 return;
             }
-            var openerIndex = tree.getTabIndex(opener);
-            var tabIndex = tab.index;
+            // var openerIndex = tree.getTabIndex(opener);
 
-            if (openerIndex == tabIndex - 1) {
-                // Created tab was inserted by Chrome immediately following its opener tab
-                // so tentatively assume opener is its proper parent
-                log('Created tab inserted by Chrome immediately after its openerTab; assuming parent-child relationship');
-                tree.addNode(page, opener, undefined, true);
-                return;
-            }
+            // if (openerIndex == tab.index - 1) {
+            //     // Created tab was inserted by Chrome immediately following its opener tab
+            //     // so tentatively assume opener is its proper parent
+            //     log('Created tab inserted by Chrome immediately after its openerTab; assuming parent-child relationship');
+            //     tree.addNode(page, opener, undefined, true);
+            //     return;
+            // }
 
             var winTabs = tree.getWindowTabIndexArray('w' + tab.windowId);
-            if (winTabs && winTabs.length == tab.index) {
-                // Chrome inserted the created tab at the end of its window's tabs
-                log('Created tab inserted by Chrome at end of its window\'s tabs; mimicking this');
-                page.placed = true;
-                tree.addTabToWindow(tab, page, undefined, false, false);
-                return;
-            }
 
-            // Chrome inserted the created tab somewhere in the middle of its window's tabs
-            var prevByIndex = winTabs[tabIndex - 1];
-            if (prevByIndex.parent === opener || prevByIndex.parent === opener) {
-                log('Created tab inserted in the middle of its window\'s tabs and appears to be a child of its openerTab');
+            if (opener === winTabs[tab.index - 1] || opener === winTabs[tab.index - 1].parent) {
+                log('Created tab is child of its preceding sibling or its parent by tab index, making it a child');
                 tree.addNode(page, opener, undefined, true);
                 return;
             }
 
-            log('Created tab inserted in the middle of its window\'s tabs; mimicking this');
-            tree.addTabToWindow(tab, page, undefined, true, true);
-            return;
+            // if (winTabs && winTabs.length == tab.index) {
+            //     // Chrome inserted the created tab at the end of its window's tabs
+            //     log('Created tab inserted by Chrome at end of its window\'s tabs; mimicking this');
+            //     // page.placed = true;
+            //     tree.addTabToWindow(tab, page, undefined, true, true);
+            //     return;
+            // }
+
+            // // Chrome inserted the created tab somewhere in the middle of its window's tabs
+            // var prevByIndex = winTabs[tab.index - 1];
+            // if (prevByIndex.parent === opener || prevByIndex.parent === opener) {
+            //     log('Created tab inserted in the middle of its window\'s tabs and appears to be a child of its openerTab');
+            //     tree.addNode(page, opener, undefined, true);
+            //     return;
+            // }
+
+            // log('Created tab inserted in the middle of its window\'s tabs; mimicking this');
+            // tree.addTabToWindow(tab, page, undefined, true, true);
+            // return;
         }
     }
 
@@ -340,6 +346,7 @@ function testNodeForFocus(node, testDescendants)
 
 function onTabUpdated(tabId, changeInfo, tab)
 {
+    log(tab);
     if (tabId == sidebarHandler.tabId) {
         // we ignore the sidebar tab
         return;
@@ -358,7 +365,6 @@ function onTabUpdated(tabId, changeInfo, tab)
     if (monitorInfo.isDetecting()) {
         return;
     }
-    log(tab);
 
     var page = tree.getPage(tabId);
 
