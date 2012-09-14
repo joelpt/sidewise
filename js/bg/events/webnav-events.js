@@ -59,7 +59,7 @@ function onCreatedNavigationTarget(details)
     log('Making page a child in onCreatedNavigationTarget', details.tabId, details.sourceTabId, details);
 
     var page = tree.getPage(details.tabId);
-    tree.moveNode(page, 'p' + details.sourceTabId, undefined, false, false, true);
+    tree.moveNode(page, 'p' + details.sourceTabId);
     tree.updateNode(page, { placed: true });
 }
 
