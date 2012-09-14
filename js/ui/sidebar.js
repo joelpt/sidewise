@@ -33,9 +33,8 @@ function onReady() {
 
     // Defeat Chrome's possible attempt to set its own scroll position when sidebar is refreshed
     $(window).load(function() {
-        setTimeout(function() {
-            manager.scrollToCurrentSidebarPane(true);
-        }, 0);
+        setTimeout(function() { manager.scrollToCurrentSidebarPane(true); }, 0);
+        setTimeout(function() { manager.scrollToCurrentSidebarPane(true); }, 100);
     });
 
     $(document)

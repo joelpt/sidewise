@@ -225,11 +225,20 @@ FancyTree.prototype.focusRow = function(idOrElem) {
     $row.parents('.ftRowNode').addClass('ftChildFocused');
 
     var $innerRow = this.getInnerRow($row);
-    var scrollDistance = this.scrollDistanceRequired($innerRow, this.root, this.scrollTargetElem);
-    if (scrollDistance) {
-        var scrollParam = (scrollDistance > 0 ? '+' : '-') + '=' + (Math.abs(scrollDistance) + 2);
-        this.scrollTargetElem.scrollTo(scrollParam, { duration: 200 });
+
+    if (this.scrollToRowTimeout) {
+        clearTimeout(this.scrollToRowTimeout);
     }
+
+    var self = this;
+    this.scrollToRowTimeout = setTimeout(function() {
+        var scrollDistance = self.scrollDistanceRequired($innerRow, self.root, self.scrollTargetElem);
+        if (scrollDistance) {
+            var scrollParam = (scrollDistance > 0 ? '+' : '-') + '=' + (Math.abs(scrollDistance) + 2);
+            console.log('Scrolling ' + scrollDistance + ' to show ' + id);
+            self.scrollTargetElem.scrollTo(scrollParam, { duration: 200 });
+        }
+    }, 100);
 };
 
 FancyTree.prototype.expandRow = function(id) {
