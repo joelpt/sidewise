@@ -168,59 +168,51 @@ function onTabCreated(tab)
 
     page.initialCreation = true;
 
-    if (tab.openerTabId) {
-        var opener = tree.getNode('p' + tab.openerTabId);
-        if (opener) {
-            if (opener.windowId != tab.windowId) {
-                // Chrome claims opener tab which is not in the same window as the created tab
-                // so just create the new tab in its own (possibly new) window
-                log('Created tab does not belong to same window as its openerTab, putting into new window');
-                tree.addTabToWindow(tab, page, undefined, true, true);
-                return;
-            }
-            // var openerIndex = tree.getTabIndex(opener);
+    var winTabs = tree.getWindowTabIndexArray(tab.windowId);
 
-            // if (openerIndex == tab.index - 1) {
-            //     // Created tab was inserted by Chrome immediately following its opener tab
-            //     // so tentatively assume opener is its proper parent
-            //     log('Created tab inserted by Chrome immediately after its openerTab; assuming parent-child relationship');
-            //     tree.addNode(page, opener, undefined, true);
-            //     return;
-            // }
-
-            var winTabs = tree.getWindowTabIndexArray('w' + tab.windowId);
-
-            if (opener === winTabs[tab.index - 1] || opener === winTabs[tab.index - 1].parent) {
-                log('Created tab is child of its preceding sibling or its parent by tab index, making it a child');
-                tree.addNode(page, opener, undefined, true);
-                return;
-            }
-
-            // if (winTabs && winTabs.length == tab.index) {
-            //     // Chrome inserted the created tab at the end of its window's tabs
-            //     log('Created tab inserted by Chrome at end of its window\'s tabs; mimicking this');
-            //     // page.placed = true;
-            //     tree.addTabToWindow(tab, page, undefined, true, true);
-            //     return;
-            // }
-
-            // // Chrome inserted the created tab somewhere in the middle of its window's tabs
-            // var prevByIndex = winTabs[tab.index - 1];
-            // if (prevByIndex.parent === opener || prevByIndex.parent === opener) {
-            //     log('Created tab inserted in the middle of its window\'s tabs and appears to be a child of its openerTab');
-            //     tree.addNode(page, opener, undefined, true);
-            //     return;
-            // }
-
-            // log('Created tab inserted in the middle of its window\'s tabs; mimicking this');
-            // tree.addTabToWindow(tab, page, undefined, true, true);
-            // return;
+    if (!tab.openerTabId) {
+        if (tab.index == 0 || winTabs.length == 0 || winTabs.length == tab.index) {
+            log('No openerTabId and index is at start or end of tree or no tabs are in hosting window; appending to window');
+            tree.addTabToWindow(tab, page);
+            return;
         }
+        var nextByIndex = winTabs[tab.index];
+        if (!nextByIndex) {
+            throw new Error('Could not find nextByIndex even though tab.index tells us we should have');
+        }
+        log('No openerTabId and index is in middle of window\'s tabs; inserting before ' + nextByIndex.id, nextByIndex);
+        tree.addNodeRel(page, 'before', nextByIndex);
+        return;
     }
 
-    // Make page a child of its hosting window
-    log('Created tab has no opener specified, setting page as child of its hosting window by index', page, tab.windowId);
-    tree.addTabToWindow(tab, page, undefined, true, true);
+    var opener = tree.getNode('p' + tab.openerTabId);
+    if (!opener) {
+        throw new Error('Could not find node matching given openerTabId ' + openerTabId);
+    }
+
+    var precedingByIndex = winTabs[tab.index - 1];
+
+    if (opener === precedingByIndex) {
+        log('openerTabId corresponds to preceding page by index; making a child of opener ' + opener);
+        tree.addNodeRel(page, 'prepend', opener);
+        return;
+    }
+
+    if (opener === precedingByIndex.parent) {
+        log('openerTabId corresponds to parent of preceding page by index; inserting after preceding ' + precedingByIndex.id);
+        tree.addNodeRel(page, 'after', precedingByIndex);
+        return;
+    }
+
+    var nextByIndex = winTabs[tab.index];
+    if (nextByIndex) {
+        log('openerTabId does not correspond to preceding page nor its parent; insert purely by index before following node ' + nextByIndex.id);
+        tree.addNodeRel(page, 'before', nextByIndex);
+        return;
+    }
+
+    log('openerTabId does not correspond to preceding page nor its parent, and next by index not found; insert at end of window');
+    tree.addTabToWindow(tab, page);
 }
 
 function onTabRemoved(tabId, removeInfo)
