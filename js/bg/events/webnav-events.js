@@ -56,11 +56,19 @@ function onCreatedNavigationTarget(details)
     if (monitorInfo.isDetecting()) {
         return;
     }
-    log('Making page a child in onCreatedNavigationTarget', details.tabId, details.sourceTabId, details);
+
 
     var page = tree.getPage(details.tabId);
-    tree.moveNode(page, 'p' + details.sourceTabId);
-    tree.updateNode(page, { placed: true });
+    log(details.tabId, details.sourceTabId, details, page);
+    page.placed = true;
+
+    if (page.parent instanceof WindowNode) {
+        log('Moving page from under window to be a child of its sourceTabId in onCreatedNavigationTarget', details.tabId, details.sourceTabId, details);
+        tree.moveNode(page, 'p' + details.sourceTabId);
+        return;
+    }
+    log('Not moving because page is not a child of a WindowNode');
+    return;
 }
 
 
