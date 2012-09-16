@@ -84,6 +84,47 @@ DataTree.prototype = {
         return [node, parent, beforeSibling ? beforeSibling.node : undefined];
     },
 
+    addNodeRel: function(node, relation, toMatcher) {
+        var parent;
+        var beforeSibling;
+
+        if (!toMatcher) {
+            if (relation == 'before' || relation == 'after') {
+                throw new Error('Cannot add node ' + relation + ' the root node');
+            }
+            if (relation == 'prepend') {
+                beforeSibling = this.root.children[0];
+            }
+        }
+        else {
+            var to = this.getNode(toMatcher);
+
+            if (!to) {
+                throw new Error('Could not find node matching toMatcher');
+            }
+
+            switch (relation) {
+                case 'prepend':
+                    parent = to;
+                    beforeSibling = parent.children[0];
+                    break;
+                case 'append':
+                    parent = to;
+                    break;
+                case 'before':
+                    beforeSibling = to;
+                    parent = beforeSibling.parent;
+                    break;
+                case 'after':
+                    parent = to.parent;
+                    beforeSibling = to.afterSibling();
+                    break;
+            }
+        }
+        log(node, relation, toMatcher, 'parent id', parent ? parent.id : 'none', 'before sibling id', beforeSibling ? beforeSibling.id : 'none');
+        return this.addNode(node, parent, beforeSibling);
+    },
+
     /**
       * Find a node in the tree.
       * @param matcher Used to identify the sought node; may be one of:

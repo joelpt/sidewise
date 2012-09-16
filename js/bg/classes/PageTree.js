@@ -99,6 +99,21 @@ PageTree.prototype = {
         return r;
     },
 
+    addNodeRel: function(node, relation, toMatcher)
+    {
+        var r = this.$super('addNodeRel')(node, relation, toMatcher);
+
+        this.callbackProxyFn('add', {
+            element: node,
+            parentId: r[1] ? r[1].id : undefined,
+            beforeSiblingId: r[2] ? r[2].id : undefined
+        });
+
+        this.addToTabIndex(node);
+
+        return r;
+    },
+
     // update an existing node matching matcher with given details
     updateNode: function(matcher, details)
     {
@@ -606,7 +621,18 @@ PageTree.prototype = {
     },
 
     getWindowTabIndexArray: function(windowNodeId) {
+        if (typeof(windowNodeId) == 'number') {
+            windowNodeId = 'w' + windowNodeId;
+        }
         return this.tabIndexes[windowNodeId];
+    },
+
+    getWindowIndexedTabsCount: function(windowNodeId) {
+        var ary = this.getWindowTabIndexArray(windowNodeId);
+        if (ary) {
+            return ary.length;
+        }
+        return 0;
     },
 
     // Add the given node to the tab index based on its .index
