@@ -168,7 +168,7 @@ function onCommitted(details)
             return;
         }
 
-        if (page && !page.initialCreation) {
+        if (!page.initialCreation) {
             // existing tab was just manually reloaded
             return;
         }
@@ -177,6 +177,32 @@ function onCommitted(details)
         // attempt to associate the existing page node to a restorable node
         tryAssociateExistingToRestorablePageNode(page);
         return;
+    }
+
+    if (details.transitionType == 'link') {
+        var page = tree.getPage(details.tabId);
+        if (!page) {
+            return;
+        }
+
+        if (page.openerTabId && page.parent instanceof WindowNode) {
+            var parent = tree.getPage(page.openerTabId);
+            var before = first(parent.children, function(e) {
+                log('test', e.index, page.index, e instanceof PageNode && !e.hibernated && e.unread && e.index > page.index);
+                return e instanceof PageNode && !e.hibernated && e.unread && e.index > page.index;
+            });
+
+            page.placed = true;
+            if (before) {
+                before = before[1];
+                log('Moving page with link transitionType to be before predicted next-sibling ' + before.id, before);
+                tree.moveNodeRel(page, 'before', before, true, false, true);
+                return;
+            }
+            log('Moving page with link transitionType to be last child of its opener ' + parent.id);
+            tree.moveNodeRel(page, 'append', parent, true, false, true);
+            return;
+        }
     }
 }
 
