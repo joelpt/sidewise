@@ -11,6 +11,7 @@ var PageNode = function(tab, overrideStatus)
     this.elemType = 'page';
     this.id = 'p' + tab.id;
     this.windowId = tab.windowId;
+    this.openerTabId = tab.openerTabId;
     this.index = tab.index;
     this.url = tab.url;
     this.favicon = getBestFavIconUrl(tab.favIconUrl, url);
