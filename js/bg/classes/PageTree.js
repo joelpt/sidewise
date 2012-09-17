@@ -59,7 +59,7 @@ PageTree.prototype = {
       *                             node that matches beforeSiblingMatcher.
       * @returns [node, parent, beforeSibling], where parent/beforeSibling may be undefined
       */
-    addNode: function(node, parentMatcher, beforeSiblingMatcher, useChromeTabIndex, forceUseChromeTabIndex)
+    addNode: function(node, parentMatcher, beforeSiblingMatcher)
     {
         if (node instanceof WindowNode) {
             this.tabIndexes[node.windowId] = [];
@@ -68,20 +68,6 @@ PageTree.prototype = {
         var parent;
         if (parentMatcher) {
             parent = this.getNode(parentMatcher);
-        }
-
-        if (useChromeTabIndex && !beforeSiblingMatcher && node instanceof PageNode && !node.hibernated) {
-            var index = node.index;
-            var indexes = this.getWindowTabIndexArray('w' + node.windowId);
-            if (indexes) {
-                var nextByIndex = indexes[index];
-                if (nextByIndex) {
-                    if (forceUseChromeTabIndex || !parent || parent === nextByIndex.parent) {
-                        beforeSiblingMatcher = nextByIndex;
-                        parent = undefined;
-                    }
-                }
-            }
         }
 
         var r = this.$super('addNode')(node, parent, beforeSiblingMatcher);
@@ -585,13 +571,13 @@ PageTree.prototype = {
     // @param tab {Chrome.Tab} to add under window node
     // @param pageNode {PageNode} if given, use this instead of creating a new PageNode from tab
     // @param onAdded {Function(pageNode, winNode)} if given, call this after performing addition(s)
-    addTabToWindow: function(tab, pageNode, onAdded, useChromeTabIndex, forceUseChromeTabIndex) {
+    addTabToWindow: function(tab, pageNode, onAdded) {
         var pageNode = pageNode || new PageNode(tab);
         var winNode = this.getNode('w' + tab.windowId);
 
         if (winNode) {
             // window node exists, add page to it
-            this.addNode(pageNode, winNode, undefined, useChromeTabIndex, forceUseChromeTabIndex);
+            this.addNode(pageNode, winNode);
             if (onAdded) {
                 onAdded(pageNode, winNode);
             }
@@ -603,7 +589,7 @@ PageTree.prototype = {
         chrome.windows.get(tab.windowId, function(win) {
             var winNode = new WindowNode(win);
             self.addNode(winNode);
-            self.addNode(pageNode, winNode, undefined, useChromeTabIndex, forceUseChromeTabIndex);
+            self.addNode(pageNode, winNode);
             if (onAdded) {
                 onAdded(pageNode, winNode);
             }
