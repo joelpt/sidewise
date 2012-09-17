@@ -338,7 +338,7 @@ function testNodeForFocus(node, testDescendants)
 
 function onTabUpdated(tabId, changeInfo, tab)
 {
-    log(tab);
+    log(tab, changeInfo, tabId);
     if (tabId == sidebarHandler.tabId) {
         // we ignore the sidebar tab
         return;
@@ -411,7 +411,8 @@ function onTabUpdated(tabId, changeInfo, tab)
         url: tab.url,
         favicon: favicon,
         title: title,
-        pinned: tab.pinned
+        pinned: tab.pinned,
+        openerTabId: tab.openerTabId
     });
 
     if (tab.url.match(/^chrome-/)) {
@@ -424,13 +425,13 @@ function onTabUpdated(tabId, changeInfo, tab)
         }, 1000);
     }
 
-    if (tab.openerTabId !== undefined && !page.placed) {
-        var pageEx = tree.getNodeEx(page);
-        if (getNumericId(pageEx.parent.id) !== tab.openerTabId) {
-            log('moving page to parent by openerTabId', tab.openerTabId);
-            tree.moveNode(page, 'p' + tab.openerTabId);
-        }
-    }
+    // if (tab.openerTabId !== undefined && !page.placed) {
+    //     var pageEx = tree.getNodeEx(page);
+    //     if (getNumericId(pageEx.parent.id) !== tab.openerTabId) {
+    //         log('moving page to parent by openerTabId', tab.openerTabId);
+    //         tree.moveNode(page, 'p' + tab.openerTabId);
+    //     }
+    // }
 
     // Some pages, e.g. maps.google.com, modify the history without triggering any
     // content-script-detectable events that we would otherwise use to detect such a modification.
