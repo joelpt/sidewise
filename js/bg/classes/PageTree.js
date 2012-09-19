@@ -96,7 +96,6 @@ PageTree.prototype = {
         });
 
         this.addToTabIndex(node);
-
         return r;
     },
 
@@ -161,7 +160,7 @@ PageTree.prototype = {
             var index = moving.index;
             var nextByIndex = this.tabIndexes['w' + moving.windowId][index];
             if (nextByIndex) {
-                if (nextByIndex === moving) {
+                if (nextByIndex === moving && parent === nextByIndex.parent) {
                     log('moveNode would move node to same position after compensating for preferChromeTabIndex, doing nothing', movingMatcher, parentMatcher);
                     return;
                 }
@@ -186,7 +185,9 @@ PageTree.prototype = {
             });
         }
 
-        this.conformChromeTabIndexForPageNode(r[0], keepChildren);
+        if (preferChromeTabIndex) {
+            this.conformChromeTabIndexForPageNode(r[0], keepChildren);
+        }
 
         return r;
     },
