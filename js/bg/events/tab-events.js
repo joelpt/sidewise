@@ -404,9 +404,35 @@ function onTabUpdated(tabId, changeInfo, tab)
         }
     }
 
+    if (!page.placed && !(page.parent instanceof WindowNode) && !tab.openerTabId && page.openerTabId) {
+        // openerTabId has gone missing since onTabCreated and tab is not placed yet;
+        // this can happen when opening several bookmarks into a new window from Chrome's
+        // Bookmark Manager. Un-childify such tabs.
+        var parent = page.topParent();
+        var before = first(parent.children, function(e) {
+            return e instanceof PageNode && !e.hibernated && e.index > page.index;
+        });
+
+        if (before) {
+            before = before[1];
+            tree.moveNodeRel(page, 'before', before);
+        }
+        else {
+            tree.moveNodeRel(page, 'append', parent);
+        }
+
+        // This usually will end up having no effect, but is done just in case something
+        // goes awry, e.g. user opens dozens of bookmarks at once while system is under load
+        // and timing issues cause us to put the opened tabs in a non-original index order
+        // (very rare but has been seen)
+        TimeoutManager.reset('conformAfterFlatteningMissingOpeners', function() {
+            tree.conformAllChromeTabIndexes();
+        }, 5000);
+    }
+
     // TODO also don't push status unless it's in changeInfo
     // TODO in fact only change what is in changeInfo, period
-    tree.updatePage(tabId, {
+    tree.updateNode(page, {
         status: tab.status,
         url: tab.url,
         favicon: favicon,
@@ -424,14 +450,6 @@ function onTabUpdated(tabId, changeInfo, tab)
             });
         }, 1000);
     }
-
-    // if (tab.openerTabId !== undefined && !page.placed) {
-    //     var pageEx = tree.getNodeEx(page);
-    //     if (getNumericId(pageEx.parent.id) !== tab.openerTabId) {
-    //         log('moving page to parent by openerTabId', tab.openerTabId);
-    //         tree.moveNode(page, 'p' + tab.openerTabId);
-    //     }
-    // }
 
     // Some pages, e.g. maps.google.com, modify the history without triggering any
     // content-script-detectable events that we would otherwise use to detect such a modification.
@@ -485,24 +503,58 @@ function onTabActivated(activeInfo) {
 }
 
 function onTabAttached(tabId, attachInfo) {
-    var moving = tree.getPageEx(tabId);
+    log(tabId, attachInfo);
+    var moving = tree.getPage(tabId);
 
     if (!moving) {
         throw new Error('Could not find page with tab id ' + tabId);
     }
 
-    if (moving.ancestors[0] instanceof WindowNode
-        && !(moving.ancestors[0].hibernated)
-        && getNumericId(moving.ancestors[0].id) == attachInfo.newWindowId) {
-        // row is already under the correct parent window in the tree
-        return;
+    // var topParent = moving.topParent();
+    // if (topParent instanceof WindowNode
+    //     && !(topParent.hibernated)
+    //     && getNumericId(topParent.id) == attachInfo.newWindowId) {
+    //     log('moving node to new position in same window ' + attachInfo.newWindowId + ' index ' + attachInfo.newPosition);
+
+    //     return;
+    // }
+
+    log('moving node in tree to window ' + attachInfo.newWindowId + ', to index ' + attachInfo.newPosition);
+    moving.index = attachInfo.newPosition;
+
+    var before;
+    var exists = tree.getTabIndex(moving);
+    if (exists >= 0) {
+        log('attached node exists already in tree, removing before doing lookup');
+        tree.removeFromTabIndex(moving);
+    }
+    log('indexes look like this before getting before', moving.id, moving.index, tree.getWindowTabIndexArray(attachInfo.newWindowId));
+    var winTabs = tree.getWindowTabIndexArray(attachInfo.newWindowId);
+
+    if (winTabs) {
+        var before = winTabs[moving.index];
+
+        if (before) {
+            log('moving to before ' + before.id, before);
+            tree.moveNodeRel(moving, 'before', before);
+        }
+        else {
+            log('moving to last node under window ' + attachInfo.newWindowId);
+            tree.moveNodeRel(moving, 'append', tree.getNode('w' + attachInfo.newWindowId));
+        }
+    }
+    else {
+        log('winTabs do not yet exist; moving to a new window; just move attached tab to be under new window');
+        tree.moveNodeRel(moving, 'append', tree.getNode('w' + attachInfo.newWindowId));
     }
 
-    tree.moveNode(moving.node, tree.getNode('w' + attachInfo.newWindowId));
+    tree.rebuildPageNodeWindowIds(function() {
+        tree.rebuildTabIndex();
+    });
 }
 
 function onTabHighlighted(highlightInfo) {
-    log(highlightInfo);
+    // log(highlightInfo);
     PageTreeCallbackProxy('multiSelectInWindow', highlightInfo);
 }
 
