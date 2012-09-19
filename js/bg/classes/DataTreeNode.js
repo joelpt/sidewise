@@ -32,7 +32,7 @@ DataTreeNode.prototype = {
 
     topParent: function() {
         var top = this;
-        while (top.parent) {
+        while (top.parent && !top.parent.isRoot) {
             top = top.parent;
         }
         if (top === this) {
