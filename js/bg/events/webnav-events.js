@@ -126,28 +126,25 @@ function onCommitted(details)
     if (monitorInfo.isDetecting()) {
         return;
     }
-    log(details);
+    var page = tree.getPage(details.tabId);
+
+    log(details.tabId, details, page);
+
+    if (!page || page.placed) {
+        return;
+    }
+
     if (details.transitionQualifiers.indexOf('from_address_bar') != -1) {
         // stick pages which were created by the user typing into the
         // address bar under their parent window, rather than potentially
         // beneath the page which the user was viewing at the time of
         // typing into the address bar and hitting alt+enter
-        var page = tree.getPage(details.tabId);
-        if (!page.placed) {
-            tree.updatePage(details.tabId, { placed: true });
-            chrome.tabs.get(details.tabId, function(tab) {
-                var winNode = tree.getNode('w' + tab.windowId);
-                if (!winNode) {
-                    chrome.windows.get(tab.windowId, function(win) {
-                        var winNode = new WindowNode(win);
-                        tree.addNode(winNode);
-                        tree.moveNode(page, winNode);
-                    });
-                    return;
-                }
-                tree.moveNode(page, winNode);
-            });
+        var winNode = tree.getNode('w' + page.windowId);
+        if (!winNode) {
+            throw new Error('Could not find WindowNode to put page under that was opened via url bar alt-enter');
         }
+        tree.updatePage(page, { placed: true });
+        tree.moveNode(page, winNode);
         return;
     }
 
@@ -155,18 +152,6 @@ function onCommitted(details)
         // a tab is being manually reloaded, has been duplicated from
         // another tab, or is being loaded during a session restore
         // or undo-closed-tab process
-        var page = tree.getPage(details.tabId);
-
-        // page node hasn't been created yet; this happens during
-        // a regular session restore, where we don't have page nodes
-        // in existence for the tabs being restored (with a matching
-        // tabId); the startAssoctionRun() routine will pick these up
-        // and process them
-        // TODO should we just tryAssociateTabToPageNode() directly here
-        // and get rid of the startAssociationRun() crap?
-        if (!page) {
-            return;
-        }
 
         if (!page.initialCreation) {
             // existing tab was just manually reloaded
@@ -179,16 +164,10 @@ function onCommitted(details)
         return;
     }
 
-    if (details.transitionType == 'link') {
-        var page = tree.getPage(details.tabId);
-        if (!page) {
-            return;
-        }
-
+    if (details.transitionType == 'link' && details.transitionQualifiers.indexOf('client_redirect') == -1) {
         if (page.openerTabId && page.parent instanceof WindowNode) {
             var parent = tree.getPage(page.openerTabId);
             var before = first(parent.children, function(e) {
-                log('test', e.index, page.index, e instanceof PageNode && !e.hibernated && e.unread && e.index > page.index);
                 return e instanceof PageNode && !e.hibernated && e.unread && e.index > page.index;
             });
 
