@@ -510,14 +510,15 @@ function onTabAttached(tabId, attachInfo) {
         throw new Error('Could not find page with tab id ' + tabId);
     }
 
-    // var topParent = moving.topParent();
-    // if (topParent instanceof WindowNode
-    //     && !(topParent.hibernated)
-    //     && getNumericId(topParent.id) == attachInfo.newWindowId) {
-    //     log('moving node to new position in same window ' + attachInfo.newWindowId + ' index ' + attachInfo.newPosition);
-
-    //     return;
-    // }
+    var topParent = moving.topParent();
+    if (topParent instanceof WindowNode
+        && !(topParent.hibernated)
+        && getNumericId(topParent.id) == attachInfo.newWindowId
+        && tree.getTabIndex(moving) == attachInfo.newPosition)
+    {
+        log('attach move would have no effect, doing nothing ' + attachInfo.newWindowId + ' index ' + attachInfo.newPosition);
+        return;
+    }
 
     log('moving node in tree to window ' + attachInfo.newWindowId + ', to index ' + attachInfo.newPosition);
     moving.index = attachInfo.newPosition;
