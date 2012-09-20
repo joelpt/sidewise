@@ -237,7 +237,7 @@ function PageTreeCallbackProxyListener(op, args)
         return;
     }
 
-    log(op, args);
+    // log(op, args);
     switch (op)
     {
         case 'add':
@@ -295,7 +295,7 @@ function onRowExpanderClick(evt) {
 }
 
 function onRowsMoved(moves) {
-    // console.log('MOVES', moves);
+    console.log('MOVES', moves);
     var windowToWindowMoves = {};
     var windowToWindowMovesCount = 0;
     for (var i = 0; i < moves.length; i++) {
@@ -304,7 +304,7 @@ function onRowsMoved(moves) {
         var $to = move.$to;
         var rowId = $row.attr('id');
         var toId = $to ? $to.attr('id') : undefined;
-        // console.log('---- move:', rowId, move.relation, toId, move.keepChildren ? 'KEEP CHILDREN' : '');
+        console.log('---- move:', rowId, move.relation, toId, move.keepChildren ? 'KEEP CHILDREN' : '');
 
         if (move.relation != 'nomove') {
             // record the move in bg.tree
@@ -324,24 +324,30 @@ function onRowsMoved(moves) {
                 && $moveTopParent.attr('hibernated') != 'true'
                 && !($moveTopParent.is($oldTopParent)))
             {
-                // ... accumulate the list of window-to-window moves we'll perform after this loop
+                // this works, but has the gray-window problem which we should be able to fix by building out winToWinMoves array again
+                // and using this here technique for doing the moves, but doing the temp-tab create-and-destroy crap in addition as needed
+                // (and possibly activating moved tabs after always, too)
+                //
+                var movingTabId = getRowNumericId($row);
                 var fromWindowId = getRowNumericId($oldTopParent);
                 var toWindowId = getRowNumericId($moveTopParent);
-                var movingTabId = getRowNumericId($row);
+                var node = bg.tree.getNode(rowId);
+                node.windowId = toWindowId;
+
                 if (windowToWindowMoves[fromWindowId] === undefined) {
                     windowToWindowMoves[fromWindowId] = [];
                     windowToWindowMovesCount++;
                 }
-                windowToWindowMoves[fromWindowId].push([toWindowId, movingTabId]);
+
+                windowToWindowMoves[fromWindowId].push({ node: node, movingTabId: movingTabId, toWindowId: toWindowId });
                 continue;
             }
         }
     }
 
-    bg.tree.conformAllChromeTabIndexes();
-
     if (windowToWindowMovesCount > 0) {
         // perform window-to-window moves
+        bg.tree.rebuildTabIndex();
         for (var fromWindowId in windowToWindowMoves) {
             if (!windowToWindowMoves.hasOwnProperty(fromWindowId)) {
                 continue;
@@ -349,16 +355,19 @@ function onRowsMoved(moves) {
             moveTabsBetweenWindows(parseInt(fromWindowId), windowToWindowMoves[fromWindowId]);
         }
     }
+    else {
+        bg.tree.conformAllChromeTabIndexes();
+    }
 }
 
 function moveTabsBetweenWindows(fromWindowId, moves) {
-    chrome.tabs.query({ windowId: fromWindowId }, function(fromWinTabs) {
-        if (fromWinTabs.length > moves.length) {
-            var afterFn = function() { };
+    chrome.tabs.query({ windowId: fromWindowId }, function(tabs) {
+        if (tabs.length > moves.length) {    // from-window will still have at least 1 tab after the moves are done
             for (var i in moves) {
-                var toWindowId = moves[i][0];
-                var movingTabId = moves[i][1];
-                moveTabToWindow(movingTabId, toWindowId, afterFn);
+                var move = moves[i];
+                var toPosition = bg.tree.getTabIndex(move.node);
+                log('win to win move', 'moving', move.node.id, 'to', move.toWindowId, 'index', toPosition);
+                moveTabToWindow(move.movingTabId, move.toWindowId, toPosition);
             }
             return;
         }
@@ -369,24 +378,28 @@ function moveTabsBetweenWindows(fromWindowId, moves) {
         // window show up in the new window with no actual content (Chrome just shows an empty gray window for the tab/s).
         chrome.tabs.create({ url: 'about:blank', windowId: fromWindowId }, function(tempTab) {
             for (var i in moves) {
-                var toWindowId = moves[i][0];
-                var movingTabId = moves[i][1];
                 var afterFn;
-                console.log(i, moves.length - 1);
                 if (i == moves.length - 1) {
-                    afterFn = function() { chrome.tabs.remove(tempTab.id); };
+                    afterFn = function() {
+                        chrome.tabs.remove(tempTab.id);
+                    };
                 }
-                else {
-                    afterFn = function() { };
-                }
-                moveTabToWindow(movingTabId, toWindowId, afterFn);
+
+                var move = moves[i];
+                var toPosition = bg.tree.getTabIndex(move.node);
+                log('win to win move + last-tab hack', 'moving', move.node.id, 'to', move.toWindowId, 'index', toPosition);
+                moveTabToWindow(move.movingTabId, move.toWindowId, toPosition, afterFn);
             }
         });
     });
 }
 
-function moveTabToWindow(movingTabId, toWindowId, afterFn) {
-    chrome.tabs.move(movingTabId, { windowId: toWindowId, index: -1 }, function() {
+function moveTabToWindow(movingTabId, toWindowId, toPosition, afterFn) {
+    log('moving tab to window', 'movingTabId', movingTabId, 'toWindowId', toWindowId, 'toPosition', toPosition);
+    if (!afterFn) {
+        afterFn = function() {};
+    }
+    chrome.tabs.move(movingTabId, { windowId: toWindowId, index: toPosition }, function() {
         chrome.tabs.update(movingTabId, { active: true }, afterFn);
     });
 }
