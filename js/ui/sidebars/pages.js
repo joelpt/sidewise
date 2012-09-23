@@ -427,6 +427,18 @@ function allowDropHandler($fromRows, relation, $toRow) {
         return false;
     }
 
+    // don't allow dropping a non pinned tab to above a pinned one
+    var movingNonPinnedTabs = $fromRows.is('[rowtype=page][pinned=false]');
+
+    if (movingNonPinnedTabs) {
+        if (relation == 'before' && $toRow.is('[pinned=true]')) {
+            return false;
+        }
+        // TODO enforce this more strictly:
+        // - if any $fromRows are collapsed we must also include all their children in the moveNonPinnedTabs check value
+        // - we cannot have a pinned tab anywhere AFTER the proposed insert point in the same window
+    }
+
     // allow any other type of drop
     return true;
 }
