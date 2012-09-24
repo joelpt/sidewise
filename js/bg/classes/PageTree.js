@@ -185,9 +185,7 @@ PageTree.prototype = {
             });
         }
 
-        if (preferChromeTabIndex) {
-            this.conformChromeTabIndexForPageNode(r[0], keepChildren);
-        }
+        this.conformChromeTabIndexForPageNode(r[0], keepChildren);
 
         return r;
     },
@@ -604,7 +602,12 @@ PageTree.prototype = {
 
     getTabIndex: function(node) {
         var winId = 'w' + node.windowId;
-        return this.getWindowTabIndexArray(winId).indexOf(node);
+        var winTabs = this.getWindowTabIndexArray(winId);
+
+        if (!winTabs) {
+            throw new Error('Indexes array does not exist for node', 'node id', node.id, 'window id', node.windowId, 'node', node);
+        }
+        return winTabs.indexOf(node);
     },
 
     getWindowTabIndexArray: function(windowNodeId) {
@@ -756,6 +759,7 @@ PageTree.prototype = {
     // update a page's position in the tree on a tab index basis, given its new windowId, old fromIndex, and new toIndex
     updatePageIndex: function(tabId, windowId, fromIndex, toIndex)
     {
+        log('updating page index', tabId, windowId, fromIndex, toIndex);
         var to;
         var moving = this.getPage(tabId);
         tree.updateNode(moving, { windowId: windowId });
@@ -773,10 +777,12 @@ PageTree.prototype = {
         }
 
         if (to) {
+            log('moving to before by index', moving.id, 'before', to.id);
             this.moveNodeRel(moving, 'before', to, false, false);
             return;
         }
 
+        log('moving to append by index', moving.id, 'append to', windowId);
         this.moveNodeRel(moving, 'append', this.getNode(windowId), false, false);
     },
 
