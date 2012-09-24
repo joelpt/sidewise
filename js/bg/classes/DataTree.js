@@ -21,89 +21,8 @@ var DataTree = function() {
 DataTree.prototype = {
 
     /////////////////////////////////////////////////////
-    // Node create-read-update-delete operations
+    // Node retrieval
     /////////////////////////////////////////////////////
-
-    /**
-      * Adds a node to the tree as a child of the element matched by parentMatcher.
-      *
-      * @param node The node to add.
-      * @param parentMatcher The parentMatcher to use for identifying the parent; see getNode().
-      *                      If parentMatcher is omitted, add to the top level of the tree.
-      * @param beforeSiblingMatcher If provided, node will be added under the parent before the
-      *                             node that matches beforeSiblingMatcher.
-      * @returns [node, parent, beforeSibling], where parent/beforeSibling may be undefined
-      */
-    addNode: function(node, parentMatcher, beforeSiblingMatcher)
-    {
-        var parent, beforeSibling;
-
-        if (parentMatcher) {
-            parent = this.getNode(parentMatcher);
-
-            if (!parent) {
-                throw new Error('Could not find element matching parentMatcher');
-            }
-        }
-
-        if (beforeSiblingMatcher) {
-            beforeSibling = this.getNodeEx(beforeSiblingMatcher);
-
-            if (!beforeSibling) {
-                throw new Error('Could not find element matching beforeSiblingMatcher');
-            }
-
-            if (parent && beforeSibling.parent !== parent) {
-                throw new Error('Specified sibling is not a child of specified parent');
-            }
-        }
-
-        if (parent) {
-            if (beforeSibling) {
-                parent.children.splice(beforeSibling.index, 0, node);
-            }
-            else {
-                parent.children.push(node);
-            }
-            node.parent = parent;
-        }
-        else {
-            if (beforeSibling) {
-                beforeSibling.siblings.splice(beforeSibling.index, 0, node);
-                node.parent = beforeSibling.parent;
-            }
-            else {
-                this.tree.push(node);
-                node.parent = this.root;
-            }
-        }
-
-        node.root = this.root;
-        this.idIndex[node.id] = node;
-        this.updateLastModified();
-        return [node, parent, beforeSibling ? beforeSibling.node : undefined];
-    },
-
-    addNodeRel: function(node, relation, toMatcher) {
-        var parent;
-        var beforeSibling;
-
-        if (!toMatcher) {
-            if (relation == 'before' || relation == 'after') {
-                throw new Error('Cannot add node ' + relation + ' the root node');
-            }
-            if (relation == 'prepend') {
-                beforeSibling = this.root.children[0];
-            }
-        }
-        else {
-            var rel = this.getNodeRel(relation, toMatcher);
-            parent = rel.parent;
-            beforeSibling = rel.following;
-        }
-        log(node, relation, toMatcher, 'parent id', parent ? parent.id : 'none', 'before sibling id', beforeSibling ? beforeSibling.id : 'none');
-        return this.addNode(node, parent, beforeSibling);
-    },
 
     /**
       * Find a node in the tree.
@@ -253,6 +172,92 @@ DataTree.prototype = {
         return undefined;
     },
 
+
+    /////////////////////////////////////////////////////
+    // Node add, update, remove, move, merge
+    /////////////////////////////////////////////////////
+
+    /**
+      * Adds a node to the tree as a child of the element matched by parentMatcher.
+      *
+      * @param node The node to add.
+      * @param parentMatcher The parentMatcher to use for identifying the parent; see getNode().
+      *                      If parentMatcher is omitted, add to the top level of the tree.
+      * @param beforeSiblingMatcher If provided, node will be added under the parent before the
+      *                             node that matches beforeSiblingMatcher.
+      * @returns [node, parent, beforeSibling], where parent/beforeSibling may be undefined
+      */
+    addNode: function(node, parentMatcher, beforeSiblingMatcher)
+    {
+        var parent, beforeSibling;
+
+        if (parentMatcher) {
+            parent = this.getNode(parentMatcher);
+
+            if (!parent) {
+                throw new Error('Could not find element matching parentMatcher');
+            }
+        }
+
+        if (beforeSiblingMatcher) {
+            beforeSibling = this.getNodeEx(beforeSiblingMatcher);
+
+            if (!beforeSibling) {
+                throw new Error('Could not find element matching beforeSiblingMatcher');
+            }
+
+            if (parent && beforeSibling.parent !== parent) {
+                throw new Error('Specified sibling is not a child of specified parent');
+            }
+        }
+
+        if (parent) {
+            if (beforeSibling) {
+                parent.children.splice(beforeSibling.index, 0, node);
+            }
+            else {
+                parent.children.push(node);
+            }
+            node.parent = parent;
+        }
+        else {
+            if (beforeSibling) {
+                beforeSibling.siblings.splice(beforeSibling.index, 0, node);
+                node.parent = beforeSibling.parent;
+            }
+            else {
+                this.tree.push(node);
+                node.parent = this.root;
+            }
+        }
+
+        node.root = this.root;
+        this.idIndex[node.id] = node;
+        this.updateLastModified();
+        return [node, parent, beforeSibling ? beforeSibling.node : undefined];
+    },
+
+    addNodeRel: function(node, relation, toMatcher) {
+        var parent;
+        var beforeSibling;
+
+        if (!toMatcher) {
+            if (relation == 'before' || relation == 'after') {
+                throw new Error('Cannot add node ' + relation + ' the root node');
+            }
+            if (relation == 'prepend') {
+                beforeSibling = this.root.children[0];
+            }
+        }
+        else {
+            var rel = this.getNodeRel(relation, toMatcher);
+            parent = rel.parent;
+            beforeSibling = rel.following;
+        }
+        log(node, relation, toMatcher, 'parent id', parent ? parent.id : 'none', 'before sibling id', beforeSibling ? beforeSibling.id : 'none');
+        return this.addNode(node, parent, beforeSibling);
+    },
+
     // Update the first element that matches matcher
     updateNode: function(matcher, details)
     {
@@ -271,6 +276,31 @@ DataTree.prototype = {
         }
         this.updateLastModified();
         return elem;
+    },
+
+    // remove the first element from the tree matching matcher
+    // removeChildren: if true, remove element's children; if false (default), splice them into element's old spot
+    removeNode: function(matcher, removeChildren)
+    {
+        var found = this.getNodeEx(matcher);
+        if (found === undefined) {
+            console.error(matcher);
+            throw new Error('Could not find requested element to remove matching above matcher');
+        }
+
+        if (removeChildren) {
+            // remove all children
+            found.siblings.splice(found.index, 1);
+        }
+        else {
+            found.node.children.forEach(function(e) { e.parent = found.parent; });
+            Array.prototype.splice.apply(found.siblings, [found.index, 1].concat(found.node.children));
+        }
+
+        delete this.idIndex[found.node.id];
+
+        this.updateLastModified();
+        return found.node;
     },
 
     // Move the node matching movingMatcher to reside under the node matching parentMatcher.
@@ -353,31 +383,6 @@ DataTree.prototype = {
         fromNodeEx.siblings.splice(fromNodeEx.index, 1);
 
         return { fromId: fromId, toId: toId };
-    },
-
-    // remove the first element from the tree matching matcher
-    // removeChildren: if true, remove element's children; if false (default), splice them into element's old spot
-    removeNode: function(matcher, removeChildren)
-    {
-        var found = this.getNodeEx(matcher);
-        if (found === undefined) {
-            console.error(matcher);
-            throw new Error('Could not find requested element to remove matching above matcher');
-        }
-
-        if (removeChildren) {
-            // remove all children
-            found.siblings.splice(found.index, 1);
-        }
-        else {
-            found.node.children.forEach(function(e) { e.parent = found.parent; });
-            Array.prototype.splice.apply(found.siblings, [found.index, 1].concat(found.node.children));
-        }
-
-        delete this.idIndex[found.node.id];
-
-        this.updateLastModified();
-        return found.node;
     },
 
 
