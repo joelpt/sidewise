@@ -39,7 +39,9 @@ SidebarNavManager.prototype = {
     addSidebarPanes: function(sidebars) {
         for (var i in sidebars) {
             var details = sidebars[i];
-            this.addSidebarPane(details.id, details.label, details.icon, details.url);
+            if (details.enabled) {
+                this.addSidebarPane(details.id, details.label, details.icon, details.url);
+            }
         }
     },
 
