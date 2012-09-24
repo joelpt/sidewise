@@ -4,6 +4,7 @@
 
 var tree;
 var sidebarHandler;
+var paneCatalog;
 var focusTracker;
 var monitorInfo;
 var settings;
@@ -37,6 +38,10 @@ function onLoad()
 function postLoad() {
     settings.initializeDefaults();
     settings.updateStateFromSettings();
+
+    paneCatalog = new SidebarPaneCatalog();
+    paneCatalog.loadState();
+
     registerEventHandlers();
     injectContentScriptInExistingTabs('content_script.js');
 
