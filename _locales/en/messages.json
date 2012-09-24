@@ -2,10 +2,8 @@
     "extName": { "message": "Sidewise Tree Style Tabs" },
     "extDescription": { "message": "A dockable sidebar for Chrome featuring vertical Tree Style Tabs, Tab Hibernation, and much more." },
 
-
     "sidebarTitle": { "message": "Sidewise" },
     "sidebars_optionsButtonTooltip": { "message": "Options" },
-
 
     "text_page": { "message": "page" },
     "text_pages": { "message": "pages" },
@@ -25,10 +23,8 @@
     "tabTitle_History": { "message": "History" },
     "tabTitle_NewTab": { "message": "New Tab" },
 
-
     "omniboxDefaultSuggestion": { "message": "Enter text to search page titles and labels" },
     "omniboxSuggestionPrefix": { "message": "Page:" },
-
 
     "prompt_filterPlaceholderText": { "message": "Type to search titles and URLs"},
     "prompt_filterActiveText": { "message": "Matches shown, click here to reset"},
@@ -61,7 +57,6 @@
     "sidebarLabel_TabHistory": { "message": "Tab history" },
     "sidebarLabel_ClosedPages": { "message": "Closed pages" },
 
-
     "pages_hibernatedHint": { "message": "Hibernated page" },
     "pages_omniboxTip": { "message": "Tip: You can type \"sw sometext\" into Chrome's address bar to find pages in Sidewise." },
 
@@ -75,18 +70,13 @@
     "notepad_hint": { "message": "Just start typing. Text is auto-saved." },
     "notepad_lastSavedAt": { "message": "Last saved at:" },
 
-
     "bookmarks_heading": { "message": "Bookmarks" },
-
 
     "globalHistory_heading": { "message": "Browser History" },
 
-
     "tabHistory_heading": { "message": "Tab History" },
 
-
     "closedPages_heading": { "message": "Closed Pages" },
-
 
     "optionsPageTitle": { "message": "Sidewise Options" },
     "optionsPageHeading": { "message": "Sidewise Options" },
@@ -162,6 +152,9 @@
     "option_alwaysShowAdvancedOptions": { "message": "Always show advanced options" },
     "option_reportUsageStatistics": { "message": "Allow reporting to Google Analytics" },
     "option_reportUsageStatistics_hint": { "message": "#Like many websites and other Chrome extensions, Sidewise uses Google Analytics to track usage levels of different parts of the extension. This tracking is [anonymized](https://developers.google.com/analytics/devguides/collection/gajs/methods/gaJSApi_gat#_gat._anonymizeIp) and no personal information is collected. //// If you'd rather not have Sidewise use Google Analytics tracking you can disable this option. //// To opt-out of all Google Analytics tracking browser-wide, install Google's [opt-out extension](https://chrome.google.com/webstore/detail/fllaojicojecljbmefodhfapmkghcbnh/details)." },
+
+    "optionsShowPanePicker": { "message": "Toggle and reorder available sidebar panes" },
+    "optionsInfoPanePicker": { "message": "Toggle and reorder the available sidebar panes below." },
 
     "option_closeButton": { "message": "Close settings" },
     "option_resetButton": { "message": "Reset to defaults" },
