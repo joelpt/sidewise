@@ -154,7 +154,7 @@
     "option_reportUsageStatistics_hint": { "message": "#Like many websites and other Chrome extensions, Sidewise uses Google Analytics to track usage levels of different parts of the extension. This tracking is [anonymized](https://developers.google.com/analytics/devguides/collection/gajs/methods/gaJSApi_gat#_gat._anonymizeIp) and no personal information is collected. //// If you'd rather not have Sidewise use Google Analytics tracking you can disable this option. //// To opt-out of all Google Analytics tracking browser-wide, install Google's [opt-out extension](https://chrome.google.com/webstore/detail/fllaojicojecljbmefodhfapmkghcbnh/details)." },
 
     "optionsShowPanePicker": { "message": "Toggle and reorder available sidebar panes" },
-    "optionsInfoPanePicker": { "message": "Toggle and reorder the available sidebar panes below." },
+    "optionsInfoPanePicker": { "message": "Toggle sidebar panes below, or reorder them using drag and drop." },
 
     "option_closeButton": { "message": "Close settings" },
     "option_resetButton": { "message": "Reset to defaults" },
