@@ -156,46 +156,27 @@ function setCloudPlayState() {
 }
 
 function initPaneGrid() {
-
-    jQuery("#sortrows").jqGrid({
-        datatype: "local",
-        colNames:['Inv No','Date', 'Client', 'Amount','Tax'],
-        colModel:[
-            {sortable: false, name:'id',index:'id', width:55},
-            {sortable: false, name:'invdate',index:'invdate', width:90},
-            {sortable: false, name:'name',index:'name asc, invdate', width:100},
-            {sortable: false, name:'amount',index:'amount', width:80, align:"right"},
-            {sortable: false, name:'tax',index:'tax', width:80, align:"right"}//,
-            // {name:'total',index:'total', width:80,align:"right"},
-            // {name:'note',index:'note', width:150, sortable:false}
-        ],
-        rowNum:15,
-        width:600,
-        height: 300,
-        // rowList:[10,20,30],
-        // pager: '#psortrows',
-        // sortname: 'id',
-        // viewrecords: true,
-        // sortorder: "desc",
-        // caption:"Sortable Rows Example"
+    $('#panePickerContainer').hide();
+    $(document).on('click', '#panePickerExpander', function(evt) {
+        $(evt.target).hide();
+        $('#panePickerContainer').slideDown();
     });
 
-    var mydata = [
-            {id:"1",invdate:"2007-10-01",name:"test",amount:"200.00",tax:"10.00"},
-            {id:"2",invdate:"2007-10-02",name:"test2",amount:"300.00",tax:"20.00"},
-            {id:"3",invdate:"2007-09-01",name:"test3",amount:"400.00",tax:"30.00"},
-            {id:"4",invdate:"2007-10-04",name:"test",amount:"200.00",tax:"10.00"},
-            {id:"5",invdate:"2007-10-05",name:"test2",amount:"300.00",tax:"20.00"},
-            {id:"6",invdate:"2007-09-06",name:"test3",amount:"400.00",tax:"30.00"},
-            {id:"7",invdate:"2007-10-04",name:"test",amount:"200.00",tax:"10.00"},
-            {id:"8",invdate:"2007-10-03",name:"test2",amount:"300.00",tax:"20.00"},
-            {id:"9",invdate:"2007-09-01",name:"test3",amount:"400.00",tax:"30.00"}
-            ];
-    jQuery("#sortrows").jqGrid('navGrid','#psortrows',{edit:false,add:false,del:false});
-    jQuery("#sortrows").jqGrid('sortableRows');
-    for(var i=0;i<=mydata.length;i++)
-        jQuery("#sortrows").jqGrid('addRowData',i+1,mydata[i]);
+    var $picker = $('#panePicker');
+    $picker.jqGrid({
+        datatype: "local",
+        colNames:['Show?','Sidebar Pane'],
+        colModel:[
+            {sortable: false, name:'enabled', index:'enabled', width: 40, formatter: 'checkbox', formatoptions: { disabled: false } },
+            {sortable: false, name:'label', index:'label', width: 200}
+        ]
+    });
 
+    $picker.jqGrid('sortableRows');
+    var panes = bg.paneCatalog.panes;
+    for(var i=0; i <= panes.length; i++) {
+        $picker.jqGrid('addRowData', i+1, panes[i]);
+    }
 }
 
 ///////////////////////////////////////////////////////////
