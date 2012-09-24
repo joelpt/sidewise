@@ -97,29 +97,9 @@ DataTree.prototype = {
             }
         }
         else {
-            var to = this.getNode(toMatcher);
-
-            if (!to) {
-                throw new Error('Could not find node matching toMatcher');
-            }
-
-            switch (relation) {
-                case 'prepend':
-                    parent = to;
-                    beforeSibling = parent.children[0];
-                    break;
-                case 'append':
-                    parent = to;
-                    break;
-                case 'before':
-                    beforeSibling = to;
-                    parent = beforeSibling.parent;
-                    break;
-                case 'after':
-                    parent = to.parent;
-                    beforeSibling = to.afterSibling();
-                    break;
-            }
+            var rel = this.getNodeRel(relation, toMatcher);
+            parent = rel.parent;
+            beforeSibling = rel.following;
         }
         log(node, relation, toMatcher, 'parent id', parent ? parent.id : 'none', 'before sibling id', beforeSibling ? beforeSibling.id : 'none');
         return this.addNode(node, parent, beforeSibling);
@@ -165,6 +145,42 @@ DataTree.prototype = {
                 return childElem;
         }
         return undefined;
+    },
+
+    // Find position in tree bearing the given relation (before, after, prepend, append) to the node matching toMatcher.
+    // Returns the parent and following nodes that correspond to the position found, plus the 'to' node that matched toMatcher.
+    getNodeRel: function(relation, toMatcher)
+    {
+        var to = this.getNode(toMatcher);
+        var parent;
+        var following;
+
+        if (!to) {
+            throw new Error('Could not find node matching toMatcher');
+        }
+
+        switch (relation) {
+            case 'prepend':
+                parent = to;
+                following = to.children[0];
+                break;
+            case 'append':
+                parent = to;
+                following = undefined;
+                break;
+            case 'before':
+                parent = to.parent;
+                following = to;
+                break;
+            case 'after':
+                parent = to.parent;
+                following = to.afterSibling();
+                break;
+            default:
+                throw new Error('Unrecognized relation ' + relation);
+        }
+
+        return { parent: parent, following: following, to: to };
     },
 
     /**
@@ -305,36 +321,9 @@ DataTree.prototype = {
             moving.children = []; // remove all of its children
         }
 
-        var to = this.getNodeEx(toMatcher);
-        if (!to) {
-            throw new Error('Could not find node matching toMatcher');
-        }
 
-        var underParent;
-        var beforeSibling;
-        switch (relation) {
-            case 'before':
-                underParent = to.parent;
-                beforeSibling = to.node;
-                break;
-            case 'after':
-                underParent = to.parent;
-                beforeSibling = to.siblings[to.index + 1]; // undefined when out of range
-                break;
-            case 'append':
-                underParent = to.node;
-                break;
-            case 'prepend':
-                underParent = to.node;
-                beforeSibling = to.node.children[0]; // undefined when out of range
-                break;
-            default:
-                throw new Error('Unrecognized relation ' + relation);
-        }
-
-        return this.addNode(moving, underParent, beforeSibling);
-
-        // return [moving, relation, to];
+        var rel = this.getNodeRel(relation, toMatcher);
+        return this.addNode(moving, rel.parent, rel.following);
     },
 
     // Merge the node matching fromNodeMatcher and all its children into the node matching toNodeMatcher.
