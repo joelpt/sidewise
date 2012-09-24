@@ -29,5 +29,10 @@ var PageNode = function(tab, overrideStatus)
     this.sessionGuid = null;
 };
 
-extendClass(PageNode, PageTreeNode, {});
+PageNode.prototype = {
+    isTab: function() {
+        return !this.hibernated;
+    }
+};
 
+extendClass(PageNode, PageTreeNode, PageNode.prototype);
