@@ -483,6 +483,8 @@ input.invalid {
 
 .ui-jqgrid {
     border-color: transparent;
+    margin-top: 0.5em;
+    margin-left: 1.5em;
 }
 
 #panePicker tr[role=row] {
