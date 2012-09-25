@@ -267,6 +267,7 @@ function initPaneGrid() {
         $picker.jqGrid('addRowData', i+1, panes[i]);
     }
 
+    // remove 'title' attributes from all pane picker grid cells, since it is redundant
     $picker.find('[role=gridcell]').attr('title', '');
 }
 
