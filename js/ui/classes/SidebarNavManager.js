@@ -94,6 +94,35 @@ SidebarNavManager.prototype = {
         }
     },
 
+    reorderSidebarPane: function(id, newIndex) {
+        var index = this.getPaneIndex(id);
+
+        if (index == newIndex) {
+            return;
+        }
+
+        var pane = this.panes[index];
+
+        this.panes.splice(index, 1);
+        this.panes.splice(newIndex, 0, pane);
+
+
+        if (pane.enabled) {
+            var insertAtIndex = this._getEnabledPanesBeforeIndex(newIndex);
+
+            var $button = $('.sidebarButton[buttonid=' + id + ']');
+            $button.remove();
+            this.navButtonsContainer.insertAt(insertAtIndex + 1, $button);
+            $button.attr('title', $button.attr('tooltip-title'));
+            $button.tooltip({ position: 'bottom right', predelay: 400, offset: [15, -24] });
+
+            var $container = $('#sidebarContainer__' + id);
+            this.sidebarsContainer.insertAt(insertAtIndex, $container);
+
+            this.scrollToCurrentSidebarPane(true);
+        }
+    },
+
     showSidebarPane: function(id) {
         // set selected state of correct nav button
         $('#sidebarButtons').children().removeClass('selected');
@@ -200,14 +229,13 @@ SidebarNavManager.prototype = {
     },
 
     _createSidebarButton: function(id, label, icon, atIndex) {
-        var elem = $('<li/>', { 'class': 'sidebarButton', 'title': label, 'buttonid': id })
+        var elem = $('<li/>', { 'class': 'sidebarButton', 'tooltip-title': label, 'title': label, 'buttonid': id })
             .append(
                 $('<div/>').append(
                     $('<img/>', { src: icon, draggable: false })
                 )
             );
-        elem.tooltip({ position: 'bottom center', predelay: 400,
-            offset: [15, this.panes.length == 1 ? 10 : 0] });
+        elem.tooltip({ position: 'bottom right', predelay: 400, offset: [15, -24] });
 
         if (atIndex === undefined || atIndex >= this.sidebarsContainer.children().length - 1) {
             atIndex = -1;
