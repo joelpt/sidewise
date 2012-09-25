@@ -48,7 +48,8 @@ SidebarHandler.prototype = {
                     width: handler.targetWidth,
                     height: settings.get('undockedHeight', Math.min(600, focusWin.height - 100)),
                     left: settings.get('undockedLeft', focusWin.left + 100),
-                    top: settings.get('undockedTop', focusWin.top + 100)
+                    top: settings.get('undockedTop', focusWin.top + 100),
+                    focused: false
                 };
                 chrome.windows.create(winSpec, function(win) {
                     handler.onCreatedSidebarWindow.call(handler, win);
@@ -89,7 +90,8 @@ SidebarHandler.prototype = {
                 left: metrics.sidebarLeft,
                 top: win.top,
                 width: handler.targetWidth,
-                height: win.height
+                height: win.height,
+                focused: false
             };
             log(winSpec);
             chrome.windows.create(winSpec, function(win) {
