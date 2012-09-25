@@ -25,6 +25,22 @@ FancyTree.prototype.toggleMultiSelectionSingle = function($row, forceOn) {
     }
 };
 
+FancyTree.prototype.removeMultiSelectionSingle = function($row) {
+    var exists = this.multiSelection.is($row);
+
+    if (!exists) {
+        return false;
+    }
+
+    this.multiSelection = this.multiSelection.not($row);
+    this.removeSelectionEffect($row);
+
+    if (this.multiSelection.length == 0) {
+        this.clearMultiSelection();
+    }
+    return true;
+};
+
 FancyTree.prototype.addMultiSelectionBetween = function($fromRow, $toRow) {
     // if from and to are the same, just do a single selection
     if ($fromRow.is($toRow)) {
@@ -111,6 +127,26 @@ FancyTree.prototype.clearMultiSelection = function() {
     this.lastMultiSelectedFromId = null;
     this.lastMultiSelectedToId = null;
 };
+
+FancyTree.prototype.setMultiSelectedChildrenUnderRow = function($underRow, $newSelections, removalFilter) {
+    var $oldSelections = $underRow.find(this.multiSelection);
+
+    var $removes = $oldSelections.not($newSelections);
+    var $adds = $newSelections.not($oldSelections);
+
+    if (removalFilter) {
+        $removes = $removes.filter(removalFilter);
+    }
+
+    var self = this;
+    $removes.each(function(i, e) { self.removeMultiSelectionSingle($(e)); });
+
+    if ($adds.length == 1 && this.multiSelection.length == 0) {
+        return;
+    }
+
+    $adds.each(function(i, e) { self.toggleMultiSelectionSingle($(e), true); });
+}
 
 FancyTree.prototype.addSelectionEffect = function($row) {
     var rowTypeParams = this.getRowTypeParams($row);

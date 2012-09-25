@@ -14,6 +14,7 @@ FancyTree.prototype.getRowTypeParams = function(row) {
   */
 FancyTree.prototype.addRowType = function(name, params) {
     var self = this;
+    params.name = name;
     this.rowTypes[name] = params;
 
     // configure params
@@ -38,7 +39,7 @@ FancyTree.prototype.addRowType = function(name, params) {
     // configure row button event handling
     for (var i in params.buttons)
     {
-        var buttonClass = '.ftButton__' + name + '_' + i;
+        var buttonClass = '.ftButton__' + name + '_' + params.buttons[i].id;
         var buttonData = { treeObj: this, onClick: params.buttons[i].onClick };
         $(document).on('mouseup', buttonClass, buttonData, this.rowButtonClickHandler);
     }

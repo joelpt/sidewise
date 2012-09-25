@@ -3,6 +3,7 @@
 ///////////////////////////////////////////////////////////
 
 var expectingSmartFocusTabId = null;
+var expectingTabMoves = [];
 
 
 ///////////////////////////////////////////////////////////
@@ -14,8 +15,10 @@ function registerTabEvents()
     chrome.tabs.onCreated.addListener(onTabCreated);
     chrome.tabs.onRemoved.addListener(onTabRemoved);
     chrome.tabs.onUpdated.addListener(onTabUpdated);
+    chrome.tabs.onMoved.addListener(onTabMoved);
     chrome.tabs.onActivated.addListener(onTabActivated);
     chrome.tabs.onAttached.addListener(onTabAttached);
+    chrome.tabs.onHighlighted.addListener(onTabHighlighted);
 }
 
 
@@ -25,7 +28,7 @@ function registerTabEvents()
 
 function onTabCreated(tab)
 {
-    log(tab);
+    log(tab, tab.id);
     if (monitorInfo.isDetecting()) {
         return;
     }
@@ -42,7 +45,8 @@ function onTabCreated(tab)
             log('Swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id);
             tree.updatePage(expectingNavigationOldTabId, {
                 id: 'p' + tab.id,
-                url: tab.url
+                url: tab.url,
+                windowId: tab.windowId
             });
             resetExpectingNavigation();
             return;
@@ -56,7 +60,8 @@ function onTabCreated(tab)
             log('Fallback approach - swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id);
             tree.updatePage(expectingNavigationOldTabId, {
                 id: 'p' + tab.id,
-                url: tab.url
+                url: tab.url,
+                windowId: tab.windowId
             });
             resetExpectingNavigation();
             return;
@@ -76,8 +81,15 @@ function onTabCreated(tab)
         var wakingIndex = waking[0];
         var wakingPage = waking[1];
         log('associating waking tab to existing hibernated page element', tab, wakingPage);
-        tree.updatePage(wakingPage, { id: 'p' + tab.id, hibernated: false, unread: true, status: 'preload' });
+        tree.updatePage(wakingPage, {
+            id: 'p' + tab.id,
+            windowId: tab.windowId,
+            hibernated: false,
+            unread: true,
+            status: 'preload'
+        });
         tree.awakeningPages.splice(wakingIndex, 1); // remove matched element
+        tree.conformChromeTabIndexForPageNode(wakingPage, true);
         return;
     }
 
@@ -142,12 +154,13 @@ function onTabCreated(tab)
         });
         return;
     }
-    else if (!isScriptableUrl(tab.url)) {
+    else if (tab.url && !isScriptableUrl(tab.url)) {
         // Non scriptable tab; attempt to associate it with a restorable page node
         // even though it's possible the user just created this tab freshly. We do this
         // because onCommitted never fires for non scriptable tabs and therefore
         // we'll never be able to detect if this tab's transitionType=='reload' which
         // is how we normally detect that a tab is being restored rather than created anew
+        log('Adding non scriptable tab to tree via association attempt', tab.id, tab, tab.url);
         tree.addNode(page, 'w' + tab.windowId);
         associateExistingToRestorablePageNode(tab);
         return;
@@ -155,15 +168,50 @@ function onTabCreated(tab)
 
     page.initialCreation = true;
 
-    if (tab.openerTabId) {
-        // Make page a child of its opener tab; this may be overriden later in webnav-events.js
-        log('Tentatively setting page as child of its opener tab', page.id, tab.openerTabId);
-        tree.addNode(page, 'p' + tab.openerTabId);
+    var winTabs = tree.getWindowTabIndexArray(tab.windowId);
+
+    if (!tab.openerTabId) {
+        if (tab.index == 0 || winTabs.length == 0 || winTabs.length == tab.index) {
+            log('No openerTabId and index is at start or end of tree or no tabs are in hosting window; appending to window');
+            tree.addTabToWindow(tab, page);
+            return;
+        }
+        var nextByIndex = winTabs[tab.index];
+        if (!nextByIndex) {
+            throw new Error('Could not find nextByIndex even though tab.index tells us we should have');
+        }
+        log('No openerTabId and index is in middle of window\'s tabs; inserting before ' + nextByIndex.id, nextByIndex);
+        tree.addNodeRel(page, 'before', nextByIndex);
         return;
     }
 
-    // Make page a child of its hosting window
-    log('Setting page as child of its hosting window', page, tab.windowId);
+    var opener = tree.getNode('p' + tab.openerTabId);
+    if (!opener) {
+        throw new Error('Could not find node matching given openerTabId ' + openerTabId);
+    }
+
+    var precedingByIndex = winTabs[tab.index - 1];
+
+    if (opener === precedingByIndex) {
+        log('openerTabId corresponds to preceding page by index; making a child of opener ' + opener);
+        tree.addNodeRel(page, 'prepend', opener);
+        return;
+    }
+
+    if (opener === precedingByIndex.parent) {
+        log('openerTabId corresponds to parent of preceding page by index; inserting after preceding ' + precedingByIndex.id);
+        tree.addNodeRel(page, 'after', precedingByIndex);
+        return;
+    }
+
+    var nextByIndex = winTabs[tab.index];
+    if (nextByIndex) {
+        log('openerTabId does not correspond to preceding page nor its parent; insert purely by index before following node ' + nextByIndex.id);
+        tree.addNodeRel(page, 'before', nextByIndex);
+        return;
+    }
+
+    log('openerTabId does not correspond to preceding page nor its parent, and next by index not found; insert at end of window');
     tree.addTabToWindow(tab, page);
 }
 
@@ -290,6 +338,7 @@ function testNodeForFocus(node, testDescendants)
 
 function onTabUpdated(tabId, changeInfo, tab)
 {
+    log(tab, changeInfo, tabId);
     if (tabId == sidebarHandler.tabId) {
         // we ignore the sidebar tab
         return;
@@ -308,7 +357,6 @@ function onTabUpdated(tabId, changeInfo, tab)
     if (monitorInfo.isDetecting()) {
         return;
     }
-    log(tab);
 
     var page = tree.getPage(tabId);
 
@@ -356,14 +404,41 @@ function onTabUpdated(tabId, changeInfo, tab)
         }
     }
 
+    if (!page.placed && !(page.parent instanceof WindowNode) && !tab.openerTabId && page.openerTabId) {
+        // openerTabId has gone missing since onTabCreated and tab is not placed yet;
+        // this can happen when opening several bookmarks into a new window from Chrome's
+        // Bookmark Manager. Un-childify such tabs.
+        var parent = page.topParent();
+        var before = first(parent.children, function(e) {
+            return e instanceof PageNode && !e.hibernated && e.index > page.index;
+        });
+
+        if (before) {
+            before = before[1];
+            tree.moveNodeRel(page, 'before', before);
+        }
+        else {
+            tree.moveNodeRel(page, 'append', parent);
+        }
+
+        // This usually will end up having no effect, but is done just in case something
+        // goes awry, e.g. user opens dozens of bookmarks at once while system is under load
+        // and timing issues cause us to put the opened tabs in a non-original index order
+        // (very rare but has been seen)
+        TimeoutManager.reset('conformAfterFlatteningMissingOpeners', function() {
+            tree.conformAllChromeTabIndexes();
+        }, 5000);
+    }
+
     // TODO also don't push status unless it's in changeInfo
     // TODO in fact only change what is in changeInfo, period
-    tree.updatePage(tabId, {
+    tree.updateNode(page, {
         status: tab.status,
         url: tab.url,
         favicon: favicon,
         title: title,
-        pinned: tab.pinned
+        pinned: tab.pinned,
+        openerTabId: tab.openerTabId
     });
 
     if (tab.url.match(/^chrome-/)) {
@@ -374,14 +449,6 @@ function onTabUpdated(tabId, changeInfo, tab)
                 tree.updatePage(tab.id, { title: getBestPageTitle(t.title) });
             });
         }, 1000);
-    }
-
-    if (tab.openerTabId !== undefined && !page.placed) {
-        var pageEx = tree.getNodeEx(page);
-        if (getNumericId(pageEx.parent.id) !== tab.openerTabId) {
-            log('moving page to parent by openerTabId', tab.openerTabId);
-            tree.moveNode(page, 'p' + tab.openerTabId);
-        }
     }
 
     // Some pages, e.g. maps.google.com, modify the history without triggering any
@@ -396,6 +463,23 @@ function onTabUpdated(tabId, changeInfo, tab)
     }
 }
 
+function onTabMoved(tabId, moveInfo) {
+    log(tabId, moveInfo);
+    if (removeFromExpectingTabMoves(tabId)) {
+        log('Was expecting this tab move, doing nothing');
+        return;
+    }
+    tree.updatePageIndex(tabId, moveInfo.windowId, moveInfo.fromIndex, moveInfo.toIndex);
+}
+
+function removeFromExpectingTabMoves(tabId) {
+    var expectingTabMovesIndex = expectingTabMoves.indexOf(tabId);
+    if (expectingTabMovesIndex > -1) {
+        expectingTabMoves.splice(expectingTabMovesIndex, 1);
+        return true;
+    }
+    return false;
+}
 
 function onTabActivated(activeInfo) {
     if (monitorInfo.isDetecting()) {
@@ -420,18 +504,59 @@ function onTabActivated(activeInfo) {
 }
 
 function onTabAttached(tabId, attachInfo) {
-    var moving = tree.getPageEx(tabId);
+    log(tabId, attachInfo);
+    var moving = tree.getPage(tabId);
 
     if (!moving) {
         throw new Error('Could not find page with tab id ' + tabId);
     }
 
-    if (moving.ancestors[0] instanceof WindowNode
-        && !(moving.ancestors[0].hibernated)
-        && getNumericId(moving.ancestors[0].id) == attachInfo.newWindowId) {
-        // row is already under the correct parent window in the tree
+    var topParent = moving.topParent();
+    if (topParent instanceof WindowNode
+        && !(topParent.hibernated)
+        && getNumericId(topParent.id) == attachInfo.newWindowId
+        && tree.getTabIndex(moving) == attachInfo.newPosition)
+    {
+        log('attach move would have no effect, doing nothing ' + attachInfo.newWindowId + ' index ' + attachInfo.newPosition);
         return;
     }
 
-    tree.moveNode(moving.node, tree.getNode('w' + attachInfo.newWindowId));
+    log('moving node in tree to window ' + attachInfo.newWindowId + ', to index ' + attachInfo.newPosition);
+    moving.index = attachInfo.newPosition;
+
+    var before;
+    var exists = tree.getTabIndex(moving);
+    if (exists >= 0) {
+        log('attached node exists already in tree, removing before doing lookup');
+        tree.removeFromTabIndex(moving);
+    }
+    log('indexes look like this before getting before', moving.id, moving.index, tree.getWindowTabIndexArray(attachInfo.newWindowId));
+    var winTabs = tree.getWindowTabIndexArray(attachInfo.newWindowId);
+
+    if (winTabs) {
+        var before = winTabs[moving.index];
+
+        if (before) {
+            log('moving to before ' + before.id, before);
+            tree.moveNodeRel(moving, 'before', before);
+        }
+        else {
+            log('moving to last node under window ' + attachInfo.newWindowId);
+            tree.moveNodeRel(moving, 'append', tree.getNode('w' + attachInfo.newWindowId));
+        }
+    }
+    else {
+        log('winTabs do not yet exist; moving to a new window; just move attached tab to be under new window');
+        tree.moveNodeRel(moving, 'append', tree.getNode('w' + attachInfo.newWindowId));
+    }
+
+    tree.rebuildPageNodeWindowIds(function() {
+        tree.rebuildTabIndex();
+    });
 }
+
+function onTabHighlighted(highlightInfo) {
+    // log(highlightInfo);
+    PageTreeCallbackProxy('multiSelectInWindow', highlightInfo);
+}
+

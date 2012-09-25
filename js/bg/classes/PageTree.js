@@ -28,6 +28,7 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     this.$base();
     this.callbackProxyFn = callbackProxyFn; // callback proxy function for page/window functions
     this.focusedTabId = null;
+    this.tabIndexes = {};
     this.onModified = this._onPageTreeModified;
     this.awakeningPages = [];
     this.onModifiedDelayed = onModifiedDelayed;
@@ -60,19 +61,48 @@ PageTree.prototype = {
       */
     addNode: function(node, parentMatcher, beforeSiblingMatcher)
     {
-        var r = this.$super('addNode')(node, parentMatcher, beforeSiblingMatcher);
+        if (node instanceof WindowNode) {
+            this.tabIndexes[node.windowId] = [];
+        }
+
+        var parent;
+        if (parentMatcher) {
+            parent = this.getNode(parentMatcher);
+        }
+
+        var r = this.$super('addNode')(node, parent, beforeSiblingMatcher);
+
+        var parentId = r[1] ? r[1].id : undefined;
+
         this.callbackProxyFn('add', {
             element: node,
             parentId: r[1] ? r[1].id : undefined,
             beforeSiblingId: r[2] ? r[2].id : undefined
         });
+
+        this.addToTabIndex(node);
+
+        return r;
+    },
+
+    addNodeRel: function(node, relation, toMatcher)
+    {
+        var r = this.$super('addNodeRel')(node, relation, toMatcher);
+
+        this.callbackProxyFn('add', {
+            element: node,
+            parentId: r[1] ? r[1].id : undefined,
+            beforeSiblingId: r[2] ? r[2].id : undefined
+        });
+
+        this.addToTabIndex(node);
         return r;
     },
 
     // update an existing node matching matcher with given details
     updateNode: function(matcher, details)
     {
-        log(matcher, details);
+        // log(matcher, details);
 
         var page = this.getNode(matcher);
 
@@ -91,15 +121,25 @@ PageTree.prototype = {
     // remove the element matching matcher
     removeNode: function(matcher, removeChildren)
     {
-        var found = this.getNodeEx(matcher);
-        var r = this.$super('removeNode')(found.node, removeChildren);
-        this.callbackProxyFn('remove', { element: r, removeChildren: removeChildren || false });
+        // var found = this.getNodeEx(matcher);
+        // var index = found.node.index;
+        var node = this.getNode(matcher);
 
-        var topParent = found.ancestors[0];
-        if (topParent instanceof WindowNode && topParent.hibernated && topParent.children.length == 0) {
-            var removedParent = this.$super('removeNode')(topParent, false);
-            this.callbackProxyFn('remove', { element: removedParent });
+        if (!node) {
+            throw new Error('Node not found to remove');
         }
+
+        this.removeFromTabIndex(node);
+
+        if (removeChildren) {
+            var descendants = this.filter(function(e) { return e; }, node.children);
+            for (var i = descendants.length - 1; i >= 0; i--) {
+                this.removeFromTabIndex(descendants[i]);
+            };
+        }
+
+        var r = this.$super('removeNode')(node, removeChildren);
+        this.callbackProxyFn('remove', { element: r, removeChildren: removeChildren || false });
 
         return r;
     },
@@ -111,10 +151,31 @@ PageTree.prototype = {
     // If blockCallback is true, don't call the callback.
     //
     // Returns [moved, newParent, beforeSibling] if a move was actually performed, or undefined if not.
-    moveNode: function(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren, blockCallback)
+    moveNode: function(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren, blockCallback, preferChromeTabIndex)
     {
-        var r = this.$super('moveNode')(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren);
+        var moving = this.getNode(movingMatcher);
+        var parent = this.getNode(parentMatcher);
 
+        if (preferChromeTabIndex && !beforeSiblingMatcher && moving instanceof PageNode && !moving.hibernated) {
+            var index = moving.index;
+            var nextByIndex = this.tabIndexes['w' + moving.windowId][index];
+            if (nextByIndex) {
+                if (nextByIndex === moving && parent === nextByIndex.parent) {
+                    log('moveNode would move node to same position after compensating for preferChromeTabIndex, doing nothing', movingMatcher, parentMatcher);
+                    return;
+                }
+                var ex = this.getNodeEx(nextByIndex);
+                if (ex.parent === parent) {
+                    beforeSiblingMatcher = nextByIndex;
+                }
+            }
+        }
+
+        log('moving node', 'moving', moving, 'parent', parent, 'beforeSiblingMatcher', beforeSiblingMatcher, 'keepChildren', keepChildren, 'preferChromeTabIndex', preferChromeTabIndex);
+        var r = this.$super('moveNode')(moving, parent, beforeSiblingMatcher, keepChildren);
+        if (r === undefined) {
+            log('$super.move returned undefined');
+        }
         if (r !== undefined && !blockCallback) {
             this.callbackProxyFn('move', {
                 element: r[0],
@@ -123,12 +184,26 @@ PageTree.prototype = {
                 keepChildren: keepChildren || false
             });
         }
+
+        this.conformChromeTabIndexForPageNode(r[0], keepChildren);
+
         return r;
     },
 
-    moveNodeRel: function(movingMatcher, relation, toMatcher, keepChildren, blockCallback)
+
+    // Move node matching movingMatcher to position relative to toMatcher based on given relation
+    moveNodeRel: function(movingMatcher, relation, toMatcher, keepChildren, blockCallback, conformTabIndex)
     {
-        var r = this.$super('moveNodeRel')(movingMatcher, relation, toMatcher, keepChildren);
+        var moving = this.getNode(movingMatcher);
+        this.removeFromTabIndex(moving);
+        var r = this.$super('moveNodeRel')(moving, relation, toMatcher, keepChildren);
+
+        if (conformTabIndex) {
+            this.conformChromeTabIndexForPageNode(r[0]);
+        }
+        else {
+            this.addToTabIndex(moving);
+        }
 
         if (r !== undefined && !blockCallback) {
             this.callbackProxyFn('move', {
@@ -196,13 +271,13 @@ PageTree.prototype = {
     },
 
     // retrieve a page from the tree given its tabId, and return additional details
-    getPageEx: function(tabId) {
-        return this.getNodeEx('p' + tabId);
+    getPageEx: function(tabId, inArray) {
+        return this.getNodeEx('p' + tabId, inArray);
     },
 
     focusPage: function(tabId)
     {
-        log(tabId);
+        // log(tabId);
 
         var page = this.getPage(tabId);
 
@@ -222,7 +297,7 @@ PageTree.prototype = {
     // update an existing page with given details
     updatePage: function(tabIdOrElem, details)
     {
-        log(tabIdOrElem, details);
+        // log(tabIdOrElem, details);
 
         if (typeof(tabIdOrElem) == 'number') {
             var page = this.getNode('p' + tabIdOrElem);
@@ -248,11 +323,12 @@ PageTree.prototype = {
     hibernatePage: function(id, skipLastTabCheck)
     {
         var tabId = getNumericId(id);
-        this.updatePage(tabId, { hibernated: true, id: 'pH' + generateGuid(), status: 'complete' });
+        var page = this.updatePage(tabId, { hibernated: true, id: 'pH' + generateGuid(), status: 'complete' });
 
         var self = this;
         function removeAfterHibernate() {
             chrome.tabs.remove(tabId);
+            tree.removeFromTabIndex(page);
             self.updateLastModified();
         }
 
@@ -467,14 +543,21 @@ PageTree.prototype = {
         }
 
         // existingWindowNode is not hibernated (its Chrome window already exists)
+        var self = this;
         var windowId = getNumericId(existingWindowNode.id);
         nodes.forEach(function(e) {
-            log('awakening', e.url, 'windowId', windowId);
+            var index;
+            var next = e.following(function(e) { return e instanceof PageNode && !e.hibernated; });
+            if (next) {
+                index = self.getTabIndex(next);
+            }
+            log('awakening', e.url, 'windowId', windowId, 'index', index);
             chrome.tabs.create({
                 url: e.url,
                 windowId: windowId,
                 active: activateAfter || false,
-                pinned: e.pinned
+                pinned: e.pinned,
+                index: index
             });
         });
     },
@@ -514,14 +597,228 @@ PageTree.prototype = {
 
 
     ///////////////////////////////////////////////////////////
+    // Tab index maintenance
+    ///////////////////////////////////////////////////////////
+
+    getTabIndex: function(node) {
+        var winId = 'w' + node.windowId;
+        var winTabs = this.getWindowTabIndexArray(winId);
+
+        if (!winTabs) {
+            throw new Error('Indexes array does not exist for node', 'node id', node.id, 'window id', node.windowId, 'node', node);
+        }
+        return winTabs.indexOf(node);
+    },
+
+    getWindowTabIndexArray: function(windowNodeId) {
+        if (typeof(windowNodeId) == 'number') {
+            windowNodeId = 'w' + windowNodeId;
+        }
+        return this.tabIndexes[windowNodeId];
+    },
+
+    getWindowIndexedTabsCount: function(windowNodeId) {
+        var ary = this.getWindowTabIndexArray(windowNodeId);
+        if (ary) {
+            return ary.length;
+        }
+        return 0;
+    },
+
+    // Add the given node to the tab index based on its .index
+    addToTabIndex: function(node) {
+        if (!(node instanceof PageNode) || node.hibernated) {
+            return;
+        }
+
+        var found = this.getNodeEx(node);
+        var topParent = found.ancestors[0];
+
+        if (!(topParent instanceof WindowNode)) {
+            return;
+        }
+
+        if (!this.tabIndexes[topParent.id]) {
+            this.tabIndexes[topParent.id] = [];
+        }
+
+        var index = node.index;
+        if (index >= this.tabIndexes[topParent.id].length) {
+            this.tabIndexes[topParent.id].push(node);
+            return;
+        }
+        this.tabIndexes[topParent.id].splice(index, 0, node);
+    },
+
+    // Remove the given node from the tab index
+    removeFromTabIndex: function(node) {
+        if (!(node instanceof PageNode)) {
+            return;
+        }
+
+        var found = this.getNodeEx(node);
+        var topParent = found.ancestors[0];
+
+        if (!(topParent instanceof WindowNode)) {
+            return;
+        }
+
+        if (!this.tabIndexes[topParent.id]) {
+            return;
+        }
+
+        var index = this.tabIndexes[topParent.id].indexOf(node);
+        if (index > -1) {
+            this.tabIndexes[topParent.id].splice(index, 1);
+        }
+    },
+
+    // rebuild the tab index
+    rebuildTabIndex: function() {
+        this.tabIndexes = this.groupBy(function(e) {
+            if (e instanceof PageNode && !e.hibernated) {
+                return 'w' + e.windowId;
+            }
+        });
+    },
+
+    // rebuild window ids on page nodes
+    rebuildPageNodeWindowIds: function(onComplete) {
+        var self = this;
+        chrome.tabs.query({ }, function(tabs) {
+            for (var i in tabs) {
+                var tab = tabs[i];
+                var page = self.getPage(tab.id);
+                if (page) {
+                    self.updateNode(page, { windowId: tab.windowId });
+                }
+            }
+            if (onComplete) {
+                onComplete();
+            }
+        });
+    },
+
+    // conform a given page node's tab index within Chrome to match
+    // the page node's vertically ordered position within the tree
+    conformChromeTabIndexForPageNode: function(node, conformDescendants, skipIndexRebuild) {
+        if (node instanceof PageNode && !node.hibernated) {
+            var topParent = this.getNodeEx(node).ancestors[0];
+            if (topParent instanceof WindowNode) {
+                var self = this;
+                chrome.tabs.get(getNumericId(node.id), function(tab) {
+                    if (!skipIndexRebuild) {
+                        self.rebuildTabIndex();
+                    }
+                    var newIndex = self.tabIndexes[topParent.id].indexOf(node);
+                    if (tab.index != newIndex) {
+                        log('Conforming chrome tab index', 'id', tab.id, 'tab.index', tab.index, 'target index', newIndex);
+                        expectingTabMoves.push(tab.id);
+                        chrome.tabs.move(tab.id, { index: newIndex }, function() {
+                            setTimeout(function() { removeFromExpectingTabMoves(tab.id); }, 250);
+                        });
+                    }
+                    else {
+                        log('Not conforming chrome tab index', 'id', tab.id, 'tab.index', tab.index, 'target index', newIndex);
+                    }
+                });
+            }
+        }
+        if (conformDescendants) {
+            this.conformChromeTabIndexForNodeArray(node.children, true, skipIndexRebuild);
+        }
+
+    },
+
+    // conform tab indexes of page nodes in given array and optionally all descendant page nodes
+    conformChromeTabIndexForNodeArray: function(nodeArray, conformDescendants, skipIndexRebuild) {
+        if (!skipIndexRebuild) {
+            this.rebuildTabIndex();
+        }
+        for (var i = 0; i < nodeArray.length; i++) {
+            var node = nodeArray[i];
+            log('Conforming from array', node.id, conformDescendants);
+            this.conformChromeTabIndexForPageNode(node, conformDescendants, true);
+        }
+    },
+
+    // conform tab indexes of all page nodes
+    conformAllChromeTabIndexes: function() {
+        this.rebuildTabIndex();
+
+        var windows = this.tree.filter(function(e) {
+            return e instanceof WindowNode && !e.hiberanted;
+        });
+
+        for (var i = 0; i < windows.length; i++) {
+            var win = windows[i];
+            this.conformChromeTabIndexForNodeArray(win.children, true, true);
+        }
+    },
+
+    // update a page's position in the tree on a tab index basis, given its new windowId, old fromIndex, and new toIndex
+    updatePageIndex: function(tabId, windowId, fromIndex, toIndex)
+    {
+        log('updating page index', tabId, windowId, fromIndex, toIndex);
+        var to;
+        var moving = this.getPage(tabId);
+        tree.updateNode(moving, { windowId: windowId });
+        windowId = 'w' + windowId;
+
+        if (toIndex < fromIndex) {
+            // moving tab to the left
+            moving.index = toIndex;
+            to = this.tabIndexes[windowId][toIndex];
+        }
+        else {
+            // moving tab to the right
+            moving.index = toIndex;
+            to = this.tabIndexes[windowId][toIndex + 1];
+        }
+
+        if (to) {
+            log('moving to before by index', moving.id, 'before', to.id);
+            this.moveNodeRel(moving, 'before', to, false, false);
+            return;
+        }
+
+        log('moving to append by index', moving.id, 'append to', windowId);
+        this.moveNodeRel(moving, 'append', this.getNode(windowId), false, false);
+    },
+
+
+    ///////////////////////////////////////////////////////////
     // Miscellaneous functions
     ///////////////////////////////////////////////////////////
+
+    clear: function() {
+        this.$super('clear')();
+        this.tabIndexes = {};
+    },
 
     // Returns contents of tree formatted as a string. Used for debugging.
     dump: function()
     {
+        var self = this;
         var dumpFn = function(lastValue, e, depth) {
+            var topParent = self.getNodeEx(e).ancestors[0];
+            var indexes = self.tabIndexes[topParent.id];
+            if (indexes) {
+                var index = indexes.indexOf(e);
+                if (index == -1) {
+                    index = '---';
+                }
+                else {
+                    index = '   ' + index;
+                    index = index.slice(index.length - 3);
+                }
+            }
+            else {
+                var index = '---';
+            }
+
             return lastValue + '\n'
+                + index + '|'
                 + Array(-4 + 1 + (1 + depth) * 4).join(' ')
                 + e.id + ': '
                 + (e.id[0] == 'p' ? e.title : 'window ' + e.type + (e.incognito ? ' incognito' : ''))

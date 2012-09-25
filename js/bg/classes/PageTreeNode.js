@@ -14,4 +14,10 @@ var PageTreeNode = function()
     this.restorable = false;
 };
 
-extendClass(PageTreeNode, DataTreeNode, {});
+PageTreeNode.prototype = {
+    isTab: function() {
+        return false;
+    }
+};
+
+extendClass(PageTreeNode, DataTreeNode, PageTreeNode.prototype);

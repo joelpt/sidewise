@@ -87,8 +87,8 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             filterByExtraParams: ['url'],
             tooltipMaxWidthPercent: 0.95,
             buttons: [
-                {icon: '/images/hibernate_wake.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
-                {icon: '/images/close.png', tooltip: getMessage('pages_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
+                {id: 'hibernate', icon: '/images/hibernate_wake.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
+                {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
             ]
         },
         'folder': {
@@ -109,7 +109,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onResizeTooltip: onResizeTooltip,
             tooltipMaxWidthPercent: 0.95,
             buttons: [
-                {icon: '/images/close.png', tooltip: getMessage('pages_folderRowButtonTip_close'), onClick: onFolderRowCloseButton }
+                {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_folderRowButtonTip_close'), onClick: onFolderRowCloseButton }
             ]
         },
         'window': {
@@ -129,9 +129,10 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onResizeTooltip: onResizeTooltip,
             tooltipMaxWidthPercent: 0.95,
             buttons: [
-                {icon: '/images/create_tab.png', tooltip: getMessage('pages_windowRowButtonTip_createTab'), onClick: onWindowRowCreateTabButton },
-                {icon: '/images/close.png', tooltip: getMessage('pages_windowRowButtonTip_close'), onClick: onWindowRowCloseButton }
-            ]
+                {id: 'createTab', icon: '/images/create_tab.png', tooltip: getMessage('pages_windowRowButtonTip_createTab'), onClick: onWindowRowCreateTabButton },
+                {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_windowRowButtonTip_close'), onClick: onWindowRowCloseButton }
+            ],
+            onShowButtons: onWindowShowButtons
         }
     };
 
@@ -165,7 +166,7 @@ function populateFancyTreeFromPageTree(fancyTree, pageTree) {
     });
 }
 
-function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
+function addPageTreeNodeToFancyTree(fancyTree, node, parentId, beforeSiblingId)
 {
     var row;
     if (node instanceof bg.WindowNode) {
@@ -215,7 +216,7 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId)
         throw new Error('Unknown node type');
     }
 
-    fancyTree.addRow(row, parentId);
+    fancyTree.addRow(row, parentId, beforeSiblingId);
 
     setTimeout(function() {
         fancyTree.updateRow.call(fancyTree, row, { icon: node.favicon });
@@ -236,11 +237,11 @@ function PageTreeCallbackProxyListener(op, args)
         return;
     }
 
-    log(op, args);
+    // log(op, args);
     switch (op)
     {
         case 'add':
-            addPageTreeNodeToFancyTree(ft, args.element, args.parentId);
+            addPageTreeNodeToFancyTree(ft, args.element, args.parentId, args.beforeSiblingId);
             break;
         case 'remove':
             ft.removeRow(args.element.id, args.removeChildren);
@@ -270,6 +271,11 @@ function PageTreeCallbackProxyListener(op, args)
         case 'collapse':
             ft.collapseRow(args.id);
             break;
+        case 'multiSelectInWindow':
+            var $win = ft.getRow('w' + args.windowId);
+            var $kids = $('#p' + args.tabIds.join(',#p'));
+            ft.setMultiSelectedChildrenUnderRow($win, $kids, '[rowtype=page][hibernated=false]');
+            break;
     }
 }
 
@@ -289,7 +295,7 @@ function onRowExpanderClick(evt) {
 }
 
 function onRowsMoved(moves) {
-    // console.log('MOVES', moves);
+    console.log('MOVES', moves);
     var windowToWindowMoves = {};
     var windowToWindowMovesCount = 0;
     for (var i = 0; i < moves.length; i++) {
@@ -298,11 +304,11 @@ function onRowsMoved(moves) {
         var $to = move.$to;
         var rowId = $row.attr('id');
         var toId = $to ? $to.attr('id') : undefined;
-        // console.log('---- move:', rowId, move.relation, toId, move.keepChildren ? 'KEEP CHILDREN' : '');
+        console.log('---- move:', rowId, move.relation, toId, move.keepChildren ? 'KEEP CHILDREN' : '');
 
         if (move.relation != 'nomove') {
             // record the move in bg.tree
-            bg.tree.moveNodeRel(rowId, move.relation, toId, move.keepChildren, true);
+            bg.tree.moveNodeRel(rowId, move.relation, toId, move.keepChildren, true, false);
         }
 
         if ($row.attr('rowtype') == 'page' && $row.attr('hibernated') != 'true') {
@@ -318,21 +324,30 @@ function onRowsMoved(moves) {
                 && $moveTopParent.attr('hibernated') != 'true'
                 && !($moveTopParent.is($oldTopParent)))
             {
-                // ... accumulate the list of window-to-window moves we'll perform after this loop
+                // this works, but has the gray-window problem which we should be able to fix by building out winToWinMoves array again
+                // and using this here technique for doing the moves, but doing the temp-tab create-and-destroy crap in addition as needed
+                // (and possibly activating moved tabs after always, too)
+                //
+                var movingTabId = getRowNumericId($row);
                 var fromWindowId = getRowNumericId($oldTopParent);
                 var toWindowId = getRowNumericId($moveTopParent);
-                var movingTabId = getRowNumericId($row);
+                var node = bg.tree.getNode(rowId);
+                node.windowId = toWindowId;
+
                 if (windowToWindowMoves[fromWindowId] === undefined) {
                     windowToWindowMoves[fromWindowId] = [];
                     windowToWindowMovesCount++;
                 }
-                windowToWindowMoves[fromWindowId].push([toWindowId, movingTabId]);
+
+                windowToWindowMoves[fromWindowId].push({ node: node, movingTabId: movingTabId, toWindowId: toWindowId });
                 continue;
             }
         }
     }
+
     if (windowToWindowMovesCount > 0) {
         // perform window-to-window moves
+        bg.tree.rebuildTabIndex();
         for (var fromWindowId in windowToWindowMoves) {
             if (!windowToWindowMoves.hasOwnProperty(fromWindowId)) {
                 continue;
@@ -340,16 +355,19 @@ function onRowsMoved(moves) {
             moveTabsBetweenWindows(parseInt(fromWindowId), windowToWindowMoves[fromWindowId]);
         }
     }
+    else {
+        bg.tree.conformAllChromeTabIndexes();
+    }
 }
 
 function moveTabsBetweenWindows(fromWindowId, moves) {
-    chrome.tabs.query({ windowId: fromWindowId }, function(fromWinTabs) {
-        if (fromWinTabs.length > moves.length) {
-            var afterFn = function() { };
+    chrome.tabs.query({ windowId: fromWindowId }, function(tabs) {
+        if (tabs.length > moves.length) {    // from-window will still have at least 1 tab after the moves are done
             for (var i in moves) {
-                var toWindowId = moves[i][0];
-                var movingTabId = moves[i][1];
-                moveTabToWindow(movingTabId, toWindowId, afterFn);
+                var move = moves[i];
+                var toPosition = bg.tree.getTabIndex(move.node);
+                log('win to win move', 'moving', move.node.id, 'to', move.toWindowId, 'index', toPosition);
+                moveTabToWindow(move.movingTabId, move.toWindowId, toPosition);
             }
             return;
         }
@@ -360,24 +378,28 @@ function moveTabsBetweenWindows(fromWindowId, moves) {
         // window show up in the new window with no actual content (Chrome just shows an empty gray window for the tab/s).
         chrome.tabs.create({ url: 'about:blank', windowId: fromWindowId }, function(tempTab) {
             for (var i in moves) {
-                var toWindowId = moves[i][0];
-                var movingTabId = moves[i][1];
                 var afterFn;
-                console.log(i, moves.length - 1);
                 if (i == moves.length - 1) {
-                    afterFn = function() { chrome.tabs.remove(tempTab.id); };
+                    afterFn = function() {
+                        chrome.tabs.remove(tempTab.id);
+                    };
                 }
-                else {
-                    afterFn = function() { };
-                }
-                moveTabToWindow(movingTabId, toWindowId, afterFn);
+
+                var move = moves[i];
+                var toPosition = bg.tree.getTabIndex(move.node);
+                log('win to win move + last-tab hack', 'moving', move.node.id, 'to', move.toWindowId, 'index', toPosition);
+                moveTabToWindow(move.movingTabId, move.toWindowId, toPosition, afterFn);
             }
         });
     });
 }
 
-function moveTabToWindow(movingTabId, toWindowId, afterFn) {
-    chrome.tabs.move(movingTabId, { windowId: toWindowId, index: -1 }, function() {
+function moveTabToWindow(movingTabId, toWindowId, toPosition, afterFn) {
+    log('moving tab to window', 'movingTabId', movingTabId, 'toWindowId', toWindowId, 'toPosition', toPosition);
+    if (!afterFn) {
+        afterFn = function() {};
+    }
+    chrome.tabs.move(movingTabId, { windowId: toWindowId, index: toPosition }, function() {
         chrome.tabs.update(movingTabId, { active: true }, afterFn);
     });
 }
@@ -403,6 +425,18 @@ function allowDropHandler($fromRows, relation, $toRow) {
     var toIncognito = $toRow.add($toRow.parents()).is('[incognito=true]');
     if (fromIncognito != toIncognito) {
         return false;
+    }
+
+    // don't allow dropping a non pinned tab to above a pinned one
+    var movingNonPinnedTabs = $fromRows.is('[rowtype=page][pinned=false]');
+
+    if (movingNonPinnedTabs) {
+        if (relation == 'before' && $toRow.is('[pinned=true]')) {
+            return false;
+        }
+        // TODO enforce this more strictly:
+        // - if any $fromRows are collapsed we must also include all their children in the moveNonPinnedTabs check value
+        // - we cannot have a pinned tab anywhere AFTER the proposed insert point in the same window
     }
 
     // allow any other type of drop
@@ -976,6 +1010,24 @@ function handleWindowRowAction(action, evt) {
     }
 }
 
+function onWindowShowButtons(row, buttons) {
+    var show = [];
+
+    for (var i = 0; i < buttons.length; i++) {
+        var button = buttons[i];
+        if (button.id == 'close') {
+            show.push(button);
+            continue;
+        }
+        if (button.id == 'createTab' && row.attr('hibernated') == 'false' && row.attr('type') == 'normal') {
+            show.push(button);
+            continue;
+        }
+    };
+
+    return show;
+}
+
 function onWindowRowCloseButton(evt) {
     var treeObj = evt.data.treeObj;
     var row = evt.data.row;
@@ -987,7 +1039,7 @@ function onWindowRowCreateTabButton(evt) {
     var treeObj = evt.data.treeObj;
     var row = evt.data.row;
 
-    chrome.tabs.create({ windowId: getRowNumericId(row) }, function(tab) {
+    chrome.tabs.create({ windowId: getRowNumericId(row) || undefined }, function(tab) {
         // ensure the new tab and window have focus after a short delay to compensate for Sidewise
         // potentially doing window-switching when Chrome is unfocused and "Create new tab"
         // button is clicked, and the "Keep sidebar visible next to dock window" option is on

@@ -244,7 +244,7 @@ function identifyPlatform()
 // Javascript object manipulation
 ///////////////////////////////////////////////////////////
 
-function clone(obj) {
+function clone(obj, ignoreProperties) {
     // Handle the 3 simple types, and null or undefined
     if (null == obj || "object" != typeof obj) return obj;
 
@@ -260,7 +260,7 @@ function clone(obj) {
         var copy = [];
         var len = obj.length;
         for (var i = 0; i < len; ++i) {
-            copy[i] = clone(obj[i]);
+            copy[i] = clone(obj[i], ignoreProperties);
         }
         return copy;
     }
@@ -269,7 +269,13 @@ function clone(obj) {
     if (obj instanceof Object) {
         var copy = {};
         for (var attr in obj) {
-            if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
+            if (!obj.hasOwnProperty(attr)) {
+                continue;
+            }
+            if (ignoreProperties instanceof Array && ignoreProperties.indexOf(attr) > -1) {
+                continue;
+            }
+            copy[attr] = clone(obj[attr], ignoreProperties);
         }
         return copy;
     }

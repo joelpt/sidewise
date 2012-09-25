@@ -113,13 +113,10 @@ function createSidebarOnStartup() {
 
 function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
     if (tree.lastModified != tree.lastSaved) {
-        log('saving tree to local storage');
-        var saveTree;
+        log('--- saving tree to local storage ---');
+        var saveTree = clone(tree.tree, ['parent', 'root', 'hostTree']);
         if (excludeIncognitoNodes) {
-            saveTree = tree.tree.filter(function(e) { return !e.incognito; });
-        }
-        else {
-            saveTree = tree;
+            saveTree = saveTree.filter(function(e) { return !e.incognito; });
         }
         settings.set(settingName, saveTree);
         tree.lastSaved = tree.lastModified;
@@ -230,8 +227,10 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
             } catch(ex) { }
         });
 
-        // rebuild the id index
+        // rebuild the indexes
         tree.rebuildIdIndex();
+        tree.rebuildTabIndex();
+        tree.rebuildParents();
 
         // set modified state
         tree.updateLastModified();
@@ -298,7 +297,6 @@ function populatePages()
 
         }
         setTimeout(function() { findTabParents(tabsToQuery); }, 1500); // give content scripts a moment to get going
-
     });
 }
 

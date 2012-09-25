@@ -73,7 +73,9 @@
   *                  onClick: Function(evt)      // left click event handler for button
   *                },
   *                ...
-  *              ]
+  *              ],
+  *              onShowButtons: Function(row, buttons) // given a row and the rowtype buttons we propose to show,
+  *                                                    // return an array of the buttons we should actually show
   *            },
   *            ...
   *          }

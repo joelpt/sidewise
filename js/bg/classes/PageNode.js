@@ -10,6 +10,9 @@ var PageNode = function(tab, overrideStatus)
 
     this.elemType = 'page';
     this.id = 'p' + tab.id;
+    this.windowId = tab.windowId;
+    this.openerTabId = tab.openerTabId;
+    this.index = tab.index;
     this.url = tab.url;
     this.favicon = getBestFavIconUrl(tab.favIconUrl, url);
     this.referrer = '';
@@ -26,5 +29,10 @@ var PageNode = function(tab, overrideStatus)
     this.sessionGuid = null;
 };
 
-extendClass(PageNode, PageTreeNode, {});
+PageNode.prototype = {
+    isTab: function() {
+        return !this.hibernated;
+    }
+};
 
+extendClass(PageNode, PageTreeNode, PageNode.prototype);

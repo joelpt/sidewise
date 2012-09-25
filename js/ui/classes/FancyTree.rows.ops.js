@@ -18,14 +18,23 @@ FancyTree.prototype.getRow = function(idOrElem) {
     return $row;
 };
 
-FancyTree.prototype.addRow = function($row, parentId) {
-    if (!parentId) {
-        // When parentId is missing just add $row to the root level children
-        this.root.children('.ftChildren').append($row);
-        return;
+FancyTree.prototype.addRow = function($row, parentId, beforeSiblingId) {
+    var $parent;
+    if (beforeSiblingId) {
+        var $beforeSibling = this.getRow(beforeSiblingId);
+        $beforeSibling.before($row);
+        $parent = $beforeSibling.parent();
     }
-    var $parent = this.getRow(parentId);
-    $parent.children('.ftChildren').append($row);
+    else {
+        if (parentId) {
+            $parent = this.getRow(parentId);
+        }
+        else {
+            $parent = this.root;
+        }
+        $parent.children('.ftChildren').append($row);
+    }
+
     this.updateRowExpander($parent);
     this.formatLineageTitles($parent);
 };
@@ -204,9 +213,9 @@ FancyTree.prototype.focusRow = function(idOrElem) {
         this.root.find('.ftChildFocused').removeClass('ftChildFocused');
     }
 
-    if (this.multiSelection.length > 0) {
-        this.clearMultiSelection();
-    }
+    // if (this.multiSelection.length > 0) {
+    //     this.clearMultiSelection();
+    // }
 
     this.lastMultiSelectedToId = id;
     this.lastMultiSelectedFromId = id;

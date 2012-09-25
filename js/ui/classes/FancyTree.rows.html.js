@@ -70,7 +70,7 @@ FancyTree.prototype.buildRowTypeElem = function(rowType) {
     for (var i in params.buttons) {
         var buttonSpec = params.buttons[i];
         var button = $('<img>', {
-            class: 'ftIconButton ftButton__' + rowType + '_' + i,
+            class: 'ftIconButton ftButton__' + rowType + '_' + buttonSpec.id,
             src: buttonSpec.icon,
             tooltip: buttonSpec.tooltip
         });
