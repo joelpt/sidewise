@@ -39,6 +39,8 @@ $(document).ready(function() {
 
     bg.sidebarHandler.registerSidebarPane('pages', window);
     bg.focusCurrentTabInPageTree();
+
+    $(document).on('dblclick', 'body', onBodyDoubleClick);
 });
 
 function initDebugBar() {
@@ -225,7 +227,7 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId, beforeSiblingId)
 
 
 ///////////////////////////////////////////////////////////
-// Top-level event handlers
+// Background page callback proxy listener
 ///////////////////////////////////////////////////////////
 
 function PageTreeCallbackProxyListener(op, args)
@@ -277,6 +279,21 @@ function PageTreeCallbackProxyListener(op, args)
             ft.setMultiSelectedChildrenUnderRow($win, $kids, '[rowtype=page][hibernated=false]');
             break;
     }
+}
+
+
+///////////////////////////////////////////////////////////
+// Page-scope event handlers
+///////////////////////////////////////////////////////////
+
+function onBodyDoubleClick(evt) {
+    if ($(evt.target).parents().is(ft.root)) {
+        // over the tree
+        return true;
+    }
+
+    var windowId = bg.focusTracker.getFocused();
+    createNewTabInWindow(windowId);
 }
 
 
@@ -1039,47 +1056,7 @@ function onWindowRowCreateTabButton(evt) {
     var treeObj = evt.data.treeObj;
     var row = evt.data.row;
 
-    chrome.tabs.create({ windowId: getRowNumericId(row) || undefined }, function(tab) {
-        // ensure the new tab and window have focus after a short delay to compensate for Sidewise
-        // potentially doing window-switching when Chrome is unfocused and "Create new tab"
-        // button is clicked, and the "Keep sidebar visible next to dock window" option is on
-        setTimeout(function() {
-            chrome.windows.update(tab.windowId, { focused: true });
-            chrome.tabs.update(tab.id, { active: true });
-        }, 50);
-    });
-}
-
-function closeWindowRow(row) {
-    ft.resetDragDropState(function() {
-        var childCount = ft.getChildrenCount(row);
-
-        var threshold = settings.get('multiSelectActionConfirmThreshold');
-        if (threshold > 0 && childCount >= threshold) {
-            var msg = getMessage('prompt_closeWindow',
-                [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
-            if (!confirm(msg)) {
-                return;
-            }
-        }
-
-        var id = row.attr('id');
-        var windowId = getRowNumericId(row);
-
-        if (row.attr('hibernated') == 'true' || !windowId) {
-            bg.tree.removeNode(id, true);
-            return;
-        }
-
-        chrome.windows.get(windowId, function(win) {
-            if (win) {
-                chrome.windows.remove(windowId, function() {
-                    bg.tree.removeNode(id, true);
-                });
-                return;
-            }
-        });
-    });
+    createNewTabInWindow(getRowNumericId(row) || undefined);
 }
 
 function onWindowRowFormatTitle(row, itemTextElem) {
@@ -1139,6 +1116,38 @@ function closeRow($row) {
 
     $row.addClass('closing'); // "about to close" styling
     chrome.tabs.remove(getRowNumericId($row));
+}
+
+function closeWindowRow(row) {
+    ft.resetDragDropState(function() {
+        var childCount = ft.getChildrenCount(row);
+
+        var threshold = settings.get('multiSelectActionConfirmThreshold');
+        if (threshold > 0 && childCount >= threshold) {
+            var msg = getMessage('prompt_closeWindow',
+                [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
+            if (!confirm(msg)) {
+                return;
+            }
+        }
+
+        var id = row.attr('id');
+        var windowId = getRowNumericId(row);
+
+        if (row.attr('hibernated') == 'true' || !windowId) {
+            bg.tree.removeNode(id, true);
+            return;
+        }
+
+        chrome.windows.get(windowId, function(win) {
+            if (win) {
+                chrome.windows.remove(windowId, function() {
+                    bg.tree.removeNode(id, true);
+                });
+                return;
+            }
+        });
+    });
 }
 
 // hibernateAwakeState values:
@@ -1206,6 +1215,18 @@ function setRowHighlight(row, highlightState) {
     }
 
     bg.tree.updateNode(row.attr('id'), { highlighted: true });
+}
+
+function createNewTabInWindow(windowId) {
+    chrome.tabs.create({ windowId: windowId }, function(tab) {
+        // ensure the new tab and window have focus after a short delay to compensate for Sidewise
+        // potentially doing window-switching when Chrome is unfocused and "Create new tab"
+        // button is clicked, and the "Keep sidebar visible next to dock window" option is on
+        setTimeout(function() {
+            chrome.windows.update(tab.windowId, { focused: true });
+            chrome.tabs.update(tab.id, { active: true });
+        }, 50);
+    });
 }
 
 
