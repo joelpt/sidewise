@@ -259,13 +259,15 @@ function initPaneGrid() {
         return {
             paneid: e.id,
             enabled: e.enabled,
-            label: '<img style="position: relative; top: 3px" width="16" height="16" src="' + e.icon + '"> ' + e.label
+            label: '<img class="panePickerRowIcon" width="16" height="16" src="' + e.icon + '">&nbsp;' + e.label
         };
     });
 
     for(var i=0; i <= panes.length; i++) {
         $picker.jqGrid('addRowData', i+1, panes[i]);
     }
+
+    $picker.find('[role=gridcell]').attr('title', '');
 }
 
 function showPanePicker(evt) {

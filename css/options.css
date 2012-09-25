@@ -490,3 +490,14 @@ input.invalid {
 #panePicker tr[role=row] {
     cursor: pointer;
 }
+
+.panePickerRowIcon {
+    position: relative;
+    top: 4px;
+    width: 16px;
+    height: 16px;
+}
+
+#panePicker td[role=gridcell]:nth-child(3) {
+    padding-left: 4px;
+}
