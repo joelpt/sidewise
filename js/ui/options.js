@@ -169,20 +169,12 @@ function onSettingModified(evt) {
         // pane picker checkbox clicked
         var id = parseInt($gp.attr('id'));
         var data = $('#panePicker').jqGrid('getRowData', id);
-        var label = data.label;
-        if (!label) {
-            throw new Error('Unable to retrieve row data for expected pane picker row id ' + id);
-        }
         var enabled = (data.enabled == 'Yes');
-        var pane = bg.paneCatalog.panes[id - 1];
-
-        if (!pane) {
-            throw new Error('Unable to find correct pane in catalog by id');
-        }
+        var pane = getPaneByPickerRowId(id);
 
         if (enabled && !pane.enabled) {
             // user enabled a disabled pane
-            console.log('enabling ' + label);
+            console.log('enabling ' + pane.id);
             pane.enabled = true;
             bg.paneCatalog.saveState();
             if (bg.sidebarHandler.sidebarExists()) {
@@ -192,7 +184,7 @@ function onSettingModified(evt) {
         }
         else if (!enabled && pane.enabled) {
             // user disabled an enabled pane
-            console.log('disabling ' + label);
+            console.log('disabling ' + pane.id);
             pane.enabled = false;
             bg.paneCatalog.saveState();
             if (bg.sidebarHandler.sidebarExists()) {
@@ -248,6 +240,7 @@ function initPaneGrid() {
     $picker.jqGrid({
         datatype: "local",
         colModel: [
+            {name:'paneid', hidden: true },
             {sortable: false, name:'enabled', index:'enabled', width: 40, formatter: 'checkbox', formatoptions: { disabled: false }, align: 'center' },
             {sortable: false, name:'label', index:'label', width: 200}
         ],
@@ -263,7 +256,11 @@ function initPaneGrid() {
 
     // populate grid with panes data
     var panes = bg.paneCatalog.panes.map(function(e) {
-        return { enabled: e.enabled, label: '<img style="position: relative; top: 3px" width="16" height="16" src="' + e.icon + '"> ' + e.label };
+        return {
+            paneid: e.id,
+            enabled: e.enabled,
+            label: '<img style="position: relative; top: 3px" width="16" height="16" src="' + e.icon + '"> ' + e.label
+        };
     });
 
     for(var i=0; i <= panes.length; i++) {
@@ -281,7 +278,16 @@ function onPanePickerReorderedRow(evt, ui) {
     var $row = $(ui.item);
     var newIndex = $row.index() - 1;
     var pane = getPaneByPickerRowId($row.attr('id'));
-    console.log('reordered ' + pane.id + ', new index ' + newIndex);
+    console.log('reorder row id' + $row.attr('id') + ', pane id ' + pane.id + ', new index ' + newIndex);
+
+    bg.paneCatalog.reorderPane(pane.id, newIndex);
+
+    if (!bg.sidebarHandler.sidebarExists()) {
+        return;
+    }
+    var manager = bg.sidebarHandler.sidebarPanes.sidebarHost.manager;
+    manager.reorderSidebarPane(pane.id, newIndex);
+    bg.paneCatalog.saveState();
 }
 
 function onPanePickerSelectRow(rowid, status, e) {
@@ -289,7 +295,7 @@ function onPanePickerSelectRow(rowid, status, e) {
         return;
     }
     var pane = getPaneByPickerRowId(rowid);
-
+    log('select pane ' + rowid + ' ' + pane.id);
     if (!pane.enabled) {
         return;
     }
@@ -298,7 +304,8 @@ function onPanePickerSelectRow(rowid, status, e) {
 }
 
 function getPaneByPickerRowId(rowid) {
-    var pane = bg.paneCatalog.panes[parseInt(rowid) - 1];
+    var data = $('#panePicker').jqGrid('getRowData', rowid);
+    var pane = bg.paneCatalog.getPane(data.paneid);
     if (pane) {
         return pane;
     }
