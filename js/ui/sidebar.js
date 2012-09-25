@@ -2,15 +2,6 @@
 // Initialization
 //////////////////////////////////////////
 
-var sidebars = [
-    { id: 'pages', url: 'sidebars/pages.html', label: getMessage('sidebarLabel_Pages'), icon: 'images/nav/pages.png' },
-    { id: 'notepad', url: 'sidebars/notepad.html', label: getMessage('sidebarLabel_Notepad'), icon: 'images/nav/notepad.png' },
-    { id: 'reddit', url: 'sidebars/external-site.html#http://i.reddit.com', label: 'Reddit', icon: 'images/nav/reddit.png' },
-    { id: 'grooveshark', url: 'sidebars/external-site.html#http://html5.grooveshark.com/#/stations', label: 'Grooveshark', icon: 'images/nav/grooveshark.ico' }//,
-    // { id: 'tribunal', url: 'sidebars/external-site.html#https://tribunal.herokuapp.com/', label: 'Tribunal', icon: 'images/nav/tribunal.png' },
-    // { id: 'twitter', url: 'sidebars/external-site.html#http://mobile.twitter.com', label: 'Twitter', icon: 'http://twitter.com/favicon.ico' },
-];
-
 var manager;
 var bg;
 var settings;
@@ -25,10 +16,13 @@ function onReady() {
 
     manager = new SidebarNavManager($('ul#sidebarButtons'), $('tr#sidebars'),
         $('table#main'), $('body'), 'td');
-    manager.addSidebarPanes(sidebars);
+    manager.addSidebarPanes(bg.paneCatalog.panes);
 
     // Set initial sidebar position
-    var initialSidebar = settings.get('lastSidebarPaneId', sidebars[0].id);
+    var initialSidebar = settings.get('lastSidebarPaneId');
+    if (initialSidebar === undefined || bg.paneCatalog.getPaneIds().indexOf(initialSidebar) == -1) {
+        initialSidebar = bg.paneCatalog.panes[0].id;
+    }
     manager.showSidebarPane(initialSidebar);
 
     // Defeat Chrome's possible attempt to set its own scroll position when sidebar is refreshed

@@ -22,7 +22,10 @@ $(document).ready(function() {
         .on('click', '#closeButton', onCloseButtonClick)
         .on('click', '#resetButton', resetAllSettings)
         .on('click', '#detectMonitorsButton', detectMonitors)
-        .on('click', '#donateLink', onDonateLinkClick);
+        .on('click', '#donateLink', onDonateLinkClick)
+        .on('click', '#panePickerExpander', showPanePicker);
+
+    $('#panePickerContainer').hide();
 
     $('#version').text(getMessage('text_Version') + ' ' + getVersion());
     setMonitorCountInfo(settings.get('monitorMetrics').length, false);
