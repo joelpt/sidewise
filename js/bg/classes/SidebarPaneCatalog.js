@@ -11,6 +11,16 @@ var SidebarPaneCatalog = function() {
 
 SidebarPaneCatalog.prototype = {
 
+    getPane: function(id) {
+        for (var i = 0; i < this.panes.length; i++) {
+            var pane = this.panes[i];
+            if (pane.id == id) {
+                return pane;
+            }
+        }
+        throw new Error('Could not find pane with specified id ' + id);
+    },
+
     getPaneIds: function() {
         return this.panes.map(function(e) { return e.id; });
     },
@@ -79,5 +89,23 @@ SidebarPaneCatalog.prototype = {
 
         settings.set('sidebarPanesState', state);
     },
+
+    reorderPane: function(id, newIndex) {
+        var index, pane;
+        for (var i = 0; i < this.panes.length; i++) {
+            pane = this.panes[i];
+            if (pane.id == id) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index === undefined) {
+            throw new Error('Could not find pane by id ' + id);
+        }
+        log(index, newIndex);
+        this.panes.splice(index, 1);
+        this.panes.splice(newIndex, 0, pane);
+    }
 
 };
