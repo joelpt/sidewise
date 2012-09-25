@@ -1217,8 +1217,26 @@ function setRowHighlight(row, highlightState) {
     bg.tree.updateNode(row.attr('id'), { highlighted: true });
 }
 
-function createNewTabInWindow(windowId) {
-    chrome.tabs.create({ windowId: windowId }, function(tab) {
+function createNewTabInWindow(windowId, url) {
+    if (!url) {
+        var mode = settings.get('pages_createNewTabUrl');
+        switch (mode) {
+            case 'newtab':
+                url = 'chrome://newtab/';
+                break;
+            case 'homepage':
+                url = undefined;
+                break;
+            case 'blank':
+                url = 'about:blank';
+                break;
+            case 'google':
+                url = 'https://www.google.com/webhp';
+                break;
+        }
+    }
+
+    chrome.tabs.create({ windowId: windowId, url: url }, function(tab) {
         // ensure the new tab and window have focus after a short delay to compensate for Sidewise
         // potentially doing window-switching when Chrome is unfocused and "Create new tab"
         // button is clicked, and the "Keep sidebar visible next to dock window" option is on

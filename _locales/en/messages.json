@@ -122,6 +122,13 @@
     "option_pages_specialClickAction_expand": { "message": "expand/collapse branch"},
     "option_pages_specialClickAction_setLabel": { "message": "set label"},
     "option_pages_specialClickAction_highlight": { "message": "toggle highlight"},
+    "option_pages_createNewTabUrl": { "message": "Creating a new tab from the sidebar opens"},
+    "option_pages_createNewTabUrl_hint": { "message": "#When clicking the ![new tab button](/images/create_tab.png) **Create new tab** button on a window row, or double-clicking in the empty space below the page tree, Sidewise will open a new tab. //// You can specify what page appears in the newly created tab: //// * **New Tab page**: opens Chrome's New Tab page. // * **your homepage:** opens your default homepage as specified in Chrome's settings. // * **google.com:** opens the google.com homepage. // * **blank tab**: opens a blank tab."},
+    "option_pages_createNewTabUrl_newtab": { "message": "New Tab page"},
+    "option_pages_createNewTabUrl_homepage": { "message": "your homepage"},
+    "option_pages_createNewTabUrl_blank": { "message": "blank tab"},
+    "option_pages_createNewTabUrl_google": { "message": "google.com"},
+
     "option_smartFocusOnClose": { "message": "Use smart focus logic when closing tabs"},
     "option_smartFocusOnClose_hint": { "message": "#When enabled and the sidebar is open, Sidewise will use its own tree-oriented logic to decide which tab to focus next after a tab is closed. //// Note that this can sometimes cause a quick visual jump between two tabs after closing a tab, due to [a limitation of Chrome](http://code.google.com/p/chromium/issues/detail?id=133503). //// Technical details: smart focus uses the following order of priority in picking the next tab to focus: //// 1. First child of closed tab // 2. Next sibling of closed tab // 3. Preceding sibling of closed tab // 4. Parent of closed tab // 5. Let Chrome decide //// Smart focus starts with the first rule and proceeds down the list until it finds a suitable tab to focus. //// If this option is disabled, Sidewise will always let Chrome decide which tab to focus next."},
     "option_smartFocusPrefersCousins": { "message": "Smart focus prefers cousins before parents"},

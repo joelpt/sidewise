@@ -84,6 +84,7 @@ Settings.prototype = {
             useAdvancedTreeFiltering: false,
             pages_doubleClickAction: 'hibernate',
             pages_middleClickAction: 'none',
+            pages_createNewTabUrl: 'newtab',
             smartFocusOnClose: false,
             smartFocusPrefersCousins: false,
             loggingEnabled: false,
