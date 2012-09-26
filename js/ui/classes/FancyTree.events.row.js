@@ -50,6 +50,36 @@ FancyTree.prototype.onItemRowMouseEnter = function(evt) {
     treeObj.getInnerRow(row).children('.ftItemTextAffix').hide();
     treeObj.hoveredRow = row;
     treeObj.startTooltipTimer(row, evt);
+
+    if (treeObj.clickOnHoverDelayMs >= 0 && rowTypeParams.allowClickOnHover) {
+        if (treeObj.clickOnHoverTimer) {
+            clearTimeout(treeObj.clickOnHoverTimer);
+        }
+
+        treeObj.clickOnHoverTimer = setTimeout(function() {
+            if (evt.shiftKey || evt.ctrlKey || treeObj.contextMenuShown || treeObj.multiSelection.length > 1) {
+                return;
+            }
+
+            if (evt.data.autofocusOnClick !== false) {
+                // automatically set focus to clicked row
+                treeObj.focusRow(row);
+            }
+
+            if (rowTypeParams.onClick) {
+                // handle left click
+                var evtdata = evt.data;
+                var onComplete = function() {
+                    evt.data = evtdata;
+                    evt.data.row = row;
+                    evt.data.clickedViaHover = true;
+                    rowTypeParams.onClick(evt);
+                };
+                treeObj.resetDragDropState(onComplete);
+            }
+
+        }, treeObj.clickOnHoverDelayMs);
+    }
 };
 
 FancyTree.prototype.onItemRowMouseLeave = function(evt) {
@@ -65,6 +95,10 @@ FancyTree.prototype.onItemRowMouseLeave = function(evt) {
 
     treeObj.hoveredRow = null;
     treeObj.handleHideTooltipEvent(evt);
+
+    if (treeObj.clickOnHoverTimer) {
+        clearTimeout(treeObj.clickOnHoverTimer);
+    }
 };
 
 FancyTree.prototype.defaultFormatTitleHandler = function(row, itemTextElem) {

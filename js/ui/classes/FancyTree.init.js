@@ -36,15 +36,22 @@
   *          filterPlaceholderText: String,      // text to show in filter box when otherwise empty
   *          filterActiveText: String,           // text to show below filter box when filtering is active
   *          useAdvancedFiltering: Boolean,      // if true, use nonadjacent char matching when filtering
+  *          clickOnHoverDelayMs: Integer,       // if specified as a value of 0 or greater, hovering a row for the specified ms
+  *                                              // will act like a click if there is no active multiselection, context menu,
+  *                                              // shift/ctrl are not being held down, and the row type has allowClickOnHover set
+  *                                              // to true; when a row type's onClick handler is fired via hover, the passed
+  *                                              // Event will have the property evt.data.clickedViaHover=true.
   *          permitTooltipHandler: Function(),   // if this function returns false, block showing a row tip
   *          tooltipTopOffset: Integer,          // offset row tip from row by this much pixel spacing
   *          rowTypes:
   *          {
   *            identifier:                       // identifying string for each type of row to support
   *            {
-  *              allowAtTopLevel: Boolean,       // allow row at top (root) level, default=true
-  *              allowAtChildLevel: Boolean,     // allow row as child of another row, default=true
-  *              autofocusOnClick: Boolean,      // if true (default), set focus to row when clicked
+  *              allowAtTopLevel: Boolean,       // allow row at top (root) level (default: true)
+  *              allowAtChildLevel: Boolean,     // allow row as child of another row (default: true)
+  *              autofocusOnClick: Boolean,      // if true, set focus to row when clicked (default: true)
+  *              allowClickOnHover: Boolean,     // if true, row may be focused-on-hover pursuant to
+  *                                              // clickOnHoverDelayMs setting (default: false)
   *              multiselectable: Boolean,       // if true (default), row can be in ctrl/shift selections
   *              allowedDropTargets: Array,      // if provided, a row of this type will be permitted to be
   *                                              // drag-dropped into the given rowtypes; pass the allowed row
@@ -132,6 +139,7 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.useAdvancedFiltering = options.useAdvancedFiltering;
     this.scrollTargetElem = options.scrollTargetElem || $(document.body);
     this.filterBoxShown = options.showFilterBox;
+    this.clickOnHoverDelayMs = options.clickOnHoverDelayMs;
 
     this.focusedRow = null;
     this.hoveredRow = null;
@@ -139,6 +147,7 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.ignoreNextRowMouseUpEvent = false;
     this.ignoreDoubleClickEvent = false;
     this.ignoreDoubleClickEventResetTimer = null;
+    this.clickOnHoverTimer = null;
 
     this.onContextMenuShow = options.onContextMenuShow;
     this.multiSelection = $();

@@ -74,6 +74,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             allowAtTopLevel: false,
             allowAtChildLevel: true,
             autofocusOnClick: true,
+            allowClickOnHover: true,
             permitAutoSelectChildren: true,
             alwaysMoveChildren: false,
             multiselectable: true,
@@ -97,6 +98,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             allowAtTopLevel: false,
             allowAtChildLevel: true,
             autofocusOnClick: true,
+            allowClickOnHover: false,
             permitAutoSelectChildren: true,
             alwaysMoveChildren: false,
             multiselectable: true,
@@ -118,6 +120,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             allowAtTopLevel: true,
             allowAtChildLevel: false,
             autofocusOnClick: false,
+            allowClickOnHover: false,
             permitAutoSelectChildren: false,
             alwaysMoveChildren: true,
             multiselectable: false,
@@ -138,6 +141,11 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
         }
     };
 
+    var clickOnHoverDelayMs;
+    if (settings.get('pages_clickOnHoverDelay')) {
+        clickOnHoverDelayMs = settings.get('pages_clickOnHoverDelayMs');
+    }
+
     fancyTree = new FancyTree($(treeReplaceSelector), $(filterBoxReplaceSelector), {
         rowTypes: rowTypes,
         onContextMenuShow: onContextMenuShow,
@@ -148,7 +156,8 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
         autoSelectChildrenOnDrag: settings.get('autoSelectChildrenOnDrag'),
         filterPlaceholderText: getMessage('prompt_filterPlaceholderText'),
         filterActiveText: getMessage('prompt_filterActiveText'),
-        useAdvancedFiltering: settings.get('useAdvancedTreeFiltering')
+        useAdvancedFiltering: settings.get('useAdvancedTreeFiltering'),
+        clickOnHoverDelayMs: clickOnHoverDelayMs
     });
 
     $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));
@@ -790,8 +799,7 @@ function onPageRowClick(evt) {
     if (row.attr('hibernated') == 'true') {
         // row is hibernated, show its tooltip extra quickly
         treeObj.startTooltipTimer(row, evt, 500);
-
-        if (settings.get('wakeHibernatedPagesOnClick')) {
+        if (settings.get('wakeHibernatedPagesOnClick') && !evt.data.clickedViaHover) {
             // also wake it up
             bg.tree.awakenPages([row.attr('id')], true);
         }
