@@ -263,7 +263,14 @@ function onTabRemoved(tabId, removeInfo)
         if (nextTabId) {
             log('Smart focus setting selected tab to ' + nextTabId);
             expectingSmartFocusTabId = nextTabId;
-            chrome.tabs.update(nextTabId, { active: true });
+            chrome.tabs.update(nextTabId, { active: true }, function(tab) {
+                if (!tab) {
+                    // an error occurred while trying to smart focus, most likely
+                    // the tab we tried to focus was removed, so just reset
+                    // expectingSmartFocusTabId
+                    expectingSmartFocusTabId = null;
+                }
+            });
         }
         // else, nothing suitable was found; we'll just let Chrome decide
     }
@@ -482,6 +489,7 @@ function removeFromExpectingTabMoves(tabId) {
 }
 
 function onTabActivated(activeInfo) {
+    log(activeInfo);
     if (monitorInfo.isDetecting()) {
         return;
     }
