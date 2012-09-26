@@ -240,6 +240,20 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
 function PageTreeCallbackProxy(methodName, args) {
     // log(methodName, args);
 
+    if (methodName == 'remove') {
+        // proactively remove window nodes that would have no children after tab removal;
+        // under certain circumstances Chrome does not fire onWindowRemoved() so we need
+        // a back-up plan
+        var node = args.element;
+        if (node.parent instanceof WindowNode && !node.parent.hibernated && node.parent.children.length == 0) {
+            TimeoutManager.reset('removeChildlessWindowNode_' + node.parent.id, function() {
+                if (node.parent instanceof WindowNode && !node.parent.hibernated && node.parent.children.length == 0) {
+                    tree.removeNode(node.parent, true);
+                }
+            }, 1500);
+        }
+    }
+
     var pagesWindow = sidebarHandler.sidebarPanes['pages'];
 
     if (!pagesWindow) {
