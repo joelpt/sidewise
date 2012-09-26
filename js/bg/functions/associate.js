@@ -206,7 +206,8 @@ function associateExistingToRestorablePageNode(tab, referrer, historylength) {
         mustBeRestorable: true,
         url: tab.url,
         referrer: referrer,
-        historylength: historylength
+        historylength: historylength,
+        pinned: tab.pinned
     });
 
     if (!match) {
@@ -307,7 +308,8 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         topParentMustBeRealOrRestorableWindow: true,
         url: tab.url,
         referrer: referrer,
-        historylength: historylength
+        historylength: historylength,
+        pinned: tab.pinned
     });
 
     if (!match) {
@@ -418,6 +420,13 @@ function findPageNodeForAssociation(params) {
         }
 
         if (params.referrer === undefined || params.referrer == node.referrer) {
+            return true;
+        }
+
+        if (params.pinned && node.pinned) {
+            // for pinned tabs, Chrome blanks out the referrer if 'Open pages from last time'
+            // setting is not on; since we cannot determine if that setting is on, we just
+            // match on pinned state and ignore referrer matching entirely for these
             return true;
         }
 
