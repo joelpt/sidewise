@@ -248,7 +248,10 @@ function PageTreeCallbackProxy(methodName, args) {
         if (node.parent instanceof WindowNode && !node.parent.hibernated && node.parent.children.length == 0) {
             TimeoutManager.reset('removeChildlessWindowNode_' + node.parent.id, function() {
                 if (node.parent instanceof WindowNode && !node.parent.hibernated && node.parent.children.length == 0) {
-                    tree.removeNode(node.parent, true);
+                    var toRemove = tree.getNode(node.parent.id);
+                    if (toRemove) {
+                        tree.removeNode(node.parent, true);
+                    }
                 }
             }, 1500);
         }
