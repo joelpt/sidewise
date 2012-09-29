@@ -14,6 +14,12 @@ function registerWindowEvents()
 
 function onWindowCreated(win)
 {
+    if (browserIsClosed) {
+        log('about to reload background page');
+        document.location.reload();
+        return;
+    }
+
     if ((win.type == 'popup' && sidebarHandler.creatingSidebar) || monitorInfo.isDetecting())
     {
         return;
@@ -88,19 +94,26 @@ function onWindowRemoved(windowId)
         // "popup" windows (such as the sidebar or dev-tools windows)
         // which should cause Chrome to exit.
         log('do shutdown');
+
         // Prevent page tree from being saved from this point forward
         TimeoutManager.clear('onPageTreeModified');
         tree.onModifiedDelayed = undefined;
 
         // Prevent onWindowUpdateCheckInterval from firing
-        clearInterval(windowUpdateCheckInterval);
+        try {
+            clearInterval(windowUpdateCheckInterval);
+        } catch(err) { }
 
         // Close any remaining (popup) windows
-        sidebarHandler.remove();
+        try {
+            sidebarHandler.remove();
+        } catch(err) { }
 
         for (var i in wins) {
             chrome.windows.remove(wins[i].id);
         }
+
+        browserIsClosed = true;
     });
 
 }

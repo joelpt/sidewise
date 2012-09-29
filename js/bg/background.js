@@ -8,6 +8,7 @@ var paneCatalog;
 var focusTracker;
 var monitorInfo;
 var settings;
+var browserIsClosed = false;
 
 ///////////////////////////////////////////////////////////
 // Initialization
@@ -48,10 +49,12 @@ function postLoad() {
     var storedPageTree = settings.get('pageTree', []);
     if (storedPageTree.length == 0) {
         // first time population of page tree
+        log('--- first time population of page tree ---');
         populatePages();
     }
     else {
         // load stored page tree and associate tabs to existing page nodes
+        log('--- loading page tree from storage ---');
         loadPageTreeFromLocalStorage(storedPageTree);
 
         if (settings.get('rememberOpenPagesBetweenSessions')) {
