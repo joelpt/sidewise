@@ -136,7 +136,9 @@ function endAssociationRun(runId) {
     log('Ending association run', runId, runInfo);
     delete associationRuns[runId];
     associationConcurrentRuns--;
-    tree.rebuildPageNodeWindowIds(function() { tree.conformAllChromeTabIndexes(); });
+    TimeoutManager.reset('conformAfterEndAssocationRun', function() {
+        tree.rebuildPageNodeWindowIds(function() { tree.conformAllChromeTabIndexes(); });
+    }, 5000);
 
     try {
         TimeoutManager.clear(runId);
