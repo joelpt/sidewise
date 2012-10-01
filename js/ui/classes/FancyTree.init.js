@@ -41,6 +41,8 @@
   *                                              // shift/ctrl are not being held down, and the row type has allowClickOnHover set
   *                                              // to true; when a row type's onClick handler is fired via hover, the passed
   *                                              // Event will have the property evt.data.clickedViaHover=true.
+  *          clickOnMouseWheel: Boolean,        // if true, scrolling the mouse wheel will move the current focus by increments of
+  *                                              // 1 row when there is no multiselection and ctrl/shift are not down (default: false)
   *          permitTooltipHandler: Function(),   // if this function returns false, block showing a row tip
   *          tooltipTopOffset: Integer,          // offset row tip from row by this much pixel spacing
   *          rowTypes:
@@ -52,6 +54,8 @@
   *              autofocusOnClick: Boolean,      // if true, set focus to row when clicked (default: true)
   *              allowClickOnHover: Boolean,     // if true, row may be focused-on-hover pursuant to
   *                                              // clickOnHoverDelayMs setting (default: false)
+  *              allowClickOnScroll: Boolean,    // if true, row may be focused by scroll wheel when
+  *                                              // clickOnMouseWheel is also true (default: false)
   *              multiselectable: Boolean,       // if true (default), row can be in ctrl/shift selections
   *              allowedDropTargets: Array,      // if provided, a row of this type will be permitted to be
   *                                              // drag-dropped into the given rowtypes; pass the allowed row
@@ -140,6 +144,7 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.scrollTargetElem = options.scrollTargetElem || $(document.body);
     this.filterBoxShown = options.showFilterBox;
     this.clickOnHoverDelayMs = options.clickOnHoverDelayMs;
+    this.clickOnMouseWheel = options.clickOnMouseWheel;
 
     this.focusedRow = null;
     this.hoveredRow = null;
@@ -195,6 +200,8 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
 
     // configure row types
     this.rowTypes = {};
+    this.allowClickOnScrollSelector = '';
+
     var rowTypes = options.rowTypes || {'row': {}};
     for (var rowType in rowTypes) {
         this.addRowType(rowType, rowTypes[rowType]);
@@ -216,7 +223,8 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
         .on('mouseup', '.ftContextMenuSeparator', data, function() { return false; })
         .on('mouseup', 'body', data, this.onBodyMouseUp)
         .on('keydown', data, this.onDocumentKeyDown)
-        .on('mousemove', '.ftItemRow', data, this.onItemRowMouseMove);
+        .on('mousemove', '.ftItemRow', data, this.onItemRowMouseMove)
+        .on('mousewheel', 'body', data, this.onBodyMouseWheel);
 
     if (options.showFilterBox != false) {
         // add event handlers for filter box

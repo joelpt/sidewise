@@ -171,6 +171,9 @@ function onGetPageDetailsMessage(tab, msg) {
             if (msg.title) {
                 details.title = msg.title;
             }
+            if (msg.favicon) {
+                details.favicon = msg.favicon;
+            }
             tree.updatePage(page, details);
             break;
 
