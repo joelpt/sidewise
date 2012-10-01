@@ -48,10 +48,18 @@ FancyTree.prototype.onBodyMouseWheel = function(evt) {
     if (evt.originalEvent.wheelDeltaY < 0) {
         // scroll down
         var $toRow = treeObj.focusedRow.following(treeObj.allowClickOnScrollSelector);
+        if ($toRow.length == 0) {
+            // wrap around to top
+            $toRow = treeObj.root.find('.ftRowNode[rowtype=page][hibernated=false]:first');
+        }
     }
     else {
         // scroll up
         var $toRow = treeObj.focusedRow.preceding(treeObj.allowClickOnScrollSelector);
+        if ($toRow.length == 0) {
+            // wrap around to bottom
+            $toRow = treeObj.root.find('.ftRowNode[rowtype=page][hibernated=false]:last');
+        }
     }
 
     console.log($toRow);
