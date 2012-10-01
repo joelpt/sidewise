@@ -360,6 +360,7 @@ function restoreParentWindowViaUniqueChildPageNode(parentWindowNode, childPageNo
     // as childPageNode?
     var otherMatch = findPageNodeForAssociation({
         url: childPageNode.url,
+        title: childPageNode.title,
         referrer: childPageNode.referrer,
         historylength: childPageNode.historylength,
         notMatchingNode: childPageNode
@@ -402,6 +403,7 @@ function findPageNodeForAssociation(params) {
             && (!params.mustBeHibernated || node.hibernated === true)
             && (!params.mustBeRestorable || node.restorable === true)
             && node.url == params.url
+            && (!params.title || node.title == params.title)
             && (params.historylength === undefined || node.historylength == params.historylength)
             && (params.notMatchingNode === undefined || node !== params.notMatchingNode);
 
