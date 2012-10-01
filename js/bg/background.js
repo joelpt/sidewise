@@ -243,7 +243,7 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
 function PageTreeCallbackProxy(methodName, args) {
     // log(methodName, args);
 
-    if (methodName == 'remove') {
+    if (methodName == 'remove' || methodName == 'move') {
         // proactively remove window nodes that would have no children after tab removal;
         // under certain circumstances Chrome does not fire onWindowRemoved() so we need
         // a back-up plan
