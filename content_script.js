@@ -10,6 +10,7 @@ var LOGGING_ENABLED = false;
 ///////////////////////////////////////////////////////////
 
 var port;
+var notifyTimeout;
 connectPort();
 notifySidewise();
 
@@ -22,17 +23,15 @@ function onDOMContentLoaded() {
 
 function setUpTitleObserver() {
     // set up an observer for the title element
-    var target = document.querySelector('head > title');
+    var target = document.querySelector('head');
     if (!target) {
-        log('Page does not have head > title element');
+        log('Page does not have head element');
         return;
     }
     var observer = new window.WebKitMutationObserver(function(mutations) {
-        var mutation = mutations[0];
-        log('new page title:', mutation.target.textContent);
         notifySidewise();
     });
-    observer.observe(target, { subtree: true, characterData: true, childList: true });
+    observer.observe(target, { attributes: true, subtree: true, characterData: true, childList: true });
 }
 
 
@@ -75,7 +74,10 @@ function onLocationOrHistoryChanged(evt) {
 ///////////////////////////////////////////////////////////
 
 function notifySidewise() {
-    sendPageDetails({ action: 'store' });
+    clearTimeout(notifyTimeout);
+    notifyTimeout = setTimeout(function() {
+        sendPageDetails({ action: 'store' });
+    }, 20);
 }
 
 function sendPageDetails(details) {
@@ -85,6 +87,10 @@ function sendPageDetails(details) {
     details.historylength = history.length;
     details.sessionGuid = getSessionGuid();
 
+    var faviconElem = document.querySelector('head > link[rel=icon], head > link[rel=favicon]');
+    if (faviconElem) {
+        details.favicon = faviconElem.href;
+    }
     var detailsJSON = JSON.stringify(details);
 
     var lastDetails = sessionStorage['sidewiseLastDetailsSent'];
@@ -94,7 +100,7 @@ function sendPageDetails(details) {
     }
     sessionStorage['sidewiseLastDetailsSent'] = detailsJSON;
 
-    log('pushing details via sendRequest', detailsJSON);
+    // console.log('pushing details via sendRequest', detailsJSON);
     chrome.extension.sendRequest(details);
 }
 
