@@ -55,4 +55,71 @@ jQuery.fn.insertAt = function(index, element) {
     this.children().eq(index).before(this.children().last());
   }
   return this;
-}
+};
+
+jQuery.fn.following = function(selector) {
+    if (!selector) {
+        selector = '*';
+    }
+    var firstSelector = selector.replace(',', ':first,') + ':first';
+
+    var $child = this.find(firstSelector);
+    if ($child.length > 0) {
+        return $child;
+    }
+    var $next = this.nextAll(firstSelector);
+    if ($next.length > 0) {
+        return $next;
+    }
+
+    var parent = this.parent();
+    while (parent.length > 0) {
+        var $afters = parent.nextAll();
+        for (var i = 0; i < $afters.length; i++) {
+            var $after = $($afters[i]);
+            if ($after.is(selector)) {
+                return $after;
+            }
+            var $child = $after.find(firstSelector);
+            if ($child.length > 0) {
+                return $child;
+            }
+        }
+        parent = parent.parent();
+    }
+    return $();
+};
+
+jQuery.fn.preceding = function(selector) {
+    if (!selector) {
+        selector = '*';
+    }
+
+    var $befores = this.prevAll();
+
+    for (var i = 0; i < $befores.length; i++) {
+        var $before = $($befores[i]);
+        var $child = $before.find(selector).last();
+        if ($child.length > 0) {
+            return $child;
+        }
+        if ($before.is(selector)) {
+            return $before;
+        }
+    }
+
+    var $parent = this.parent();
+
+    if ($parent.length > 0) {
+        if ($parent.is(selector)) {
+            return $parent;
+        }
+
+        var $before = $parent.preceding(selector);
+        if ($before.length > 0) {
+            return $before;
+        }
+    }
+
+    return $();
+};
