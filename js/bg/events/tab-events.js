@@ -285,42 +285,40 @@ function onTabRemoved(tabId, removeInfo)
     tree.removeNode(page);
 }
 
-function findNextTabToFocus(id, preferCousins) {
+function findNextTabToFocus(nextToNodeId, preferCousins) {
         // identify the next tab we would like to navigate to
-        var found = tree.getNodeEx(id);
+        var node = tree.getNode(nextToNodeId);
+        var id;
 
         // first valid descendant
-        for (var i = 0; i < found.node.children.length; i++) {
-            var id = testNodeForFocus(found.node.children[i], true);
+        for (var i = 0; i < node.children.length; i++) {
+            var id = testNodeForFocus(node.children[i], true);
             if (id) return id;
         }
 
         // next valid sibling or sibling-descendant
-        if (found.siblings.length > found.index + 1) {
-            var id = testNodeForFocus(found.siblings[found.index + 1], true);
+        var index = node.siblingIndex();
+        if (node.siblings().length > index + 1) {
+            var id = testNodeForFocus(node.siblings()[index + 1], true);
             if (id) return id;
         }
 
-        // preceding valid sibling
-        if (found.index > 0) {
-            for (var i = found.index - 1; i >= 0; i--) {
-                var id = testNodeForFocus(found.siblings[i], true);
-                if (id) return id;
-            }
-        }
-
-        // look for a later cousin before traversing up to found.node's parent
+        // look for a later cousin before traversing up to node's parent
         if (preferCousins) {
-            for (var i = found.parentIndex + 1; i < found.parentSiblings.length; i++) {
-                if (found.parentSiblings[i].children.length > 0) {
-                    var id = testNodeForFocus(found.parentSiblings[i].children[0], true);
+            for (var i = node.parent.siblingIndex() + 1; i < node.parent.siblings().length; i++) {
+                if (node.parent.siblings()[i].children.length > 0) {
+                    var id = testNodeForFocus(node.parent.siblings()[i].children[0], true);
                     if (id) return id;
                 }
             }
         }
 
-        // use direct parent
-        var id = testNodeForFocus(found.parent, false);
+        // use nearest preceding node
+        var id = node.preceding(function(e) { return e.isTab(); }).id;
+        if (id) return id;
+
+        // use nearest following node
+        var id = node.following(function(e) { return e.isTab(); }).id;
         if (id) return id;
 
         // nothing suitable found
@@ -329,7 +327,7 @@ function findNextTabToFocus(id, preferCousins) {
 
 function testNodeForFocus(node, testDescendants)
 {
-    if (node instanceof PageNode && !node.hibernated) {
+    if (node.isTab()) {
         return node.id;
     }
 
