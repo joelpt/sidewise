@@ -75,6 +75,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             allowAtChildLevel: true,
             autofocusOnClick: true,
             allowClickOnHover: true,
+            allowClickOnScroll: true,
             permitAutoSelectChildren: true,
             alwaysMoveChildren: false,
             multiselectable: true,
@@ -99,6 +100,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             allowAtChildLevel: true,
             autofocusOnClick: true,
             allowClickOnHover: false,
+            allowClickOnScroll: true,
             permitAutoSelectChildren: true,
             alwaysMoveChildren: false,
             multiselectable: true,
@@ -121,6 +123,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             allowAtChildLevel: false,
             autofocusOnClick: false,
             allowClickOnHover: false,
+            allowClickOnScroll: false,
             permitAutoSelectChildren: false,
             alwaysMoveChildren: true,
             multiselectable: false,
@@ -157,7 +160,8 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
         filterPlaceholderText: getMessage('prompt_filterPlaceholderText'),
         filterActiveText: getMessage('prompt_filterActiveText'),
         useAdvancedFiltering: settings.get('useAdvancedTreeFiltering'),
-        clickOnHoverDelayMs: clickOnHoverDelayMs
+        clickOnHoverDelayMs: clickOnHoverDelayMs,
+        clickOnMouseWheel: settings.get('pages_clickOnMouseWheel')
     });
 
     $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));

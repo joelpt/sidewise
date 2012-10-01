@@ -87,6 +87,7 @@ Settings.prototype = {
             pages_createNewTabUrl: 'newtab',
             pages_clickOnHoverDelay: false,
             pages_clickOnHoverDelayMs: 150,
+            pages_clickOnMouseWheel: false,
             smartFocusOnClose: false,
             smartFocusPrefersCousins: false,
             loggingEnabled: false,
@@ -163,6 +164,7 @@ Settings.prototype = {
                         // event to listen for settings changes and set java.fx appropriately
                         domWindow.ft.useAdvancedFiltering = this.get('useAdvancedTreeFiltering');
                         domWindow.ft.autoSelectChildrenOnDrag = this.get('autoSelectChildrenOnDrag');
+                        domWindow.ft.clickOnMouseWheel = this.get('pages_clickOnMouseWheel');
 
                         var clickOnHoverDelayMs;
                         if (this.get('pages_clickOnHoverDelay')) {

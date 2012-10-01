@@ -21,6 +21,15 @@ FancyTree.prototype.addRowType = function(name, params) {
     params.allowAtTopLevel = (params.allowAtTopLevel === undefined ? true : params.allowAtTopLevel);
     params.allowAtChildLevel = (params.allowAtChildLevel === undefined ? true : params.allowAtChildLevel);
 
+    // add to allowClickOnScrollSelector
+    console.log(name, params.allowClickOnScroll);
+    if (params.allowClickOnScroll) {
+        this.allowClickOnScrollSelector =
+            (this.allowClickOnScrollSelector ? this.allowClickOnScrollSelector + ',' : '')
+            + '.ftRowNode[rowtype=' + name + ']';
+        console.log(this.allowClickOnScrollSelector);
+    }
+
     // configure title formatting handler
     var onFormatTitle = params.onFormatTitle || this.defaultFormatTitleHandler;
     params.onFormatTitle = function(row) {

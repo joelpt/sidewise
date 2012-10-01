@@ -25,6 +25,60 @@ FancyTree.prototype.onBodyMouseUp = function(evt) {
     return true;
 };
 
+
+FancyTree.prototype.onBodyMouseWheel = function(evt) {
+    var treeObj = evt.data.treeObj;
+
+    if (!treeObj.clickOnMouseWheel) {
+        return true;
+    }
+
+    if (!treeObj.focusedRow) {
+        return true;
+    }
+
+    if (evt.ctrlKey || evt.shiftKey || treeObj.multiSelection > 1) {
+        return true;
+    }
+
+    if (!treeObj.allowClickOnScrollSelector) {
+        return true;
+    }
+
+    if (evt.originalEvent.wheelDeltaY < 0) {
+        // scroll down
+        var $toRow = treeObj.focusedRow.following(treeObj.allowClickOnScrollSelector);
+    }
+    else {
+        // scroll up
+        var $toRow = treeObj.focusedRow.preceding(treeObj.allowClickOnScrollSelector);
+    }
+
+    console.log($toRow);
+
+    if ($toRow.length == 0) {
+        return true;
+    }
+
+    var rowTypeParams = treeObj.getRowTypeParams($toRow);
+    if (rowTypeParams.autofocusOnClick !== false) {
+        // automatically set focus to clicked row
+        treeObj.focusRow($toRow);
+    }
+
+    if (rowTypeParams.onClick) {
+        // simulate left click
+        var evtdata = evt.data;
+        var onComplete = function() {
+            evt.data = evtdata;
+            evt.data.row = $toRow;
+            rowTypeParams.onClick(evt);
+        };
+        treeObj.resetDragDropState(onComplete);
+    }
+    return false;
+};
+
 FancyTree.prototype.onDocumentKeyDown = function(evt) {
     var treeObj = evt.data.treeObj;
     // console.log(evt.keyCode, evt);
