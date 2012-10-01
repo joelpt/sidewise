@@ -159,6 +159,7 @@ function onWindowFocusChanged(windowId)
 
     var wasFocused = focusTracker.chromeHasFocus;
     focusTracker.chromeHasFocus = true;
+    focusTracker.setFocused(windowId);
 
     sidebarHandler.matchSidebarDockMinimizedStates(function(performedMinimizeOrRestore) {
         if (performedMinimizeOrRestore) {
