@@ -90,6 +90,7 @@ Settings.prototype = {
             pages_clickOnMouseWheel: false,
             smartFocusOnClose: false,
             smartFocusPrefersCousins: false,
+            smartFocusPrefersParent: true,
             loggingEnabled: false,
             alwaysShowAdvancedOptions: false,
             sidebarTargetWidth: 275,

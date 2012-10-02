@@ -99,11 +99,6 @@
                     <option value="highlight" i18n="option_pages_specialClickAction_highlight"/>
                 </select>
                 <div class="advancedOptions">
-                    <input type="checkbox" name="pages_clickOnMouseWheel"/>
-                    <input type="checkbox" name="pages_clickOnHoverDelay"/>
-                    <blockquote>
-                        <input type="text" name="pages_clickOnHoverDelayMs" datatype="int"/>
-                    </blockquote>
                     <select name="pages_createNewTabUrl">
                         <option value="newtab" i18n="option_pages_createNewTabUrl_newtab"/>
                         <option value="homepage" i18n="option_pages_createNewTabUrl_homepage"/>
@@ -111,10 +106,16 @@
                         <option value="blank" i18n="option_pages_createNewTabUrl_blank"/>
                     </select>
                     <input type="text" name="multiSelectActionConfirmThreshold" datatype="int"/>
+                    <input type="checkbox" name="pages_clickOnMouseWheel"/>
+                    <input type="checkbox" name="pages_clickOnHoverDelay"/>
+                    <blockquote>
+                        <input type="text" name="pages_clickOnHoverDelayMs" datatype="int"/>
+                    </blockquote>
                 </div>
                 <input type="checkbox" name="smartFocusOnClose"/>
                 <div class="advancedOptions">
                     <blockquote>
+                        <input type="checkbox" name="smartFocusPrefersParent"/>
                         <input type="checkbox" name="smartFocusPrefersCousins"/>
                     </blockquote>
                 </div>

@@ -324,6 +324,11 @@ function findNextTabToFocus(nextToNodeId, preferCousins) {
             }
         }
 
+        // use parent
+        if (settings.get('smartFocusPrefersParent') && node.parent.isTab()) {
+            return node.parent.id;
+        }
+
         // use nearest following node
         var following = node.following(function(e) { return e.isTab(); });
         if (following) {
