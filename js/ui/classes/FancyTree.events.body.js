@@ -33,11 +33,15 @@ FancyTree.prototype.onBodyMouseWheel = function(evt) {
         return true;
     }
 
+    if (treeObj.clickOnMouseWheelIgnoring) {
+        return false;
+    }
+
     if (!treeObj.focusedRow) {
         return true;
     }
 
-    if (evt.ctrlKey || evt.shiftKey || treeObj.multiSelection > 1) {
+    if (evt.ctrlKey || evt.shiftKey || treeObj.multiSelection.length > 1) {
         return true;
     }
 
@@ -68,10 +72,20 @@ FancyTree.prototype.onBodyMouseWheel = function(evt) {
         return true;
     }
 
-    var rowTypeParams = treeObj.getRowTypeParams($toRow);
+    treeObj.clickOnMouseWheelIgnoring = true;
+    treeObj.clickOnMouseWheelTimer = setTimeout(function() {
+        treeObj.clickOnMouseWheelIgnoring = false;
+    }, 20);
+
+    treeObj.bodyMouseWheelHandler.call(treeObj, evt, $toRow);
+    return false;
+};
+
+FancyTree.prototype.bodyMouseWheelHandler = function(evt, $row) {
+    var rowTypeParams = this.getRowTypeParams($row);
     if (rowTypeParams.autofocusOnClick !== false) {
         // automatically set focus to clicked row
-        treeObj.focusRow($toRow);
+        this.focusRow($row);
     }
 
     if (rowTypeParams.onClick) {
@@ -79,12 +93,11 @@ FancyTree.prototype.onBodyMouseWheel = function(evt) {
         var evtdata = evt.data;
         var onComplete = function() {
             evt.data = evtdata;
-            evt.data.row = $toRow;
+            evt.data.row = $row;
             rowTypeParams.onClick(evt);
         };
-        treeObj.resetDragDropState(onComplete);
+        this.resetDragDropState(onComplete);
     }
-    return false;
 };
 
 FancyTree.prototype.onDocumentKeyDown = function(evt) {

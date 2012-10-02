@@ -153,6 +153,8 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.ignoreDoubleClickEvent = false;
     this.ignoreDoubleClickEventResetTimer = null;
     this.clickOnHoverTimer = null;
+    this.clickOnMouseWheelTimer = null;
+    this.clickOnMouseWheelIgnoring = false;
 
     this.onContextMenuShow = options.onContextMenuShow;
     this.multiSelection = $();
