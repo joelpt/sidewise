@@ -171,7 +171,7 @@ function onGetPageDetailsMessage(tab, msg) {
             if (msg.title) {
                 details.title = msg.title;
             }
-            if (msg.favicon) {
+            if (msg.favicon && page.status == 'complete') {
                 details.favicon = msg.favicon;
             }
             tree.updatePage(page, details);
