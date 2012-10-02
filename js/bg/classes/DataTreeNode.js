@@ -57,12 +57,20 @@ DataTreeNode.prototype = {
         return this.parent.children[index];
     },
 
+    beforeSiblings: function() {
+        return this.siblings().slice(0, this.siblingIndex()).reverse();
+    },
+
     afterSibling: function() {
         var index = this.siblingIndex() + 1;
         if (index >= this.parent.children.length) {
             return;
         }
         return this.parent.children[index];
+    },
+
+    afterSiblings: function() {
+        return this.siblings().slice(this.siblingIndex() + 1);
     },
 
     precedingNodes: function() {
