@@ -170,6 +170,11 @@ function onTabCreated(tab)
 
     var winTabs = tree.getWindowTabIndexArray(tab.windowId);
 
+    if (!winTabs) {
+        console.error(tab.windowId, tree.tabIndexes);
+        throw new Error('getWindowTabIndexArray returned undefined');
+    }
+
     if (!tab.openerTabId) {
         if (tab.index == 0 || winTabs.length == 0 || winTabs.length == tab.index) {
             log('No openerTabId and index is at start or end of tree or no tabs are in hosting window; appending to window');
@@ -297,10 +302,16 @@ function findNextTabToFocus(nextToNodeId, preferCousins) {
         }
 
         // next valid sibling or sibling-descendant
-        var index = node.siblingIndex();
-        if (node.siblings().length > index + 1) {
-            var id = testNodeForFocus(node.siblings()[index + 1], true);
+        var afters = node.afterSiblings();
+        for (var i = 0; i < afters.length; i++) {
+            var id = testNodeForFocus(afters[i], true);
             if (id) return id;
+        }
+
+        // use nearest preceding node unless it is at parent or higher level
+        var preceding = node.preceding(function(e) { return e.isTab() });
+        if (preceding && node.parents().indexOf(preceding) == -1) {
+            return preceding.id;
         }
 
         // look for a later cousin before traversing up to node's parent
@@ -313,13 +324,16 @@ function findNextTabToFocus(nextToNodeId, preferCousins) {
             }
         }
 
-        // use nearest preceding node
-        var id = node.preceding(function(e) { return e.isTab(); }).id;
-        if (id) return id;
-
         // use nearest following node
-        var id = node.following(function(e) { return e.isTab(); }).id;
-        if (id) return id;
+        var following = node.following(function(e) { return e.isTab(); });
+        if (following) {
+            return following.id;
+        }
+
+        // use nearest preceding node including ancestors
+        if (preceding) {
+            return preceding.id;
+        }
 
         // nothing suitable found
         return undefined;
