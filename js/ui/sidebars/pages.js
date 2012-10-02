@@ -165,9 +165,6 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     });
 
     $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));
-    $(document)
-        .on('click', '.pinned', onRowPinClick)
-        .on('mouseleave', '.pinned', onRowPinMouseLeave);
 
     populateFancyTreeFromPageTree(fancyTree, pageTree);
 
@@ -890,17 +887,8 @@ function onPageRowFormatTitle(row, itemTextElem) {
     var existingPin = itemTextElem.parent().children('.pinned');
     if (row.attr('pinned') == 'true') {
         if (existingPin.length == 0) {
-            var newPin = $('<img/>', { class: 'pinned', src: '/images/pinned.png', title: getMessage('pages_pageRowButtonTip_unpin') });
+            var newPin = $('<img/>', { class: 'pinned', src: '/images/pinned.png' });
             itemTextElem.before(newPin);
-            newPin.tooltip({ tip: '#ftSimpleTip', predelay: 400, position: 'top right', offset: [10, 10],
-                onShow: function(evt) {
-                    // prevent tooltip from showing whenever permitTooltipHandler() returns false
-                    if (ft.permitTooltipHandler && !ft.permitTooltipHandler()) {
-                        this.hide();
-                    }
-                    ft.hideTooltip(true);
-                }
-            });
         }
     }
     else {
@@ -967,17 +955,6 @@ function onPageRowCloseButton(evt) {
 
 function onPageRowHibernateButton(evt) {
     togglePageRowsHibernated(evt.data.row);
-}
-
-function onRowPinClick(evt) {
-    var row = $(this).closest('.ftRowNode');
-    setPageRowPinnedState(row, false);
-}
-
-function onRowPinMouseLeave(evt) {
-    var row = $(this).closest('.ftItemRow');
-    ft.hideTooltip();
-    row.trigger('mouseenter');
 }
 
 

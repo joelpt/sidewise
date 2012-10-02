@@ -301,11 +301,6 @@ section#main:not(.debugEnabled) {
     padding-left: 3px;
 }
 
-.pinned:hover {
-    padding-left: 3px;
-    background-color: hsl(55, 80%, 80%);
-}
-
 .pinned+.ftItemText {
     margin-left: 2px;
 }
