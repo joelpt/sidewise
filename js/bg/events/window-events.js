@@ -178,9 +178,7 @@ function onWindowFocusChanged(windowId)
                     raiseWindowId = sidebarHandler.dockWindowId;
                 }
                 // Sidebar has been focused; raise the dock window too then refocus sidebar
-
                 // log('Sidebar has been focused; raising its dock window alongside it');
-
                 chrome.windows.update(raiseWindowId, { focused: true }, function() {
                     chrome.windows.update(sidebarHandler.windowId, { focused: true });
                 });
@@ -188,7 +186,6 @@ function onWindowFocusChanged(windowId)
             }
 
             // Chrome window other than sidebar received the focus; raise the sidebar then refocus said window
-            focusTracker.setFocused(windowId);
             chrome.tabs.query({ windowId: windowId, active: true }, function(tabs) {
                 var tab = tabs[0];
                 if (!isScriptableUrl(tab.url)) {
@@ -220,16 +217,12 @@ function onWindowFocusChanged(windowId)
         }
 
         // Was the sidebar focused (or in the process of being created)?
-        if (windowId == sidebarHandler.windowId && sidebarHandler.creatingSidebar) {
+        if (windowId == sidebarHandler.windowId || sidebarHandler.creatingSidebar) {
             return;
         }
 
         // Sidebar wasn't just focused and we don't need to force-raise either the sidebar or
         // the dock-window; so we just set the tracked focus to the now-focused window
-
-        // log('Recording focus as the now-focused window tab', windowId);
-
-        focusTracker.setFocused(windowId);
         focusCurrentTabInPageTree();
     });
 }
