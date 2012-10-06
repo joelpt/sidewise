@@ -63,11 +63,16 @@ function onCreatedNavigationTarget(details)
     page.placed = true;
 
     if (page.parent instanceof WindowNode) {
-        log('Moving page from under window to be a child of its sourceTabId in onCreatedNavigationTarget', details.tabId, details.sourceTabId, details);
-        tree.moveNode(page, 'p' + details.sourceTabId);
+        var to = tree.getPage('p' + details.sourceTabId);
+        if (to && to.windowId == details.windowId) {
+            log('Moving page from under window to be a child of its sourceTabId in onCreatedNavigationTarget', details.tabId, details.sourceTabId, details);
+            tree.moveNode(page, 'p' + details.sourceTabId);
+            return;
+        }
+        log('Not moving because opener and opened tabs are in different windows');
         return;
     }
-    log('Not moving because page is not a child of a WindowNode');
+    log('Not moving because page is not a direct child of a window node');
     return;
 }
 
