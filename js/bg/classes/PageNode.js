@@ -27,6 +27,8 @@ var PageNode = function(tab, overrideStatus)
     this.restored = false;
     this.incognito = tab.incognito || false;
     this.sessionGuid = null;
+    this.mediaState = null;
+    this.mediaTime = null;
 };
 
 PageNode.prototype = {

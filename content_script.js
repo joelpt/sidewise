@@ -3,6 +3,14 @@
 ///////////////////////////////////////////////////////////
 
 var LOGGING_ENABLED = false;
+var YOUTUBE_PLAYER_STATES = {
+    '-1': 'unstarted',
+    '0': 'ended',
+    '1': 'playing',
+    '2': 'paused',
+    '3': 'buffering',
+    '5': 'video cued'
+};
 
 
 ///////////////////////////////////////////////////////////
@@ -11,6 +19,7 @@ var LOGGING_ENABLED = false;
 
 var port;
 var notifyTimeout;
+
 connectPort();
 notifySidewise();
 
@@ -19,6 +28,7 @@ window.addEventListener('DOMContentLoaded', onDOMContentLoaded);
 
 function onDOMContentLoaded() {
     setUpTitleObserver();
+    setUpYouTubeMonitor();
 }
 
 function setUpTitleObserver() {
@@ -29,6 +39,11 @@ function setUpTitleObserver() {
         return;
     }
     var observer = new window.WebKitMutationObserver(function(mutations) {
+        var first = mutations[0];
+        if (first.type == 'attributes' && first.target.name == 'sidewise_event') {
+            receivePageEvent(first.target);
+            return;
+        }
         notifySidewise();
     });
     observer.observe(target, { attributes: true, subtree: true, characterData: true, childList: true });
@@ -56,6 +71,50 @@ function connectPort() {
     port.onDisconnect.addListener(function() {
         log('disconnect', port);
     });
+}
+
+
+///////////////////////////////////////////////////////////
+// In-page script injection and passed event handling
+///////////////////////////////////////////////////////////
+
+function injectPageScript(fn) {
+    var code = '(' + fn + ')();';
+    var script = document.createElement('script');
+    script.textContent = code;
+    (document.head||document.documentElement).appendChild(script);
+    script.parentNode.removeChild(script);
+}
+
+function injectPageScriptSendEventFn() {
+    injectPageScript(function() {
+        window.sidewise_sendEvent = function(name, value) {
+            var e = document.createElement('meta');
+            e.setAttribute('name', 'sidewise_event');
+            e.setAttribute('event-name', name);
+            e.setAttribute('event-value', value);
+            document.head.appendChild(e);
+        };
+    });
+}
+
+function receivePageEvent(eventElement) {
+    var name = eventElement.getAttribute('event-name');
+    var value = eventElement.getAttribute('event-value');
+    eventElement.parentElement.removeChild(eventElement);
+
+    switch (name) {
+        case 'updateMediaState':
+            var parts = value.split(',');
+            chrome.extension.sendRequest({
+                op: 'updateMediaState',
+                state: YOUTUBE_PLAYER_STATES[parts[0]],
+                time: parts[1]
+            });
+            break;
+        default:
+            throw new Error('Unrecognized event-name ' + name);
+    }
 }
 
 
@@ -123,6 +182,45 @@ function generateGuid() {
        return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
     };
     return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+}
+
+
+///////////////////////////////////////////////////////////
+// Youtube
+///////////////////////////////////////////////////////////
+
+function setUpYouTubeMonitor() {
+    if (document.location.href.indexOf('.youtube.') == -1) {
+        return;
+    }
+    injectPageScriptSendEventFn();
+    injectPageScript(youTubePageScript);
+}
+
+function youTubePageScript() {
+    window.sidewise_onVideoPlayingTimer = null;
+
+    window.sidewise_sendYouTubeUpdateEvent = function(state) {
+        window.sidewise_sendEvent('updateMediaState', state + ',' + sidewise_ytplayer.getCurrentTime());
+    };
+
+    window.sidewise_onPlayerStateChange = function(state) {
+        if (state == 1) {
+            // Report current time value periodically during playback
+            window.sidewise_onVideoPlayingTimer = setInterval(function() {
+                sidewise_sendYouTubeUpdateEvent(1);
+            }, 500);
+        }
+        else {
+            clearInterval(sidewise_onVideoPlayingTimer);
+        }
+        sidewise_sendYouTubeUpdateEvent(state);
+    };
+
+    window.onYouTubePlayerReady = function() {
+        window.sidewise_ytplayer = document.getElementById("movie_player");
+        window.sidewise_ytplayer.addEventListener('onStateChange', 'sidewise_onPlayerStateChange');
+    };
 }
 
 

@@ -99,9 +99,25 @@ function onRequest(request, sender, sendResponse) {
         case 'getIsFullScreen':
             onGetIsFullScreenMessage(sender.tab, request);
             break;
+        case 'updateMediaState':
+            onGetUpdateMediaStateMessage(sender.tab, request);
+            break;
         default:
             throw new Error('Unrecognized onRequest op ' + request.op);
     }
+}
+
+
+///////////////////////////////////////////////////////////
+// onGetUpdateMediaStateMessage
+///////////////////////////////////////////////////////////
+
+function onGetUpdateMediaStateMessage(tab, msg) {
+    var page = tree.getPage(tab.id);
+    if (!page) {
+        throw new Error('Cannot find page for updating media state ' + tab.id);
+    }
+    tree.updateNode(page, { mediaState: msg.state, mediaTime: msg.time });
 }
 
 

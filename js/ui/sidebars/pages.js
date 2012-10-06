@@ -12,7 +12,9 @@ var PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP = {
     pinned: 'pinned',
     unread: 'unread',
     hibernated: 'hibernated',
-    highlighted: 'highlighted'
+    highlighted: 'highlighted',
+    mediaState: 'media-state',
+    mediaTime: 'media-time'
 };
 
 
@@ -856,12 +858,25 @@ function handlePageRowAction(action, evt) {
 function onPageRowFormatTitle(row, itemTextElem) {
     var label = row.attr('label');
     var text = row.attr('text');
+
     var textAffix = '';
+
+    var mediaState = row.attr('media-state');
+    if (mediaState == 'playing') {
+        var mediaTime = parseInt(row.attr('media-time'));
+        if (mediaTime > 0) {
+            var mins = Math.floor(mediaTime / 60);
+            var secs = Math.floor(mediaTime - (mins * 60));
+            var secsPadded = '0' + secs;
+            secsPadded = secsPadded.substring(secsPadded.length - 2);
+            textAffix = '[' + mins + ':' + secsPadded + ']';
+        }
+    }
 
     if (row.hasClass('ftCollapsed')) {
         var childCount = row.children('.ftChildren').find('.ftRowNode').length;
         if (childCount > 0) {
-            textAffix = '(' + childCount + ')';
+            textAffix += (textAffix == '' ? '' : ' ') + '(' + childCount + ')';
         }
     }
 
