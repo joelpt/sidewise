@@ -40,6 +40,7 @@ FancyTree.prototype.addRowType = function(name, params) {
     var selector = '.ftRowNode[rowtype=' + name + '] > .ftItemRow > .ftItemRowContent';
     var data = params;
     data.treeObj = this;
+
     $(document)
         .on('mousedown', selector, data, this.rowMouseDownHandler)
         .on('mouseup', selector, data, this.rowMouseUpHandler)
