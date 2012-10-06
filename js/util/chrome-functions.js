@@ -30,6 +30,11 @@ function focusCurrentTabInPageTree() {
         }
 
         var activeTab = tabs[0];
+
+        if (activeTab.id == tree.focusedTabId) {
+            return;
+        }
+
         tree.focusPage(activeTab.id);
     });
 }
