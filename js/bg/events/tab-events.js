@@ -171,8 +171,9 @@ function onTabCreated(tab)
     var winTabs = tree.getWindowTabIndexArray(tab.windowId);
 
     if (!winTabs) {
-        console.error(tab.windowId, tree.tabIndexes);
-        throw new Error('getWindowTabIndexArray returned undefined');
+        log('Window node does not exist for owning windowid ' + tab.windowId + ', creating tab under new window row');
+        tree.addTabToWindow(tab, page);
+        return;
     }
 
     if (!tab.openerTabId) {
