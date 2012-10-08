@@ -36,7 +36,19 @@ function onLoad()
 // - use c.ext.onConnect to establish a port first?
 //   - keep retrying on chrome.ext.lastError, esp. if lastError is something meaningful that can distinguish this case?
 
-function postLoad() {
+function postLoad(focusedWin) {
+    if (!focusedWin) {
+        // If no focused win yet then there are no actual Chrome windows
+        // open yet; wait for one to be created then reload the background
+        // page to re-init everything cleanly
+        chrome.windows.onCreated.addListener(function(win) {
+            log('about to reload background page');
+            document.location.reload();
+            return;
+        });
+        return;
+    }
+
     settings.initializeDefaults();
     settings.updateStateFromSettings();
 
