@@ -21,7 +21,9 @@ ChromeWindowFocusTracker.prototype = {
 
             // set currently focused window
             chrome.windows.getLastFocused(null, function(win) {
-                tracker.setFocused(win.id);
+                if (win) {
+                    tracker.setFocused(win.id);
+                }
                 if (onInitialized) {
                     onInitialized(win);
                 }
