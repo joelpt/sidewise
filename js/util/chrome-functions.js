@@ -16,8 +16,10 @@ function positionWindow(winId, metrics, callback)
     chrome.windows.update(winId, metrics);
 }
 
-/* Focus the current Chrome window's active tab in the page tree. */
-function focusCurrentTabInPageTree() {
+// Focus the current Chrome window's active tab in the page tree.
+// If force=true, perform a (re)focusing even if we're already focused
+// on the currently focused tab.
+function focusCurrentTabInPageTree(force) {
     var windowId = focusTracker.getFocused();
 
     if (!windowId) {
@@ -31,7 +33,7 @@ function focusCurrentTabInPageTree() {
 
         var activeTab = tabs[0];
 
-        if (activeTab.id == tree.focusedTabId) {
+        if (activeTab.id == tree.focusedTabId && !force) {
             return;
         }
 

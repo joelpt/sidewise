@@ -40,7 +40,7 @@ $(document).ready(function() {
     binder.bind();
 
     bg.sidebarHandler.registerSidebarPane('pages', window);
-    bg.focusCurrentTabInPageTree();
+    bg.focusCurrentTabInPageTree(true);
 
     $(document).on('dblclick', 'body', onBodyDoubleClick);
 });
