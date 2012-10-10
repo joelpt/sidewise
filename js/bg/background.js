@@ -9,6 +9,7 @@ var focusTracker;
 var monitorInfo;
 var settings;
 var browserIsClosed = false;
+var firstTimeInstallTabId;
 
 ///////////////////////////////////////////////////////////
 // Initialization
@@ -114,8 +115,11 @@ function createSidebarOnStartup() {
     if (!settings.get('firstTimeInstallShown')) {
         settings.set('firstTimeInstallShown', true);
         setTimeout(function() {
-            chrome.tabs.create({ 'url': '/options_install.html' }, function(tab) {
-                tree.updatePage(tab.id, { status: 'loaded' });
+            chrome.tabs.create({ 'url': '/options_install.html', active: true }, function(tab) {
+                setTimeout(function() {
+                    tree.updatePage(tab.id, { status: 'loaded' });
+                    firstTimeInstallTabId = tab.id;
+                }, 500);
             });
         }, 1500);
     }

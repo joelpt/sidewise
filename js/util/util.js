@@ -23,6 +23,7 @@ var URL_FAVICON_REPLACEMENTS = {
 
 URL_FAVICON_REPLACEMENTS[(chrome.extension || window.parent.chrome.extension).getURL('/options.html')] = '/images/sidewise_icon_16.png';
 URL_FAVICON_REPLACEMENTS[(chrome.extension || window.parent.chrome.extension).getURL('/options_install.html')] = '/images/sidewise_icon_16.png';
+URL_FAVICON_REPLACEMENTS[(chrome.extension || window.parent.chrome.extension).getURL('/options_install.html?page=donate')] = '/images/sidewise_icon_16.png';
 
 var URL_TITLE_REPLACEMENTS = {
     'chrome://chrome/extensions': getMessage('tabTitle_Extensions'),

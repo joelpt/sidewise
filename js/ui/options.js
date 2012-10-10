@@ -320,9 +320,13 @@ function getPaneByPickerRowId(rowid) {
 // Card display
 ///////////////////////////////////////////////////////////
 
-function showCard(id) {
+function showCard(id, pageTitle) {
     $('#' + id).show();
     currentCardId = id;
+
+    if (pageTitle) {
+        window.document.title = pageTitle;
+    }
 }
 
 function slideCard(newCardId) {

@@ -132,7 +132,9 @@ function onTabCreated(tab)
             log('Setting smart focus parent for an extension options page');
             page.smartFocusParentTabId = tree.focusedTabId;
             page.placed = true; // prevent tab from being moved by a later webnav/tabupdated event
-            tree.addNode(page, 'w' + tab.windowId);
+            tree.addTabToWindow(tab, page, function() {
+                focusCurrentTabInPageTree();
+            });
             return;
         }
         // Appears to be a non-options extension page, make it a child of focused tab
@@ -248,6 +250,18 @@ function onTabRemoved(tabId, removeInfo)
         // the user hibernated it from the sidebar. Don't try to remove the node
         // or do smart-focus because the node doesn't exist and we know nothing
         // about where it was in the tree.
+        return;
+    }
+
+    // force one-time viewing of donate page during first time install, if user did
+    // not click the "what now?" button on the first time install page
+    if (firstTimeInstallTabId == tabId) {
+        tree.removeNode(page);
+        firstTimeInstallTabId = null;
+        if (!settings.get('firstTimeInstallDonatePageShown')) {
+            settings.set('firstTimeInstallDonatePageShown', true);
+            chrome.tabs.create({ url: '/options_install.html?page=donate', active: true });
+        }
         return;
     }
 

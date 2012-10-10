@@ -1,10 +1,22 @@
 $(document).ready(function() {
     reportEvent('install', 'viewed_first_time_install');
     initOptionsPage();
+
+    if (getURLParameter('page') == 'donate') {
+        settings.set('firstTimeInstallDonatePageShown', true);
+        showCard('donateCard', 'Keep Sidewise Alive!');
+        return;
+    }
+
     showCard('optionsCard');
     $('#version').text(getMessage('text_Version') + ' ' + getVersion());
     styleOptionsNavButton();
-    $(document).on('click', '#installDoneButton', onDonateLinkClick);
+
+    $(document).on('click', '#installDoneButton', function() {
+        settings.set('firstTimeInstallDonatePageShown', true);
+        onDonateLinkClick();
+    });
+
     setTimeout(drawInstallIndicatorArrow, 100);
 });
 
