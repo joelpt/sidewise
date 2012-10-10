@@ -245,7 +245,7 @@ section#main:not(.debugEnabled) {
     border-right: 1px solid #ccc;
 }
 
-#ftTooltip[rowtype=window] .ftBigTip {
+#ftTooltip[rowtype=window] .ftBigTip, #ftTooltip[rowtype=folder] .ftBigTip {
     margin: 0.25em 0.75em 0.25em 0.25em;
 }
 

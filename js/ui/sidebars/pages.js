@@ -113,7 +113,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onExpanderClick: onRowExpanderClick,
             // onIconError: onPageRowIconError,
             onFormatTitle: onFolderRowFormatTitle,
-            // onFormatTooltip: onPageRowFormatTooltip,
+            onFormatTooltip: onFolderRowFormatTooltip,
             onResizeTooltip: onResizeTooltip,
             tooltipMaxWidthPercent: 0.95,
             buttons: [
@@ -789,6 +789,14 @@ function onFolderRowFormatTitle(row, itemTextElem) {
     itemTextElem.children('.ftItemTitle').html(textAffix).show();
 }
 
+function onFolderRowFormatTooltip(evt) {
+    var childCount = evt.data.treeObj.getChildrenCount(evt.data.row);
+    var icon = evt.data.icon;
+    var label = evt.data.label;
+    var body = childCount + ' '  + (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'));
+    return getBigTooltipContent(label, icon, body);
+}
+
 
 ///////////////////////////////////////////////////////////
 // Page rowtype handlers
@@ -884,7 +892,7 @@ function onPageRowFormatTitle(row, itemTextElem) {
         label = row.attr('id').slice(0, 5) + (label ? ': ' : '') + label;
     }
 
-    itemTextElem.children('.ftItemTitle').html(text);
+    itemTextElem.children('.ftItemTitle').text(text);
     itemTextElem.children('.ftItemLabel').html(label + (text && label ? ': ' : ''));
 
     var itemTextAffix = row.children('.ftItemRow').find('.ftItemTextAffix');
@@ -922,8 +930,10 @@ function onPageRowFormatTooltip(evt) {
     if (url == text) {
         text = '';
     }
+
+    var headerPrefix;
     if (row.attr('hibernated') == 'true') {
-        text = '<div class="hibernatedHint">' + getMessage('pages_hibernatedHint') + '</div>' + text;
+        headerPrefix = '<div class="hibernatedHint">' + getMessage('pages_hibernatedHint') + '</div>';
     }
 
     if (loggingEnabled) {
@@ -933,7 +943,7 @@ function onPageRowFormatTooltip(evt) {
             + '<br/>Referrer: ' + (page.referrer || "''");
     }
 
-    var elem = getBigTooltipContent(text, icon, url);
+    var elem = getBigTooltipContent(text, icon, url, headerPrefix);
 
     var onIconError = evt.data.rowTypeParams.onIconError;
     if (onIconError) {
@@ -1256,7 +1266,7 @@ function createNewTabInWindow(windowId, url) {
 // Miscellaneous helper functions
 ///////////////////////////////////////////////////////////
 
-function getBigTooltipContent(header, icon, body) {
+function getBigTooltipContent(header, icon, body, headerPrefix) {
     var elem = $('<div class="ftBigTip"/>');
     var table = $('<table/>');
     var tr = $('<tr/>');
@@ -1269,8 +1279,12 @@ function getBigTooltipContent(header, icon, body) {
     tr.append(td);
 
     if (header) {
-        var headerElem = $('<div class="ftBigTipHeader">').html(header);
+        var headerElem = $('<div class="ftBigTipHeader">').text(header);
         td.append(headerElem);
+    }
+
+    if (headerPrefix) {
+        td.prepend(headerPrefix);
     }
 
     if (body) {
