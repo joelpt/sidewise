@@ -80,7 +80,7 @@
 
     "optionsPageTitle": { "message": "Sidewise Options" },
     "optionsPageHeading": { "message": "Sidewise Options" },
-    "optionsTinyLinks": { "message": "#[feedback](http://sidewise.userecho.com/list/14136-general/?category=0) | [home](http://www.sidewise.info) | [log](http://www.sidewise.info/changelog)" },
+    "optionsTinyLinks": { "message": "#[feedback](http://sidewise.userecho.com/list/14136-general/?category=0) | [home](http://www.sidewise.info) | [news](http://www.sidewise.info/changelog)" },
 
     "optionsErrorSavingSetting": { "message": "Please correct your entry." },
     "optionsSuccessSavingSetting": { "message": "Setting saved." },
