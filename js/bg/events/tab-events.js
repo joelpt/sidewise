@@ -252,7 +252,9 @@ function onTabRemoved(tabId, removeInfo)
     }
 
     // smart focus on close
-    if (settings.get('smartFocusOnClose') && sidebarHandler.sidebarExists())
+    if (settings.get('smartFocusOnClose')
+        && sidebarHandler.sidebarExists()
+        && tabId == tree.focusedTabId)
     {
         var nextTabId;
         if (page.smartFocusParentTabId) {
@@ -313,6 +315,22 @@ function findNextTabToFocus(nextToNodeId, preferCousins) {
         var preceding = node.preceding(function(e) { return e.isTab() });
         if (preceding && node.parents().indexOf(preceding) == -1) {
             return preceding.id;
+        }
+
+        // parent, when node is only child of parent and
+        // we were just focusing the parent
+        if (node.isTab() && node.parent.isTab() && node.parent.children.length == 1) {
+            var nodeTabId = getNumericId(node.id);
+            var parentTabId = getNumericId(node.parent.id);
+
+            // test node and parent matching focused and last-focused in either pairing
+            // combination; due to variances in timing of onTabActivated() event firings
+            // either can occur and mean the same thing to us here
+            if ((nodeTabId == tree.focusedTabId && parentTabId == tree.lastFocusedTabId)
+                || (nodeTabId = tree.lastFocusedTabId && parentTabId == tree.focusedTabId))
+            {
+                return node.parent.id;
+            }
         }
 
         // look for a later cousin before traversing up to node's parent

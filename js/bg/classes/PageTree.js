@@ -28,6 +28,7 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     this.$base();
     this.callbackProxyFn = callbackProxyFn; // callback proxy function for page/window functions
     this.focusedTabId = null;
+    this.lastFocusedTabId = null;
     this.tabIndexes = {};
     this.onModified = this._onPageTreeModified;
     this.awakeningPages = [];
@@ -286,6 +287,7 @@ PageTree.prototype = {
             return;
         }
 
+        this.lastFocusedTabId = this.focusedTabId;
         this.focusedTabId = tabId;
         this.callbackProxyFn('focusPage', { id: 'p' + tabId });
 
