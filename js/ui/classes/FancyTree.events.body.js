@@ -29,7 +29,11 @@ FancyTree.prototype.onBodyMouseUp = function(evt) {
 FancyTree.prototype.onBodyMouseWheel = function(evt) {
     var treeObj = evt.data.treeObj;
 
-    if (!treeObj.clickOnMouseWheel) {
+    if (!treeObj.clickOnMouseWheel && !evt.shiftKey) {
+        return true;
+    }
+
+    if (treeObj.clickOnMouseWheel && evt.altKey) {
         return true;
     }
 
@@ -41,7 +45,7 @@ FancyTree.prototype.onBodyMouseWheel = function(evt) {
         return true;
     }
 
-    if (evt.ctrlKey || evt.shiftKey || treeObj.multiSelection.length > 1) {
+    if (treeObj.multiSelection.length > 1) {
         return true;
     }
 
@@ -49,7 +53,7 @@ FancyTree.prototype.onBodyMouseWheel = function(evt) {
         return true;
     }
 
-    if (evt.originalEvent.wheelDeltaY < 0) {
+    if (evt.originalEvent.wheelDelta < 0) {
         // scroll down
         var $toRow = treeObj.focusedRow.following(treeObj.allowClickOnScrollSelector);
         if ($toRow.length == 0) {
