@@ -90,6 +90,20 @@ SidebarPaneCatalog.prototype = {
         settings.set('sidebarPanesState', state);
     },
 
+    addPane: function(id, enabled, url, label, icon) {
+        var pane = { id: id, enabled: enabled, url: url, label: label, icon: icon };
+        this.panes.push(pane);
+        return pane;
+    },
+
+    removePane: function(id) {
+        var found = first(this.panes, function(e) { return e.id == id; });
+        if (!found) {
+            throw new Error('Could not find pane to remove with id ' + id);
+        }
+        this.panes.splice(found[0], 1);
+    },
+
     reorderPane: function(id, newIndex) {
         var index, pane;
         for (var i = 0; i < this.panes.length; i++) {

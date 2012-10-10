@@ -71,7 +71,7 @@ Settings.prototype = {
 
         if (version == lastInitVersion && !forceReset) {
             console.log('Settings are at current version', version);
-            return;
+            return false;
         }
 
         console.log('Initializing settings', 'old version:', lastInitVersion, 'current version:', version);
@@ -101,7 +101,8 @@ Settings.prototype = {
             animationEnabled: true,
             autoSelectChildrenOnDrag: true,
             reportUsageStatistics: true,
-            multiSelectActionConfirmThreshold: 3
+            multiSelectActionConfirmThreshold: 3,
+            showWhatsNewPane: true
         };
 
         for (var setting in defaultSettings) {
@@ -125,6 +126,7 @@ Settings.prototype = {
 
         this.set('lastInitializedVersion', version);
         console.log('Initialization of settings done, settings version now at', version);
+        return true;
     },
 
 
