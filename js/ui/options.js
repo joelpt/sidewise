@@ -24,6 +24,12 @@ function initOptionsPage() {
     bg = chrome.extension.getBackgroundPage();
     settings = bg.settings;
 
+    if (!bg || !settings) {
+        // background page not ready yet, try again in a bit
+        setTimeout(initOptionsPage, 2000);
+        return;
+    }
+
     setI18NText();
     transformInputElements();
     initDonateElements();
