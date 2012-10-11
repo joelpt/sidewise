@@ -217,7 +217,7 @@ function associateExistingToRestorablePageNode(tab, referrer, historylength) {
         return;
     }
 
-    log('Restorable match found', 'match', match.node, 'match.node.id', match.node.id);
+    log('Restorable match found', 'match', match, 'match.id', match.id);
 
     var details = { restored: true, hibernated: false, restorable: false,
         id: existingPage.id, status: existingPage.status };
@@ -229,11 +229,11 @@ function associateExistingToRestorablePageNode(tab, referrer, historylength) {
         details.historylength = historylength;
     }
 
-    tree.mergeNodes(existingPage, match.node);
-    tree.updateNode(match.node, details);
+    tree.mergeNodes(existingPage, match);
+    tree.updateNode(match, details);
 
-    var topParent = match.ancestors[0];
-    restoreParentWindowViaUniqueChildPageNode(topParent, match.node, tab.windowId);
+    var topParent = match.topParent();
+    restoreParentWindowViaUniqueChildPageNode(topParent, match, tab.windowId);
 
     // TODO call associateWindowsToWindowNodes() iff all existing restorable windows
     // have zero .restorable children (and there is at least one such restorable window
@@ -328,13 +328,13 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         return;
     }
 
-    log('matching PageNode found, restoring', tab.id, tab, match.node);
+    log('matching PageNode found, restoring', tab.id, tab, match);
     var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id };
-    tree.updateNode(match.node, details);
+    tree.updateNode(match, details);
 
     // get updated status from Chrome in a moment
     chrome.tabs.get(tab.id, function(t) {
-        tree.updateNode(match.node, { status: t.status });
+        tree.updateNode(match, { status: t.status });
     });
 
     // set focus to this page if it and its window have the current focus
@@ -342,8 +342,8 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         tree.focusPage(tab.id);
     }
 
-    var topParent = match.ancestors[0];
-    restoreParentWindowViaUniqueChildPageNode(topParent, match.node, tab.windowId);
+    var topParent = match.topParent();
+    restoreParentWindowViaUniqueChildPageNode(topParent, match, tab.windowId);
 }
 
 function restoreParentWindowViaUniqueChildPageNode(parentWindowNode, childPageNode, childWindowId)
@@ -398,11 +398,38 @@ function findPageNodeForAssociation(params) {
         fallbackReferrer = '';
     }
 
-    return tree.getNodeEx(function(node, ancestors) {
-        var matched = node instanceof PageNode
-            && (!params.mustBeHibernated || node.hibernated === true)
+    var testUrl = params.url;
+    var matchingGoogleUrl = false;
+
+    if (isGoogleSearchUrl(testUrl)) {
+        // special handling for google urls, which seem to tack on &sei= query parameters
+        // that vary between restarts
+        matchingGoogleUrl = true;
+        var googleTestUrl = getGoogleTestUrl(testUrl);
+    }
+
+    return tree.getNode(function(node) {
+        if (!(node instanceof PageNode)) {
+            return false;
+        }
+
+        var urlMatch = false;
+        if (!matchingGoogleUrl) {
+            urlMatch = (testUrl == node.url);
+        }
+        else {
+            if (!isGoogleSearchUrl(node.url)) {
+                return false;
+            }
+            // special handling for google urls, which seem to tack on &sei= and/or #hash.. components to the url
+            // which are known to vary between restarts for the same tab
+            var googleNodeUrl = getGoogleTestUrl(node.url);
+            urlMatch = (googleNodeUrl == googleTestUrl);
+        }
+
+        var matched = (!params.mustBeHibernated || node.hibernated === true)
             && (!params.mustBeRestorable || node.restorable === true)
-            && node.url == params.url
+            && urlMatch
             && (!params.title || node.title == params.title)
             && (params.historylength === undefined || node.historylength == params.historylength)
             && (params.notMatchingNode === undefined || node !== params.notMatchingNode);
@@ -413,7 +440,7 @@ function findPageNodeForAssociation(params) {
 
 
         if (params.topParentMustBeRealOrRestorableWindow) {
-            var topParent = ancestors[0];
+            var topParent = node.topParent();
             if (!(topParent instanceof WindowNode)) {
                 return false;
             }
@@ -448,6 +475,16 @@ function findPageNodeForAssociation(params) {
 
         return false;
     });
+}
+
+
+function isGoogleSearchUrl(url) {
+    return url.match(/^https?:\/\/.*google.*\/search\?q=/);
+}
+
+function getGoogleTestUrl(url) {
+    var r = url.replace(/sei=[a-zA-Z0-9]+/g, '').replace(/\#.+$/, '');
+    return r;
 }
 
 
