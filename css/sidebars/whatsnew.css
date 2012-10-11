@@ -1,0 +1,30 @@
+body {
+    font-family: 'Segoe UI', 'MS Sans Serif', sans-serif;
+    font-size: 12px;
+    margin: 5px;
+}
+
+a {
+    font-weight: bold;
+}
+
+ul {
+    padding-left: 1.5em;
+}
+
+hr {
+    color: #000;
+    background-color: #000;
+    height: 1px;
+    border: none;
+}
+
+#heading {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+input[type=checkbox] {
+    position: relative;
+    top: 2px;
+}
