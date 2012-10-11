@@ -44,7 +44,6 @@ DataTree.prototype = {
             return this.getNodeStep(matcher, this.tree);
         }
 
-
         throw new Error('Unsupported "matcher" argument passed');
     },
 
