@@ -180,7 +180,6 @@ function onSettingModified(evt) {
 
         if (enabled && !pane.enabled) {
             // user enabled a disabled pane
-            console.log('enabling ' + pane.id);
             pane.enabled = true;
             bg.paneCatalog.saveState();
             if (bg.sidebarHandler.sidebarExists()) {
@@ -190,7 +189,6 @@ function onSettingModified(evt) {
         }
         else if (!enabled && pane.enabled) {
             // user disabled an enabled pane
-            console.log('disabling ' + pane.id);
             pane.enabled = false;
             bg.paneCatalog.saveState();
             if (bg.sidebarHandler.sidebarExists()) {
@@ -287,7 +285,6 @@ function onPanePickerReorderedRow(evt, ui) {
     var $row = $(ui.item);
     var newIndex = $row.index() - 1;
     var pane = getPaneByPickerRowId($row.attr('id'));
-    console.log('reorder row id' + $row.attr('id') + ', pane id ' + pane.id + ', new index ' + newIndex);
 
     bg.paneCatalog.reorderPane(pane.id, newIndex);
 

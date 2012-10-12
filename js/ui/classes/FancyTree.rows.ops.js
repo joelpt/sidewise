@@ -231,14 +231,11 @@ FancyTree.prototype.focusRow = function(idOrElem) {
     }
 
     var self = this;
-    // this.scrollToRowTimeout = setTimeout(function() {
-        var scrollDistance = self.scrollDistanceRequired($innerRow, self.root, self.scrollTargetElem);
-        if (scrollDistance) {
-            var scrollParam = (scrollDistance > 0 ? '+' : '-') + '=' + (Math.abs(scrollDistance) + 2);
-            console.log('Scrolling ' + scrollDistance + ' to show ' + id);
-            self.scrollTargetElem.scrollTo(scrollParam, { duration: 0 });
-        }
-    // }, 100);
+    var scrollDistance = self.scrollDistanceRequired($innerRow, self.root, self.scrollTargetElem);
+    if (scrollDistance) {
+        var scrollParam = (scrollDistance > 0 ? '+' : '-') + '=' + (Math.abs(scrollDistance) + 2);
+        self.scrollTargetElem.scrollTo(scrollParam, { duration: 0 });
+    }
 };
 
 FancyTree.prototype.expandRow = function(id) {

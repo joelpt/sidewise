@@ -22,12 +22,10 @@ FancyTree.prototype.addRowType = function(name, params) {
     params.allowAtChildLevel = (params.allowAtChildLevel === undefined ? true : params.allowAtChildLevel);
 
     // add to allowClickOnScrollSelector
-    console.log(name, params.allowClickOnScroll);
     if (params.allowClickOnScroll) {
         this.allowClickOnScrollSelector =
             (this.allowClickOnScrollSelector ? this.allowClickOnScrollSelector + ',' : '')
             + '.ftRowNode[rowtype=' + name + ']';
-        console.log(this.allowClickOnScrollSelector);
     }
 
     // configure title formatting handler

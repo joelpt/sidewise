@@ -70,8 +70,6 @@ FancyTree.prototype.onBodyMouseWheel = function(evt) {
         }
     }
 
-    console.log($toRow);
-
     if ($toRow.length == 0) {
         return true;
     }
