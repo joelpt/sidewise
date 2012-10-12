@@ -200,16 +200,18 @@ function onTabCreated(tab)
 
     var precedingByIndex = winTabs[tab.index - 1];
 
-    if (opener === precedingByIndex) {
-        log('openerTabId corresponds to preceding page by index; making a child of opener ' + opener);
-        tree.addNodeRel(page, 'prepend', opener);
-        return;
-    }
+    if (precedingByIndex) {
+        if (opener === precedingByIndex) {
+            log('openerTabId corresponds to preceding page by index; making a child of opener ' + opener);
+            tree.addNodeRel(page, 'prepend', opener);
+            return;
+        }
 
-    if (opener === precedingByIndex.parent) {
-        log('openerTabId corresponds to parent of preceding page by index; inserting after preceding ' + precedingByIndex.id);
-        tree.addNodeRel(page, 'after', precedingByIndex);
-        return;
+        if (opener === precedingByIndex.parent) {
+            log('openerTabId corresponds to parent of preceding page by index; inserting after preceding ' + precedingByIndex.id);
+            tree.addNodeRel(page, 'after', precedingByIndex);
+            return;
+        }
     }
 
     var nextByIndex = winTabs[tab.index];
