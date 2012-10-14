@@ -484,9 +484,7 @@ function onTabUpdated(tabId, changeInfo, tab)
         // goes awry, e.g. user opens dozens of bookmarks at once while system is under load
         // and timing issues cause us to put the opened tabs in a non-original index order
         // (very rare but has been seen)
-        TimeoutManager.reset('conformAfterFlatteningMissingOpeners', function() {
-            tree.conformAllChromeTabIndexes();
-        }, 5000);
+        tree.conformAllChromeTabIndexes();
     }
 
     // TODO also don't push status unless it's in changeInfo

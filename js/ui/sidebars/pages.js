@@ -385,7 +385,7 @@ function onRowsMoved(moves) {
         }
     }
     else {
-        bg.tree.conformAllChromeTabIndexes();
+        bg.tree.conformAllChromeTabIndexes(true);
     }
 }
 
@@ -1189,11 +1189,10 @@ function togglePageRowsHibernated($rows, hibernateAwakeState, activateAfterWakin
 }
 
 function setPageRowPinnedState(row, pinned) {
+    bg.tree.updateNode(row.attr('id'), { pinned: pinned });
     if (row.attr('hibernated') == 'true') {
-        bg.tree.updateNode(row.attr('id'), { pinned: pinned });
         return;
     }
-
     chrome.tabs.update(getRowNumericId(row), { pinned: pinned });
 }
 

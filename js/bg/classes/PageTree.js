@@ -192,7 +192,14 @@ PageTree.prototype = {
     },
 
 
-    // Move node matching movingMatcher to position relative to toMatcher based on given relation
+    // Move node matching movingMatcher to position relative to toMatcher based on given relation.
+    //
+    // If keepChildren is true, all children of the moving node will keep its existing children after the move.
+    // If keepChildren if false (default), the moving node's children get spliced into the moving node's old spot.
+    // If blockCallback is true, don't call this PageTree instance's callback proxy handler.
+    // If conformTabIndex is true, conform Chrome's tab ordering to match the tree ordering after the move is performed.
+    // If conformTabIndex is false, just update the tab index to reflect the move performed, but don't change Chrome's tab order.
+    //
     moveNodeRel: function(movingMatcher, relation, toMatcher, keepChildren, blockCallback, conformTabIndex)
     {
         var moving = this.getNode(movingMatcher);
@@ -200,7 +207,7 @@ PageTree.prototype = {
         var r = this.$super('moveNodeRel')(moving, relation, toMatcher, keepChildren);
 
         if (conformTabIndex) {
-            this.conformChromeTabIndexForPageNode(r[0]);
+            this.conformChromeTabIndexForPageNode(r[0], keepChildren);
         }
         else {
             this.addToTabIndex(moving);
@@ -703,9 +710,17 @@ PageTree.prototype = {
 
     // conform a given page node's tab index within Chrome to match
     // the page node's vertically ordered position within the tree
-    conformChromeTabIndexForPageNode: function(node, conformDescendants, skipIndexRebuild) {
-        if (node instanceof PageNode && !node.hibernated) {
-            var topParent = this.getNodeEx(node).ancestors[0];
+    conformChromeTabIndexForPageNode: function(node, conformDescendants, skipIndexRebuild, instant) {
+        if (!instant) {
+            var self = this;
+            TimeoutManager.set('conformChromeTabIndexForPageNode_' + generateGuid(), function() {
+                self.conformChromeTabIndexForPageNode(node, conformDescendants, skipIndexRebuild, true);
+            }, 5000);
+            return;
+        }
+
+        if (node.isTab()) {
+            var topParent = node.topParent();
             if (topParent instanceof WindowNode) {
                 var self = this;
                 chrome.tabs.get(getNumericId(node.id), function(tab) {
@@ -740,12 +755,20 @@ PageTree.prototype = {
         for (var i = 0; i < nodeArray.length; i++) {
             var node = nodeArray[i];
             log('Conforming from array', node.id, conformDescendants);
-            this.conformChromeTabIndexForPageNode(node, conformDescendants, true);
+            this.conformChromeTabIndexForPageNode(node, conformDescendants, true, true);
         }
     },
 
     // conform tab indexes of all page nodes
-    conformAllChromeTabIndexes: function() {
+    conformAllChromeTabIndexes: function(instant) {
+        if (!instant) {
+            var self = this;
+            TimeoutManager.reset('conformAllChromeTabIndexes', function() {
+                self.conformAllChromeTabIndexes(true);
+            }, 5000);
+            return;
+        }
+
         this.rebuildTabIndex();
 
         var windows = this.tree.filter(function(e) {
