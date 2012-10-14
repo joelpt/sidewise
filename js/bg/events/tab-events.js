@@ -156,6 +156,11 @@ function onTabCreated(tab)
         });
         return;
     }
+    else if (tab.url && tab.url.indexOf('view-source:') == 0 && tab.openerTabId) {
+        // view source pages should be nested under the parent always
+        tree.addNode(page, 'p' + tab.openerTabId, undefined, true);
+        return;
+    }
     else if (tab.url && !isScriptableUrl(tab.url)) {
         // Non scriptable tab; attempt to associate it with a restorable page node
         // even though it's possible the user just created this tab freshly. We do this
