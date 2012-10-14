@@ -60,7 +60,7 @@ PageTree.prototype = {
       *                             node that matches beforeSiblingMatcher.
       * @returns [node, parent, beforeSibling], where parent/beforeSibling may be undefined
       */
-    addNode: function(node, parentMatcher, beforeSiblingMatcher)
+    addNode: function(node, parentMatcher, beforeSiblingMatcher, preferChromeTabIndex)
     {
         if (node instanceof WindowNode) {
             this.tabIndexes[node.windowId] = [];
@@ -69,6 +69,19 @@ PageTree.prototype = {
         var parent;
         if (parentMatcher) {
             parent = this.getNode(parentMatcher);
+        }
+
+        if (preferChromeTabIndex && !beforeSiblingMatcher && node.isTab()) {
+            var index = node.index;
+            var winTabs = this.tabIndexes['w' + node.windowId];
+            if (winTabs) {
+                var nextByIndex = winTabs[index];
+                if (nextByIndex) {
+                    if (nextByIndex.parent === parent) {
+                        beforeSiblingMatcher = nextByIndex;
+                    }
+                }
+            }
         }
 
         var r = this.$super('addNode')(node, parent, beforeSiblingMatcher);
@@ -145,11 +158,16 @@ PageTree.prototype = {
         return r;
     },
 
-    // Move the node matching movingMatcher to reside under the node matching parentMatcher.
+    // Move the node matching movingMatcher to reside under the node matching parentMatcher, then conform
+    // Chrome's tab order to match the tab order in the tree as needed.
+    //
     // If beforeSiblingMatcher is specified, node will be placed before beforeSiblingMatcher under new parent.
     // If keepChildren is true, all children of the moving node will keep its existing children after the move.
     // If keepChildren if false (default), the moving node's children get spliced into the moving node's old spot.
-    // If blockCallback is true, don't call the callback.
+    // If blockCallback is true, don't call this PageTree instance's callback proxy handler.
+    // If preferChromeTabIndex is true and a beforeSiblingMatcher is not given, attempt to move the node to
+    //      be a child of the given parentMatcher, and in the correct order amongst its siblings based on
+    //      the movingMatcher node's .index value.
     //
     // Returns [moved, newParent, beforeSibling] if a move was actually performed, or undefined if not.
     moveNode: function(movingMatcher, parentMatcher, beforeSiblingMatcher, keepChildren, blockCallback, preferChromeTabIndex)
@@ -157,7 +175,7 @@ PageTree.prototype = {
         var moving = this.getNode(movingMatcher);
         var parent = this.getNode(parentMatcher);
 
-        if (preferChromeTabIndex && !beforeSiblingMatcher && moving instanceof PageNode && !moving.hibernated) {
+        if (preferChromeTabIndex && !beforeSiblingMatcher && moving.isTab()) {
             var index = moving.index;
             var nextByIndex = this.tabIndexes['w' + moving.windowId][index];
             if (nextByIndex) {
@@ -636,12 +654,11 @@ PageTree.prototype = {
 
     // Add the given node to the tab index based on its .index
     addToTabIndex: function(node) {
-        if (!(node instanceof PageNode) || node.hibernated) {
+        if (!node.isTab()) {
             return;
         }
 
-        var found = this.getNodeEx(node);
-        var topParent = found.ancestors[0];
+        var topParent = node.topParent();
 
         if (!(topParent instanceof WindowNode)) {
             return;
@@ -661,12 +678,11 @@ PageTree.prototype = {
 
     // Remove the given node from the tab index
     removeFromTabIndex: function(node) {
-        if (!(node instanceof PageNode)) {
+        if (!node.isTab()) {
             return;
         }
 
-        var found = this.getNodeEx(node);
-        var topParent = found.ancestors[0];
+        var topParent = node.topParent();
 
         if (!(topParent instanceof WindowNode)) {
             return;
