@@ -17,6 +17,7 @@ function registerTabEvents()
     chrome.tabs.onUpdated.addListener(onTabUpdated);
     chrome.tabs.onMoved.addListener(onTabMoved);
     chrome.tabs.onActivated.addListener(onTabActivated);
+    chrome.tabs.onDetached.addListener(onTabDetached);
     chrome.tabs.onAttached.addListener(onTabAttached);
     chrome.tabs.onHighlighted.addListener(onTabHighlighted);
 }
@@ -566,10 +567,24 @@ function onTabActivated(activeInfo) {
     tree.focusPage(activeInfo.tabId);
 }
 
+function onTabDetached(tabId, detachInfo) {
+    // remove detatched tabs temporarily from tree.tabIndexes, they will
+    // be added back correctly when we receive onTabAttached shortly
+    var node = tree.getPage(tabId);
+    if (node) {
+        tree.removeFromTabIndex(node);
+    }
+}
+
 function onTabAttached(tabId, attachInfo) {
     log(tabId, attachInfo);
-    var moving = tree.getPage(tabId);
 
+    if (removeFromExpectingTabMoves(tabId)) {
+        log('Was expecting this tab move, doing nothing');
+        return;
+    }
+
+    var moving = tree.getPage(tabId);
     if (!moving) {
         throw new Error('Could not find page with tab id ' + tabId);
     }
@@ -587,30 +602,27 @@ function onTabAttached(tabId, attachInfo) {
     log('moving node in tree to window ' + attachInfo.newWindowId + ', to index ' + attachInfo.newPosition);
     moving.index = attachInfo.newPosition;
 
-    var before;
     var exists = tree.getTabIndex(moving);
     if (exists >= 0) {
         log('attached node exists already in tree, removing before doing lookup');
         tree.removeFromTabIndex(moving);
     }
+
     log('indexes look like this before getting before', moving.id, moving.index, tree.getWindowTabIndexArray(attachInfo.newWindowId));
-    var winTabs = tree.getWindowTabIndexArray(attachInfo.newWindowId);
+    var before = tree.getTabByIndex(attachInfo.newWindowId, moving.index);
 
-    if (winTabs) {
-        var before = winTabs[moving.index];
-
-        if (before) {
+    if (before) {
+        if (moving.following() === before) {
+            log('moving node is already before ' + before.id + ' in tree, not moving');
+        }
+        else {
             log('moving to before ' + before.id, before);
             tree.moveNodeRel(moving, 'before', before);
         }
-        else {
-            log('moving to last node under window ' + attachInfo.newWindowId);
-            tree.moveNodeRel(moving, 'append', tree.getNode('w' + attachInfo.newWindowId));
-        }
     }
     else {
-        log('winTabs do not yet exist; moving to a new window; just move attached tab to be under new window');
-        tree.moveNodeRel(moving, 'append', tree.getNode('w' + attachInfo.newWindowId));
+        log('moving to last node under window ' + attachInfo.newWindowId);
+        tree.moveNodeRel(moving, 'append', 'w' + attachInfo.newWindowId);
     }
 
     tree.rebuildPageNodeWindowIds(function() {
