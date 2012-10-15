@@ -88,6 +88,7 @@ Settings.prototype = {
             pages_clickOnHoverDelay: false,
             pages_clickOnHoverDelayMs: 150,
             pages_clickOnMouseWheel: false,
+            pages_showMediaPlayTime: true,
             smartFocusOnClose: false,
             smartFocusPrefersCousins: false,
             smartFocusPrefersParent: true,

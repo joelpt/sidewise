@@ -882,15 +882,17 @@ function onPageRowFormatTitle(row, itemTextElem) {
 
     var textAffix = '';
 
-    var mediaState = row.attr('media-state');
-    if (mediaState == 'playing') {
-        var mediaTime = parseInt(row.attr('media-time'));
-        if (mediaTime > 0) {
-            var mins = Math.floor(mediaTime / 60);
-            var secs = Math.floor(mediaTime - (mins * 60));
-            var secsPadded = '0' + secs;
-            secsPadded = secsPadded.substring(secsPadded.length - 2);
-            textAffix = '[' + mins + ':' + secsPadded + ']';
+    if (settings.get('pages_showMediaPlayTime')) {
+        var mediaState = row.attr('media-state');
+        if (mediaState == 'playing') {
+            var mediaTime = parseInt(row.attr('media-time'));
+            if (mediaTime > 0) {
+                var mins = Math.floor(mediaTime / 60);
+                var secs = Math.floor(mediaTime - (mins * 60));
+                var secsPadded = '0' + secs;
+                secsPadded = secsPadded.substring(secsPadded.length - 2);
+                textAffix = '[' + mins + ':' + secsPadded + ']';
+            }
         }
     }
 
