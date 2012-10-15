@@ -394,7 +394,7 @@ function moveTabsBetweenWindows(fromWindowId, moves) {
         if (tabs.length > moves.length) {    // from-window will still have at least 1 tab after the moves are done
             for (var i in moves) {
                 var move = moves[i];
-                var toPosition = bg.tree.getTabIndex(move.node);
+                var toPosition = bg.tree.getTabIndex(move.node) || 0;
                 log('win to win move', 'moving', move.node.id, 'to', move.toWindowId, 'index', toPosition);
                 moveTabToWindow(move.movingTabId, move.toWindowId, toPosition);
             }
@@ -415,7 +415,7 @@ function moveTabsBetweenWindows(fromWindowId, moves) {
                 }
 
                 var move = moves[i];
-                var toPosition = bg.tree.getTabIndex(move.node);
+                var toPosition = bg.tree.getTabIndex(move.node) || 0;
                 log('win to win move + last-tab hack', 'moving', move.node.id, 'to', move.toWindowId, 'index', toPosition);
                 moveTabToWindow(move.movingTabId, move.toWindowId, toPosition, afterFn);
             }
@@ -428,6 +428,7 @@ function moveTabToWindow(movingTabId, toWindowId, toPosition, afterFn) {
     if (!afterFn) {
         afterFn = function() {};
     }
+    bg.expectingTabMoves.push(movingTabId);
     chrome.tabs.move(movingTabId, { windowId: toWindowId, index: toPosition }, function() {
         chrome.tabs.update(movingTabId, { active: true }, afterFn);
     });
