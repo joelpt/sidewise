@@ -579,14 +579,17 @@ function onTabDetached(tabId, detachInfo) {
 function onTabAttached(tabId, attachInfo) {
     log(tabId, attachInfo);
 
-    if (removeFromExpectingTabMoves(tabId)) {
-        log('Was expecting this tab move, doing nothing');
-        return;
-    }
-
     var moving = tree.getPage(tabId);
     if (!moving) {
         throw new Error('Could not find page with tab id ' + tabId);
+    }
+
+    moving.windowId = attachInfo.newWindowId;
+    moving.index = attachInfo.newPosition;
+
+    if (removeFromExpectingTabMoves(tabId)) {
+        log('Was expecting this tab move, just updating its windowId and index');
+        return;
     }
 
     var topParent = moving.topParent();
@@ -595,12 +598,11 @@ function onTabAttached(tabId, attachInfo) {
         && getNumericId(topParent.id) == attachInfo.newWindowId
         && tree.getTabIndex(moving) == attachInfo.newPosition)
     {
-        log('attach move would have no effect, doing nothing ' + attachInfo.newWindowId + ' index ' + attachInfo.newPosition);
+        log('attach move would have no effect, just updating moving.windowId/index, windowId ' + attachInfo.newWindowId + ' index ' + attachInfo.newPosition);
         return;
     }
 
     log('moving node in tree to window ' + attachInfo.newWindowId + ', to index ' + attachInfo.newPosition);
-    moving.index = attachInfo.newPosition;
 
     var exists = tree.getTabIndex(moving);
     if (exists >= 0) {
