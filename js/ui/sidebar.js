@@ -85,7 +85,6 @@ function onDocumentScroll() {
 }
 
 function onWindowResize() {
-
     // perform resize work, e.g. resizing an attached dock window
     bg.sidebarHandler.onResize();
 
