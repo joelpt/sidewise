@@ -392,11 +392,20 @@ function onRowsMoved(moves) {
 function moveTabsBetweenWindows(fromWindowId, moves) {
     chrome.tabs.query({ windowId: fromWindowId }, function(tabs) {
         if (tabs.length > moves.length) {    // from-window will still have at least 1 tab after the moves are done
+            var onCompleteFn = function() {
+                setTimeout(function() {
+                    bg.tree.rebuildPageNodeWindowIds(function() {
+                        bg.tree.rebuildTabIndex();
+                        bg.tree.conformAllChromeTabIndexes(true);
+                    });
+                }, 500);
+            };
             for (var i in moves) {
                 var move = moves[i];
                 var toPosition = bg.tree.getTabIndex(move.node) || 0;
                 log('win to win move', 'moving', move.node.id, 'to', move.toWindowId, 'index', toPosition);
-                moveTabToWindow(move.movingTabId, move.toWindowId, toPosition);
+                moveTabToWindow(move.movingTabId, move.toWindowId, toPosition,
+                    i == moves.length - 1 ? onCompleteFn : undefined);
             }
             return;
         }
@@ -406,18 +415,21 @@ function moveTabsBetweenWindows(fromWindowId, moves) {
         // get removed by moving its last tab to another window; if we do not do this, the tabs that get moved to the new
         // window show up in the new window with no actual content (Chrome just shows an empty gray window for the tab/s).
         chrome.tabs.create({ url: 'about:blank', windowId: fromWindowId }, function(tempTab) {
+            var onCompleteFn = function() {
+                chrome.tabs.remove(tempTab.id);
+                setTimeout(function() {
+                    bg.tree.rebuildPageNodeWindowIds(function() {
+                        bg.tree.rebuildTabIndex();
+                        bg.tree.conformAllChromeTabIndexes(true);
+                    });
+                }, 500);
+            };
             for (var i in moves) {
-                var afterFn;
-                if (i == moves.length - 1) {
-                    afterFn = function() {
-                        chrome.tabs.remove(tempTab.id);
-                    };
-                }
-
                 var move = moves[i];
                 var toPosition = bg.tree.getTabIndex(move.node) || 0;
                 log('win to win move + last-tab hack', 'moving', move.node.id, 'to', move.toWindowId, 'index', toPosition);
-                moveTabToWindow(move.movingTabId, move.toWindowId, toPosition, afterFn);
+                moveTabToWindow(move.movingTabId, move.toWindowId, toPosition,
+                    i == moves.length - 1 ? onCompleteFn : undefined);
             }
         });
     });
