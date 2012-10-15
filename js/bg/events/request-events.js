@@ -208,8 +208,12 @@ function onGetPageDetailsMessage(tab, msg) {
 
         case 'find_parent':
             // look for an existing parent page node whose url matches our tab's referrer
+            // and is in the same window
             var parent = tree.getNode(function(e) {
-                return e.elemType == 'page' && e.id != 'p' + tabId && dropUrlHash(e.url) == msg.referrer
+                return e instanceof PageNode
+                    && e !== page
+                    && dropUrlHash(e.url) == msg.referrer
+                    && e.windowId === page.windowId
             });
 
             log('find_parent', 'page.id', page.id, 'msg.referrer', msg.referrer, 'msg.historylength', msg.historylength,
