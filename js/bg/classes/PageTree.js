@@ -628,28 +628,34 @@ PageTree.prototype = {
     ///////////////////////////////////////////////////////////
 
     getTabIndex: function(node) {
-        var winId = 'w' + node.windowId;
-        var winTabs = this.getWindowTabIndexArray(winId);
-
-        if (!winTabs) {
-            throw new Error('Indexes array does not exist for node', 'node id', node.id, 'window id', node.windowId, 'node', node);
+        var winTabs = this.getWindowTabIndexArray(node.windowId);
+        if (winTabs) {
+            return winTabs.indexOf(node);
         }
-        return winTabs.indexOf(node);
+        return undefined;
     },
 
-    getWindowTabIndexArray: function(windowNodeId) {
-        if (typeof(windowNodeId) == 'number') {
-            windowNodeId = 'w' + windowNodeId;
+    getTabByIndex: function(windowId, index) {
+        var winTabs = this.getWindowTabIndexArray(windowId);
+        if (winTabs) {
+            return winTabs[index];
         }
-        return this.tabIndexes[windowNodeId];
+        return undefined;
     },
 
-    getWindowIndexedTabsCount: function(windowNodeId) {
-        var ary = this.getWindowTabIndexArray(windowNodeId);
-        if (ary) {
-            return ary.length;
+    getWindowTabIndexArray: function(windowId) {
+        if (typeof(windowId) == 'number') {
+            windowId = 'w' + windowId;
         }
-        return 0;
+        return this.tabIndexes[windowId];
+    },
+
+    getWindowIndexedTabsCount: function(windowId) {
+        var winTabs = this.getWindowTabIndexArray(windowId);
+        if (winTabs) {
+            return winTabs.length;
+        }
+        return undefined;
     },
 
     // Add the given node to the tab index based on its .index
@@ -701,7 +707,7 @@ PageTree.prototype = {
     // rebuild the tab index
     rebuildTabIndex: function() {
         this.tabIndexes = this.groupBy(function(e) {
-            if (e instanceof PageNode && !e.hibernated) {
+            if (e.isTab()) {
                 return 'w' + e.windowId;
             }
         });
