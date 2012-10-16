@@ -293,7 +293,11 @@ function onTabRemoved(tabId, removeInfo)
         if (nextTabId) {
             log('Smart focus setting selected tab to ' + nextTabId);
             expectingSmartFocusTabId = nextTabId;
+            TimeoutManager.reset('resetExpectingSmartFocusTabId', function() {
+                expectingSmartFocusTabId = null;
+            }, 500);
             chrome.tabs.update(nextTabId, { active: true }, function(tab) {
+                TimeoutManager.clear('resetExpectingSmartFocusTabId');
                 if (!tab) {
                     // an error occurred while trying to smart focus, most likely
                     // the tab we tried to focus was removed, so just reset
