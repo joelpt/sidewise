@@ -190,7 +190,7 @@ function generateGuid() {
 ///////////////////////////////////////////////////////////
 
 function setUpYouTubeMonitor() {
-    if (document.location.href.indexOf('.youtube.') == -1) {
+    if (!document.location.href.match('youtube.+/watch')) {
         return;
     }
     injectPageScriptSendEventFn();
@@ -200,9 +200,17 @@ function setUpYouTubeMonitor() {
 function youTubePageScript() {
     window.sidewise_onVideoPlayingTimer = null;
 
-    window.sidewise_sendYouTubeUpdateEvent = function(state) {
-        window.sidewise_sendEvent('updateMediaState', state + ',' + sidewise_ytplayer.getCurrentTime());
+    window.onYouTubePlayerReady = function() {
+        clearTimeout(window.sidewise_missedOnYoutubePlayerReadyTimer);
+        window.sidewise_ytplayer = document.getElementById("movie_player");
+        if (!window.sidewise_ytplayer) {
+            window.sidewise_missedOnYouTubePlayerReadyTimer = setTimeout(window.onYouTubePlayerReady(), 5000);
+            return;
+        }
+        window.sidewise_ytplayer.addEventListener('onStateChange', 'sidewise_onPlayerStateChange');
     };
+
+    window.sidewise_missedOnYouTubePlayerReadyTimer = setTimeout(window.onYouTubePlayerReady(), 5000);
 
     window.sidewise_onPlayerStateChange = function(state) {
         if (state == 1) {
@@ -217,9 +225,8 @@ function youTubePageScript() {
         sidewise_sendYouTubeUpdateEvent(state);
     };
 
-    window.onYouTubePlayerReady = function() {
-        window.sidewise_ytplayer = document.getElementById("movie_player");
-        window.sidewise_ytplayer.addEventListener('onStateChange', 'sidewise_onPlayerStateChange');
+    window.sidewise_sendYouTubeUpdateEvent = function(state) {
+        window.sidewise_sendEvent('updateMediaState', state + ',' + sidewise_ytplayer.getCurrentTime());
     };
 }
 
