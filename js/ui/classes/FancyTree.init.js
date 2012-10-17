@@ -226,7 +226,8 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
         .on('mouseup', 'body', data, this.onBodyMouseUp)
         .on('keydown', data, this.onDocumentKeyDown)
         .on('mousemove', '.ftItemRow', data, this.onItemRowMouseMove)
-        .on('mousewheel', 'body', data, this.onBodyMouseWheel);
+        .on('mousewheel', 'body', data, this.onBodyMouseWheel)
+        .on('mouseleave', 'body', data, this.onBodyMouseLeave);
 
     if (options.showFilterBox != false) {
         // add event handlers for filter box
