@@ -216,9 +216,9 @@ function onBeforeNavigate(details)
                 }
             });
         };
-        TimeoutManager.set('checkPageStatus1_' + details.tabId, checkPageStatusFn, 2000);
-        TimeoutManager.set('checkPageStatus2_' + details.tabId, checkPageStatusFn, 5000);
-        TimeoutManager.set('checkPageStatus3_' + details.tabId, checkPageStatusFn, 15000);
+        TimeoutManager.reset('checkPageStatus1_' + details.tabId, checkPageStatusFn, 2000);
+        TimeoutManager.reset('checkPageStatus2_' + details.tabId, checkPageStatusFn, 5000);
+        TimeoutManager.reset('checkPageStatus3_' + details.tabId, checkPageStatusFn, 15000);
 
         return;
     }
