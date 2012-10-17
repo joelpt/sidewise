@@ -202,6 +202,24 @@ function onBeforeNavigate(details)
 
     if (page) {
         tree.updateNode(page, { status: 'preload' });
+
+        // Hack around a Chrome bug which causes pages which the user downloads a file from
+        // to cease responding to sendRequest messages or fire onTabUpdated events properly
+        var checkPageStatusFn = function() {
+            chrome.tabs.get(details.tabId, function(tab) {
+                if (tab) {
+                    tree.updateNode(page, { status: tab.status });
+                    if (tab.status == 'complete') {
+                        TimeoutManager.clear('checkPageStatus2_' + details.tabId);
+                        TimeoutManager.clear('checkPageStatus3_' + details.tabId);
+                    }
+                }
+            });
+        };
+        TimeoutManager.set('checkPageStatus1_' + details.tabId, checkPageStatusFn, 2000);
+        TimeoutManager.set('checkPageStatus2_' + details.tabId, checkPageStatusFn, 5000);
+        TimeoutManager.set('checkPageStatus3_' + details.tabId, checkPageStatusFn, 15000);
+
         return;
     }
     // If we get an onBeforeNavigate event and the corresponding page node

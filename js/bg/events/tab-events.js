@@ -436,6 +436,15 @@ function onTabUpdated(tabId, changeInfo, tab)
         return;
     }
 
+    // Clear any checkPageStatus timers that may have been set in onBeforeNavigate; since
+    // we have gotten an onTabUpdated event we won't need to do this redundant checking
+    if (page.status == 'preload') {
+        log('Clearing checkPageStatuses');
+        TimeoutManager.clear('checkPageStatus1_' + tabId);
+        TimeoutManager.clear('checkPageStatus2_' + tabId);
+        TimeoutManager.clear('checkPageStatus3_' + tabId);
+    }
+
     var url = tab.url ? dropUrlHash(tab.url) : '';
     var title = getBestPageTitle(tab.title, url)
 
