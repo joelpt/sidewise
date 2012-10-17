@@ -293,10 +293,6 @@ section#main:not(.debugEnabled) {
     100%  { -webkit-transform: rotate(0deg); }
 }
 
-.ftRowNode[rowtype=page][status=complete] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
-    -webkit-transform: rotate(0deg);
-}
-
 .pinned {
     padding-left: 3px;
 }

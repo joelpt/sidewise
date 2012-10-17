@@ -268,13 +268,27 @@ function PageTreeCallbackProxyListener(op, args)
             break;
         case 'update':
             var elem = args.element;
+
             var details = {};
             for (var key in elem) {
                 if (key in PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP) {
                     details[PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP[key]] = elem[key];
                 }
             }
-            ft.updateRow(args.id, details);
+
+            var row = ft.getRow(args.id);
+            if (!row) {
+                throw new Error('Could not find row with id ' + args.id);
+            }
+
+            if (elem.status == 'complete' && row.attr('status') != 'complete' && row.attr('rowtype') == 'page' && row.attr('hibernated') == 'false') {
+                // hack around Chrome bug which sometimes leaves icons in a partially rotated state
+                // even though the CSS specifies they should be rotated back to 0deg when [status=complete]
+                setTimeout(function() { row.css('-webkit-transform', 'rotate(0deg)'); }, 100);
+                setTimeout(function() { row.css('-webkit-transform', ''); }, 150);
+            }
+
+            ft.updateRow(row, details);
             break;
         case 'focusPage':
             ft.focusRow(args.id);
