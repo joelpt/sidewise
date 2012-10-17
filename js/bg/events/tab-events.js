@@ -301,8 +301,9 @@ function onTabRemoved(tabId, removeInfo)
                 if (!tab) {
                     // an error occurred while trying to smart focus, most likely
                     // the tab we tried to focus was removed, so just reset
-                    // expectingSmartFocusTabId
+                    // expectingSmartFocusTabId and update focus to what Chrome says
                     expectingSmartFocusTabId = null;
+                    focusCurrentTabInPageTree(true);
                 }
             });
         }
