@@ -132,7 +132,7 @@
     "option_pages_clickOnHoverDelayMs": { "message": "Wait this long before focusing on hover" },
     "option_pages_clickOnHoverDelayMs_units": { "message": "millseconds" },
     "option_pages_clickOnMouseWheel": { "message": "Switch pages in sidebar with scroll wheel" },
-    "option_pages_clickOnMouseWheel_hint": { "message": "#When enabled, spinning the mouse's scroll wheel while hovering the sidebar will switch pages. //// In addition, the following key+wheel combinations always work regardless of this setting: //// **Shift+wheel:** switch pages when hovering sidebar // **Alt+wheel:** scroll sidebar when hovered" },
+    "option_pages_clickOnMouseWheel_hint": { "message": "#When enabled, spinning the mouse's scroll wheel while hovering the sidebar will switch pages. //// Even when this option is enabled, normal sidebar scrolling can still be performed by spinning the wheel over the right 15% of the sidebar. //// In addition, the following key+wheel combinations always work regardless of this setting: //// **Shift+wheel:** switch pages when hovering sidebar // **Alt+wheel:** scroll sidebar when hovered" },
     "option_pages_showMediaPlayTime": { "message": "Show current playback time on YouTube pages" },
     "option_pages_showMediaPlayTime_hint": { "message": "When enabled, the current time of playing videos on youtube.com pages will be shown next to the page row's title in [m:ss] format." },
     "option_smartFocusOnClose": { "message": "Use smart focus logic when closing tabs"},

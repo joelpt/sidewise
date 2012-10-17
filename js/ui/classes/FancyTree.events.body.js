@@ -53,6 +53,15 @@ FancyTree.prototype.onBodyMouseWheel = function(evt) {
         return true;
     }
 
+    if (treeObj.scrollTargetElem.get(0).scrollHeight > treeObj.scrollTargetElem.height()) {
+        // scrollbar is visible
+        var rightEdge = 0.85 * (treeObj.scrollTargetElem.width()+treeObj.scrollTargetElem.offset().left) - 16;
+        if (evt.originalEvent.pageX >= rightEdge) {
+            // don't switch rows when scroll was performed in right 15% of the sidebar, just do a normal scroll
+            return true;
+        }
+    }
+
     if (evt.originalEvent.wheelDelta < 0) {
         // scroll down
         var $toRow = treeObj.focusedRow.following(treeObj.allowClickOnScrollSelector);
