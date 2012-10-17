@@ -887,22 +887,7 @@ function onPageRowFormatTitle(row, itemTextElem) {
         if (mediaState == 'playing') {
             var mediaTime = parseInt(row.attr('media-time'));
             if (mediaTime > 0) {
-                var hours = Math.floor(mediaTime / 3600);
-                var mins = Math.floor((mediaTime - (hours * 3600)) / 60);
-                var secs = Math.floor(mediaTime - (hours * 3600) - (mins * 60));
-                if (secs <= 9) {
-                    secs = '0' + secs;
-                }
-                if (hours > 0) {
-                    hours += ':';
-                    if (mins <= 9) {
-                        mins = '0' + mins;
-                    }
-                }
-                else {
-                    hours = '';
-                }
-                textAffix = '[' + hours + mins + ':' + secs + ']';
+                textAffix = formatSecondsAsHMS(mediaTime);
             }
         }
     }

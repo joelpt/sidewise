@@ -429,7 +429,7 @@ function mostFrequent(arr) {
 }
 
 ///////////////////////////////////////////////////////////
-// Numeric related
+// Data type related
 ///////////////////////////////////////////////////////////
 
 function clamp(value, min, max)
@@ -437,6 +437,27 @@ function clamp(value, min, max)
     value = value < min ? min : value;
     value = value > max ? max : value;
     return value;
+}
+
+function formatSecondsAsHMS(seconds)
+{
+    seconds = parseInt(seconds);
+    var hours = Math.floor(seconds / 3600);
+    var mins = Math.floor((seconds - (hours * 3600)) / 60);
+    var secs = Math.floor(seconds - (hours * 3600) - (mins * 60));
+    if (secs <= 9) {
+        secs = '0' + secs;
+    }
+    if (hours > 0) {
+        hours += ':';
+        if (mins <= 9) {
+            mins = '0' + mins;
+        }
+    }
+    else {
+        hours = '';
+    }
+    return '[' + hours + mins + ':' + secs + ']';
 }
 
 
