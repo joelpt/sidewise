@@ -86,7 +86,7 @@ Settings.prototype = {
             pages_middleClickAction: 'none',
             pages_createNewTabUrl: 'newtab',
             pages_clickOnHoverDelay: false,
-            pages_clickOnHoverDelayMs: 150,
+            pages_clickOnHoverDelayMs: 250,
             pages_clickOnMouseWheel: false,
             pages_showMediaPlayTime: true,
             smartFocusOnClose: false,
