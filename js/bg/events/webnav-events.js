@@ -210,6 +210,7 @@ function onBeforeNavigate(details)
                 if (tab) {
                     tree.updateNode(page, { status: tab.status });
                     if (tab.status == 'complete') {
+                        TimeoutManager.clear('checkPageStatus1_' + details.tabId);
                         TimeoutManager.clear('checkPageStatus2_' + details.tabId);
                         TimeoutManager.clear('checkPageStatus3_' + details.tabId);
                     }
