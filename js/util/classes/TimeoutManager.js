@@ -9,9 +9,6 @@ var TimeoutManager = {
 
     get: function(label) {
         var timeout = this.timeouts[label];
-        if (!timeout) {
-            throw new Error('A timeout with the given label does not exist');
-        }
         return timeout;
     },
 
@@ -34,8 +31,12 @@ var TimeoutManager = {
 
     clear: function(label) {
         var timeout = this.get(label);
-        clearTimeout(timeout.id);
-        this.del(label);
+        if (timeout) {
+            clearTimeout(timeout.id);
+            this.del(label);
+            return true;
+        }
+        return false;
     },
 
     del: function(label) {
