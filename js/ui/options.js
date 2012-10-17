@@ -71,12 +71,6 @@ function initDonateElements() {
     var iframeUrl = 'http://www.sidewise.info/pay/?embed=1&which=' + whichPage + '&whichLink=' + whichLink;
     $('#donatePage').attr('src', iframeUrl);
 
-    // _gaq.push(function() {
-    //   var pageTracker = _gat._getTrackerByName();
-    //   var iframe = document.getElementById('donatePage');
-    //   iframe.src = pageTracker._getLinkerUrl(iframeUrl);
-    // });
-
     donationLinkNumber = whichLink;
     donationPageNumber = whichPage;
 
