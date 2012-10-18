@@ -56,15 +56,6 @@ function postLoad(focusedWin) {
     paneCatalog = new SidebarPaneCatalog();
     paneCatalog.loadState();
 
-    try {
-        var newsPane = paneCatalog.getPane('whatsnew');
-    }
-    catch(ex) {
-        if (!newsPane && updatedSidewise && settings.get('showWhatsNewPane') ) {
-            paneCatalog.addPane('whatsnew', true, '/sidebars/whatsnew.html', 'What\'s New', '/images/nav/whatsnew.png');
-        }
-    }
-
     registerEventHandlers();
     injectContentScriptInExistingTabs('content_script.js');
 
@@ -85,6 +76,17 @@ function postLoad(focusedWin) {
         else {
             populatePages();
         }
+
+        // Show What's New pane after Sidewise is updated
+        try {
+            var newsPane = paneCatalog.getPane('whatsnew');
+        }
+        catch(ex) {
+            if (!newsPane && updatedSidewise && settings.get('showWhatsNewPane') ) {
+                paneCatalog.addPane('whatsnew', true, '/sidebars/whatsnew.html', 'What\'s New', '/images/nav/whatsnew.png');
+            }
+        }
+
     }
 
     reportEvent('sidewise', 'loaded');
