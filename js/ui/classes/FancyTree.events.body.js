@@ -65,6 +65,8 @@ FancyTree.prototype.onBodyMouseWheel = function(evt) {
         }
     }
 
+    treeObj.hideTooltip();
+
     if (evt.originalEvent.wheelDelta < 0) {
         // scroll down
         var $toRow = treeObj.focusedRow.following(treeObj.allowClickOnScrollSelector);
@@ -108,6 +110,7 @@ FancyTree.prototype.bodyMouseWheelHandler = function(evt, $row) {
         var onComplete = function() {
             evt.data = evtdata;
             evt.data.row = $row;
+            evt.data.clickedViaScroll = true;
             rowTypeParams.onClick(evt);
         };
         this.resetDragDropState(onComplete);

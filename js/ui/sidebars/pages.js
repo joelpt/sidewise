@@ -839,7 +839,7 @@ function onPageRowClick(evt) {
     if (row.attr('hibernated') == 'true') {
         // row is hibernated, show its tooltip extra quickly
         treeObj.startTooltipTimer(row, evt, 500);
-        if (settings.get('wakeHibernatedPagesOnClick') && !evt.data.clickedViaHover) {
+        if (settings.get('wakeHibernatedPagesOnClick') && !evt.data.clickedViaHover && !evt.data.clickedViaScroll) {
             // also wake it up
             bg.tree.awakenPages([row.attr('id')], true);
         }
