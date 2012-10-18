@@ -590,6 +590,17 @@ PageTree.prototype = {
             if (index === undefined) {
                 index = 99999; // Chrome will clamp this value to the number of tabs actually in the window
                                // thereby putting the tab at the end of the window's tab bar
+                TimeoutManager.reset('conformAfterWake', function() {
+                    // We will be unable to immediately obtain a proper 'next' tab index in the case where
+                    // we quickly a tab followed by a hibernated tab just above it, with no interceding
+                    // wake tabs, because the tab index won't have been populated until onTabCreated() fires
+                    // for the first woken tab. So as a fallback we just rebuild and conform all tab indexes
+                    // a short while after waking is complete.
+                    self.rebuildTabIndex();
+                    self.conformAllChromeTabIndexes(true);  // conform instantly
+                    self.conformAllChromeTabIndexes(false); // conform again after normal delay just in case
+                                                            // the first attempt was too fast
+                }, 500);
             }
             log('awakening', e.url, 'windowId', windowId, 'index', index);
             chrome.tabs.create({
