@@ -350,7 +350,7 @@ PageTree.prototype = {
     hibernatePage: function(id, skipLastTabCheck)
     {
         var tabId = getNumericId(id);
-        var page = this.updatePage(tabId, { hibernated: true, id: 'pH' + generateGuid(), status: 'complete' });
+        var page = this.updatePage(tabId, { hibernated: true, restorable: false, id: 'pH' + generateGuid(), status: 'complete' });
 
         var self = this;
         function removeAfterHibernate() {
@@ -427,13 +427,20 @@ PageTree.prototype = {
     ///////////////////////////////////////////////////////////
 
     // awaken (unhibernate) a window node
-    awakenWindow: function(id)
+    awakenWindow: function(id, wakeTabsMatchingFn)
     {
         log(id);
         var winNode = this.getNode(id);
 
         var awakening = this.filter(function(e) {
-            return e instanceof PageNode && e.hibernated;
+            var r = e instanceof PageNode && e.hibernated;
+            if (!r) {
+                return false;
+            }
+            if (wakeTabsMatchingFn) {
+                return wakeTabsMatchingFn(e);
+            }
+            return true;
         }, winNode.children);
 
         this.awakenPageNodes(awakening, winNode);

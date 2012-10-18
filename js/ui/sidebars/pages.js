@@ -12,6 +12,7 @@ var PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP = {
     pinned: 'pinned',
     unread: 'unread',
     hibernated: 'hibernated',
+    restorable: 'restorable',
     highlighted: 'highlighted',
     mediaState: 'media-state',
     mediaTime: 'media-time'
@@ -218,6 +219,7 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId, beforeSiblingId)
                 pinned: node.pinned,
                 unread: node.unread,
                 hibernated: node.hibernated,
+                restorable: node.restorable,
                 highlighted: node.highlighted,
                 incognito: node.incognito
             },
@@ -1027,7 +1029,7 @@ function onWindowRowClick(evt) {
         return;
     }
 
-    var childCount = treeObj.getChildrenCount(row);
+    var childCount = treeObj.getChildrenContainer(row).find('.ftRowNode[rowtype=page][restorable=true]').length;
 
     var msg = getMessage('prompt_awakenWindow',
         [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
@@ -1036,7 +1038,7 @@ function onWindowRowClick(evt) {
         return;
     }
 
-    bg.tree.awakenWindow(row.attr('id'));
+    bg.tree.awakenWindow(row.attr('id'), function(e) { return e.restorable; });
 }
 
 function onWindowRowDoubleClick(evt) {
