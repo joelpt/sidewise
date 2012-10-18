@@ -62,6 +62,9 @@ FancyTree.prototype.showTooltip =  function(row, bodyWidth, evt) {
     var content = this.getItemRowContent(row);
     var pos = content.offset();
 
+    // proactively remove any tooltip that may have gotten 'stuck' due to a bug elsewhere
+    $('#ftTooltip').remove();
+
     // reset tooltip
     var tooltip = $('<div id="ftTooltip"/>').attr('rowtype', rowType).hide();
     this.tooltip = tooltip;
