@@ -766,9 +766,6 @@ PageTree.prototype = {
                             setTimeout(function() { removeFromExpectingTabMoves(tab.id); }, 250);
                         });
                     }
-                    else {
-                        log('Not conforming chrome tab index', 'id', tab.id, 'tab.index', tab.index, 'target index', newIndex);
-                    }
                 });
             }
         }
