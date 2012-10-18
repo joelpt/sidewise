@@ -3,7 +3,7 @@
 ///////////////////////////////////////////////////////////
 
 // delay before asking Chrome for favicon again in onComplete
-var ONCOMPLETED_LATE_UPDATE_DELAY_MS = 1000;
+var ONCOMPLETED_LATE_UPDATE_DELAY_MS = 1500;
 
 // additional delay before setting a favicon to chrome://favicon in onCompletedLateUpdateTimeout
 var ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS = 500;
@@ -201,6 +201,7 @@ function onBeforeNavigate(details)
     var page = tree.getPage(details.tabId);
 
     if (page) {
+        log('Marking existing page as preloading', page);
         tree.updateNode(page, { status: 'preload' });
 
         // Hack around a Chrome bug which causes pages which the user downloads a file from
@@ -220,7 +221,6 @@ function onBeforeNavigate(details)
         TimeoutManager.reset('checkPageStatus1_' + details.tabId, checkPageStatusFn, 2000);
         TimeoutManager.reset('checkPageStatus2_' + details.tabId, checkPageStatusFn, 5000);
         TimeoutManager.reset('checkPageStatus3_' + details.tabId, checkPageStatusFn, 15000);
-
         return;
     }
     // If we get an onBeforeNavigate event and the corresponding page node
@@ -230,6 +230,7 @@ function onBeforeNavigate(details)
     // We can get more than one such tabId before a navigation of this sort
     // actually takes place.
     if (associationConcurrentRuns > 0) {
+        log('Not expecting a tab id swap because associationConcurrentRuns == ' + associationConcurrentRuns);
         return;
     }
     log('Expecting a tab id swap', details.tabId);
