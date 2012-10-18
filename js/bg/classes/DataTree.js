@@ -258,7 +258,7 @@ DataTree.prototype = {
     },
 
     // Update the first element that matches matcher
-    updateNode: function(matcher, details)
+    updateNode: function(matcher, details, blockUpdateLastModified)
     {
         var elem = this.getNode(matcher);
         if (elem === undefined) {
@@ -273,7 +273,11 @@ DataTree.prototype = {
         {
             elem[key] = details[key];
         }
-        this.updateLastModified();
+
+        if (!blockUpdateLastModified) {
+            this.updateLastModified();
+        }
+
         return elem;
     },
 

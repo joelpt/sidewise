@@ -117,7 +117,7 @@ function onGetUpdateMediaStateMessage(tab, msg) {
     if (!page) {
         throw new Error('Cannot find page for updating media state ' + tab.id);
     }
-    tree.updateNode(page, { mediaState: msg.state, mediaTime: msg.time });
+    tree.updateNode(page, { mediaState: msg.state, mediaTime: msg.time }, true);
 }
 
 

@@ -114,7 +114,7 @@ PageTree.prototype = {
     },
 
     // update an existing node matching matcher with given details
-    updateNode: function(matcher, details)
+    updateNode: function(matcher, details, blockUpdateLastModified)
     {
         // log(matcher, details);
 
@@ -126,7 +126,7 @@ PageTree.prototype = {
 
         var existingId = page.id;
 
-        this.$super('updateNode')(page, details);
+        this.$super('updateNode')(page, details, blockUpdateLastModified);
         this.callbackProxyFn('update', { id: existingId, element: details });
 
         return page;
