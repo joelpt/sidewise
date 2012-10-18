@@ -98,7 +98,7 @@ Settings.prototype = {
             allowAutoUnmaximize: true,
             autoCollapseLastSessionWindows: true,
             rememberOpenPagesBetweenSessions: true,
-            wakeHibernatedPagesOnClick: true,
+            wakeHibernatedPagesOnClick: false,
             animationEnabled: true,
             autoSelectChildrenOnDrag: true,
             reportUsageStatistics: true,
