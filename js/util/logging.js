@@ -40,7 +40,7 @@ function log() {
         stack = new CallStack(e.stack);
 
         // discard unwanted calls from top of stack
-        while (stack.stack[0].indexOf('log') == 0 || stack.stack[0].indexOf('Error (unknown source)') == 0) {
+        while (stack.stack[0].indexOf('log') == 0 || stack.stack[0].indexOf('Error') == 0) {
             stack.stack.shift(1);
         }
     }
