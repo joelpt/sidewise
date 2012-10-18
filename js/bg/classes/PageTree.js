@@ -581,9 +581,13 @@ PageTree.prototype = {
         var windowId = getNumericId(existingWindowNode.id);
         nodes.forEach(function(e) {
             var index;
-            var next = e.following(function(e) { return e instanceof PageNode && !e.hibernated; });
+            var next = e.following(function(test) { return test.isTab() && test.windowId == e.windowId; });
             if (next) {
                 index = self.getTabIndex(next);
+            }
+            if (index === undefined) {
+                index = 99999; // Chrome will clamp this value to the number of tabs actually in the window
+                               // thereby putting the tab at the end of the window's tab bar
             }
             log('awakening', e.url, 'windowId', windowId, 'index', index);
             chrome.tabs.create({
@@ -691,10 +695,6 @@ PageTree.prototype = {
 
     // Remove the given node from the tab index
     removeFromTabIndex: function(node) {
-        if (!node.isTab()) {
-            return;
-        }
-
         var topParent = node.topParent();
 
         if (!(topParent instanceof WindowNode)) {
