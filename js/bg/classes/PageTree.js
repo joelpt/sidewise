@@ -643,7 +643,11 @@ PageTree.prototype = {
     getTabIndex: function(node) {
         var winTabs = this.getWindowTabIndexArray(node.windowId);
         if (winTabs) {
-            return winTabs.indexOf(node);
+            var r = winTabs.indexOf(node);
+            if (r == -1) {
+                return undefined;
+            }
+            return r;
         }
         return undefined;
     },
