@@ -432,6 +432,9 @@ PageTree.prototype = {
         log(id);
         var winNode = this.getNode(id);
 
+        // collect list of nodes that need to be woken;
+        // that list is then reversed to be more compatible
+        // with tab index ordering when waking the tabs
         var awakening = this.filter(function(e) {
             var r = e instanceof PageNode && e.hibernated;
             if (!r) {
@@ -441,7 +444,7 @@ PageTree.prototype = {
                 return wakeTabsMatchingFn(e);
             }
             return true;
-        }, winNode.children);
+        }, winNode.children).reverse();
 
         this.awakenPageNodes(awakening, winNode);
         this.updateLastModified();
@@ -496,7 +499,6 @@ PageTree.prototype = {
 
     awakenPageNodes: function(nodes, existingWindowNode, activateAfter) {
         var self = this;
-
         var urls = nodes.map(function(e) { return e.url; });
         nodes.forEach(function(e) { self.awakeningPages.push(e); });
 
