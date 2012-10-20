@@ -83,7 +83,7 @@ function postLoad(focusedWin) {
         }
         catch(ex) {
             if (!newsPane && updatedSidewise && settings.get('showWhatsNewPane') ) {
-                paneCatalog.addPane('whatsnew', true, '/sidebars/whatsnew.html', 'What\'s New', '/images/nav/whatsnew.png');
+                paneCatalog.addPane('whatsnew', true, '/sidebars/whatsnew.html', 'What\'s New', '/images/nav/whatsnew.gif');
             }
         }
 
