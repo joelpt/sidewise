@@ -3,10 +3,12 @@
 ///////////////////////////////////////////////////////////
 
 // delay before asking Chrome for favicon again in onComplete
-var ONCOMPLETED_LATE_UPDATE_DELAY_MS = 1500;
+var ONCOMPLETED_LATE_UPDATE_DELAY_MS = 2000;
 
-// additional delay before setting a favicon to chrome://favicon in onCompletedLateUpdateTimeout
-var ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS = 500;
+// additional delay before setting a favicon to chrome://favicon/<url> in onCompletedLateUpdateTimeout
+// due to Chrome being slow to make these properly available and providing no means of determining
+// when the icon will be 'ready'
+var ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS = 5000;
 
 
 ///////////////////////////////////////////////////////////
@@ -180,11 +182,11 @@ function onCommitted(details)
             if (before) {
                 before = before[1];
                 log('Moving page with link transitionType to be before predicted next-sibling ' + before.id, before);
-                tree.moveNodeRel(page, 'before', before, true, false, true);
+                tree.moveNodeRel(page, 'before', before, true);
                 return;
             }
             log('Moving page with link transitionType to be last child of its opener ' + parent.id);
-            tree.moveNodeRel(page, 'append', parent, true, false, true);
+            tree.moveNodeRel(page, 'append', parent, true);
             return;
         }
     }
@@ -296,7 +298,13 @@ function onCompletedLateUpdateTimeout(tabId) {
         }
 
         // no static favicon url available, fall back on chrome://favicon/URL icon cache
-        favicon = getChromeFavIconUrl(url);
+        var split = splitUrl(url);
+        if (split) {
+            favicon = 'http://www.google.com/s2/favicons?domain=' + split.domain;
+        }
+        else {
+            favicon = getChromeFavIconUrl(url);
+        }
         setTimeout(function() { tree.updatePage(tabId, { favicon: favicon, title: title }); },
             ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS);
 

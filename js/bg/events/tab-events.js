@@ -90,39 +90,46 @@ function onTabCreated(tab)
             status: 'preload'
         });
         tree.awakeningPages.splice(wakingIndex, 1); // remove matched element
-        tree.conformChromeTabIndexForPageNode(wakingPage, true);
         return;
     }
 
     page = new PageNode(tab, 'preload');
     page.unread = true;
-
-    // TODO find any edge cases where chrome doesn't add a child tab to the right of parent tab in tabbar
-    // TODO consider adding pages to the tree in the same order as they appear on tabbar
-    //      (utilize tab.index hint which usually means first opened child tab will have index=0
-    //      below the parent, second will have index=1, etc.) rather than always adding child tabs
-    //      at the end of parent.children; this would conform more to how the tabs appear on the
-    //      tabbar, but possibly might not be desirable when the actual tab-tree is visible and
-    //      may also have unwanted effects on the next-tab-on-close ordering
-    // TODO consider doing our custom next-tab-on-close ordering only when sidebar is visible and
-    //      fallback on chrome default if not; this might make everything seem intuitive since if
-    //      sidebar's visible you intuitively see what's happening and if not visible then
-    //      chrome's mechanism appears to be more intuitive; possibly make it an option;
-    //      OTOH maybe our mechanism is decidedly superior at all times and we should just
-    //      always go with it and assume the user will either turn this "smart next tab" feature
-    //      option off entirely if they don't like it, or else will usually have the sidebar visible
-    // TODO consider using a navigation style where prior to jumping to the parent tab,
-    //      we prefer to jump to that parent's next sibling's first child if it has one; this may be more useful
-    //      if for instance we open a bunch of tabs off reddit and slashdot then navigate to one of
-    //      the reddit children; after closing them all using this mechanic, we'd start browsing
-    //      through the slashdot tab's children. the current behavior is "clean up parent tabs first",
-    //      this alternative approach would be more like "look forward through all tabs before
-    //      returning to parent level". the alternative approach might not be desirable in some cases though:
-    //      not sure when, it might be sensical to have an option for next-tab-on-close:
-    //          [x] use smart navigation when closing tabs (navigate to children, siblings, and parent in that order)
-    //              [x] navigate to cousins first: navigate to children of parent pages later in the tree before parent
-
     page.initialCreation = false;
+
+    // try to do association by index first
+    var existingWindow = tree.getNode('w' + tab.windowId);
+    var inArray = (existingWindow ? existingWindow.children : undefined);
+    var matches = tree.filter(function(e) {
+        return e instanceof PageNode
+            && e.hibernated
+            // && e.restorable
+            && tab.url == e.url
+            && tab.index == e.index;
+    }, inArray);
+
+    if (matches.length == 1) {
+        // Exactly one page node matches this tab by url+index so assume it's a match
+        // and do the association
+        var match = matches[0];
+        console.log('doing fast associate in onTabCreated', tab, match, tab.id, match.id);
+        var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id, windowId: tab.windowId, index: tab.index, initialCreation: false };
+        tree.updateNode(match, details);
+
+        // get updated status from Chrome in a moment
+        chrome.tabs.get(tab.id, function(t) {
+            tree.updateNode(match, { status: t.status });
+        });
+
+        // set focus to this page if it and its window have the current focus
+        if (tab.active && focusTracker.getFocused() == tab.windowId) {
+            tree.focusPage(tab.id);
+        }
+
+        var topParent = match.topParent();
+        restoreParentWindowViaUniqueChildPageNode(topParent, match, tab.windowId);
+        return;
+    }
 
     // Special handling for extension pages
     if (isExtensionUrl(tab.url)) {
@@ -179,9 +186,7 @@ function onTabCreated(tab)
     var winTabs = tree.getWindowTabIndexArray(tab.windowId);
 
     if (!winTabs) {
-        log('Window node does not exist for owning windowid ' + tab.windowId + ', creating tab under new window row');
-        tree.addTabToWindow(tab, page);
-        return;
+        winTabs = [];
     }
 
     if (!tab.openerTabId) {
@@ -192,7 +197,10 @@ function onTabCreated(tab)
         }
         var nextByIndex = winTabs[tab.index];
         if (!nextByIndex) {
-            throw new Error('Could not find nextByIndex even though tab.index tells us we should have');
+            log('nextByIndex not found though it should have been; just adding tab to window and scheduling full rebuild');
+            tree.addTabToWindow(tab, page);
+            tree.rebuildTreeByTabIndex(false);
+            return;
         }
         log('No openerTabId and index is in middle of window\'s tabs; inserting before ' + nextByIndex.id, nextByIndex);
         tree.addNodeRel(page, 'before', nextByIndex);
@@ -201,7 +209,10 @@ function onTabCreated(tab)
 
     var opener = tree.getNode('p' + tab.openerTabId);
     if (!opener) {
-        throw new Error('Could not find node matching given openerTabId ' + openerTabId);
+        log('Could not find node matching openerTabId; just adding tab to window and scheduling full rebuild', 'openerTabId', openerTabId);
+        tree.addTabToWindow(tab, page);
+        tree.rebuildTreeByTabIndex(false);
+        return;
     }
 
     var precedingByIndex = winTabs[tab.index - 1];
@@ -227,8 +238,15 @@ function onTabCreated(tab)
         return;
     }
 
-    log('openerTabId does not correspond to preceding page nor its parent, and next by index not found; insert at end of window');
-    tree.addTabToWindow(tab, page);
+    if (tab.index == winTabs.length) {
+        log('Tab appears to be created as last tab in window, so just appending it to the window');
+        tree.addTabToWindow(tab, page);
+        return;
+    }
+
+    log('Could not find insert position on tab index basis, resorting to simple parent-append followed by a rebuild', opener, nextByIndex, precedingByIndex, winTabs);
+    tree.addNodeRel(page, 'append', opener);
+    tree.rebuildTreeByTabIndex(false);
 }
 
 function onTabRemoved(tabId, removeInfo)
@@ -413,17 +431,6 @@ function onTabUpdated(tabId, changeInfo, tab)
         // we ignore the sidebar tab
         return;
     }
-    // TODO obtain the detection tab's tabId and check against it here and in other spots,
-    // since we really don't want to miss all tab events while monitor detection is going on
-    // should be able to obtain by creating the detection window/tab, then immediately asking
-    // chrome for the tabId of the (only) tab in the detection window and storing that in
-    // monitorInfo
-    // One case where this could be an issue is if Chrome is shut down, then on another synced
-    // machine the user adds Sidewise, then starts up Chrome on the original computer --
-    // Sidewise will have to do monitor detection near the time of browser startup, but
-    // Chrome could also be in the midst of session restore and we do not want to miss
-    // anything whilst detecting too; going off the literal tabId of the detection tab
-    // would cure this
     if (monitorInfo.isDetecting()) {
         return;
     }
@@ -499,12 +506,6 @@ function onTabUpdated(tabId, changeInfo, tab)
         else {
             tree.moveNodeRel(page, 'append', parent);
         }
-
-        // This usually will end up having no effect, but is done just in case something
-        // goes awry, e.g. user opens dozens of bookmarks at once while system is under load
-        // and timing issues cause us to put the opened tabs in a non-original index order
-        // (very rare but has been seen)
-        tree.conformAllChromeTabIndexes();
     }
 
     // TODO also don't push status unless it's in changeInfo
@@ -559,7 +560,7 @@ function removeFromExpectingTabMoves(tabId) {
 }
 
 function onTabActivated(activeInfo) {
-    log(activeInfo);
+    // log(activeInfo);
     if (monitorInfo.isDetecting()) {
         return;
     }

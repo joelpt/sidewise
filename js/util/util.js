@@ -154,7 +154,7 @@ function injectScriptInExistingTabs(script)
     chrome.tabs.query({}, function(tabs) {
         for (var i in tabs) {
             var tab = tabs[i];
-            log('Injecting script into tab', tab.id, tab.url);
+            // log('Injecting script into tab', tab.id, tab.url);
             executeContentScript(tab.url, tab.id, script);
         }
     });
@@ -164,7 +164,7 @@ function executeContentScript(url, tabId, scriptBody)
 {
     if (isScriptableUrl(url))
     {
-        log_brief(tabId, scriptBody);
+        // log_brief(tabId, scriptBody);
         chrome.tabs.executeScript(tabId, { code: scriptBody });
     }
 }

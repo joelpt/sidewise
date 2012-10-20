@@ -353,7 +353,7 @@ function onRowsMoved(moves) {
 
         if (move.relation != 'nomove') {
             // record the move in bg.tree
-            bg.tree.moveNodeRel(rowId, move.relation, toId, move.keepChildren, true, false);
+            bg.tree.moveNodeRel(rowId, move.relation, toId, move.keepChildren, true);
         }
 
         if ($row.attr('rowtype') == 'page' && $row.attr('hibernated') != 'true') {
@@ -411,7 +411,6 @@ function moveTabsBetweenWindows(fromWindowId, moves) {
             var onCompleteFn = function() {
                 setTimeout(function() {
                     bg.tree.rebuildPageNodeWindowIds(function() {
-                        bg.tree.rebuildTabIndex();
                         bg.tree.conformAllChromeTabIndexes(true);
                     });
                 }, 500);
@@ -435,7 +434,6 @@ function moveTabsBetweenWindows(fromWindowId, moves) {
                 chrome.tabs.remove(tempTab.id);
                 setTimeout(function() {
                     bg.tree.rebuildPageNodeWindowIds(function() {
-                        bg.tree.rebuildTabIndex();
                         bg.tree.conformAllChromeTabIndexes(true);
                     });
                 }, 500);
@@ -724,7 +722,7 @@ function onContextMenuItemMoveToNewFolder($rows) {
 
     // TODO implement .addNodeRel
     bg.tree.addNode(folder);
-    bg.tree.moveNodeRel(folder, 'before', $rows.first().attr('id'), false, false);
+    bg.tree.moveNodeRel(folder, 'before', $rows.first().attr('id'));
 
     ft.moveRowSetAnimate($rows, 'append', ft.getRow(folder.id), function(moves) {
         onRowsMoved(moves);
@@ -982,7 +980,9 @@ function onPageRowFormatTooltip(evt) {
 }
 
 function onPageRowIconError(evt) {
-    evt.target.src = getChromeFavIconUrl(evt.data.row.attr('url'));
+    setTimeout(function() {
+        evt.target.src = getChromeFavIconUrl(evt.data.row.attr('url'));
+    }, 2000);
 }
 
 function onPageRowCloseButton(evt) {

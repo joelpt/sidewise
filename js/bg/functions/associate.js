@@ -137,7 +137,7 @@ function endAssociationRun(runId) {
     delete associationRuns[runId];
     associationConcurrentRuns--;
     TimeoutManager.reset('conformAfterEndAssocationRun', function() {
-        tree.rebuildPageNodeWindowIds(function() { tree.conformAllChromeTabIndexes(); });
+        tree.rebuildPageNodeWindowIds(function() { tree.conformAllChromeTabIndexes(true); });
     }, 5000);
 
     try {
@@ -152,6 +152,39 @@ function endAssociationRun(runId) {
 
 function tryAssociateTab(runInfo, tab) {
     var runId = runInfo.runId;
+
+    var existingWindow = tree.getNode('w' + tab.windowId);
+    var inArray = (existingWindow ? existingWindow.children : undefined);
+    var matches = tree.filter(function(e) {
+        return e instanceof PageNode
+            && e.hibernated
+            && e.restorable
+            && tab.url == e.url
+            && tab.index == e.index;
+    }, inArray);
+
+    if (matches.length == 1) {
+        // Exactly one page node matches this tab by url+index so assume it's a match
+        // and do the association
+        var match = matches[0];
+        console.log('doing fast associate', tab, match, tab.id, match.id);
+        var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id, windowId: tab.windowId, index: tab.index };
+        tree.updateNode(match, details);
+
+        // get updated status from Chrome in a moment
+        chrome.tabs.get(tab.id, function(t) {
+            tree.updateNode(match, { status: t.status });
+        });
+
+        // set focus to this page if it and its window have the current focus
+        if (tab.active && focusTracker.getFocused() == tab.windowId) {
+            tree.focusPage(tab.id);
+        }
+
+        var topParent = match.topParent();
+        restoreParentWindowViaUniqueChildPageNode(topParent, match, tab.windowId);
+        return;
+    }
 
     if (!isScriptableUrl(tab.url)) {
         // this tab will never be able to return details to us from content_script.js,
@@ -329,7 +362,7 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
     }
 
     log('matching PageNode found, restoring', tab.id, tab, match);
-    var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id };
+    var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id, windowId: tab.windowId, index: tab.index };
     tree.updateNode(match, details);
 
     // get updated status from Chrome in a moment
