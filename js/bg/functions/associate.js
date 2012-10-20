@@ -183,6 +183,16 @@ function tryAssociateTab(runInfo, tab) {
 
         var topParent = match.topParent();
         restoreParentWindowViaUniqueChildPageNode(topParent, match, tab.windowId);
+
+        // ask the tab for more details via its content_script.js connected port
+        // in this case we only need them to store on the node in case a successive
+        // assocation run fails to do fast association
+        try {
+            getPageDetails(tab.id, { action: 'store' });
+        }
+        catch(ex) {
+            return;
+        }
         return;
     }
 
