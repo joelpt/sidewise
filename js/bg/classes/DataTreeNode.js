@@ -73,9 +73,12 @@ DataTreeNode.prototype = {
         return this.siblings().slice(this.siblingIndex() + 1);
     },
 
-    precedingNodes: function() {
+    precedingNodes: function(topmostParent) {
         var found = false;
         var self = this;
+        if (!topmostParent) {
+            topmostParent = this.root;
+        }
         return this.root.hostTree.filter(function(e) {
             if (e === self) {
                 found = true;
@@ -85,11 +88,11 @@ DataTreeNode.prototype = {
                 return false;
             }
             return true;
-        });
+        }, topmostParent.children);
     },
 
-    preceding: function(matchFn) {
-        var p = this.precedingNodes();
+    preceding: function(matchFn, topmostParent) {
+        var p = this.precedingNodes(topmostParent);
         if (p.length == 0) {
             return;
         }
@@ -106,9 +109,12 @@ DataTreeNode.prototype = {
         return;
     },
 
-    followingNodes: function() {
+    followingNodes: function(topmostParent) {
         var found = false;
         var self = this;
+        if (!topmostParent) {
+            topmostParent = this.root;
+        }
         return this.root.hostTree.filter(function(e) {
             if (e === self) {
                 found = true;
@@ -118,11 +124,11 @@ DataTreeNode.prototype = {
                 return false;
             }
             return true;
-        });
+        }, topmostParent.children);
     },
 
-    following: function(matchFn) {
-        var p = this.followingNodes();
+    following: function(matchFn, topmostParent) {
+        var p = this.followingNodes(topmostParent);
         if (p.length == 0) {
             return;
         }
