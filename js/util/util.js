@@ -413,6 +413,14 @@ function first(array, matchFn) {
     }
 }
 
+function last(array, matchFn) {
+    for (var i = array.length; i >= 0; i--) {
+        if (matchFn(array[i])) {
+            return [i, array[i]];
+        }
+    }
+}
+
 function mostFrequent(arr) {
     var uniqs = {};
 
