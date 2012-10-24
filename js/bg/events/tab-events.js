@@ -90,6 +90,26 @@ function onTabCreated(tab)
             status: 'preload'
         });
         tree.awakeningPages.splice(wakingIndex, 1); // remove matched element
+
+        // fix order wrt pinned tabs if necessary
+        if (!wakingPage.pinned
+            && wakingPage.following(function(e) { return e.isTab() && e.pinned }, wakingPage.topParent()))
+        {
+            // tree.rebuildTreeByTabIndex(false);
+            var following = wakingPage.followingNodes(wakingPage.topParent());
+            var lastPinned;
+            for (var i = 0; i < following.length; i++) {
+                var testing = following[i];
+                if (testing.isTab() && testing.pinned) {
+                    lastPinned = testing;
+                }
+            }
+            if (!lastPinned) {
+                throw new Error('Could not find lastPinned but should have been able to');
+            }
+            // chrome.tabs.move(getNumericId(wakingPage.id), { index: lastPinned.index });
+            tree.moveNodeRel(wakingPage, 'after', lastPinned);
+        }
         return;
     }
 
