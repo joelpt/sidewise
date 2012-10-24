@@ -487,12 +487,26 @@ function allowDropHandler($fromRows, relation, $toRow) {
     var movingNonPinnedTabs = $fromRows.is('[rowtype=page][pinned=false]');
 
     if (movingNonPinnedTabs) {
-        if (relation == 'before' && $toRow.is('[pinned=true]')) {
+        if (relation == 'before' && $toRow.is('[rowtype=page][hibernated=false][pinned=true]')) {
             return false;
         }
-        // TODO enforce this more strictly:
-        // - if any $fromRows are collapsed we must also include all their children in the moveNonPinnedTabs check value
-        // - we cannot have a pinned tab anywhere AFTER the proposed insert point in the same window
+        var toNode = bg.tree.getNode($toRow.attr('id'));
+        if (toNode.following(function(e) { return e.isTab() && e.pinned; }, toNode.topParent())) {
+            return false;
+        }
+    }
+
+    // don't allow dropping a pinned tab to below a pinned one
+    var movingPinnedTabs = $fromRows.is('[rowtype=page][pinned=true]');
+
+    if (movingPinnedTabs) {
+        if (relation != 'before' && $toRow.is('[rowtype=page][hibernated=false][pinned=false]')) {
+            return false;
+        }
+        var toNode = bg.tree.getNode($toRow.attr('id'));
+        if (toNode.preceding(function(e) { return e.isTab() && !e.pinned; }, toNode.topParent())) {
+            return false;
+        }
     }
 
     // allow any other type of drop
