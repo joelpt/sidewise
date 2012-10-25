@@ -143,14 +143,14 @@ section#main:not(.debugEnabled) {
 }
 
 
-/* folder tree row states */
+/* folder tree rows */
 
-.ftRowNode[rowtype=folder] > .ftItemRow .ftItemLabel {
-    /*font-style: italic;*/
-}
+/*.ftRowNode[rowtype=folder] > .ftItemRow .ftItemLabel {
+    font-style: italic;
+}*/
 
 
-/* page tree row states */
+/* page tree rows */
 
 .ftRowNode[rowtype=page][unread=true] > .ftItemRow {
     color: blue;
@@ -178,6 +178,14 @@ section#main:not(.debugEnabled) {
 .ftRoot:not(.ftMultiselecting) .ftRowNode[rowtype=page][hibernated=true].ftFocused > .ftItemRow:hover > .ftItemRowContent {
     background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #cacaca),color-stop(1, white));
     border: 1px dotted rgb(0, 0, 0);
+}
+
+.pinned {
+    padding-left: 3px;
+}
+
+.pinned+.ftItemText {
+    margin-left: 2px;
 }
 
 
@@ -293,10 +301,3 @@ section#main:not(.debugEnabled) {
     100%  { -webkit-transform: rotate(0deg); }
 }
 
-.pinned {
-    padding-left: 3px;
-}
-
-.pinned+.ftItemText {
-    margin-left: 2px;
-}
