@@ -103,7 +103,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             allowAtChildLevel: true,
             autofocusOnClick: true,
             allowClickOnHover: false,
-            allowClickOnScroll: true,
+            allowClickOnScroll: false,
             permitAutoSelectChildren: true,
             alwaysMoveChildren: false,
             multiselectable: true,
@@ -471,8 +471,11 @@ function moveTabToWindow(movingTabId, toWindowId, toPosition, afterFn) {
 function allowDropHandler($fromRows, relation, $toRow) {
     // console.log('from', $fromRows, relation, 'to', $toRow);
 
-    // allow window nodes to be dropped anywhere they normally can be
+    // allow window nodes to be dropped above or below other window nodes, not 'into'
     if ($fromRows.is('[rowtype=window]')) {
+        if (relation == 'append' || relation == 'prepend') {
+            return false;
+        }
         return true;
     }
 
@@ -492,11 +495,17 @@ function allowDropHandler($fromRows, relation, $toRow) {
     }
 
     // don't allow dropping a non pinned tab to above a pinned one
-    var movingNonPinnedTabs = $fromRows.is('[rowtype=page][pinned=false]');
+    var movingNonPinnedTabs = $fromRows.is('[rowtype=page][pinned=false][hibernated=false]');
 
     if (movingNonPinnedTabs) {
         if (relation == 'before' && $toRow.is('[rowtype=page][hibernated=false][pinned=true]')) {
             return false;
+        }
+        if (relation == 'prepend' && $toRow.is('[rowtype=window]')) {
+            var toNode = bg.tree.getNode($toRow.attr('id'));
+            if (toNode.following(function(e) { return e.isTab() && e.pinned; }, toNode)) {
+                return false;
+            }
         }
         var toNode = bg.tree.getNode($toRow.attr('id'));
         if (toNode.following(function(e) { return e.isTab() && e.pinned; }, toNode.topParent())) {
@@ -505,10 +514,13 @@ function allowDropHandler($fromRows, relation, $toRow) {
     }
 
     // don't allow dropping a pinned tab to below a pinned one
-    var movingPinnedTabs = $fromRows.is('[rowtype=page][pinned=true]');
+    var movingPinnedTabs = $fromRows.is('[rowtype=page][pinned=true][hibernated=false]');
 
     if (movingPinnedTabs) {
         if (relation != 'before' && $toRow.is('[rowtype=page][hibernated=false][pinned=false]')) {
+            return false;
+        }
+        if (relation == 'append' && $toRow.is('[rowtype=window]')) {
             return false;
         }
         var toNode = bg.tree.getNode($toRow.attr('id'));
@@ -567,8 +579,8 @@ function onContextMenuShow($rows) {
     var highlightedCount = $rows.filter(function(i, e) { return $(e).attr('highlighted') == 'true'; }).length;
     var unhighlightedCount = $rows.length - highlightedCount;
 
-    var pinnedCount = $rows.filter(function(i, e) { return $(e).attr('pinned') == 'true'; }).length;
-    var unpinnedCount = $rows.length - pinnedCount;
+    var pinnedCount = $pages.filter(function(i, e) { return $(e).attr('pinned') == 'true'; }).length;
+    var unpinnedCount = $pages.length - pinnedCount;
 
     if (hibernatedCount)
         items.push({ $rows: $pages, id: 'awakenPage', icon: '/images/wake.png', label: 'Wake tab', callback: onContextMenuItemWakePages });
