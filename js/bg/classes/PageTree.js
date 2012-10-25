@@ -216,6 +216,9 @@ PageTree.prototype = {
     moveNodeRel: function(movingMatcher, relation, toMatcher, keepChildren, blockCallback)
     {
         var moving = this.getNode(movingMatcher);
+        if (!moving) {
+            throw new Error('Could not find node to move', movingMatcher, relation, toMatcher);
+        }
         this.removeFromTabIndex(moving);
         var r = this.$super('moveNodeRel')(moving, relation, toMatcher, keepChildren);
         this.addToTabIndex(moving);
