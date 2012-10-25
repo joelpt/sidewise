@@ -24,7 +24,7 @@ function registerRequestEvents() {
 
 
 function onConnectPort(port) {
-    log('onConnect', port);
+    // log('onConnect', port);
     // add port to list of known tab ports
     connectedTabs[port.sender.tab.id] = port;
 
@@ -34,7 +34,7 @@ function onConnectPort(port) {
 }
 
 function onPortMessage(port, msg) {
-    log('onPortMessage', msg, port);
+    // log('onPortMessage', msg, port);
     // port.postMessage({ action: 'wassup' });
     switch (msg.op) {
         case 'getPageDetails':
@@ -45,7 +45,7 @@ function onPortMessage(port, msg) {
 }
 
 function onPortDisconnect(port) {
-    log('onPortDisconnect', port);
+    // log('onPortDisconnect', port);
 
     // delete entry from known tab ports list
     if (connectedTabs[port.sender.tab.id]) {
@@ -89,7 +89,7 @@ function getPort(tabId) {
 ///////////////////////////////////////////////////////////
 
 function onRequest(request, sender, sendResponse) {
-    log(request, sender);
+    // log(request, sender);
 
     switch (request.op)
     {
@@ -173,7 +173,7 @@ function getPageDetails(tabId, params) {
 // }
 
 function onGetPageDetailsMessage(tab, msg) {
-    log(tab, msg);
+    // log(tab, msg);
     var tabId = tab.id;
 
     var page = tree.getPage(tabId);
