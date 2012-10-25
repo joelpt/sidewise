@@ -523,3 +523,26 @@ function showAdvancedOptions(revealing) {
         $advOpts.show();
     }
 };
+
+
+///////////////////////////////////////////////////////////
+// Bug submitter
+///////////////////////////////////////////////////////////
+
+function submitBugReport() {
+    var desc = prompt('Please describe the problem below.');
+    if (!desc) {
+        alert('Bug report cancelled.');
+        return;
+    }
+
+    // bg.log(bg.tree);
+    bg.log(bg.tree.dump());
+    bg.log(bg.tree.dumpTabIndexes());
+
+    var data = getVersion() + ' - ' + Date() + '\n' + desc + '\n\n' + bg.runningLog;
+    // alert(data.length);
+    $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': data }, function(data, textStatus, jqXHR) {
+        alert('Bug report submitted. Thank you for the report.');
+    });
+}

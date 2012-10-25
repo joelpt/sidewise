@@ -1,5 +1,8 @@
+var RUNNING_LOG_MAX_SIZE = 0.8 * 1024 * 1024; // 2 MB
+
 var loggingEnabled = localStorage['loggingEnabled'] == 'true' || false;
 var logObjectsAsJSON = false;
+var runningLog = '';
 // loggingEnabled = false;
 
 // Logs all passed arguments to console if loggingEnabled is true.
@@ -13,19 +16,26 @@ function log() {
     }
 
     var messages = [];
+    var jsonMessages = [];
     for (var i in arguments) {
         var arg = arguments[i];
         if (typeof(arg) == 'string' || typeof(arg) == 'number') {
             messages.push(arg);
+            jsonMessages.push(arg);
+            continue;
+        }
+        var json;
+        try {
+            json = JSON.stringify(arg, StringifyReplacer);
+            jsonMessages.push(json);
+        }
+        catch (ex) {
+            jsonMessages.push('ERROR CONVERTING TO JSON');
+            messages.push(arg);
             continue;
         }
         if (logObjectsAsJSON) {
-            try {
-                messages.push(JSON.stringify(arg));
-            }
-            catch(ex) {
-                messages.push(arg);
-            }
+            messages.push(json);
             continue;
         }
         messages.push(arg);
@@ -57,6 +67,18 @@ function log() {
     }
 
     console.log.apply(console, messages);
+    jsonMessages = jsonMessages.join(' ');
+    runningLog += jsonMessages + '\n';
+    if (jsonMessages.indexOf('---') == 0) {
+        runningLog += '\n\n';
+    }
+    else {
+        runningLog += '    ' + stack.stack.join('\n    ') + '\n\n';
+    }
+
+    if (runningLog.length >= RUNNING_LOG_MAX_SIZE) {
+        runningLog = runningLog.substring((runningLog.length - RUNNING_LOG_MAX_SIZE) + (RUNNING_LOG_MAX_SIZE * 0.25));
+    }
 }
 
 // Like log(), but abbreviates multiline strings to 'first line...'
@@ -89,3 +111,68 @@ function CallStack(stack) {
         .replace(/\n$/gm, '')
         .split('\n');
 }
+
+
+
+var StringifyReplacer = function (stack, undefined, r, i) {
+  // a WebReflection hint to avoid recursion
+  return function StringifyReplacer(key, value) {
+    // this happens only first iteration
+    // key is empty, and value is the object
+    if (key === "") {
+      // put the value in the stack
+      stack = [value];
+      // and reset the r
+      r = 0;
+      return value;
+    }
+    switch(typeof value) {
+      case "function":
+        // not allowed in JSON protocol
+        // let's return some info in any case
+        return "".concat(
+          "function ",
+          value.name || "anonymous",
+          "(",
+            Array(value.length + 1).join(",arg").slice(1),
+          "){}"
+        );
+      // is this a primitive value ?
+      case "boolean":
+      case "number":
+        return value;
+      case "string":
+        // primitives cannot have properties
+        // <span class="goog_qs-tidbit goog_qs-tidbit-0">so these are safe to parse</span>
+        if (value.indexOf('data:image') == 0) {
+            return value.substring(0, 16) + '...';
+        }
+        return value;
+      default:
+        // only null does not need to be stored
+        // for all objects check recursion first
+        // hopefully 255 calls are enough ...
+        if (!value || !StringifyReplacer.filter(value) || 255 < ++r) return undefined;
+        i = stack.indexOf(value);
+        // all objects not already parsed
+        if (i < 0) return stack.push(value) && value;
+        // all others are duplicated or cyclic
+        // mark them with index
+        return "*R" + i;
+    }
+  };
+}();
+
+// reusable to filter some undesired object
+// as example HTML node
+StringifyReplacer.filter = function (value) {
+  // i.e. return !(value instanceof Node)
+  // to ignore nodes
+  // if (value.indexOf('data:image') == 0) {
+  //   return 'data:image....';
+  // }
+  // console.log(value);
+  // console.log('***> ' + value);
+
+  return value;
+};
