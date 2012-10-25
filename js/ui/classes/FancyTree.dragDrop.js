@@ -165,7 +165,7 @@ FancyTree.prototype.draggableStart = function(evt) {
 
             if (self.getChildrenCount(row) > 0) {
                 row.children('.ftChildren').addClass('ftDrawAttention');
-                setTimeout(function() { row.children('.ftChildren').removeClass('ftDrawAttention'); }, 250);
+                setTimeout(function() { row.children('.ftChildren').removeClass('ftDrawAttention'); }, 350);
             }
         }
 
