@@ -198,7 +198,26 @@ function onTabCreated(tab)
         // we'll never be able to detect if this tab's transitionType=='reload' which
         // is how we normally detect that a tab is being restored rather than created anew
         log('Adding non scriptable tab to tree via association attempt', tab.id, tab, tab.url);
-        tree.addNode(page, 'w' + tab.windowId);
+
+        var winNode = tree.getNode('w' + tab.windowId);
+        if (!winNode) {
+            tree.addTabToWindow(tab, page);
+        }
+        else {
+            if (tab.index == 0) {
+                tree.addNodeRel(page, 'prepend', winNode);
+            }
+            else {
+                var next = tree.getTabByIndex(tab.windowId, tab.index);
+                if (next) {
+                    tree.addNodeRel(page, 'before', next);
+                }
+                else {
+                    tree.addNodeRel(page, 'append', winNode);
+                }
+            }
+        }
+
         associateExistingToRestorablePageNode(tab);
         return;
     }
@@ -215,8 +234,13 @@ function onTabCreated(tab)
     }
 
     if (!tab.openerTabId) {
-        if (tab.index == 0 || winTabs.length == 0 || winTabs.length == tab.index) {
-            log('No openerTabId and index is at start or end of tree or no tabs are in hosting window; appending to window');
+        if (winTabs.length > 0 && tab.index == 0) {
+            log('No openerTabId and index is at start of tree; prepending to window');
+            tree.addNodeRel(page, 'prepend', tree.getNode('w' + tab.windowId));
+            return;
+        }
+        if (winTabs.length == 0 || winTabs.length == tab.index) {
+            log('No openerTabId and index is at end of tree, or no tab indexes are found for hosting window; appending to window');
             tree.addTabToWindow(tab, page);
             return;
         }
