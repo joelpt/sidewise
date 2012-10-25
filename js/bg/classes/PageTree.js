@@ -572,14 +572,39 @@ PageTree.prototype = {
         var windowId = getNumericId(existingWindowNode.id);
         nodes.forEach(function(e) {
             var index;
+            var prev;
             var next = e.following(function(test) { return test.isTab() && test.windowId == e.windowId; });
             if (next) {
+                console.log('looking up tab index for next tab', next.id);
                 index = self.getTabIndex(next);
             }
-            if (index === undefined) {
-                index = 99999; // Chrome will clamp this value to the number of tabs actually in the window
-                               // thereby putting the tab at the end of the window's tab bar
+            else {
+                var prev = e.preceding(function(test) { return test.isTab() && test.windowId == e.windowId; });
+                if (prev) {
+                    console.log('looking up tab index for preceding tab', prev.id);
+                    index = self.getTabIndex(prev);
+                    if (index !== undefined) {
+                        index += 1;
+                    }
+                }
             }
+
+            if (index === undefined) {
+                if (next) {
+                    console.log('fallback on next.index', next.id, next.index);
+                    index = next.index;
+                }
+                else if (prev) {
+                    console.log('fallback on prev.index', prev.id, prev.index);
+                    index = prev.index + 1;
+                }
+
+                if (index === undefined) {
+                    index = 99999; // Chrome will clamp this value to the number of tabs actually in the window
+                                   // thereby putting the tab at the end of the window's tab bar
+                }
+            }
+
             log('awakening', e.url, 'windowId', windowId, 'index', index);
             chrome.tabs.create({
                 url: e.url,
@@ -666,6 +691,7 @@ PageTree.prototype = {
 
     // Add the given node to the tab index based on its .index
     addToTabIndex: function(node) {
+        log(node.id, node.index, node);
         if (!node.isTab()) {
             return;
         }
@@ -686,6 +712,7 @@ PageTree.prototype = {
             return;
         }
         this.tabIndexes[topParent.id].splice(index, 0, node);
+        // log('after addToTabIndex', this.dumpTabIndexes());
     },
 
     // Remove the given node from the tab index
@@ -716,7 +743,7 @@ PageTree.prototype = {
         if (!instant) {
             TimeoutManager.reset('rebuildTreeByTabIndex', function() {
                 self.rebuildTreeByTabIndex(true);
-            }, 5000);
+            }, 2500);
             return;
         }
 
@@ -729,6 +756,21 @@ PageTree.prototype = {
 
     // rebuild the tab index
     rebuildTabIndex: function() {
+        // useChromeOrder) {
+        // if (useChromeOrder) {
+        //     chrome.tabs.get({ }, function(tabs) {
+        //         this.tabIndexes = {};
+        //         for (var i = 0; i < tabs.length; i++) {
+        //             var tab = tabs[i];
+        //             if (this.tabIndexes['w' + tab.windowId] === undefined) {
+        //                 this.tabIndexes['w' + tab.windowId] = [];
+        //             }
+        //             this.tabIndexes['w' + tab.windowId].push(tab.id);
+        //         }
+        //     });
+        //     return;
+        // }
+
         this.tabIndexes = this.groupBy(function(e) {
             if (e.isTab()) {
                 return 'w' + e.windowId;
@@ -790,6 +832,22 @@ PageTree.prototype = {
         });
     },
 
+    validateTabIndexes: function() {
+        var tabs = this.filter(function(e) { return e.isTab(); });
+        for (var i = 0; i < tabs.length; i++) {
+            var tab = tabs[i];
+            if (tab.index != this.getTabIndex(tab)) {
+                var atIndex = this.getTabByIndex(tab.windowId, tab.index);
+                console.error('Validation error for tab index', 'tab', tab, 'tab.id', tab.id,
+                    'tab.index', tab.index, 'getTabIndex', this.getTabIndex(tab),
+                    'getTabIndex(tab.index)', atIndex, atIndex.id, atIndex.index);
+                console.error('tree dump', this.dump());
+                console.error('index dump', this.dumpTabIndexes());
+                return;
+            }
+        }
+    },
+
     // conform a given page node's tab index within Chrome to match
     // the page node's vertically ordered position within the tree
     conformChromeTabIndexForPageNode: function(node, conformDescendants, skipIndexRebuild, instant) {
@@ -808,6 +866,9 @@ PageTree.prototype = {
                 chrome.tabs.get(getNumericId(node.id), function(tab) {
                     if (!skipIndexRebuild) {
                         self.rebuildTabIndex();
+                    }
+                    if (!tab) {
+                        return;
                     }
                     var newIndex = self.tabIndexes[topParent.id].indexOf(node);
                     if (tab.index != newIndex) {
@@ -844,7 +905,7 @@ PageTree.prototype = {
             var self = this;
             TimeoutManager.reset('conformAllChromeTabIndexes', function() {
                 self.conformAllChromeTabIndexes(true);
-            }, 5000);
+            }, 2000);
             return;
         }
 
@@ -921,6 +982,15 @@ PageTree.prototype = {
                 var index = '---';
             }
 
+            if (e.index === undefined) {
+                index += '----';
+            }
+            else {
+                var index2 = '   ' + e.index;
+                index += '=' + index2.slice(index2.length - 3);
+            }
+
+
             return lastValue + '\n'
                 + index + '|'
                 + Array(-4 + 1 + (1 + depth) * 4).join(' ')
@@ -934,6 +1004,19 @@ PageTree.prototype = {
         return this.reduce(dumpFn, '');
     },
 
+    dumpTabIndexes: function() {
+        var s = '';
+        for (var windowId in this.tabIndexes) {
+            s += windowId + ':\n';
+            var indexes = this.tabIndexes[windowId];
+            for (var i = 0; i < indexes.length; i++) {
+                var tab = indexes[i];
+                s += '    ' + tab.id + ':' + i + '(' + tab.index + ') ' + tab.url + '\n';
+            }
+        }
+        return s;
+    },
+
     // Handles onModified event for DataTree, updating a timer and calling
     // this.onModifiedDelayed after the timeout; prevents executing
     // this.onModifiedDelayed every time tree is updated
@@ -943,7 +1026,7 @@ PageTree.prototype = {
         }
         var self = this;
         TimeoutManager.reset('onPageTreeModified', function() {
-            log('doing tree post-modification stuff');
+            // log('doing tree post-modification stuff');
             self.conformAllChromeTabIndexes();
             self.rebuildPageNodeWindowIds(function() {
                 self.onModifiedDelayed();
