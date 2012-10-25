@@ -451,12 +451,20 @@ function moveTabsBetweenWindows(fromWindowId, moves) {
 
 function moveTabToWindow(movingTabId, toWindowId, toPosition, afterFn) {
     log('moving tab to window', 'movingTabId', movingTabId, 'toWindowId', toWindowId, 'toPosition', toPosition);
-    if (!afterFn) {
-        afterFn = function() {};
-    }
     bg.expectingTabMoves.push(movingTabId);
     chrome.tabs.move(movingTabId, { windowId: toWindowId, index: toPosition }, function() {
-        chrome.tabs.update(movingTabId, { active: true }, afterFn);
+        chrome.tabs.update(movingTabId, { active: true }, function(tab) {
+            // Unpin tab if necessary (Chrome typically does so silenty for pinned tabs moved btwn windows this way)
+            if (!tab.pinned) {
+                var page = bg.tree.getPage(movingTabId);
+                if (page.pinned) {
+                    bg.tree.updateNode(page, { pinned: false });
+                }
+            }
+            if (afterFn) {
+                afterFn();
+            }
+        });
     });
 }
 
