@@ -67,9 +67,18 @@ jQuery.fn.following = function(selector) {
     if ($child.length > 0) {
         return $child;
     }
-    var $next = this.nextAll(firstSelector);
-    if ($next.length > 0) {
-        return $next;
+
+    var $next = this.next();
+
+    if ($next.length == 1) {
+        if ($next.is(selector)) {
+            return $next;
+        }
+
+        $next = $next.following(selector);
+        if ($next.length == 1) {
+            return $next;
+        }
     }
 
     var parent = this.parent();
