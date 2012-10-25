@@ -52,11 +52,17 @@ FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfigurat
     });
 
     if (removeChildren) {
+        var self = this;
+        $row.find('.ftRowNode').each(function(i, e) {
+            self.removeMultiSelectionSingle($(e));
+        });
         $row.remove();
     }
     else {
         $row.replaceWith($row.children('.ftChildren').children());
     }
+
+    this.removeMultiSelectionSingle($row);
 
     this.hideTooltip();
 
