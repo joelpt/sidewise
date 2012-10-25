@@ -111,14 +111,17 @@ function startAssociationRun() {
                 // this tab is already in the tree as a normal tab
                 continue;
             }
-            runInfo.total++;
-            log('trying association', 'runId', runId, 'tabId', tab.id, 'total', runInfo.total, 'count', runInfo.count);
-            tryAssociateTab(runInfo, tab);
+            // log('trying association', 'runId', runId, 'tabId', tab.id, 'total', runInfo.total, 'count', runInfo.count);
+            if (!tryAssociateTab(runInfo, tab)) {
+                runInfo.total++;
+            }
+
         }
         if (runInfo.total == 0) {
             log('No unassociated tabs left to associate; ending association run and doing parent window guessing');
             endAssociationRun(runId);
             associateWindowstoWindowNodes();
+            // log(tree.dump());
             return;
         }
         log('Started association process, tabs in queue: ' + runInfo.total);
@@ -136,6 +139,7 @@ function endAssociationRun(runId) {
     log('Ending association run', runId, runInfo);
     delete associationRuns[runId];
     associationConcurrentRuns--;
+    tree.rebuildTabIndex();
     TimeoutManager.reset('conformAfterEndAssocationRun', function() {
         tree.rebuildPageNodeWindowIds(function() { tree.conformAllChromeTabIndexes(true); });
     }, 5000);
@@ -150,6 +154,8 @@ function endAssociationRun(runId) {
     }
 }
 
+// Returns true if tab was immediately associated or false if an asynchronous
+// call to the page's content script was required to do potential association later
 function tryAssociateTab(runInfo, tab) {
     var runId = runInfo.runId;
 
@@ -167,7 +173,7 @@ function tryAssociateTab(runInfo, tab) {
         // Exactly one page node matches this tab by url+index so assume it's a match
         // and do the association
         var match = matches[0];
-        console.log('doing fast associate', tab, match, tab.id, match.id);
+        log('doing fast associate', tab, match, tab.id, match.id);
         var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id, windowId: tab.windowId, index: tab.index };
         tree.updateNode(match, details);
 
@@ -191,16 +197,17 @@ function tryAssociateTab(runInfo, tab) {
             getPageDetails(tab.id, { action: 'store' });
         }
         catch(ex) {
-            return;
+            return true;
         }
-        return;
+        return true;
     }
 
     if (!isScriptableUrl(tab.url)) {
         // this tab will never be able to return details to us from content_script.js,
         // so just associate it without the benefit of those extra details
+        log('Doing blind association for non scriptable tab', tab.id, tab.url);
         associateTabToPageNode(runId, tab);
-        return;
+        return true;
     }
 
     // record this tab's id in this run's tabIds list as one we expect to be restoring
@@ -218,6 +225,7 @@ function tryAssociateTab(runInfo, tab) {
         }
         throw ex;
     }
+    return false;
 }
 
 function tryAssociateExistingToRestorablePageNode(existingPage) {
