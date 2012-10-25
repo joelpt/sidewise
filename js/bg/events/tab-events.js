@@ -110,6 +110,8 @@ function onTabCreated(tab)
             // chrome.tabs.move(getNumericId(wakingPage.id), { index: lastPinned.index });
             tree.moveNodeRel(wakingPage, 'after', lastPinned);
         }
+
+        tree.rebuildTabIndex();
         return;
     }
 
@@ -132,7 +134,7 @@ function onTabCreated(tab)
         // Exactly one page node matches this tab by url+index so assume it's a match
         // and do the association
         var match = matches[0];
-        console.log('doing fast associate in onTabCreated', tab, match, tab.id, match.id);
+        log('doing fast associate in onTabCreated', tab, match, tab.id, match.id);
         var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id, windowId: tab.windowId, index: tab.index, initialCreation: false };
         tree.updateNode(match, details);
 
@@ -205,8 +207,11 @@ function onTabCreated(tab)
 
     var winTabs = tree.getWindowTabIndexArray(tab.windowId);
 
+    // log(tree.dump());
+    // log(tree.dumpTabIndexes());
     if (!winTabs) {
         winTabs = [];
+        log('Could not obtain winTabs for windowId ' + tab.windowId);
     }
 
     if (!tab.openerTabId) {
@@ -219,7 +224,8 @@ function onTabCreated(tab)
         if (!nextByIndex) {
             log('nextByIndex not found though it should have been; just adding tab to window and scheduling full rebuild');
             tree.addTabToWindow(tab, page);
-            tree.rebuildTreeByTabIndex(false);
+            tree.conformAllChromeTabIndexes(true);
+            // tree.rebuildTreeByTabIndex(false);
             return;
         }
         log('No openerTabId and index is in middle of window\'s tabs; inserting before ' + nextByIndex.id, nextByIndex);
@@ -231,7 +237,8 @@ function onTabCreated(tab)
     if (!opener) {
         log('Could not find node matching openerTabId; just adding tab to window and scheduling full rebuild', 'openerTabId', openerTabId);
         tree.addTabToWindow(tab, page);
-        tree.rebuildTreeByTabIndex(false);
+        tree.conformAllChromeTabIndexes(true);
+        // tree.rebuildTreeByTabIndex(false);
         return;
     }
 
@@ -258,7 +265,7 @@ function onTabCreated(tab)
         return;
     }
 
-    if (tab.index == winTabs.length) {
+    if (winTabs.length > 0 && tab.index == winTabs.length) {
         log('Tab appears to be created as last tab in window, so just appending it to the window');
         tree.addTabToWindow(tab, page);
         return;
@@ -266,7 +273,8 @@ function onTabCreated(tab)
 
     log('Could not find insert position on tab index basis, resorting to simple parent-append followed by a rebuild', opener, nextByIndex, precedingByIndex, winTabs);
     tree.addNodeRel(page, 'append', opener);
-    tree.rebuildTreeByTabIndex(false);
+    tree.conformAllChromeTabIndexes(true);
+    // tree.rebuildTreeByTabIndex(false);
 }
 
 function onTabRemoved(tabId, removeInfo)
@@ -334,16 +342,21 @@ function onTabRemoved(tabId, removeInfo)
             TimeoutManager.reset('resetExpectingSmartFocusTabId', function() {
                 expectingSmartFocusTabId = null;
             }, 500);
-            chrome.tabs.update(nextTabId, { active: true }, function(tab) {
-                TimeoutManager.clear('resetExpectingSmartFocusTabId');
-                if (!tab) {
-                    // an error occurred while trying to smart focus, most likely
-                    // the tab we tried to focus was removed, so just reset
-                    // expectingSmartFocusTabId and update focus to what Chrome says
-                    expectingSmartFocusTabId = null;
-                    focusCurrentTabInPageTree(true);
-                }
-            });
+            try {
+                chrome.tabs.update(nextTabId, { active: true }, function(tab) {
+                    TimeoutManager.clear('resetExpectingSmartFocusTabId');
+                    if (!tab) {
+                        // an error occurred while trying to smart focus, most likely
+                        // the tab we tried to focus was removed, so just reset
+                        // expectingSmartFocusTabId and update focus to what Chrome says
+                        expectingSmartFocusTabId = null;
+                        focusCurrentTabInPageTree(true);
+                    }
+                });
+            }
+            catch (ex) {
+                log('Smart focus tab no longer exists, letting Chrome decide', nextTabId);
+            }
         }
         // else, nothing suitable was found; we'll just let Chrome decide
     }
@@ -522,9 +535,39 @@ function onTabUpdated(tabId, changeInfo, tab)
         if (before) {
             before = before[1];
             tree.moveNodeRel(page, 'before', before);
+            page.placed = true;
         }
         else {
             tree.moveNodeRel(page, 'append', parent);
+            page.placed = true;
+        }
+    }
+    else if (!page.placed && tab.openerTabId && !page.openerTabId && page.parent.id != 'p' + tab.openerTabId) {
+        // openerTabId was missing initially in onTabCreated but exists now; this happens when
+        // using "open selected links" extension, so place these under their correct parent now
+
+        var newParent = tree.getPage(tab.openerTabId);
+        if (!newParent) {
+            console.error('Could not find correct parent by openerTabId ' + tab.openerTabId);
+        }
+        else {
+            // try to put in the correct order
+            var nextByIndex = first(newParent.children, function(e) {
+                return e.isTab() && e.index > tab.index;
+            });
+            if (nextByIndex) {
+                nextByIndex = nextByIndex[1];
+                log('Moving node which now has openerTabId to be ordered child of correct parent',
+                    'moving', page.id, 'before', nextByIndex, nextByIndex.id, 'parent', newParent.id);
+                tree.moveNodeRel(page, 'before', nextByIndex);
+                page.placed = true;
+            }
+            else {
+                log('Moving node which now has openerTabId to be NON ordered child of correct parent',
+                    'moving', page.id, 'append', newParent.id);
+                tree.moveNodeRel(page, 'append', newParent);
+                page.placed = true;
+            }
         }
     }
 
