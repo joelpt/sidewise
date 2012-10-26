@@ -1,4 +1,4 @@
-var RUNNING_LOG_MAX_SIZE = 0.8 * 1024 * 1024; // 2 MB
+var RUNNING_LOG_MAX_SIZE = 0.7 * 1024 * 1024; // 2 MB
 
 var loggingEnabled = localStorage['loggingEnabled'] == 'true' || false;
 var logObjectsAsJSON = false;
@@ -11,10 +11,6 @@ var runningLog = '';
 // Object arguments are turned into JSON strings and output if logObjectsAsJSON is true.
 // Call stack data is included in the output.
 function log() {
-    if (!loggingEnabled || !console) {
-        return;
-    }
-
     var messages = [];
     var jsonMessages = [];
     for (var i in arguments) {
@@ -26,7 +22,14 @@ function log() {
         }
         var json;
         try {
-            json = JSON.stringify(arg, StringifyReplacer);
+            if (arg instanceof DataTreeNode) {
+                json = arg.elemType + '::' + JSON.stringify({ id: arg.id, index: arg.index, windowId: arg.windowId, hibernated: arg.hibernated, restorable: arg.restorable,
+                    incognito: arg.incognito, status: arg.status, url: arg.url, pinned: arg.pinned, title: arg.title, label: arg.label,
+                    childrenCount: arg.children.length });
+            }
+            else {
+                json = JSON.stringify(arg, StringifyReplacer);
+            }
             jsonMessages.push(json);
         }
         catch (ex) {
@@ -66,7 +69,6 @@ function log() {
         messages.pop();
     }
 
-    console.log.apply(console, messages);
     jsonMessages = jsonMessages.join(' ');
     runningLog += jsonMessages + '\n';
     if (jsonMessages.indexOf('---') == 0) {
@@ -79,6 +81,11 @@ function log() {
     if (runningLog.length >= RUNNING_LOG_MAX_SIZE) {
         runningLog = runningLog.substring((runningLog.length - RUNNING_LOG_MAX_SIZE) + (RUNNING_LOG_MAX_SIZE * 0.25));
     }
+
+    if (!loggingEnabled || !console) {
+        return;
+    }
+    console.log.apply(console, messages);
 }
 
 // Like log(), but abbreviates multiline strings to 'first line...'
