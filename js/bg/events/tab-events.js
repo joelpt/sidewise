@@ -177,15 +177,15 @@ function onTabCreated(tab)
             return;
         }
     }
-    else if (tab.url == 'chrome://newtab/') {
-        // New Tab pages always get put at the top level of the tree since they are
-        // created via Ctrl+T or the New Tab button in the tab bar.
-        log('Setting New Tab page as child of its hosting window', page, tab.windowId);
-        tree.addTabToWindow(tab, page, function(pageNode, winNode) {
-            tree.updateNode(pageNode, { placed: true });
-        });
-        return;
-    }
+    // else if (tab.url == 'chrome://newtab/') {
+    //     // New Tab pages always get put at the top level of the tree since they are
+    //     // created via Ctrl+T or the New Tab button in the tab bar.
+    //     log('Setting New Tab page as child of its hosting window', page, tab.windowId);
+    //     tree.addTabToWindow(tab, page, function(pageNode, winNode) {
+    //         tree.updateNode(pageNode, { placed: true });
+    //     });
+    //     return;
+    // }
     else if (tab.url && tab.url.indexOf('view-source:') == 0 && tab.openerTabId) {
         // view source pages should be nested under the parent always
         tree.addNode(page, 'p' + tab.openerTabId, undefined, true);
