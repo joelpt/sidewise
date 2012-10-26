@@ -278,10 +278,14 @@ function PageTreeCallbackProxy(methodName, args) {
         if (node.parent instanceof WindowNode && !node.parent.hibernated && node.parent.children.length == 0) {
             TimeoutManager.reset('removeChildlessWindowNode_' + node.parent.id, function() {
                 if (node.parent instanceof WindowNode && !node.parent.hibernated && node.parent.children.length == 0) {
+                    // verify the parent node is still present in the tree
                     var toRemove = tree.getNode(node.parent.id);
-                    if (toRemove) {
-                        tree.removeNode(node.parent, true);
+                    if (toRemove && toRemove.children.length == 0) {
+                        log('Removing stale window ' + toRemove.id);
+                        tree.removeNode(toRemove, true);
+                        return;
                     }
+                    log('Stale window ' + node.parent.id + ' is already removed or now has children');
                 }
             }, 1500);
         }
