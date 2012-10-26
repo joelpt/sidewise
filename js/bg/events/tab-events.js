@@ -41,29 +41,16 @@ function onTabCreated(tab)
 
     if (expectingNavigationTabIdSwap) {
         // tab id swapping is probably about to occur
-        if (expectingNavigationOldTabId && expectingNavigationPossibleNewTabIds.indexOf(tab.id) >= 0) {
+        if (expectingNavigationOldTabId) {
             // it did occur; swap tab ids
             log('Swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id);
-            tree.updatePage(expectingNavigationOldTabId, {
+            var page = tree.getPage(expectingNavigationOldTabId);
+            tree.updatePage(page, {
                 id: 'p' + tab.id,
                 url: tab.url,
                 windowId: tab.windowId
             });
-            resetExpectingNavigation();
-            return;
-        }
-
-        // sometimes onBeforeNavigate fails to fire before we get here when we're expecting
-        // a tab id swap; if this happens, as long as we did get a tabRemoved event while
-        // we were expecting a tab id swap, just assume this newly created tab is in fact
-        // the one that should be swapped in for that removed tab
-        if (expectingNavigationOldTabId) {
-            log('Fallback approach - swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id);
-            tree.updatePage(expectingNavigationOldTabId, {
-                id: 'p' + tab.id,
-                url: tab.url,
-                windowId: tab.windowId
-            });
+            refreshPageStatus(page);
             resetExpectingNavigation();
             return;
         }
@@ -89,6 +76,7 @@ function onTabCreated(tab)
             unread: true,
             status: 'preload'
         });
+        refreshPageStatus(wakingPage);
         tree.awakeningPages.splice(wakingIndex, 1); // remove matched element
 
         // fix order wrt pinned tabs if necessary
@@ -137,11 +125,7 @@ function onTabCreated(tab)
         log('doing fast associate in onTabCreated', tab, match, tab.id, match.id);
         var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id, windowId: tab.windowId, index: tab.index, initialCreation: false };
         tree.updateNode(match, details);
-
-        // get updated status from Chrome in a moment
-        chrome.tabs.get(tab.id, function(t) {
-            tree.updateNode(match, { status: t.status });
-        });
+        refreshPageStatus(match);
 
         // set focus to this page if it and its window have the current focus
         if (tab.active && focusTracker.getFocused() == tab.windowId) {
@@ -152,6 +136,9 @@ function onTabCreated(tab)
         restoreParentWindowViaUniqueChildPageNode(topParent, match, tab.windowId);
         return;
     }
+
+    // get updated page status in a moment, just in case Chrome fails to fire onTabUpdated subsequently
+    refreshPageStatus(page);
 
     // Special handling for extension pages
     if (isExtensionUrl(tab.url)) {
@@ -314,11 +301,30 @@ function onTabRemoved(tabId, removeInfo)
     log(tabId, removeInfo);
 
     if (expectingNavigationTabIdSwap) {
-        // We think Chrome is about to swap this tab with another tab
-        // due to preloading a tab in the background and swapping it in
-        log('Recording expected navigation old tab id', tabId);
-        expectingNavigationOldTabId = tabId;
-        return;
+        if (removeInfo.isWindowClosing) {
+            // if a window is closing with this tab removal, a tab swap
+            // did not and will not be happening for the removed tab
+            resetExpectingNavigation();
+        }
+        else {
+            // We think Chrome is about to swap this tab with another tab
+            // due to preloading a tab in the background and swapping it in
+            log('Recording expected navigation old tab id', tabId);
+            expectingNavigationOldTabId = tabId;
+
+            // If Chrome does not perform the tab swap very soon, then we
+            // assume it never will
+            setTimeout(function() {
+                if (expectingNavigationTabIdSwap) {
+                    log('Timing out expected navigation swap');
+                    resetExpectingNavigation();
+                    onTabRemoved(tabId, removeInfo);
+                    return;
+                }
+                log('Navigation swap appears to have occurred before reset timeout');
+            }, 250);
+            return;
+        }
     }
 
     var page = tree.getPage(tabId);
@@ -393,6 +399,11 @@ function onTabRemoved(tabId, removeInfo)
 
     // remove the page element from the tree
     tree.removeNode(page);
+
+    // also remove zero-child parent window nodes if necessary
+    if (page.parent instanceof WindowNode && page.parent.children.length == 0) {
+        tree.removeNode(page.parent);
+    }
 }
 
 function findNextTabToFocus(nextToNodeId, preferCousins) {
@@ -739,3 +750,18 @@ function onTabHighlighted(highlightInfo) {
     PageTreeCallbackProxy('multiSelectInWindow', highlightInfo);
 }
 
+
+///////////////////////////////////////////////////////////
+// Helper functions
+///////////////////////////////////////////////////////////
+
+function refreshPageStatus(page) {
+    if (!page.isTab()) {
+        return;
+    }
+    setTimeout(function() {
+        chrome.tabs.get(getNumericId(page.id), function(tab) {
+            tree.updateNode(page, { status: tab.status });
+        });
+    }, 100);
+}
