@@ -101,7 +101,10 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     // prepare new tree elements to append to treeReplaceElem
     var rootNode = $('<div class="ftRoot"/>');
     var rootUL = $('<ul class="ftChildren"/>');
+    var rootBottomPadding = $('<div class="ftBottomPadding"/>');
     rootNode.append(rootUL);
+    rootNode.append(rootBottomPadding);
+    rootBottomPadding.droppable(this.getGenericDroppableParams());
 
     // append to treeReplaceElem
     var treeHostElem = $(treeReplaceElem);

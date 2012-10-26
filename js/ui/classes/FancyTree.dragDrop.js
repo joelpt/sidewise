@@ -109,6 +109,8 @@ FancyTree.prototype.resetDragDropState = function(onComplete) {
     this.draggingJustCancelled = true;
     $('.ui-draggable-dragging').trigger('mouseup');
 
+    $('.ftBottomPadding').hide();
+
     if (onComplete) {
         setTimeout(onComplete, 0);
     }
@@ -133,6 +135,7 @@ FancyTree.prototype.draggableStart = function(evt) {
     self.dragSelectedCollapsedRow = false;
 
     self.root.find('.ftChildren').droppable(droppableParams);
+    $('.ftBottomPadding').show();
     self.hideTooltip.call(self);
 
     var isCollapsed = target.parent().hasClass('ftCollapsed');
@@ -329,11 +332,20 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
 
     var self = this;
     this.moveRowSetAnimate($rows, this.draggingTo, this.draggingOverRow, function(moves) {
+        var evtSaved = evt;
+
         $.fx.off = fxAreOff;
         if (self.onRowsMoved) {
             self.onRowsMoved(moves);
         }
-        setTimeout(function() { self.dropping = false; }, 1000);
+
+        if ($(evt.toElement).hasClass('ftBottomPadding')) {
+            self.scrollTargetElem.scrollTo('+=200', { duration: 0 });
+        };
+
+        setTimeout(function() {
+            self.dropping = false;
+        }, 1000);
     });
 };
 
