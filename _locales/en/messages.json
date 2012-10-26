@@ -175,7 +175,11 @@
 
     "option_closeButton": { "message": "Close settings" },
     "option_resetButton": { "message": "Reset to defaults" },
+    "option_exportButton": { "message": "Export Sidewise data" },
+    "option_importButton": { "message": "Import Sidewise data" },
+    "option_submitBugReportButton": { "message": "Send diagnostic report" },
     "optionsSaveNotNeeded": { "message": "Note: Settings are automatically saved as you change them." },
+    "optionsToolsHeader": { "message": "Advanced tools" },
 
     "installPageTitle": { "message": "Welcome to Sidewise" },
     "installPageHeading": { "message": "# ![test](/images/sidewise_icon_48.png) Welcome to Sidewise!" },

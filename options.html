@@ -7,6 +7,7 @@
     <link type="text/css" rel="stylesheet" href="/css/reset.css"/>
     <link rel="stylesheet" type="text/css" media="screen" href="/css/jqueryui/redmond/jquery-ui-1.8.23.custom.css" />
     <link rel="stylesheet" type="text/css" media="screen" href="/css/ui.jqgrid.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="/js/jquery/impromptu/themes/clean-blue.css" />
     <link type="text/css" rel="stylesheet" href="/css/options.css"/>
 
     <link rel="shortcut icon" href="images/sidewise_icon_16.png" sizes="16x16" />
@@ -21,10 +22,13 @@
     <script src="/js/jquery/jqgrid/grid.locale-en.js" type="text/javascript"></script>
     <script src="/js/jquery/jqgrid/jquery.jqGrid.min.js" type="text/javascript"></script>
 
+    <script src="/js/jquery/impromptu/jquery-impromptu.js" type="text/javascript"></script>
+
     <script type="text/javascript" src="/js/util/marked.js"></script>
     <script type="text/javascript" src="/js/util/i18n.js"></script>
     <script type="text/javascript" src="/js/util/logging.js"></script>
     <script type="text/javascript" src="/js/util/util.js"></script>
+    <script type="text/javascript" src="/js/util/ui-util.js"></script>
     <script type="text/javascript" src="/js/util/chrome-functions.js"></script>
 
     <script type="text/javascript" src="/js/ui/options.js"></script>
@@ -145,6 +149,14 @@
                     <input type="text" name="sidebarTargetWidth" datatype="int" />
                     <input type="checkbox" name="reportUsageStatistics"/>
                     <input type="checkbox" name="showWhatsNewPane"/>
+
+                    <div class="optionsRow toolsRow" align="center">
+                        <div class="hint" i18n="optionsToolsHeader"></div>
+                        <input type="button" class="toolButton" id="exportButton" name="exportButton" />
+                        <input type="button" class="toolButton" id="importButton" name="importButton"/>
+                        <input type="button" class="toolButton" id="submitBugReportButton" name="submitBugReportButton"/>
+                    </div>
+
                 </div>
 
                 <div class="optionsRow">

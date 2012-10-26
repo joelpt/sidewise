@@ -137,7 +137,12 @@ function transformInputElements() {
                 break;
             case 'button':
                 inputElem.val(label);
-                rep.append(inputElem);
+                if (! $e.hasClass('toolButton')) {
+                    rep.append(inputElem);
+                }
+                else {
+                    rep = inputElem;
+                }
                 break;
             case 'select':
                 inputBox.append(inputElem).append(hintElem);
@@ -545,4 +550,70 @@ function submitBugReport() {
     $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': data }, function(data, textStatus, jqXHR) {
         alert('Bug report submitted. Thank you for the report.');
     });
+}
+
+
+///////////////////////////////////////////////////////////
+// Import/export
+///////////////////////////////////////////////////////////
+
+function exportState() {
+    bg.savePageTreeToLocalStorage(bg.tree, 'pageTree', true);
+    copyTextToClipboard(JSON.stringify(bg.localStorage));
+    alert('Sidewise\'s configuration and state data has been exported and copied to your clipboard.\n\nPaste this into a text file to save it.');
+}
+
+function importState() {
+    var html = 'Paste the previously exported Sidewise data into the box below:<br/><textarea rows="8" cols="30" id="importBox" name="data"></textarea>';
+    var importPrompt = $.prompt(html, { prefix: 'cleanblue', buttons: { 'OK': true, 'Cancel': false }, callback: doImportState });
+    importPrompt.bind('promptloaded', function(e) {
+        $('#importBox').focus();
+    });
+}
+
+function doImportState(e,v,m,f) {
+    if (!v) {
+        // user hit Cancel
+        return;
+    }
+
+    var data = f.data;
+    if (!data) {
+        alert('No data pasted. Import aborted.');
+        return;
+    }
+
+    try {
+        data = JSON.parse(data);
+    }
+    catch (ex) {
+        alert('There was a problem importing the data. No changes have been made.\n\n' + ex.message);
+        return;
+    }
+
+    try {
+        for (var k in data) {
+            if (k == 'lastInitializedVersion') {
+                continue;
+            }
+            bg.settings.set(k, JSON.parse(data[k]));
+        }
+    }
+    catch (ex) {
+        alert('There was a problem importing a setting. No changes have been made.\n\n' + ex.message + '\n' + 'Setting name: ' + k);
+        return;
+    }
+    alert('Import successful!\nSidewise will now be restarted.');
+
+    var afterFn = function() {
+        bg.document.location.reload();
+        setTimeout(function() { document.location.reload(); }, 2000);
+    };
+
+    if (bg.sidebarHandler.sidebarExists()) {
+        bg.sidebarHandler.remove(afterFn);
+    }
+    else {
+        afterFn();
+    }
 }

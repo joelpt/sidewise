@@ -223,6 +223,17 @@ blockquote {
     vertical-align: top;
 }
 
+.toolsRow {
+    margin: 2em 1em 1em 1em;
+    padding: 0.5em;
+    border: 1px solid #ccc;
+    border-radius: 0.25em;
+}
+
+.toolButton {
+    margin-top: 0.5em;
+}
+
 .optionsUnits {
     padding-left: 0.75em;
     font-style: italic;

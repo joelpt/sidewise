@@ -22,6 +22,9 @@ $(document).ready(function() {
         .on('click', '#closeButton', onCloseButtonClick)
         .on('click', '#resetButton', resetAllSettings)
         .on('click', '#detectMonitorsButton', detectMonitors)
+        .on('click', '#submitBugReportButton', submitBugReport)
+        .on('click', '#exportButton', exportState)
+        .on('click', '#importButton', importState)
         .on('click', '#donateLink', onDonateLinkClick)
         .on('click', '#panePickerExpander', showPanePicker);
 
