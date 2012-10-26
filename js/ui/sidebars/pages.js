@@ -1208,18 +1208,25 @@ function closeWindowRow(row) {
 
         var id = row.attr('id');
         var windowId = getRowNumericId(row);
+        var winNode = bg.tree.getNode(id);
 
         if (row.attr('hibernated') == 'true' || !windowId) {
-            bg.tree.removeNode(id, true);
+            bg.tree.removeNode(winNode, true);
             return;
         }
 
         chrome.windows.get(windowId, function(win) {
             if (win) {
-                chrome.windows.remove(windowId, function() {
-                    bg.tree.removeNode(id, true);
-                });
-                return;
+                chrome.windows.remove(windowId);
+                setTimeout(function() {
+                    var checkWinNode = bg.tree.getNode(row.attr('id'));
+                    if (checkWinNode) {
+                        log('Removing window node from tree', checkWinNode.id);
+                        bg.tree.removeNode(checkWinNode, true);
+                        return;
+                    }
+                    log('Window node already removed from tree', id);
+                }, 100);
             }
         });
     });
