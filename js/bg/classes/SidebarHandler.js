@@ -451,6 +451,9 @@ SidebarHandler.prototype = {
 
         var self = this;
         setTimeout(function() {
+            if (!self.dockWindowId || !self.windowId) {
+                return;
+            }
             chrome.windows.get(self.dockWindowId, function(dock) {
                 chrome.windows.get(self.windowId, function(sidebar) {
                     if (!dock || !sidebar) {
