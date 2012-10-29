@@ -1317,14 +1317,8 @@ function createNewTabInWindow(windowId, url) {
         }
     }
 
-    chrome.tabs.create({ windowId: windowId, url: url }, function(tab) {
-        // ensure the new tab and window have focus after a short delay to compensate for Sidewise
-        // potentially doing window-switching when Chrome is unfocused and "Create new tab"
-        // button is clicked, and the "Keep sidebar visible next to dock window" option is on
-        setTimeout(function() {
-            chrome.windows.update(tab.windowId, { focused: true });
-            chrome.tabs.update(tab.id, { active: true });
-        }, 50);
+    chrome.windows.update(windowId, { focused: true }, function(win) {
+        chrome.tabs.create({ windowId: windowId, url: url, active: true });
     });
 }
 
