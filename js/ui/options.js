@@ -197,6 +197,10 @@ function onSettingModified(evt) {
         }
     }
 
+    if ($target.is('[type=checkbox]')) {
+        updateExpansionGroup($target.attr('id'), false);
+    }
+
     if (saveOneSetting(target)) {
         $target.removeClass('invalid');
         showStatusMessage(getMessage('optionsSuccessSavingSetting'));
@@ -390,6 +394,7 @@ function loadSettings() {
 
             case 'checkbox':
                 e.checked = value;
+                updateExpansionGroup($e.attr('id'), true);
                 break;
 
             default:
@@ -512,7 +517,7 @@ function setMonitorCountInfo(count, highlight) {
 
 
 ///////////////////////////////////////////////////////////
-// Advanced options revelation
+// Option revealers
 ///////////////////////////////////////////////////////////
 
 function showAdvancedOptions(revealing) {
@@ -527,7 +532,29 @@ function showAdvancedOptions(revealing) {
         $('#advancedOptionsExpander').hide();
         $advOpts.show();
     }
-};
+}
+
+function updateExpansionGroup(forId, instant) {
+    var isTrue = $('#' + forId).is(':checked');
+    var $group = $('.trueExpansionGroup[for=' + forId + ']');
+    if ($group.length == 0) {
+        return;
+    }
+    if (isTrue) {
+        if (instant) {
+            $group.show();
+            return;
+        }
+        $group.slideDown(150);
+        return;
+    }
+    if (instant) {
+        $group.hide();
+        return;
+    }
+    $group.slideUp(150);
+}
+
 
 
 ///////////////////////////////////////////////////////////

@@ -112,22 +112,20 @@
                     <input type="text" name="multiSelectActionConfirmThreshold" datatype="int"/>
                     <input type="checkbox" name="pages_clickOnMouseWheel"/>
                     <input type="checkbox" name="pages_clickOnHoverDelay"/>
-                    <blockquote>
+                    <blockquote class="trueExpansionGroup" for="pages_clickOnHoverDelay">
                         <input type="text" name="pages_clickOnHoverDelayMs" datatype="int"/>
-                    </blockquote>
-                </div>
-                <input type="checkbox" name="smartFocusOnClose"/>
-                <div class="advancedOptions">
-                    <blockquote>
-                        <input type="checkbox" name="smartFocusPrefersParent"/>
-                        <input type="checkbox" name="smartFocusPrefersCousins"/>
                     </blockquote>
                     <input type="checkbox" name="pages_showMediaPlayTime"/>
                 </div>
+                <input type="checkbox" name="smartFocusOnClose"/>
+                <blockquote class="trueExpansionGroup" for="smartFocusOnClose">
+                        <input type="checkbox" name="smartFocusPrefersParent"/>
+                        <input type="checkbox" name="smartFocusPrefersCousins"/>
+                </blockquote>
 
                 <h2 i18n="optionsHeadingPageHibernation"></h2>
                 <input type="checkbox" name="rememberOpenPagesBetweenSessions"/>
-                <blockquote>
+                <blockquote class="trueExpansionGroup" for="rememberOpenPagesBetweenSessions">
                     <input type="checkbox" name="autoCollapseLastSessionWindows"/>
                 </blockquote>
                 <input type="checkbox" name="wakeHibernatedPagesOnClick"/>
