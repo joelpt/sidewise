@@ -91,7 +91,7 @@ Settings.prototype = {
             pages_showMediaPlayTime: true,
             smartFocusOnClose: false,
             smartFocusPrefersCousins: false,
-            smartFocusPrefersParent: false,
+            smartFocusPrefersParent: true,
             loggingEnabled: false,
             alwaysShowAdvancedOptions: false,
             sidebarTargetWidth: 275,
