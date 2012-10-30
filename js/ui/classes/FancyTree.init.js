@@ -226,11 +226,11 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
         .on('contextmenu', rootNode, data, this.onContextMenu)
         .on('mouseup', '.ftContextMenuItem', data, this.onContextMenuItemClick)
         .on('mouseup', '.ftContextMenuSeparator', data, function() { return false; })
-        .on('mouseup', 'body', data, this.onBodyMouseUp)
+        .on('mouseup', 'body,.ftBottomPadding', data, this.onBodyMouseUp)
         .on('keydown', data, this.onDocumentKeyDown)
         .on('mousemove', '.ftItemRow', data, this.onItemRowMouseMove)
-        .on('mousewheel', 'body', data, this.onBodyMouseWheel)
-        .on('mouseleave', 'body', data, this.onBodyMouseLeave);
+        .on('mousewheel', 'body,.ftBottomPadding', data, this.onBodyMouseWheel)
+        .on('mouseleave', 'body,.ftBottomPadding', data, this.onBodyMouseLeave);
 
     if (options.showFilterBox != false) {
         // add event handlers for filter box

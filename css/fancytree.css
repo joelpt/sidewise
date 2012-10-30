@@ -1,7 +1,8 @@
 .ftBottomPadding {
-    height: 200px;
-    display: none;
+    height: 6em;
+    opacity: 0.0;
 }
+
 
 /* .ftChildren, .ftRowNode */
 

@@ -5,8 +5,8 @@
 
 FancyTree.prototype.onBodyMouseUp = function(evt) {
     var treeObj = evt.data.treeObj;
-
-    if ($(evt.target).parents().is(treeObj.root)) {
+    var $target = $(evt.target);
+    if ($target.parents().is(treeObj.root) && !$target.is('.ftBottomPadding')) {
         // over the tree
         return true;
     }

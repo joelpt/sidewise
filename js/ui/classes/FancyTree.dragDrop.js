@@ -109,7 +109,7 @@ FancyTree.prototype.resetDragDropState = function(onComplete) {
     this.draggingJustCancelled = true;
     $('.ui-draggable-dragging').trigger('mouseup');
 
-    $('.ftBottomPadding').hide();
+    // $('.ftBottomPadding').hide();
 
     if (onComplete) {
         setTimeout(onComplete, 0);
@@ -339,9 +339,9 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
             self.onRowsMoved(moves);
         }
 
-        if ($(evt.toElement).hasClass('ftBottomPadding')) {
-            self.scrollTargetElem.scrollTo('+=200', { duration: 0 });
-        };
+        // if ($(evt.toElement).hasClass('ftBottomPadding')) {
+        //     self.scrollTargetElem.scrollTo('+=200', { duration: 0 });
+        // };
 
         setTimeout(function() {
             self.dropping = false;
