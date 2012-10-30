@@ -43,7 +43,11 @@ $(document).ready(function() {
     bg.sidebarHandler.registerSidebarPane('pages', window);
     bg.focusCurrentTabInPageTree(true);
 
-    $(document).on('dblclick', 'body', onBodyDoubleClick);
+    if (!settings.get('createdNewTabViaDoubleClick')) {
+        $('.ftBottomPadding').text('Double-click to create a new tab');
+    }
+
+    $(document).on('dblclick', 'body, .ftBottomPadding', onBodyDoubleClick);
 });
 
 function initDebugBar() {
@@ -315,13 +319,16 @@ function PageTreeCallbackProxyListener(op, args)
 ///////////////////////////////////////////////////////////
 
 function onBodyDoubleClick(evt) {
-    if ($(evt.target).parents().is(ft.root)) {
+    var $target = $(evt.target);
+    if ($target.parents().is(ft.root) && !$target.is('.ftBottomPadding')) {
         // over the tree
         return true;
     }
-
     var windowId = bg.focusTracker.getFocused();
     createNewTabInWindow(windowId);
+    settings.set('createdNewTabViaDoubleClick', true);
+    $('.ftBottomPadding').text('');
+    return false;
 }
 
 

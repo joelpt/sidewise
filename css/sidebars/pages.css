@@ -301,3 +301,24 @@ section#main:not(.debugEnabled) {
     100%  { -webkit-transform: rotate(0deg); }
 }
 
+
+/* .ftBottomPadding */
+
+.ftBottomPadding {
+    height: 6em;
+    opacity: 0.0;
+    transition: opacity .5s ease 0s;
+    -webkit-transition: opacity .5s ease 0s;
+    padding: 1.5em 1em;
+    text-align: center;
+    font-style: italic;
+    font-family: Verdana, sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.ftBottomPadding:hover {
+    opacity: 0.25;
+    transition: opacity 1s ease 2s;
+    -webkit-transition: opacity 1s ease 2s;
+}
