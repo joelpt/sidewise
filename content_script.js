@@ -90,20 +90,11 @@ function injectPageScript(fn) {
 function injectPageScriptSendEventFn() {
     injectPageScript(function() {
         window.sidewise_sendEvent = function(name, value) {
-            // var existing = document.getElementById('sidewise_event');
-            // if (existing) {
-            //     var e = existing;
-            // }
-            // else {
-                var e = document.createElement('meta');
-                // e.setAttribute('id', 'sidewise_event');
-                e.setAttribute('name', 'sidewise_event');
-            // }
+            var e = document.createElement('meta');
+            e.setAttribute('name', 'sidewise_event');
             e.setAttribute('event-name', name);
             e.setAttribute('event-value', value);
-            // if (!existing) {
-                document.head.appendChild(e);
-            // }
+            document.head.appendChild(e);
         };
     });
 }
@@ -215,6 +206,7 @@ function youTubePageScript() {
         if (window.sidewise_ytplayer) {
             return;
         }
+        clearInterval(window.sidewise_onVideoPlayingIntervalTimer);
         window.sidewise_onVideoPlayingIntervalTimer = null;
         window.sidewise_missedOnYoutubePlayerReadyTimer = null;
         window.sidewise_ytplayer = document.getElementById("movie_player");
@@ -243,29 +235,12 @@ function youTubePageScript() {
             window.sidewise_onVideoPlayingIntervalTimer = null;
         }
         window.sidewise_sendYouTubeUpdateEvent(state);
-        // clearInterval(window.sidewise_delayedStateChangeEventTimer1);
-        // clearInterval(window.sidewise_delayedStateChangeEventTimer2);
-        // window.sidewise_delayedStateChangeEventTimer1 = setTimeout(function() { window.sidewise_sendYouTubeUpdateEvent(state); }, 250);
-        // window.sidewise_delayedStateChangeEventTimer2 = setTimeout(function() { window.sidewise_sendYouTubeUpdateEvent(state); }, 1000);
     };
 
     window.sidewise_sendYouTubeUpdateEvent = function(state) {
         // console.log('updateMediaState', state + ',' + sidewise_ytplayer.getCurrentTime());
         window.sidewise_sendEvent('updateMediaState', state + ',' + sidewise_ytplayer.getCurrentTime());
     };
-
-    if (window.sidewise_ytplayer) {
-        // console.log('already have ytplayer wired up');
-        return;
-    }
-    //     clearInterval(window.sidewise_onVideoPlayingIntervalTimer);
-    //     clearTimeout(window.sidewise_missedOnYoutubePlayerReadyTimer);
-    //     window.sidewise_onVideoPlayingIntervalTimer = null;
-    //     window.sidewise_missedOnYoutubePlayerReadyTimer = null;
-    //     window.onYouTubePlayerReady();
-    //     return;
-    // }
-
 }
 
 
