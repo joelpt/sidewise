@@ -5,6 +5,7 @@
 var CARD_SLIDE_DURATION_MS = 450;
 var DONATION_LINK_VARIETIES = 6;
 var DONATION_PAGE_VARIETIES = 5;
+var BUG_REPORT_MAX_SIZE = 0.7 * 1024 * 1024;
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -562,9 +563,9 @@ function updateExpansionGroup(forId, instant) {
 ///////////////////////////////////////////////////////////
 
 function submitBugReport() {
-    var desc = prompt('Please describe the problem below.');
+    var desc = prompt('This sends a log of Sidewise\'s recent activity to the author for diagnostic purposes. It is best used immediately after you experience a problem.\n\nPlease describe the problem below.');
     if (!desc) {
-        alert('Bug report cancelled.');
+        alert('Diagnostic report cancelled.');
         return;
     }
 
@@ -572,10 +573,10 @@ function submitBugReport() {
     bg.log(bg.tree.dump());
     bg.log(bg.tree.dumpTabIndexes());
 
-    var data = getVersion() + ' - ' + Date() + '\n' + desc + '\n\n' + bg.runningLog;
+    var data = (getVersion() + ' - ' + Date() + '\n' + desc + '\n\n' + bg.runningLog).substr(0, BUG_REPORT_MAX_SIZE);
     // alert(data.length);
     $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': data }, function(data, textStatus, jqXHR) {
-        alert('Bug report submitted. Thank you for the report.');
+        alert('Diagnostic report sent. Thank you for the report.\n\nServer response:\n' + data);
     });
 }
 

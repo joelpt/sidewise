@@ -1,4 +1,5 @@
-var RUNNING_LOG_MAX_SIZE = 0.7 * 1024 * 1024; // 2 MB
+var RUNNING_LOG_MAX_SIZE = 1.4 * 1024 * 1024; // 2 MB
+var RUNNING_LOG_OVERTRIM_PCT = 0.5;
 
 var loggingEnabled = localStorage['loggingEnabled'] == 'true' || false;
 var logObjectsAsJSON = false;
@@ -79,7 +80,7 @@ function log() {
     }
 
     if (runningLog.length >= RUNNING_LOG_MAX_SIZE) {
-        runningLog = runningLog.substring((runningLog.length - RUNNING_LOG_MAX_SIZE) + (RUNNING_LOG_MAX_SIZE * 0.25));
+        runningLog = runningLog.substring((runningLog.length - RUNNING_LOG_MAX_SIZE) + (RUNNING_LOG_MAX_SIZE * RUNNING_LOG_OVERTRIM_PCT));
     }
 
     if (!loggingEnabled || !console) {
