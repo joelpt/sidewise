@@ -374,18 +374,19 @@ function onTabRemoved(tabId, removeInfo)
             }, 500);
             try {
                 chrome.tabs.update(nextTabId, { active: true }, function(tab) {
+                    expectingSmartFocusTabId = null;
                     TimeoutManager.clear('resetExpectingSmartFocusTabId');
                     if (!tab) {
                         // an error occurred while trying to smart focus, most likely
-                        // the tab we tried to focus was removed, so just reset
-                        // expectingSmartFocusTabId and update focus to what Chrome says
-                        expectingSmartFocusTabId = null;
+                        // the tab we tried to focus was removed, so let Chrome decide
                         focusCurrentTabInPageTree(true);
                     }
                 });
             }
             catch (ex) {
                 log('Smart focus tab no longer exists, letting Chrome decide', nextTabId);
+                expectingSmartFocusTabId = null;
+                TimeoutManager.clear('resetExpectingSmartFocusTabId');
             }
         }
         // else, nothing suitable was found; we'll just let Chrome decide
@@ -614,7 +615,9 @@ function onTabUpdated(tabId, changeInfo, tab)
         favicon: favicon,
         title: title,
         pinned: tab.pinned,
-        openerTabId: tab.openerTabId
+        openerTabId: tab.openerTabId,
+        mediaState: 'unstarted',
+        mediaTime: 0
     });
 
     if (tab.url.match(/^chrome-/)) {
