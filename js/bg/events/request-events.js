@@ -38,7 +38,7 @@ function onPortMessage(port, msg) {
     // port.postMessage({ action: 'wassup' });
     switch (msg.op) {
         case 'getPageDetails':
-            log('gotPageDetails', msg.action);
+            // log('gotPageDetails', msg.action);
             onGetPageDetailsMessage(port.sender.tab, msg);
             break;
     }
@@ -113,12 +113,14 @@ function onRequest(request, sender, sendResponse) {
 ///////////////////////////////////////////////////////////
 
 function onGetUpdateMediaStateMessage(tab, msg) {
+    // log(tab, msg);
     var page = tree.getPage(tab.id);
     if (!page) {
-        // throw new Error('Cannot find page for updating media state ' + tab.id);
+        console.error('Cannot find page for updating media state ' + tab.id);
         return;
     }
     tree.updateNode(page, { mediaState: msg.state, mediaTime: msg.time }, true);
+    // log(page);
 }
 
 
