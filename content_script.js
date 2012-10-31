@@ -27,6 +27,7 @@ window.addEventListener('popstate', onLocationOrHistoryChanged);
 window.addEventListener('DOMContentLoaded', onDOMContentLoaded);
 
 function onDOMContentLoaded() {
+    log('onDOMContentLoaded');
     setUpTitleObserver();
     setUpYouTubeMonitor();
 }
@@ -89,11 +90,20 @@ function injectPageScript(fn) {
 function injectPageScriptSendEventFn() {
     injectPageScript(function() {
         window.sidewise_sendEvent = function(name, value) {
-            var e = document.createElement('meta');
-            e.setAttribute('name', 'sidewise_event');
+            // var existing = document.getElementById('sidewise_event');
+            // if (existing) {
+            //     var e = existing;
+            // }
+            // else {
+                var e = document.createElement('meta');
+                // e.setAttribute('id', 'sidewise_event');
+                e.setAttribute('name', 'sidewise_event');
+            // }
             e.setAttribute('event-name', name);
             e.setAttribute('event-value', value);
-            document.head.appendChild(e);
+            // if (!existing) {
+                document.head.appendChild(e);
+            // }
         };
     });
 }
@@ -190,7 +200,8 @@ function generateGuid() {
 ///////////////////////////////////////////////////////////
 
 function setUpYouTubeMonitor() {
-    if (!document.location.href.match('youtube.+/watch')) {
+    // log('setUpYouTubeMonitor called', document.location.href);
+    if (!document.location.href.match('youtube.+/(user|watch)')) {
         return;
     }
     injectPageScriptSendEventFn();
@@ -198,36 +209,63 @@ function setUpYouTubeMonitor() {
 }
 
 function youTubePageScript() {
-    window.sidewise_onVideoPlayingTimer = null;
-
-    window.onYouTubePlayerReady = function() {
+    window.onYouTubePlayerReady = function(playerid) {
+        // console.log('Calling onYouTubePlayerReady', playerid);
         clearTimeout(window.sidewise_missedOnYoutubePlayerReadyTimer);
+        if (window.sidewise_ytplayer) {
+            return;
+        }
+        window.sidewise_onVideoPlayingIntervalTimer = null;
+        window.sidewise_missedOnYoutubePlayerReadyTimer = null;
         window.sidewise_ytplayer = document.getElementById("movie_player");
         if (!window.sidewise_ytplayer) {
-            window.sidewise_missedOnYouTubePlayerReadyTimer = setTimeout(window.onYouTubePlayerReady(), 5000);
+            window.sidewise_ytplayer = document.getElementById("movie_player-flash");
+        }
+        if (!window.sidewise_ytplayer) {
+            window.sidewise_missedOnYouTubePlayerReadyTimer = setTimeout(window.onYouTubePlayerReady, 5000);
             return;
         }
         window.sidewise_ytplayer.addEventListener('onStateChange', 'sidewise_onPlayerStateChange');
     };
 
-    window.sidewise_missedOnYouTubePlayerReadyTimer = setTimeout(window.onYouTubePlayerReady(), 5000);
-
     window.sidewise_onPlayerStateChange = function(state) {
+        // console.log('onPlayerStateChange', state);
         if (state == 1) {
             // Report current time value periodically during playback
-            window.sidewise_onVideoPlayingTimer = setInterval(function() {
-                sidewise_sendYouTubeUpdateEvent(1);
-            }, 500);
+            if (!window.sidewise_onVideoPlayingIntervalTimer) {
+                window.sidewise_onVideoPlayingIntervalTimer = setInterval(function() {
+                    window.sidewise_sendYouTubeUpdateEvent(1);
+                }, 500);
+            }
         }
         else {
-            clearInterval(sidewise_onVideoPlayingTimer);
+            clearInterval(window.sidewise_onVideoPlayingIntervalTimer);
+            window.sidewise_onVideoPlayingIntervalTimer = null;
         }
-        sidewise_sendYouTubeUpdateEvent(state);
+        window.sidewise_sendYouTubeUpdateEvent(state);
+        // clearInterval(window.sidewise_delayedStateChangeEventTimer1);
+        // clearInterval(window.sidewise_delayedStateChangeEventTimer2);
+        // window.sidewise_delayedStateChangeEventTimer1 = setTimeout(function() { window.sidewise_sendYouTubeUpdateEvent(state); }, 250);
+        // window.sidewise_delayedStateChangeEventTimer2 = setTimeout(function() { window.sidewise_sendYouTubeUpdateEvent(state); }, 1000);
     };
 
     window.sidewise_sendYouTubeUpdateEvent = function(state) {
+        // console.log('updateMediaState', state + ',' + sidewise_ytplayer.getCurrentTime());
         window.sidewise_sendEvent('updateMediaState', state + ',' + sidewise_ytplayer.getCurrentTime());
     };
+
+    if (window.sidewise_ytplayer) {
+        // console.log('already have ytplayer wired up');
+        return;
+    }
+    //     clearInterval(window.sidewise_onVideoPlayingIntervalTimer);
+    //     clearTimeout(window.sidewise_missedOnYoutubePlayerReadyTimer);
+    //     window.sidewise_onVideoPlayingIntervalTimer = null;
+    //     window.sidewise_missedOnYoutubePlayerReadyTimer = null;
+    //     window.onYouTubePlayerReady();
+    //     return;
+    // }
+
 }
 
 
