@@ -575,7 +575,8 @@ function onContextMenuShow($rows) {
     }
 
     var $pages = $rows.filter(function(i, e) { return $(e).attr('rowtype') == 'page' });
-    var $branches = $rows.add($rows.find('.ftRowNode'));
+    var $descendants = $rows.find('.ftRowNode');
+    var $branches = $rows.add($descendants);
     var $branchesPages = $branches.filter(function(i, e) { return $(e).attr('rowtype') == 'page' });
 
     var hibernatedCount = $pages.filter(function(i, e) { return $(e).attr('hibernated') == 'true'; }).length;
@@ -624,6 +625,10 @@ function onContextMenuShow($rows) {
     items.push({ separator: true });
 
     items.push({ $rows: $rows, id: 'moveToNewFolder', icon: '/images/folder.png', label: 'Put in new folder', callback: onContextMenuItemMoveToNewFolder, preserveSelectionAfter: true });
+
+    if ($descendants.length > 0) {
+        items.push({ $rows: $rows, id: 'flattenBranch', icon: '/images/text_indent_remove.png', label: 'Flatten branch', callback: onContextMenuItemFlattenBranch, preserveSelectionAfter: true });
+    }
 
     items.push({ separator: true });
 
@@ -770,6 +775,26 @@ function onContextMenuItemMoveToNewFolder($rows) {
         onRowsMoved(moves);
     });
 }
+
+function onContextMenuItemFlattenBranch($rows) {
+    $rows = $rows.add($rows.find('.ftRowNode'));
+    var threshold = settings.get('multiSelectActionConfirmThreshold');
+
+    if (threshold > 0 && $rows.length >= threshold && !confirm('Flatten ' + $rows.length + ' rows?') ) {
+        return;
+    }
+
+    for (var i = $rows.length; i >= 0; i--) {
+        var $row = $($rows[i]);
+        var $parents = $row.parents();
+        var $matching = $parents.filter($rows);
+        if ($matching.length > 0) {
+            var $target = $($matching[$matching.length - 1]);
+            bg.tree.moveNodeRel($row.attr('id'), 'after', $target.attr('id'));
+        }
+    }
+}
+
 
 function onContextMenuItemUnpinPages($rows) {
     $rows
