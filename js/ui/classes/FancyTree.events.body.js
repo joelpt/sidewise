@@ -6,8 +6,14 @@
 FancyTree.prototype.onBodyMouseUp = function(evt) {
     var treeObj = evt.data.treeObj;
     var $target = $(evt.target);
+
     if ($target.parents().is(treeObj.root) && !$target.is('.ftBottomPadding')) {
         // over the tree
+        return true;
+    }
+
+    if (treeObj.dragging) {
+        // drag in progress, possibly to drop on empty space below tree
         return true;
     }
 

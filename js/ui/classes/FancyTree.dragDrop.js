@@ -82,6 +82,7 @@ FancyTree.prototype.getGenericDroppableParams = function() {
         tolerance: 'pointer',
         hoverClass: 'ftDragOver',
         drop: function(evt, ui) {
+            // console.log('heard you dropped something');
             self.onItemRowDrop(evt, ui);
             evt.stopPropagation();
             return false;
@@ -130,7 +131,7 @@ FancyTree.prototype.draggableStart = function(evt) {
 
     self.dragging = true;
     self.dropping = false;
-    self.draggingRow = self.getParentRowNode(target);
+    self.draggingRow = row;
     self.canAcceptDropTo = false;
     self.dragSelectedCollapsedRow = false;
 
@@ -138,7 +139,7 @@ FancyTree.prototype.draggableStart = function(evt) {
     $('.ftBottomPadding').show();
     self.hideTooltip.call(self);
 
-    var isCollapsed = target.parent().hasClass('ftCollapsed');
+    var isCollapsed = row.hasClass('ftCollapsed');
     var hiddenRowCount = 0;
 
     if (evt.ctrlKey) {
@@ -148,7 +149,7 @@ FancyTree.prototype.draggableStart = function(evt) {
     }
     else {
         self.dragToreOffParent = false;
-        if (self.multiSelection.length == 0 || !(target.parent().hasClass('ftSelected')))
+        if (self.multiSelection.length == 0 || !(row.hasClass('ftSelected')))
         {
             self.clearMultiSelection.call(self);
             self.toggleMultiSelectionSingle.call(self, row, true);
@@ -203,8 +204,60 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
         return;
     }
 
-    var over = $(evt.target);
-    var overRow = treeObj.getParentRowNode(over);
+    var target = $(evt.target);
+    // console.log(target);
+    if (target.hasClass('ftBottomPadding')) {
+        var overRow = treeObj.root.find('.ftRowNode').last();
+    }
+    else {
+        var overRow = treeObj.getParentRowNode(target);
+    }
+
+    var overItemRow = treeObj.getItemRow(overRow);
+    var overItemRowContent = treeObj.getItemRowContent(overRow);
+
+    // TODO for left-of-node drops:
+    //  place node after the node which is at the level that we're gonna drop at,
+    //  rather than 'before first child'
+    // TODO for bottompadding drops:
+    //  start with the last top level node in the tree
+    //  if it can accept drop, this is our target - rel 'after'
+    //  otherwise repeat test with the last CHILD of the node just tested for drop-accept
+    //  and repeat through all descendant levels
+    //  if still cannot find a node in last top level node's last-descendants, repeat test
+    //  for next-to-last toplevel node node and so on until we have tried all the toplevel
+    //  nodes; if still cannot find a toplevel node match by here then just try to use
+    //  last node in entire tree and if we cannot accept a drop on that, deny the drop.
+    //  in short preferring shallower nodes as a first criteria,
+    //  and later-in-the-tree nodes as a second criteria, where passing the first
+    //  means we are happy with that result, if failing the first then we try
+    //  to find one matching the second criteria at one level deeper in the tree
+
+    // var isLeftOfNode = (evt.pageX - overItemRowContent.position().left < 0);
+    // console.log('TO LEFT: ', isLeftOfNode);
+
+    // if (treeObj.draggingOverRow && treeObj.draggingOverRow.length == 1) {
+    //     treeObj.draggingOverRow.removeClass('ftChildrenDropTarget');
+    // }
+
+    // if (isLeftOfNode) {
+    //     // console.log('selfish dragon test', overRow, treeObj.draggingRow);
+    //     console.log('target test', target, target.parent().closest('.ftRowNode')[0].id);
+    //     overRow = target.parent().closest('.ftRowNode').parent().closest('.ftRowNode');
+    //     if (overRow.length == 0) {
+    //         overRow = overRow.parent().closest('.ftRowNode');
+    //     }
+    //     // if (overRow.is(treeObj.draggingRow)) {
+    //     //     console.log('selfish dragon', overRow);
+    //     //     overRow = overRow.parent().closest('.ftRowNode').parent().closest('.ftRowNode');
+    //     // }
+    //     // else {
+    //     // }
+    //     overItemRow = treeObj.getItemRow(overRow);
+    //     overItemRowContent = treeObj.getItemRowContent(overRow);
+    //     overRow.addClass('ftChildrenDropTarget');
+    // }
+
     var draggingParams = treeObj.getRowTypeParams(treeObj.draggingRow);
     var allowedDropTargets = draggingParams.allowedDropTargets;
     var draggingToRowType = overRow.attr('rowtype');
@@ -212,11 +265,11 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
     var canAcceptDropTo = (allowedDropTargets.indexOf(draggingToRowType) >= 0);
 
     if (!canAcceptDropTo) {
+        // console.log('rejecting drag over', overRow.attr('id'));
         return;
     }
 
-    var overItemRow = treeObj.getItemRow(overRow);
-    var overItemRowContent = treeObj.getItemRowContent(overRow);
+    // console.log('accepting drag over', overRow.attr('id'));
 
     var rowHeight = overItemRow.height();
     var topDelta = evt.pageY - overItemRow.offset().top;
@@ -229,6 +282,11 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
     var isCollapsed = overRow.hasClass('ftCollapsed');
     var underRoot = overRow.parent().parent().hasClass('ftRoot');
 
+    // if (isLeftOfNode) {
+    //     drag = ['after', overRow];
+    //     console.log(drag[1]);
+    // }
+    //else
     if (treeObj.multiSelection.is(overRow)) {
         // dropping on the row we dragged from; just append to it
         drag = ['append', overItemRowContent];
@@ -302,21 +360,26 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
     treeObj.drawDragInsertBar.call(treeObj, drag[0], drag[1], treeObj.getParentRowNode(drag[1]).attr('rowtype'));
     treeObj.draggingTo = drag[0];
     treeObj.draggingOverRow = treeObj.getParentRowNode(drag[1]);
+    // console.log('draggingOverRow', treeObj.draggingOverRow);
 };
 
 FancyTree.prototype.onItemRowDrop = function(evt, ui) {
     if (this.dropping) {
-        return;
+        return false;
     }
+
+    // if (this.draggingOverRow && this.draggingOverRow.length == 1) {
+    //     this.draggingOverRow.removeClass('ftChildrenDropTarget');
+    // }
+
     if (!this.canAcceptDropTo || !this.draggingOverRow) {
-        return;
+        return false;
     }
 
     this.dropping = true;
     var $rows = this.multiSelection.not(this.draggingOverRow);
-
     if ($rows.length == 0) {
-        return;
+        return false;
     }
 
     var fxAreOff = $.fx.off;
@@ -328,7 +391,6 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
         // TODO just call moveRowSet() (fix the bug we get when calling it first..?)
         $.fx.off = true;
     }
-
 
     var self = this;
     this.moveRowSetAnimate($rows, this.draggingTo, this.draggingOverRow, function(moves) {
@@ -347,6 +409,7 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
             self.dropping = false;
         }, 1000);
     });
+    return false;
 };
 
 
@@ -624,16 +687,17 @@ FancyTree.prototype.planMoveRowSet = function($rows, relation, $toRow) {
     // DEBUG
     var ids = [];
     $rows.each(function(i, e) { ids.push(e.id); });
-    console.log('plan results for',
+    var msg = ['plan results for',
         '$rows', ids.join(', '),
         'relation', relation,
-        '$toRow', $toRow.attr('id'));
+        '$toRow', $toRow.attr('id')].join(' ');
     for (var i = 0; i < moves.length; i++) {
         var m = moves[i];
-        console.log((1 + i) + '. ' + m.row.attr('id'), m.relation,
+        msg += '\r\n' + [(1 + i) + '. ' + m.row.attr('id'), m.relation,
             m.relation != 'nomove' ? m.to.attr('id') : '',
-            keepChildren ? ' KEEP CHILDREN' : '');
+            keepChildren ? ' KEEP CHILDREN' : ''].join(' ');
     }
+    this.log(msg);
 
     return moves;
 }

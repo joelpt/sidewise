@@ -168,7 +168,8 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
         filterActiveText: getMessage('prompt_filterActiveText'),
         useAdvancedFiltering: settings.get('useAdvancedTreeFiltering'),
         clickOnHoverDelayMs: clickOnHoverDelayMs,
-        clickOnMouseWheel: settings.get('pages_clickOnMouseWheel')
+        clickOnMouseWheel: settings.get('pages_clickOnMouseWheel'),
+        logger: bg.log
     });
 
     $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));

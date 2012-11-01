@@ -45,6 +45,7 @@
   *                                              // 1 row when there is no multiselection and ctrl/shift are not down (default: false)
   *          permitTooltipHandler: Function(),   // if this function returns false, block showing a row tip
   *          tooltipTopOffset: Integer,          // offset row tip from row by this much pixel spacing
+  *          logger: Function(arguments),        // function to use for doing logging, defaults to console.log()
   *          rowTypes:
   *          {
   *            identifier:                       // identifying string for each type of row to support
@@ -148,6 +149,12 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.filterBoxShown = options.showFilterBox;
     this.clickOnHoverDelayMs = options.clickOnHoverDelayMs;
     this.clickOnMouseWheel = options.clickOnMouseWheel;
+    if (options.logger) {
+        this.log = options.logger;
+    }
+    else {
+        this.log = function() { console.log.apply(console, arguments); };
+    }
 
     this.focusedRow = null;
     this.hoveredRow = null;
@@ -228,7 +235,7 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
         .on('mouseup', '.ftContextMenuSeparator', data, function() { return false; })
         .on('mouseup', 'body,.ftBottomPadding', data, this.onBodyMouseUp)
         .on('keydown', data, this.onDocumentKeyDown)
-        .on('mousemove', '.ftItemRow', data, this.onItemRowMouseMove)
+        .on('mousemove', '.ftItemRow,.ftBottomPadding,.ftChildren', data, this.onItemRowMouseMove)
         .on('mousewheel', 'body,.ftBottomPadding', data, this.onBodyMouseWheel)
         .on('mouseleave', 'body,.ftBottomPadding', data, this.onBodyMouseLeave);
 

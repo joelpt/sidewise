@@ -314,7 +314,7 @@ section#main:not(.debugEnabled) {
     font-style: italic;
     font-family: Verdana, sans-serif;
     font-size: 12px;
-    cursor: pointer;
+    /*cursor: pointer;*/
 }
 
 .ftBottomPadding:hover {
