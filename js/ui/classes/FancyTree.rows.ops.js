@@ -39,7 +39,7 @@ FancyTree.prototype.addRow = function($row, parentId, beforeSiblingId) {
     this.formatLineageTitles($parent);
 };
 
-FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfiguration) {
+FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfiguration, skipRemoveFromMultiSelection) {
     var $row = this.getRow(id);
     var $parent = $row.parent().parent();
 
@@ -62,7 +62,9 @@ FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfigurat
         $row.replaceWith($row.children('.ftChildren').children());
     }
 
-    this.removeMultiSelectionSingle($row);
+    if (!skipRemoveFromMultiSelection) {
+        this.removeMultiSelectionSingle($row);
+    }
 
     this.hideTooltip();
 
@@ -87,7 +89,7 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
         $newParent = this.getRow(newParentId);
     }
 
-    this.removeRow(id, keepChildren, true); // prevents possible DOM_HIERARCHY exceptions
+    this.removeRow(id, keepChildren, true, true); // prevents possible DOM_HIERARCHY exceptions
 
     var $newParentChildren = this.getChildrenContainer($newParent);
     var $sibling;
@@ -138,7 +140,7 @@ FancyTree.prototype.moveRowRel = function(id, relation, toId, keepChildren, skip
     var $oldParent = this.getParentRowNode($row.parent());
     var $oldAncestors = $row.parents('.ftRowNode');
 
-    this.removeRow($row, keepChildren, true); // prevents possible DOM_HIERARCHY exceptions
+    this.removeRow($row, keepChildren, true, true); // prevents possible DOM_HIERARCHY exceptions
 
     if (relation == 'before') {
         $to.before($row);
