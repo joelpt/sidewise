@@ -142,8 +142,8 @@ Settings.prototype = {
         var loggingChanged = false;
         if (loggingEnabled != this.get("loggingEnabled")) {
             loggingChanged = true;
+            bg.setLoggingState();
         }
-        bg.loggingEnabled = this.get("loggingEnabled");
 
         sh.targetWidth = this.get('sidebarTargetWidth');
 

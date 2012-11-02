@@ -26,11 +26,26 @@ $(document).ready(function() {
         .on('click', '#exportButton', exportState)
         .on('click', '#importButton', importState)
         .on('click', '#donateLink', onDonateLinkClick)
+        .on('click', '#loggingEnabled', onLoggingEnabledClick)
         .on('click', '#panePickerExpander', showPanePicker);
 
     $('#panePickerContainer').hide();
+    setSubmitBugReportButtonDisabledState();
 
     $('#version').text(getMessage('text_Version') + ' ' + getVersion());
     setMonitorCountInfo(settings.get('monitorMetrics').length, false);
     initGooglePlusElement();
 });
+
+
+function onLoggingEnabledClick(evt) {
+    setSubmitBugReportButtonDisabledState();
+}
+
+function setSubmitBugReportButtonDisabledState() {
+    var $button = $('#submitBugReportButton');
+    var disabled = !$('#loggingEnabled').is(':checked');
+    $button
+        .attr('disabled', disabled)
+        .attr('title', disabled ? '"Enable diagnostics" must be checked to send a diagnostic report.' : '');
+}

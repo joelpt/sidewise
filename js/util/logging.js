@@ -1,17 +1,33 @@
 var RUNNING_LOG_MAX_SIZE = 1.4 * 1024 * 1024; // 2 MB
 var RUNNING_LOG_OVERTRIM_PCT = 0.5;
 
-var loggingEnabled = localStorage['loggingEnabled'] == 'true' || false;
-var logObjectsAsJSON = false;
+var loggingEnabled;
+var logObjectsAsJSON;
+
 var runningLog = '';
-// loggingEnabled = false;
+
+var log = function() { };
+
+setLoggingState();
+
+function setLoggingState() {
+    loggingEnabled = localStorage['loggingEnabled'] == 'true' || false;
+    logObjectsAsJSON = localStorage['logObjectsAsJSON'] == 'true' || false;
+    if (loggingEnabled) {
+        log = writeDiagnosticLog;
+        return;
+    }
+    log = function() { };
+}
 
 // Logs all passed arguments to console if loggingEnabled is true.
 // If the first argument is a string it will be used as the starting label for the output log row;
 //   if not, the caller function name is used instead.
 // Object arguments are turned into JSON strings and output if logObjectsAsJSON is true.
 // Call stack data is included in the output.
-function log() {
+function writeDiagnosticLog() {
+    if (!loggingEnabled) return;
+
     var messages = [];
     var jsonMessages = [];
     for (var i in arguments) {
@@ -45,25 +61,14 @@ function log() {
         messages.push(arg);
     }
 
-    var stack;
-    try {
-        // induce an exception so we can capture the call stack
-        throw new Error();
-    }
-    catch(e) {
-        stack = new CallStack(e.stack);
-
-        // discard unwanted calls from top of stack
-        while (stack.stack[0].indexOf('log') == 0 || stack.stack[0].indexOf('Error') == 0) {
-            stack.stack.shift(1);
-        }
-    }
+    var stack = { CallStack: getCallStack() };
+    var firstElem = stack.CallStack[0].toString();
 
     if (typeof(arguments[0]) == 'string') {
-        messages.splice(1, 0, '@', stack.stack[0], stack, '\n');
+        messages.splice(1, 0, '@', firstElem, stack, '\n');
     }
     else {
-        messages.splice(0, 0, stack.stack[0], stack, '\n');
+        messages.splice(0, 0, firstElem, stack, '\n');
     }
 
     if (messages[messages.length-1] == '\n') {
@@ -76,8 +81,11 @@ function log() {
         runningLog += '\n\n';
     }
     else {
-        runningLog += '    ' + stack.stack.join('\n    ') + '\n\n';
+        runningLog += '    ' + stack.CallStack.join('\n    ') + '\n\n';
     }
+
+    firstElem = '';
+    stack = '';
 
     if (runningLog.length >= RUNNING_LOG_MAX_SIZE) {
         runningLog = runningLog.substring((runningLog.length - RUNNING_LOG_MAX_SIZE) + (RUNNING_LOG_MAX_SIZE * RUNNING_LOG_OVERTRIM_PCT));
@@ -86,6 +94,7 @@ function log() {
     if (!loggingEnabled || !console) {
         return;
     }
+
     console.log.apply(console, messages);
 }
 
@@ -109,15 +118,35 @@ function log_brief() {
 }
 
 
-function CallStack(stack) {
-    this.stack = (stack + '\n')
-        .replace(/^\S[^\(]+?[\n$]/gm, '')
-        .replace(/^\s+(at eval )?at\s+/gm, '')
-        .replace(/^([^\(]+?)([\n$])/gm, '{anonymous}()@$1$2')
-        .replace(/^Object.<anonymous>\s*\(([^\)]+)\)/gm, '{anonymous}()@$1')
-        .replace(/chrome\-extension\:\/\/(.+?)\//g, '/')
-        .replace(/\n$/gm, '')
-        .split('\n');
+function getCallStack() {
+    var stack;
+    try {
+        // induce an exception so we can capture the call stack
+        throw new Error();
+    }
+    catch(ex) {
+        stack = ex.stack;
+
+        stack = (stack + '\n')
+                .replace(/^\S[^\(]+?[\n$]/gm, '')
+                .replace(/^\s+(at eval )?at\s+/gm, '')
+                .replace(/^([^\(]+?)([\n$])/gm, '{anonymous}()@$1$2')
+                .replace(/^Object.<anonymous>\s*\(([^\)]+)\)/gm, '{anonymous}()@$1')
+                .replace(/chrome\-extension\:\/\/(.+?)\//g, '/')
+                .replace(/\n+$/gm, '')
+                .split('\n');
+
+        // discard unwanted calls from top of stack
+        while (stack[0].indexOf('log') == 0
+            || stack[0].indexOf('writeDiagnosticLog') == 0
+            || stack[0].indexOf('getCallStack') == 0
+            || stack[0].indexOf('Error') == 0)
+        {
+            stack.shift(1);
+        }
+    }
+
+    return stack;
 }
 
 

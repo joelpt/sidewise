@@ -237,7 +237,6 @@ function onLinkClick(evt) {
     // alert(evt);
 }
 
-
 ///////////////////////////////////////////////////////////
 // Pane picker
 ///////////////////////////////////////////////////////////
@@ -563,7 +562,7 @@ function updateExpansionGroup(forId, instant) {
 ///////////////////////////////////////////////////////////
 
 function submitBugReport() {
-    var desc = prompt('This sends a log of Sidewise\'s recent activity to the author for diagnostic purposes. It is best used immediately after you experience a problem.\n\nPlease describe the problem below.');
+    var desc = prompt('This sends a log of Sidewise\'s recent activity to the author for diagnostic purposes. It is best used immediately after you experience a problem.\n\nPlease include row IDs from the tree when pertinent.\n\nPlease describe the problem below.');
     if (!desc) {
         alert('Diagnostic report cancelled.');
         return;
