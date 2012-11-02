@@ -5,7 +5,7 @@
 var CARD_SLIDE_DURATION_MS = 450;
 var DONATION_LINK_VARIETIES = 6;
 var DONATION_PAGE_VARIETIES = 5;
-var BUG_REPORT_MAX_SIZE = 0.7 * 1024 * 1024;
+var BUG_REPORT_MAX_SIZE = 0.75 * 1024 * 1024;
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -561,16 +561,41 @@ function updateExpansionGroup(forId, instant) {
 // Bug submitter
 ///////////////////////////////////////////////////////////
 
+var BUG_REPORT_SIDEBARHANDLER_PROPS = ['creatingSidebar', 'currentDockWindowMetrics',
+        'currentSidebarMetrics', 'dockState', 'dockWindowId', 'lastDockWindowMetrics',
+        'matchingMinimizedStates', 'maximizedOffset', 'monitorMetrics',
+        'removeInProgress', 'resetResizingDockWindowTimeout', 'resizingDockWindow',
+        'resizingSidebar', 'sidebarUrl', 'tabId', 'targetWidth', 'windowId'
+    ];
+
 function submitBugReport() {
-    var desc = prompt('This sends a log of Sidewise\'s recent activity to the author for diagnostic purposes. It is best used immediately after you experience a problem.\n\nPlease include row IDs from the tree when pertinent.\n\nPlease describe the problem below.');
+    var desc = prompt('This sends a log of Sidewise\'s recent activity to the author for diagnostic purposes. It is best used immediately after you experience a problem.\n\nPlease clearly describe the problem below. Include row IDs from the tree when pertinent.');
     if (!desc) {
         alert('Diagnostic report cancelled.');
         return;
     }
 
-    // bg.log(bg.tree);
     bg.log(bg.tree.dump());
     bg.log(bg.tree.dumpTabIndexes());
+    bg.log('--- sidebarHandler ---');
+
+    bg.log(BUG_REPORT_SIDEBARHANDLER_PROPS.map(function(e) {
+        return e + ':' + JSON.stringify(bg.sidebarHandler[e]);
+    }).join(', '));
+
+
+    bg.log('--- monitorInfo ---');
+    bg.log(JSON.stringify(bg.monitorInfo));
+
+    bg.log('--- Settings ---');
+    bg.log(settings.dump(1000));
+
+    bg.log('--- Versions ---');
+    bg.log([
+        'Sidewise: ' + getVersion(),
+        'Chrome: ' + navigator.userAgent,
+        'OS: ' + navigator.platform,
+    ].join('\n'));
 
     var data = (getVersion() + ' - ' + Date() + '\n' + desc + '\n\n' + bg.runningLog).substr(0, BUG_REPORT_MAX_SIZE);
     // alert(data.length);
