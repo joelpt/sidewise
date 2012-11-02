@@ -58,6 +58,15 @@ Settings.prototype = {
         return defaultValue;
     },
 
+    dump: function(maxElemLength) {
+        return mapObjectProps(this.cache, function(k, v) {
+            var o = JSON.stringify(v, StringifyReplacer);
+            if (maxElemLength && maxElemLength < o.length) {
+                o = o.substring(0, maxElemLength) + '...';
+            }
+            return k + ': ' + o;
+        }).join('\n');
+    },
 
     ///////////////////////////////////////////////////////////
     // Settings initialization
