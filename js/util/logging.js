@@ -1,5 +1,6 @@
 var RUNNING_LOG_MAX_SIZE = 1.4 * 1024 * 1024; // 2 MB
 var RUNNING_LOG_OVERTRIM_PCT = 0.5;
+var MAX_JSON_ARG_LENGTH = 250;
 
 var loggingEnabled;
 var logObjectsAsJSON;
@@ -45,7 +46,10 @@ function writeDiagnosticLog() {
                     childrenCount: arg.children.length });
             }
             else {
-                json = JSON.stringify(arg, StringifyReplacer);
+                json = JSON.stringify(arg, StringifyReplacer).substring(0, MAX_JSON_ARG_LENGTH);
+                if (json.length == MAX_JSON_ARG_LENGTH)  {
+                    json += '...';
+                }
             }
             jsonMessages.push(json);
         }
