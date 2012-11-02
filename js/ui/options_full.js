@@ -47,5 +47,5 @@ function setSubmitBugReportButtonDisabledState() {
     var disabled = !$('#loggingEnabled').is(':checked');
     $button
         .attr('disabled', disabled)
-        .attr('title', disabled ? '"Enable diagnostics" must be checked to send a diagnostic report.' : '');
+        .attr('title', disabled ? 'To send diagnostic reports, check the "Enable diagnostics" checkbox option above. Reproduce the problem you were having, then click this button to send a report.' : '');
 }
