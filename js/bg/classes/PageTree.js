@@ -242,6 +242,7 @@ PageTree.prototype = {
         if (r !== undefined) {
             this.callbackProxyFn('merge', { fromId: r.fromId, toId: r.toId });
         }
+        this.rebuildTabIndex();
         return r;
     },
 
