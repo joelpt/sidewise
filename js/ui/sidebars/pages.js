@@ -348,7 +348,7 @@ function onRowExpanderClick(evt) {
 }
 
 function onRowsMoved(moves) {
-    console.log('MOVES', moves);
+    log(moves);
     var windowToWindowMoves = {};
     var windowToWindowMovesCount = 0;
     for (var i = 0; i < moves.length; i++) {
@@ -357,45 +357,55 @@ function onRowsMoved(moves) {
         var $to = move.$to;
         var rowId = $row.attr('id');
         var toId = $to ? $to.attr('id') : undefined;
-        console.log('---- move:', rowId, move.relation, toId, move.keepChildren ? 'KEEP CHILDREN' : '');
+        log('---- move:', rowId, move.relation, toId, move.keepChildren ? 'KEEP CHILDREN' : '');
 
         if (move.relation != 'nomove') {
             // record the move in bg.tree
             bg.tree.moveNodeRel(rowId, move.relation, toId, move.keepChildren, true);
         }
 
-        if ($row.attr('rowtype') == 'page' && $row.attr('hibernated') != 'true') {
-            // moving a tab between windows
-            // TODO when moving tabs between windows we wont generate a move event for selected tabs
-            // which are direct children of other selected tabs; these come with due to keepChildren=true
-            // and therefore do not generate a move event. Move these properly.
-            var $moveTopParent = $to.parents('.ftRowNode').last();
-            var $oldTopParent = move.$oldAncestors.last();
-
-            // if we are moving row to a branch with a different non hibernated window row at the top ...
-            if ($moveTopParent.attr('rowtype') == 'window'
-                && $moveTopParent.attr('hibernated') != 'true'
-                && !($moveTopParent.is($oldTopParent)))
-            {
-                // this works, but has the gray-window problem which we should be able to fix by building out winToWinMoves array again
-                // and using this here technique for doing the moves, but doing the temp-tab create-and-destroy crap in addition as needed
-                // (and possibly activating moved tabs after always, too)
-                //
-                var movingTabId = getRowNumericId($row);
-                var fromWindowId = getRowNumericId($oldTopParent);
-                var toWindowId = getRowNumericId($moveTopParent);
-                var node = bg.tree.getNode(rowId);
-                node.windowId = toWindowId;
-
-                if (windowToWindowMoves[fromWindowId] === undefined) {
-                    windowToWindowMoves[fromWindowId] = [];
-                    windowToWindowMovesCount++;
-                }
-
-                windowToWindowMoves[fromWindowId].push({ node: node, movingTabId: movingTabId, toWindowId: toWindowId });
-                continue;
-            }
+        if ($row.hasClass('ftCollapsed')) {
+            log('check collapse-hidden descendants for win to win moves');
+            var $winMoveTests = $row.add($row.find('.ftRowNode'));
         }
+        else {
+            var $winMoveTests = $row;
+        }
+
+        $winMoveTests.each(function(i, e) {
+            var $row = $(e);
+            if ($row.attr('rowtype') == 'page' && $row.attr('hibernated') != 'true') {
+                // moving a tab between windows
+                // TODO when moving tabs between windows we wont generate a move event for selected tabs
+                // which are direct children of other selected tabs; these come with due to keepChildren=true
+                // and therefore do not generate a move event. Move these properly.
+                var $moveTopParent = $to.parents('.ftRowNode').last();
+                var $oldTopParent = move.$oldAncestors.last();
+
+                // if we are moving row to a branch with a different non hibernated window row at the top ...
+                if ($moveTopParent.attr('rowtype') == 'window'
+                    && $moveTopParent.attr('hibernated') != 'true'
+                    && !($moveTopParent.is($oldTopParent)))
+                {
+                    // this works, but has the gray-window problem which we should be able to fix by building out winToWinMoves array again
+                    // and using this here technique for doing the moves, but doing the temp-tab create-and-destroy crap in addition as needed
+                    // (and possibly activating moved tabs after always, too)
+                    //
+                    var movingTabId = getRowNumericId($row);
+                    var fromWindowId = getRowNumericId($oldTopParent);
+                    var toWindowId = getRowNumericId($moveTopParent);
+                    var node = bg.tree.getNode(rowId);
+                    node.windowId = toWindowId;
+
+                    if (windowToWindowMoves[fromWindowId] === undefined) {
+                        windowToWindowMoves[fromWindowId] = [];
+                        windowToWindowMovesCount++;
+                    }
+
+                    windowToWindowMoves[fromWindowId].push({ node: node, movingTabId: movingTabId, toWindowId: toWindowId });
+                }
+            }
+        });
     }
 
     if (windowToWindowMovesCount > 0) {
@@ -467,6 +477,9 @@ function moveTabToWindow(movingTabId, toWindowId, toPosition, afterFn) {
                 var page = bg.tree.getPage(movingTabId);
                 if (page.pinned) {
                     bg.tree.updateNode(page, { pinned: false });
+                    // TODO don't use below calling style: chrome-functions.js is bg specific so it should
+                    // NOT be in the util/ folder, it needs to be under /js/bg/...
+                    bg.fixPinnedUnpinnedTabOrder.call(bg, page);
                 }
             }
             if (afterFn) {
@@ -501,6 +514,9 @@ function allowDropHandler($fromRows, relation, $toRow) {
     if (fromIncognito != toIncognito) {
         return false;
     }
+
+    // do remaining checks also against all non visible children
+    $fromRows = $fromRows.add($fromRows.filter('.ftCollapsed').find('.ftRowNode'));
 
     // don't allow dropping a non pinned tab to above a pinned one
     var movingNonPinnedTabs = $fromRows.is('[rowtype=page][pinned=false][hibernated=false]');
