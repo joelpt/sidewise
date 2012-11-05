@@ -337,7 +337,7 @@ FancyTree.prototype.mergeRows = function(fromId, toId) {
     var $to = this.getRow(toId);
 
     // Append from's children to the end of to's children
-    $to.append(this.getChildrenContainer($from).children());
+    this.getChildrenContainer($to).append(this.getChildrenContainer($from).children());
 
     // Destroy from node
     $from.remove();
