@@ -73,9 +73,11 @@ FancyTree.prototype.onBodyMouseWheel = function(evt) {
 
     treeObj.hideTooltip();
 
+    // TODO below hibernated/rowtype tests belong in a pages.js function!!
     if (evt.originalEvent.wheelDelta < 0) {
         // scroll down
-        var $toRow = treeObj.focusedRow.following(treeObj.allowClickOnScrollSelector);
+        // var $toRow = treeObj.focusedRow.following(treeObj.allowClickOnScrollSelector);
+        var $toRow = treeObj.focusedRow.following('.ftRowNode[rowtype=page][hibernated=false]');
         if ($toRow.length == 0) {
             // wrap around to top
             $toRow = treeObj.root.find('.ftRowNode[rowtype=page][hibernated=false]:first');
@@ -83,7 +85,7 @@ FancyTree.prototype.onBodyMouseWheel = function(evt) {
     }
     else {
         // scroll up
-        var $toRow = treeObj.focusedRow.preceding(treeObj.allowClickOnScrollSelector);
+        var $toRow = treeObj.focusedRow.preceding('.ftRowNode[rowtype=page][hibernated=false]');
         if ($toRow.length == 0) {
             // wrap around to bottom
             $toRow = treeObj.root.find('.ftRowNode[rowtype=page][hibernated=false]:last');
