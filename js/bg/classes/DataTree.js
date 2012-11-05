@@ -360,6 +360,7 @@ DataTree.prototype = {
     },
 
     // Merge the node matching fromNodeMatcher and all its children into the node matching toNodeMatcher.
+    // The properties of the toNode will not be modified, it just receives all the children of the fromNode.
     // The fromNode is removed from the tree after the merge.
     mergeNodes: function(fromNodeMatcher, toNodeMatcher)
     {
