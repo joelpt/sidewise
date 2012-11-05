@@ -78,64 +78,19 @@ function onTabCreated(tab)
         });
         refreshPageStatus(wakingPage);
         tree.awakeningPages.splice(wakingIndex, 1); // remove matched element
-
-        // fix order wrt pinned tabs if necessary
-        if (!wakingPage.pinned
-            && wakingPage.following(function(e) { return e.isTab() && e.pinned }, wakingPage.topParent()))
-        {
-            // tree.rebuildTreeByTabIndex(false);
-            var following = wakingPage.followingNodes(wakingPage.topParent());
-            var lastPinned;
-            for (var i = 0; i < following.length; i++) {
-                var testing = following[i];
-                if (testing.isTab() && testing.pinned) {
-                    lastPinned = testing;
-                }
-            }
-            if (!lastPinned) {
-                throw new Error('Could not find lastPinned but should have been able to');
-            }
-            // chrome.tabs.move(getNumericId(wakingPage.id), { index: lastPinned.index });
-            tree.moveNodeRel(wakingPage, 'after', lastPinned);
-        }
-
+        fixPinnedUnpinnedTabOrder(wakingPage);
         tree.rebuildTabIndex();
+        return;
+    }
+
+    // try fast association first
+    if (tryFastAssociateTab(tab, false)) {
         return;
     }
 
     page = new PageNode(tab, 'preload');
     page.unread = true;
     page.initialCreation = false;
-
-    // try to do association by index first
-    var existingWindow = tree.getNode('w' + tab.windowId);
-    var inArray = (existingWindow ? existingWindow.children : undefined);
-    var matches = tree.filter(function(e) {
-        return e instanceof PageNode
-            && e.hibernated
-            // && e.restorable
-            && tab.url == e.url
-            && tab.index == e.index;
-    }, inArray);
-
-    if (matches.length == 1) {
-        // Exactly one page node matches this tab by url+index so assume it's a match
-        // and do the association
-        var match = matches[0];
-        log('doing fast associate in onTabCreated', tab, match, tab.id, match.id);
-        var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id, windowId: tab.windowId, index: tab.index, initialCreation: false };
-        tree.updateNode(match, details);
-        refreshPageStatus(match);
-
-        // set focus to this page if it and its window have the current focus
-        if (tab.active && focusTracker.getFocused() == tab.windowId) {
-            tree.focusPage(tab.id);
-        }
-
-        var topParent = match.topParent();
-        restoreParentWindowViaUniqueChildPageNode(topParent, match, tab.windowId);
-        return;
-    }
 
     // get updated page status in a moment, just in case Chrome fails to fire onTabUpdated subsequently
     refreshPageStatus(page);
@@ -164,15 +119,6 @@ function onTabCreated(tab)
             return;
         }
     }
-    // else if (tab.url == 'chrome://newtab/') {
-    //     // New Tab pages always get put at the top level of the tree since they are
-    //     // created via Ctrl+T or the New Tab button in the tab bar.
-    //     log('Setting New Tab page as child of its hosting window', page, tab.windowId);
-    //     tree.addTabToWindow(tab, page, function(pageNode, winNode) {
-    //         tree.updateNode(pageNode, { placed: true });
-    //     });
-    //     return;
-    // }
     else if (tab.url && tab.url.indexOf('view-source:') == 0 && tab.openerTabId) {
         // view source pages should be nested under the parent always
         tree.addNode(page, 'p' + tab.openerTabId, undefined, true);
@@ -213,8 +159,6 @@ function onTabCreated(tab)
 
     var winTabs = tree.getWindowTabIndexArray(tab.windowId);
 
-    // log(tree.dump());
-    // log(tree.dumpTabIndexes());
     if (!winTabs) {
         winTabs = [];
         log('Could not obtain winTabs for windowId ' + tab.windowId);
@@ -236,7 +180,6 @@ function onTabCreated(tab)
             log('nextByIndex not found though it should have been; just adding tab to window and scheduling full rebuild');
             tree.addTabToWindow(tab, page);
             tree.conformAllChromeTabIndexes(true);
-            // tree.rebuildTreeByTabIndex(false);
             return;
         }
         log('No openerTabId and index is in middle of window\'s tabs; inserting before ' + nextByIndex.id, nextByIndex);
@@ -249,7 +192,6 @@ function onTabCreated(tab)
         log('Could not find node matching openerTabId; just adding tab to window and scheduling full rebuild', 'openerTabId', openerTabId);
         tree.addTabToWindow(tab, page);
         tree.conformAllChromeTabIndexes(true);
-        // tree.rebuildTreeByTabIndex(false);
         return;
     }
 
@@ -285,7 +227,6 @@ function onTabCreated(tab)
     log('Could not find insert position on tab index basis, resorting to simple parent-append followed by a rebuild', opener, nextByIndex, precedingByIndex, winTabs);
     tree.addNodeRel(page, 'append', opener);
     tree.conformAllChromeTabIndexes(true);
-    // tree.rebuildTreeByTabIndex(false);
 }
 
 function onTabRemoved(tabId, removeInfo)
@@ -441,7 +382,7 @@ function findNextTabToFocus(nextToNodeId, preferCousins) {
             // combination; due to variances in timing of onTabActivated() event firings
             // either can occur and mean the same thing to us here
             if ((nodeTabId == tree.focusedTabId && parentTabId == tree.lastFocusedTabId)
-                || (nodeTabId = tree.lastFocusedTabId && parentTabId == tree.focusedTabId))
+                || (nodeTabId == tree.lastFocusedTabId && parentTabId == tree.focusedTabId))
             {
                 return node.parent.id;
             }
@@ -462,8 +403,8 @@ function findNextTabToFocus(nextToNodeId, preferCousins) {
             return node.parent.id;
         }
 
-        // use nearest following node
-        var following = node.following(function(e) { return e.isTab(); });
+        // use nearest following node within the same top level node (window)
+        var following = node.following(function(e) { return e.isTab(); }, node.topParent());
         if (following) {
             return following.id;
         }
@@ -599,9 +540,18 @@ function onTabUpdated(tabId, changeInfo, tab)
                 page.placed = true;
             }
             else {
-                log('Moving node which now has openerTabId to be NON ordered child of correct parent',
-                    'moving', page.id, 'append', newParent.id);
-                tree.moveNodeRel(page, 'append', newParent);
+                if ( !page.pinned
+                    && newParent.following(function(e) {
+                        return e.isTab() && e.pinned;
+                    }, newParent.topParent()) )
+                {
+                    log('Denying move-to-child because doing so would put unpinned page before pinned one');
+                }
+                else {
+                    log('Moving node which now has openerTabId to be NON ordered child of correct parent',
+                        'moving', page.id, 'append', newParent.id);
+                    tree.moveNodeRel(page, 'append', newParent);
+                }
                 page.placed = true;
             }
         }
@@ -751,20 +701,4 @@ function onTabAttached(tabId, attachInfo) {
 function onTabHighlighted(highlightInfo) {
     // log(highlightInfo);
     PageTreeCallbackProxy('multiSelectInWindow', highlightInfo);
-}
-
-
-///////////////////////////////////////////////////////////
-// Helper functions
-///////////////////////////////////////////////////////////
-
-function refreshPageStatus(page) {
-    if (!page.isTab()) {
-        return;
-    }
-    setTimeout(function() {
-        chrome.tabs.get(getNumericId(page.id), function(tab) {
-            tree.updateNode(page, { status: tab.status });
-        });
-    }, 100);
 }
