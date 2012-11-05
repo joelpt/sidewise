@@ -223,8 +223,13 @@ function onGetPageDetailsMessage(tab, msg) {
                 'parent found', parent);
 
             if (parent) {
-                log('making ' + tabId + ' a child of ' + parent.id);
-                tree.moveNode(page, parent, undefined, true);
+                // ensure we are not trying to move a pinned node below an unpinned one, or an unpinned node above a pinned one
+                if ((!page.pinned && !parent.following(function(e) { return e.isTab() && e.pinned; } , parent.topParent()))
+                    || (page.pinned && !parent.preceding(function(e) { return e.isTab() && !e.pinned; } , parent.topParent())))
+                {
+                    log('making ' + tabId + ' a child of ' + parent.id);
+                    tree.moveNode(page, parent, undefined, true);
+                }
             }
 
             var details = { placed: true, referrer: msg.referrer, historylength: msg.historylength, sessionGuid: msg.sessionGuid };
