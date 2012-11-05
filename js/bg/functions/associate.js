@@ -159,46 +159,7 @@ function endAssociationRun(runId) {
 function tryAssociateTab(runInfo, tab) {
     var runId = runInfo.runId;
 
-    var existingWindow = tree.getNode('w' + tab.windowId);
-    var inArray = (existingWindow ? existingWindow.children : undefined);
-    var matches = tree.filter(function(e) {
-        return e instanceof PageNode
-            && e.hibernated
-            && e.restorable
-            && tab.url == e.url
-            && tab.index == e.index;
-    }, inArray);
-
-    if (matches.length == 1) {
-        // Exactly one page node matches this tab by url+index so assume it's a match
-        // and do the association
-        var match = matches[0];
-        log('doing fast associate', tab, match, tab.id, match.id);
-        var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id, windowId: tab.windowId, index: tab.index };
-        tree.updateNode(match, details);
-
-        // get updated status from Chrome in a moment
-        chrome.tabs.get(tab.id, function(t) {
-            tree.updateNode(match, { status: t.status });
-        });
-
-        // set focus to this page if it and its window have the current focus
-        if (tab.active && focusTracker.getFocused() == tab.windowId) {
-            tree.focusPage(tab.id);
-        }
-
-        var topParent = match.topParent();
-        restoreParentWindowViaUniqueChildPageNode(topParent, match, tab.windowId);
-
-        // ask the tab for more details via its content_script.js connected port
-        // in this case we only need them to store on the node in case a successive
-        // assocation run fails to do fast association
-        try {
-            getPageDetails(tab.id, { action: 'store' });
-        }
-        catch(ex) {
-            return true;
-        }
+    if (tryFastAssociateTab(tab, true)) {
         return true;
     }
 
@@ -228,6 +189,38 @@ function tryAssociateTab(runInfo, tab) {
     return false;
 }
 
+function tryFastAssociateTab(tab, mustBeRestorable) {
+    var existingWindow = tree.getNode('w' + tab.windowId);
+    var inArray = (existingWindow ? existingWindow.children : undefined);
+    var matches = tree.filter(function(e) {
+        return e instanceof PageNode
+            && e.hibernated
+            && (!mustBeRestorable || e.restorable)
+            && tab.url == e.url
+            && tab.index == e.index;
+    }, inArray);
+
+    if (matches.length == 1) {
+        // Exactly one page node matches this tab by url+index so assume it's a match
+        // and do the association
+        var match = matches[0];
+        log('doing fast associate', tab, match, tab.id, match.id);
+        restoreAssociatedPage(tab, match);
+
+        // ask the tab for more details via its content_script.js connected port
+        // in this case we only need them to store on the node in case a successive
+        // assocation run fails to do fast association
+        if (isScriptableUrl(tab.url)) {
+            try {
+                getPageDetails(tab.id, { action: 'store' });
+            }
+            catch(ex) { }
+        }
+        return match;
+    }
+    return undefined;
+}
+
 function tryAssociateExistingToRestorablePageNode(existingPage) {
     var tabId = getNumericId(existingPage.id);
 
@@ -243,7 +236,7 @@ function tryAssociateExistingToRestorablePageNode(existingPage) {
             }, 1000);
             return;
         }
-        throw ex;
+        throw ex; // unhandled exception here
     }
 }
 
@@ -270,21 +263,15 @@ function associateExistingToRestorablePageNode(tab, referrer, historylength) {
 
     log('Restorable match found', 'match', match, 'match.id', match.id);
 
-    var details = { restored: true, hibernated: false, restorable: false,
-        id: existingPage.id, status: existingPage.status };
+    tree.mergeNodes(existingPage, match);
+    restoreAssociatedPage(tab, match);
 
     if (referrer !== undefined) {
-        details.referrer = referrer;
+        match.referrer = referrer;
     }
     if (historylength !== undefined) {
-        details.historylength = historylength;
+        match.historylength = historylength;
     }
-
-    tree.mergeNodes(existingPage, match);
-    tree.updateNode(match, details);
-
-    var topParent = match.topParent();
-    restoreParentWindowViaUniqueChildPageNode(topParent, match, tab.windowId);
 
     // TODO call associateWindowsToWindowNodes() iff all existing restorable windows
     // have zero .restorable children (and there is at least one such restorable window
@@ -380,12 +367,25 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
     }
 
     log('matching PageNode found, restoring', tab.id, tab, match);
-    var details = { restored: true, hibernated: false, restorable: false, id: 'p' + tab.id, windowId: tab.windowId, index: tab.index };
-    tree.updateNode(match, details);
+    restoreAssociatedPage(tab, match);
+}
+
+function restoreAssociatedPage(tab, page) {
+    log('restoring associated page', 'tab', tab.id, tab, 'page', page.id, page, tab.url, page.url);
+    var details = {
+        restored: true,
+        hibernated: false,
+        restorable: false,
+        id: 'p' + tab.id,
+        windowId: tab.windowId,
+        index: tab.index,
+        pinned: tab.pinned
+    };
+    tree.updateNode(page, details);
 
     // get updated status from Chrome in a moment
     chrome.tabs.get(tab.id, function(t) {
-        tree.updateNode(match, { status: t.status });
+        tree.updateNode(page, { status: t.status });
     });
 
     // set focus to this page if it and its window have the current focus
@@ -393,8 +393,12 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         tree.focusPage(tab.id);
     }
 
-    var topParent = match.topParent();
-    restoreParentWindowViaUniqueChildPageNode(topParent, match, tab.windowId);
+    var topParent = page.topParent();
+    restoreParentWindowViaUniqueChildPageNode(topParent, page, tab.windowId);
+
+    // check and fix pinned-vs-unpinned tab order after restoration
+    fixPinnedUnpinnedTabOrder(page);
+    return page;
 }
 
 function restoreParentWindowViaUniqueChildPageNode(parentWindowNode, childPageNode, childWindowId)
