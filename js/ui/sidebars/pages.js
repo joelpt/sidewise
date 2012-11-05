@@ -654,7 +654,14 @@ function onContextMenuShow($rows) {
     items.push({ $rows: $rows, id: 'moveToNewFolder', icon: '/images/folder.png', label: 'Put in new folder', callback: onContextMenuItemMoveToNewFolder, preserveSelectionAfter: true });
 
     if ($descendants.length > 0) {
-        items.push({ $rows: $rows, id: 'flattenBranch', icon: '/images/text_indent_remove.png', label: 'Flatten branch', callback: onContextMenuItemFlattenBranch, preserveSelectionAfter: true });
+        var $subrows = $descendants.find('.ftRowNode');
+        if ($subrows.length > 0) {
+            var label = 'Flatten children';
+        }
+        else {
+            var label = 'Flatten branch';
+        }
+        items.push({ $rows: $rows, id: 'flattenBranch', icon: '/images/text_indent_remove.png', label: label, callback: onContextMenuItemFlattenBranch, preserveSelectionAfter: true });
     }
 
     items.push({ separator: true });
@@ -804,11 +811,19 @@ function onContextMenuItemMoveToNewFolder($rows) {
 }
 
 function onContextMenuItemFlattenBranch($rows) {
-    $rows = $rows.add($rows.find('.ftRowNode'));
-    var threshold = settings.get('multiSelectActionConfirmThreshold');
+    var $subrows = $rows.find('.ftRowNode');
+    $rows = $rows.add($subrows);
 
-    if (threshold > 0 && $rows.length >= threshold && !confirm('Flatten ' + $rows.length + ' rows?') ) {
+    var threshold = settings.get('multiSelectActionConfirmThreshold');
+    if (threshold > 0 && $subrows.length >= threshold && !confirm('Flatten ' + $subrows.length + ' rows?') ) {
         return;
+    }
+
+    var relation = 'prepend';
+    if ($subrows.find('.ftRowNode').length == 0) {
+        // if $subrows have no children of their own, the branch is already flat -- so just flatten
+        // the whole branch instead (i.e. unindent selected rows' children)
+        relation = 'after';
     }
 
     for (var i = $rows.length; i >= 0; i--) {
@@ -817,7 +832,7 @@ function onContextMenuItemFlattenBranch($rows) {
         var $matching = $parents.filter($rows);
         if ($matching.length > 0) {
             var $target = $($matching[$matching.length - 1]);
-            bg.tree.moveNodeRel($row.attr('id'), 'after', $target.attr('id'));
+            bg.tree.moveNodeRel($row.attr('id'), relation, $target.attr('id'));
         }
     }
 }
