@@ -139,6 +139,7 @@ function endAssociationRun(runId) {
     log('Ending association run', runId, runInfo);
     delete associationRuns[runId];
     associationConcurrentRuns--;
+
     tree.rebuildTabIndex();
     TimeoutManager.reset('conformAfterEndAssocationRun', function() {
         tree.rebuildPageNodeWindowIds(function() { tree.conformAllChromeTabIndexes(true); });
@@ -366,7 +367,7 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         return;
     }
 
-    log('matching PageNode found, restoring', tab.id, tab, match);
+    log('matching PageNode found, restoring', tab.id, tab, 'match', match.id, match);
     restoreAssociatedPage(tab, match);
 }
 
@@ -403,10 +404,10 @@ function restoreAssociatedPage(tab, page) {
 
 function restoreParentWindowViaUniqueChildPageNode(parentWindowNode, childPageNode, childWindowId)
 {
-    // When node is under a restorable window node, we want to see if this tab/node has
+    // When node is under a hibernated window node, we want to see if this tab/node has
     // a unique key amongst all nodes. If so, we know that this tab's .windowId
-    // can definitively identify the parent restorable window's new windowId.
-    if (!parentWindowNode instanceof WindowNode || !parentWindowNode.restorable) {
+    // can definitively identify the parent hibernated window's new windowId.
+    if (!parentWindowNode instanceof WindowNode || !parentWindowNode.hibernated) {
         return;
     }
 
