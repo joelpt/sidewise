@@ -521,7 +521,7 @@ function allowDropHandler($fromRows, relation, $toRow) {
         }
     }
 
-    // don't allow dropping a pinned tab to below a pinned one
+    // don't allow dropping a pinned tab to below a nonpinned one
     var movingPinnedTabs = $fromRows.is('[rowtype=page][pinned=true][hibernated=false]');
 
     if (movingPinnedTabs) {
@@ -532,8 +532,19 @@ function allowDropHandler($fromRows, relation, $toRow) {
             return false;
         }
         var toNode = bg.tree.getNode($toRow.attr('id'));
-        if (toNode.preceding(function(e) { return e.isTab() && !e.pinned; }, toNode.topParent())) {
-            return false;
+        if (toNode.topParent()) {
+            // TODO precalculate this and pass it in from FT?
+            var fromTopParentIds = $fromRows.map(function(i, e) {
+                var $parents = $(e).parentsUntil(ft.root);
+                return $parents[$parents.length - 2].id;
+            }).toArray();
+            if (fromTopParentIds.indexOf(toNode.topParent().id) >= 0) {
+                // at least one of the nodes to move has the same top parent as the move-to target node; make sure we don't allow any pinned tab
+                // to be placed after an unpinned tab within the same top parent (window)
+                if (toNode.preceding(function(e) { return e.isTab() && !e.pinned; }, toNode.topParent())) {
+                    return false;
+                }
+            }
         }
     }
 
