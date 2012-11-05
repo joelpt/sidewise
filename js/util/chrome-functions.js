@@ -40,3 +40,55 @@ function focusCurrentTabInPageTree(force) {
         tree.focusPage(activeTab.id);
     });
 }
+
+// Retrieve and update the tab.status of the specified PageTreeNode or matcher.
+function refreshPageStatus(page) {
+    if (!page.isTab()) {
+        return;
+    }
+    setTimeout(function() {
+        chrome.tabs.get(getNumericId(page.id), function(tab) {
+            tree.updateNode(page, { status: tab.status });
+        });
+    }, 100);
+}
+
+// Repair the tab ordering of the given PageTreeNode with respect to
+// its pinned state versus the pinned state of other page nodes in the tree
+function fixPinnedUnpinnedTabOrder(page) {
+    log('doing fix un/pin tab order check', page.id, page);
+    // log(tree.dump());
+    // log(tree.dumpTabIndexes());
+
+    // fix order wrt pinned tabs if necessary
+    if (!page.pinned
+        && page.following(function(e) { return e.isTab() && e.pinned }, page.topParent()))
+    {
+        var lastPinned = last(page.followingNodes(page.topParent()), function(e) {
+            return e.isTab() && e.pinned;
+        })[1];
+        if (!lastPinned) {
+            throw new Error('Could not find lastPinned but should have been able to');
+        }
+        log('Moving non-pinned tab to be after last pinned tab', page.id, 'after', lastPinned.id);
+        return tree.moveNodeRel(page, 'after', lastPinned);
+        // TODO should it really be 'below', which would translate to 'prepend' if target has children
+        // or 'after' if not ... ??
+    }
+
+    if (page.pinned
+        && page.preceding(function(e) { return e.isTab() && !e.pinned }, page.topParent()))
+    {
+        var topUnpinned = first(page.precedingNodes(page.topParent()), function(e) {
+            return e.isTab && !e.pinned;
+        })[1];
+        if (!topUnpinned) {
+            throw new Error('Could not find topUnpinned but should have been able to');
+        }
+        log('Moving pinned tab to be before first pinned tab', page.id, 'before', topUnpinned.id);
+        return tree.moveNodeRel(page, 'before', topUnpinned);
+    }
+
+    log('no un/pin fix made');
+    return undefined;
+}
