@@ -1074,7 +1074,8 @@ function onPageRowFormatTooltip(evt) {
         var page = bg.tree.getNode(row.attr('id'));
         url += '<br/><br/>Id: ' + page.id
             + '<br/>History length: ' + page.historylength
-            + '<br/>Referrer: ' + (page.referrer || "''");
+            + '<br/>Referrer: ' + (page.referrer || "''")
+            + '<br/>WinId/index: ' + page.windowId + '/' + page.index;
     }
 
     var elem = getBigTooltipContent(text, icon, url, headerPrefix);
@@ -1258,14 +1259,18 @@ function onWindowRowFormatTooltip(evt) {
 ///////////////////////////////////////////////////////////
 
 function closeRow($row) {
+    var $parent = ft.getParentRowNode($row.parent());
     if ($row.attr('rowtype') != 'page' || $row.attr('hibernated') == 'true' || $row.hasClass('closing')) {
         // row has no corresponding tab so just remove it from the tree
         bg.tree.removeNode($row.attr('id'));
-        return;
     }
-
-    $row.addClass('closing'); // "about to close" styling
-    chrome.tabs.remove(getRowNumericId($row));
+    else {
+        $row.addClass('closing'); // "about to close" styling
+        chrome.tabs.remove(getRowNumericId($row));
+    }
+    if ($parent.attr('rowtype') == 'window' && $parent.find('.ftRowNode').length == 0) {
+        bg.tree.removeNode($parent.attr('id'), true);
+    }
 }
 
 function closeWindowRow(row) {
