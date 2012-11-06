@@ -111,7 +111,7 @@ Settings.prototype = {
             animationEnabled: true,
             autoSelectChildrenOnDrag: true,
             reportUsageStatistics: true,
-            multiSelectActionConfirmThreshold: 3,
+            multiSelectActionConfirmThreshold: 5,
             showWhatsNewPane: true
         };
 
