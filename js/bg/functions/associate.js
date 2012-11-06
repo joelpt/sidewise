@@ -198,7 +198,8 @@ function tryFastAssociateTab(tab, mustBeRestorable) {
             && e.hibernated
             && (!mustBeRestorable || e.restorable)
             && tab.url == e.url
-            && tab.index == e.index;
+            && tab.index == e.index
+            && tab.incognito == e.incognito;
     }, inArray);
 
     if (matches.length == 1) {
@@ -254,7 +255,8 @@ function associateExistingToRestorablePageNode(tab, referrer, historylength) {
         url: tab.url,
         referrer: referrer,
         historylength: historylength,
-        pinned: tab.pinned
+        pinned: tab.pinned,
+        incognito: tab.incognito
     });
 
     if (!match) {
@@ -350,7 +352,8 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         url: tab.url,
         referrer: referrer,
         historylength: historylength,
-        pinned: tab.pinned
+        pinned: tab.pinned,
+        incognito: tab.incognito
     });
 
     if (!match) {
@@ -487,6 +490,7 @@ function findPageNodeForAssociation(params) {
             && (!params.mustBeRestorable || node.restorable === true)
             && urlMatch
             && (!params.title || node.title == params.title)
+            && (params.incognito === undefined || node.incognito == params.incognito)
             && (params.historylength === undefined || node.historylength == params.historylength)
             && (params.notMatchingNode === undefined || node !== params.notMatchingNode);
 
@@ -542,7 +546,6 @@ function getGoogleTestUrl(url) {
     var r = url.replace(/sei=[a-zA-Z0-9]+/g, '').replace(/\#.+$/, '');
     return r;
 }
-
 
 function associateWindowstoWindowNodes() {
     var resWindows = tree.filter(function(e) {
