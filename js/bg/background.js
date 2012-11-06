@@ -298,7 +298,7 @@ function PageTreeCallbackProxy(methodName, args) {
         return;
     }
 
-    pagesWindow.PageTreeCallbackProxyListener(methodName, args);
+    pagesWindow.PageTreeCallbackProxyListener.call(pagesWindow, methodName, args);
 
     // args.target = 'pages';
     // args.op = methodName;
