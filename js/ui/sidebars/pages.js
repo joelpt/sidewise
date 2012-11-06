@@ -656,12 +656,11 @@ function onContextMenuShow($rows) {
     if ($descendants.length > 0) {
         var $subrows = $descendants.find('.ftRowNode');
         if ($subrows.length > 0) {
-            var label = 'Flatten children';
+            items.push({ $rows: $rows, id: 'flattenBranch', icon: '/images/text_indent_remove.png', label: 'Flatten children', callback: onContextMenuItemFlattenBranch, preserveSelectionAfter: true });
         }
         else {
-            var label = 'Flatten branch';
         }
-        items.push({ $rows: $rows, id: 'flattenBranch', icon: '/images/text_indent_remove.png', label: label, callback: onContextMenuItemFlattenBranch, preserveSelectionAfter: true });
+        items.push({ $rows: $rows, id: 'promoteChildren', icon: '/images/text_indent_promote.png', label: 'Flatten branch', callback: onContextMenuItemPromoteChildren, preserveSelectionAfter: true });
     }
 
     items.push({ separator: true });
@@ -819,13 +818,22 @@ function onContextMenuItemFlattenBranch($rows) {
         return;
     }
 
-    var relation = 'prepend';
-    if ($subrows.find('.ftRowNode').length == 0) {
-        // if $subrows have no children of their own, the branch is already flat -- so just flatten
-        // the whole branch instead (i.e. unindent selected rows' children)
-        relation = 'after';
+    flattenRows($rows, 'prepend');
+}
+
+function onContextMenuItemPromoteChildren($rows) {
+    var $subrows = $rows.find('.ftRowNode');
+    $rows = $rows.add($subrows);
+
+    var threshold = settings.get('multiSelectActionConfirmThreshold');
+    if (threshold > 0 && $subrows.length >= threshold && !confirm('Promote ' + $subrows.length + ' rows to parent tree depth?') ) {
+        return;
     }
 
+    flattenRows($rows, 'after');
+}
+
+function flattenRows($rows, relation) {
     for (var i = $rows.length; i >= 0; i--) {
         var $row = $($rows[i]);
         var $parents = $row.parents();
