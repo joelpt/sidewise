@@ -83,12 +83,38 @@ function onTabCreated(tab)
         return;
     }
 
+    if (tab.url.indexOf('chrome://newtab') == 0 && !tab.pinned) {
+        // special handling for New Tabs
+        var tabsCount = tree.getWindowIndexedTabsCount(tab.windowId);
+        if (tabsCount == tab.index) {
+            // New Tab has been added as last node of the window
+            // Try to associate to a hibernated New Tab node that is the last
+            // child row of the window, if such exists
+            var children = tree.getNode('w' + tab.windowId).children;
+            if (children.length > 0) {
+                var last = children[children.length - 1];
+                if (last.children.length == 0 && last.hibernated && last.url == tab.url && !last.pinned) {
+                    restoreAssociatedPage(tab, last);
+                    log('New Tab associated to hibernated last-in-window New Tab node');
+                    return;
+                }
+            }
+            // Otherwise just do a regular insert to last spot in window
+            var page = new PageNode(tab, 'complete');
+            page.unread = true;
+            page.initialCreation = false;
+            tree.addTabToWindow(tab, page);
+            log('New Tab added to end of window');
+            return;
+        }
+    }
+
     // try fast association first
     if (tryFastAssociateTab(tab, false)) {
         return;
     }
 
-    page = new PageNode(tab, 'preload');
+    var page = new PageNode(tab, 'preload');
     page.unread = true;
     page.initialCreation = false;
 
