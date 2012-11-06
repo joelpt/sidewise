@@ -33,6 +33,7 @@ ChromeWindowFocusTracker.prototype = {
                     return;
                 }
                 self.setFocused(win.id);
+                self.chromeHasFocus = true;
                 if (onInitialized) {
                     onInitialized(win);
                 }
