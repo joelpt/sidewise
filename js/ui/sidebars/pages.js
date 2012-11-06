@@ -656,11 +656,9 @@ function onContextMenuShow($rows) {
     if ($descendants.length > 0) {
         var $subrows = $descendants.find('.ftRowNode');
         if ($subrows.length > 0) {
-            items.push({ $rows: $rows, id: 'flattenBranch', icon: '/images/text_indent_remove.png', label: 'Flatten children', callback: onContextMenuItemFlattenBranch, preserveSelectionAfter: true });
+            items.push({ $rows: $rows, id: 'flattenBranch', icon: '/images/text_indent_remove.png', label: 'Flatten branch', callback: onContextMenuItemFlattenBranch, preserveSelectionAfter: true });
         }
-        else {
-        }
-        items.push({ $rows: $rows, id: 'promoteChildren', icon: '/images/text_indent_promote.png', label: 'Flatten branch', callback: onContextMenuItemPromoteChildren, preserveSelectionAfter: true });
+        items.push({ $rows: $rows, id: 'promoteChildren', icon: '/images/text_indent_promote.png', label: 'Promote children', callback: onContextMenuItemPromoteChildren, preserveSelectionAfter: true });
     }
 
     items.push({ separator: true });
@@ -818,29 +816,30 @@ function onContextMenuItemFlattenBranch($rows) {
         return;
     }
 
-    flattenRows($rows, 'prepend');
+    flattenRows($rows, 'prepend', false);
 }
 
 function onContextMenuItemPromoteChildren($rows) {
-    var $subrows = $rows.find('.ftRowNode');
-    $rows = $rows.add($subrows);
+    var $children = $rows.children('.ftChildren').children();
+    // var $subrows = $rows.find('.ftRowNode');
+    // $rows = $rows.not($subrows);
 
     var threshold = settings.get('multiSelectActionConfirmThreshold');
-    if (threshold > 0 && $subrows.length >= threshold && !confirm('Promote ' + $subrows.length + ' rows to parent tree depth?') ) {
+    if (threshold > 0 && $children.length >= threshold && !confirm('Promote ' + $children.length + ' rows to parent tree depth?') ) {
         return;
     }
-
-    flattenRows($rows, 'after');
+    log($children);
+    flattenRows($rows.add($children), 'after', true);
 }
 
-function flattenRows($rows, relation) {
+function flattenRows($rows, relation, keepChildren) {
     for (var i = $rows.length; i >= 0; i--) {
         var $row = $($rows[i]);
         var $parents = $row.parents();
         var $matching = $parents.filter($rows);
         if ($matching.length > 0) {
             var $target = $($matching[$matching.length - 1]);
-            bg.tree.moveNodeRel($row.attr('id'), relation, $target.attr('id'));
+            bg.tree.moveNodeRel($row.attr('id'), relation, $target.attr('id'), keepChildren);
         }
     }
 }
