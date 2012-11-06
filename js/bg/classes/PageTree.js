@@ -632,25 +632,26 @@ PageTree.prototype = {
         var pageNode = pageNode || new PageNode(tab);
         var winNode = this.getNode('w' + tab.windowId);
 
-        if (winNode) {
-            // window node exists, add page to it
-            this.addNode(pageNode, winNode);
-            if (onAdded) {
-                onAdded(pageNode, winNode);
-            }
-            return;
+        if (!winNode) {
+            log('window node does not exist, create it then add page to it', pageNode.id, tab.windowId);
+            winNode = new WindowNode({ id: tab.windowId, incognito: tab.incognito, type: 'normal' });
+            this.addNode(winNode);
+            // need to ask for window's type, but don't want to make onAdded() wait to be called
+            // until after chrome.windows.get() returns, so do this separately
+            var self = this;
+            chrome.windows.get(tab.windowId, function(win) {
+                self.updateNode.call(self, winNode, { type: win.type } );
+            });
+        }
+        else {
+            log('window node exists, add page to it', pageNode.id, winNode.id);
         }
 
-        // window node doesn't exist; create it, then add page to it
-        var self = this;
-        chrome.windows.get(tab.windowId, function(win) {
-            var winNode = new WindowNode(win);
-            self.addNode(winNode);
-            self.addNode(pageNode, winNode);
-            if (onAdded) {
-                onAdded(pageNode, winNode);
-            }
-        });
+        this.addNode(pageNode, winNode);
+        log('window node now', this.getNode('w' + tab.windowId));
+        if (onAdded) {
+            onAdded(pageNode, winNode);
+        }
     },
 
 
