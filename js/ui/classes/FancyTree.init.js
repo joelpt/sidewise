@@ -245,5 +245,6 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
             .on('click', this.filterElem, data, this.onFilterBoxModified)
             .on('keyup', this.filterElem, data, this.onFilterBoxModified)
             .on('click', '.ftFilterStatus', data, this.onFilterStatusClick);
+        this.filterElem.droppable(this.getGenericDroppableParams());
     }
 };
