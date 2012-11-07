@@ -205,11 +205,12 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
         return;
     }
 
+    // reposition .ftDragHelper if needed to avoid going off the bottom of the window
     var helper = $('.ftDragHelper');
     var treeBottom = treeObj.scrollTargetElem.position().top + treeObj.scrollTargetElem.height();
 
     if (evt.pageY + 80 > treeBottom) {
-        helper.css('margin-top', '-130px');
+        helper.css('margin-top', '-150px');
     }
     else {
         helper.css('margin-top', '');
