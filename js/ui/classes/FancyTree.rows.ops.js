@@ -346,3 +346,7 @@ FancyTree.prototype.mergeRows = function(fromId, toId) {
     this.updateRowExpander($to);
     this.formatLineageTitles($to);
 };
+
+FancyTree.prototype.clear = function() {
+    this.getChildrenContainer(this.root).empty();
+};
