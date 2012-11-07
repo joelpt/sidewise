@@ -637,7 +637,9 @@ function onContextMenuShow($rows) {
     if (awakeBranchCount && awakeBranchCount != awakeCount)
         items.push({ $rows: $branchesPages, id: 'hibernateBranch', icon: '/images/hibernate_branch.png', label: 'Hibernate branch', callback: onContextMenuItemHibernatePages });
 
-    items.push({ separator: true });
+    if (awakeCount || hibernatedCount) {
+        items.push({ separator: true });
+    }
 
     items.push({ $rows: $rows, id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
 
@@ -660,6 +662,22 @@ function onContextMenuShow($rows) {
 
     items.push({ $rows: $rows, id: 'moveToNewFolder', icon: '/images/folder.png', label: 'Put in new folder', callback: onContextMenuItemMoveToNewFolder, preserveSelectionAfter: true });
 
+    items.push({ separator: true });
+
+    if (awakeCount)
+       items.push({ $rows: $rows, id: 'reloadPage', icon: '/images/reload.png', label: 'Reload tab', callback: onContextMenuItemReload, preserveSelectionAfter: true });
+
+    if ($pages.length > 0) {
+        items.push({ $rows: $rows, id: 'closePage', icon: '/images/close.png', label: 'Close tab', callback: onContextMenuItemClosePages });
+    }
+    else {
+        items.push({ $rows: $rows, id: 'closeFolder', icon: '/images/close_branch.png', label: 'Remove folder', callback: onContextMenuItemCloseBranches });
+    }
+
+    if ($rows.length != $branches.length || $descendants.length > 0) {
+        items.push({ separator: true });
+    }
+
     if ($descendants.length > 0) {
         var $subrows = $descendants.find('.ftRowNode');
         if ($subrows.length > 0) {
@@ -668,20 +686,8 @@ function onContextMenuShow($rows) {
         items.push({ $rows: $rows, id: 'promoteChildren', icon: '/images/text_indent_promote.png', label: 'Promote children', callback: onContextMenuItemPromoteChildren, preserveSelectionAfter: true });
     }
 
-    items.push({ separator: true });
-
-    if (awakeCount)
-       items.push({ $rows: $rows, id: 'reloadPage', icon: '/images/reload.png', label: 'Reload tab', callback: onContextMenuItemReload, preserveSelectionAfter: true });
-
-    if ($pages.length > 0) {
-        items.push({ $rows: $rows, id: 'closePage', icon: '/images/close.png', label: 'Close tab', callback: onContextMenuItemClosePages });
-        if ($rows.length != $branches.length) {
-            items.push({ separator: true });
-            items.push({ $rows: $rows, id: 'closeBranch', icon: '/images/close_branch.png', label: 'Close branch', callback: onContextMenuItemCloseBranches });
-        }
-    }
-    else {
-        items.push({ $rows: $rows, id: 'closeFolder', icon: '/images/close_branch.png', label: 'Remove folder', callback: onContextMenuItemCloseBranches });
+    if ($rows.length != $branches.length) {
+        items.push({ $rows: $rows, id: 'closeBranch', icon: '/images/close_branch.png', label: 'Close branch', callback: onContextMenuItemCloseBranches });
     }
 
     return items;
@@ -818,24 +824,22 @@ function onContextMenuItemFlattenBranch($rows) {
     var $subrows = $rows.find('.ftRowNode');
     $rows = $rows.add($subrows);
 
-    var threshold = settings.get('multiSelectActionConfirmThreshold');
-    if (threshold > 0 && $subrows.length >= threshold && !confirm('Flatten ' + $subrows.length + ' rows?') ) {
-        return;
-    }
+    // var threshold = settings.get('multiSelectActionConfirmThreshold');
+    // if (threshold > 0 && $subrows.length >= threshold && !confirm('Flatten ' + $subrows.length + ' rows?') ) {
+    //     return;
+    // }
 
     flattenRows($rows, 'prepend', false);
 }
 
 function onContextMenuItemPromoteChildren($rows) {
     var $children = $rows.children('.ftChildren').children();
-    // var $subrows = $rows.find('.ftRowNode');
-    // $rows = $rows.not($subrows);
 
-    var threshold = settings.get('multiSelectActionConfirmThreshold');
-    if (threshold > 0 && $children.length >= threshold && !confirm('Promote ' + $children.length + ' rows to parent tree depth?') ) {
-        return;
-    }
-    log($children);
+    // var threshold = settings.get('multiSelectActionConfirmThreshold');
+    // if (threshold > 0 && $children.length >= threshold && !confirm('Promote ' + $children.length + ' rows to parent tree depth?') ) {
+    //     return;
+    // }
+
     flattenRows($rows.add($children), 'after', true);
 }
 
