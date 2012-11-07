@@ -235,7 +235,7 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
         .on('mouseup', '.ftContextMenuSeparator', data, function() { return false; })
         .on('mouseup', 'body,.ftBottomPadding', data, this.onBodyMouseUp)
         .on('keydown', data, this.onDocumentKeyDown)
-        .on('mousemove', '.ftItemRow,.ftBottomPadding,.ftChildren', data, this.onItemRowMouseMove)
+        .on('mousemove', '.ftItemRow,.ftBottomPadding', data, this.onItemRowMouseMove)
         .on('mousewheel', 'body,.ftBottomPadding', data, this.onBodyMouseWheel)
         .on('mouseleave', 'body,.ftBottomPadding', data, this.onBodyMouseLeave);
 
