@@ -305,7 +305,6 @@ section#main:not(.debugEnabled) {
 /* .ftBottomPadding */
 
 .ftBottomPadding {
-    height: 6em;
     opacity: 0.0;
     transition: opacity .5s ease 0s;
     -webkit-transition: opacity .5s ease 0s;
