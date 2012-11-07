@@ -67,11 +67,12 @@ function debugBarClickPromoteIframe() {
 }
 
 function debugBarClickResetTree() {
+    ft.clear();
     bg.tree.clear();
     bg.injectContentScriptInExistingTabs('content_script.js');
     bg.populatePages();
     setTimeout(function() {
-        location.reload()
+        location.reload();
     }, 500);
 }
 
@@ -380,6 +381,9 @@ function onRowsMoved(moves) {
                 // which are direct children of other selected tabs; these come with due to keepChildren=true
                 // and therefore do not generate a move event. Move these properly.
                 var $moveTopParent = $to.parents('.ftRowNode').last();
+                if ($moveTopParent.length == 0) {
+                    $moveTopParent = $to; // $to is at the topmost tree depth
+                }
                 var $oldTopParent = move.$oldAncestors.last();
 
                 // if we are moving row to a branch with a different non hibernated window row at the top ...
@@ -424,12 +428,15 @@ function onRowsMoved(moves) {
 }
 
 function moveTabsBetweenWindows(fromWindowId, moves) {
+    var multiSelection = ft.multiSelection;
+
     chrome.tabs.query({ windowId: fromWindowId }, function(tabs) {
         if (tabs.length > moves.length) {    // from-window will still have at least 1 tab after the moves are done
             var onCompleteFn = function() {
                 setTimeout(function() {
                     bg.tree.rebuildPageNodeWindowIds(function() {
                         bg.tree.conformAllChromeTabIndexes(true);
+                        ft.setMultiSelectedChildrenUnderRow(ft.root, multiSelection);
                     });
                 }, 500);
             };
@@ -493,7 +500,7 @@ function allowDropHandler($fromRows, relation, $toRow) {
     // console.log('from', $fromRows, relation, 'to', $toRow);
 
     // allow window nodes to be dropped above or below other window nodes, not 'into'
-    if ($fromRows.is('[rowtype=window]')) {
+    if ($fromRows.is('[rowtype=window]') && $toRow.is('[rowtype=window]')) {
         if (relation == 'append' || relation == 'prepend') {
             return false;
         }
