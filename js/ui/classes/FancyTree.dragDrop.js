@@ -142,6 +142,7 @@ FancyTree.prototype.draggableStart = function(evt) {
     var isCollapsed = row.hasClass('ftCollapsed');
     var hiddenRowCount = 0;
 
+    self.dragAutoSelectedChildren = false;
     if (evt.ctrlKey) {
         self.clearMultiSelection.call(self);
         self.toggleMultiSelectionSingle.call(self, row, true);
@@ -164,6 +165,7 @@ FancyTree.prototype.draggableStart = function(evt) {
                             return;
                         }
                         self.toggleMultiSelectionSingle.call(self, $e, true);
+                        self.dragAutoSelectedChildren = true;
                     });
             }
 
@@ -199,9 +201,18 @@ FancyTree.prototype.draggableStart = function(evt) {
 
 FancyTree.prototype.onItemRowMouseMove = function(evt) {
     var treeObj = evt.data.treeObj;
-
     if (!treeObj.dragging) {
         return;
+    }
+
+    var helper = $('.ftDragHelper');
+    var treeBottom = treeObj.scrollTargetElem.position().top + treeObj.scrollTargetElem.height();
+
+    if (evt.pageY + 80 > treeBottom) {
+        helper.css('margin-top', '-130px');
+    }
+    else {
+        helper.css('margin-top', '');
     }
 
     var target = $(evt.target);
@@ -418,20 +429,20 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
 ///////////////////////////////////////////////////////////
 
 FancyTree.prototype.updateDragHelper = function(evt, hiddenRowCount) {
-    var helperTip;
+    var helperTip = '';
     if (evt.ctrlKey) {
         helperTip = 'Dragging hovered row.';
     }
     else if (evt.shiftKey) {
         helperTip = 'Autoselected children.';
     }
-    else if (this.autoSelectChildrenOnDrag) {
+    else if (this.autoSelectChildrenOnDrag && this.dragAutoSelectedChildren) {
         helperTip = 'Ctrl+drag: drag just the hovered row.';
     }
-    else {
+    else if (!this.autoSelectChildrenOnDrag) {
         helperTip = 'Shift+drag: also drag all children rows.';
     }
-    helperTip += '<br/>' + 'Esc: cancel drag.';
+    helperTip += (helperTip ? '<br/>' : '') + 'Hit Esc to cancel.';
 
     $('.ftDragHelper').html(
         '<div class="ftDragHelperMessage">Moving ' + this.multiSelection.length + ' row' + (this.multiSelection.length == 1 ? '' : 's')
