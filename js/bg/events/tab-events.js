@@ -381,6 +381,13 @@ function findNextTabToFocus(nextToNodeId, preferCousins) {
         var node = tree.getNode(nextToNodeId);
         var id;
 
+        var topParent = node.topParent();
+        if (topParent instanceof WindowNode && topParent.children.length <= 1) {
+            // don't do smart focus when there are no other nodes under our window node
+            // to smart focus; just let Chrome decide which previous window/tab to focus
+            return undefined;
+        }
+
         // first valid descendant
         for (var i = 0; i < node.children.length; i++) {
             var id = testNodeForFocus(node.children[i], true);
