@@ -93,7 +93,9 @@ function onTabCreated(tab)
             var children = tree.getNode('w' + tab.windowId).children;
             if (children.length > 0) {
                 var last = children[children.length - 1];
-                if (last.children.length == 0 && last.hibernated && last.url == tab.url && !last.pinned) {
+                if (last.children.length == 0 && last.hibernated && last.restorable
+                    && last.url == tab.url && !last.pinned)
+                {
                     restoreAssociatedPage(tab, last);
                     log('New Tab associated to hibernated last-in-window New Tab node');
                     return;
