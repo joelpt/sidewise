@@ -1,5 +1,5 @@
-var RUNNING_LOG_MAX_SIZE = 1.4 * 1024 * 1024; // 2 MB
-var RUNNING_LOG_OVERTRIM_PCT = 0.5;
+var RUNNING_LOG_MAX_SIZE = 1.0 * 1024 * 1024;
+var RUNNING_LOG_OVERTRIM_PCT = 0.25;
 var MAX_JSON_ARG_LENGTH = 250;
 
 var loggingEnabled;
@@ -10,6 +10,7 @@ var runningLog = '';
 var log = function() { };
 
 setLoggingState();
+startLogTrimmer();
 
 function setLoggingState() {
     loggingEnabled = localStorage['loggingEnabled'] == 'true' || false;
@@ -31,38 +32,45 @@ function writeDiagnosticLog() {
 
     var messages = [];
     var jsonMessages = [];
+    var isBackgroundPage = (window.bg ? false : true);
+
     for (var i in arguments) {
         var arg = arguments[i];
         if (typeof(arg) == 'string' || typeof(arg) == 'number') {
             messages.push(arg);
-            jsonMessages.push(arg);
+            if (isBackgroundPage) {
+                jsonMessages.push(arg);
+            }
             continue;
         }
-        var json;
-        try {
-            if (arg instanceof DataTreeNode) {
-                json = arg.elemType + '::' + JSON.stringify({ id: arg.id, index: arg.index, windowId: arg.windowId, hibernated: arg.hibernated, restorable: arg.restorable,
-                    incognito: arg.incognito, status: arg.status, url: arg.url, pinned: arg.pinned, title: arg.title, label: arg.label,
-                    childrenCount: arg.children.length });
-            }
-            else {
-                json = JSON.stringify(arg, StringifyReplacer).substring(0, MAX_JSON_ARG_LENGTH);
-                if (json.length == MAX_JSON_ARG_LENGTH)  {
-                    json += '...';
+        if (isBackgroundPage) {
+            var json;
+            try {
+                if (arg instanceof DataTreeNode) {
+                    json = arg.elemType + '::' + JSON.stringify({ id: arg.id, index: arg.index, windowId: arg.windowId, hibernated: arg.hibernated, restorable: arg.restorable,
+                        incognito: arg.incognito, status: arg.status, url: arg.url, pinned: arg.pinned, title: arg.title, label: arg.label,
+                        childrenCount: arg.children.length });
                 }
+                else {
+                    json = JSON.stringify(arg, StringifyReplacer).substring(0, MAX_JSON_ARG_LENGTH);
+                    if (json.length == MAX_JSON_ARG_LENGTH)  {
+                        json += '...';
+                    }
+                }
+                jsonMessages.push(json);
             }
-            jsonMessages.push(json);
-        }
-        catch (ex) {
-            jsonMessages.push('ERROR CONVERTING TO JSON');
-            messages.push(arg);
-            continue;
-        }
-        if (logObjectsAsJSON) {
-            messages.push(json);
-            continue;
+            catch (ex) {
+                jsonMessages.push('ERROR CONVERTING TO JSON');
+                messages.push(arg);
+                continue;
+            }
+            if (logObjectsAsJSON) {
+                messages.push(json);
+                continue;
+            }
         }
         messages.push(arg);
+        continue;
     }
 
     var stack = { CallStack: getCallStack() };
@@ -79,6 +87,15 @@ function writeDiagnosticLog() {
         messages.pop();
     }
 
+    if (console) {
+        console.log.apply(console, messages);
+    }
+
+    if (!isBackgroundPage) {
+        // don't write running log in non bg pages
+        return;
+    }
+
     jsonMessages = jsonMessages.join(' ');
     runningLog += jsonMessages + '\n';
     if (jsonMessages.indexOf('---') == 0) {
@@ -90,16 +107,6 @@ function writeDiagnosticLog() {
 
     firstElem = '';
     stack = '';
-
-    if (runningLog.length >= RUNNING_LOG_MAX_SIZE) {
-        runningLog = runningLog.substring((runningLog.length - RUNNING_LOG_MAX_SIZE) + (RUNNING_LOG_MAX_SIZE * RUNNING_LOG_OVERTRIM_PCT));
-    }
-
-    if (!loggingEnabled || !console) {
-        return;
-    }
-
-    console.log.apply(console, messages);
 }
 
 // Like log(), but abbreviates multiline strings to 'first line...'
@@ -121,6 +128,20 @@ function log_brief() {
     log.apply(this, newargs);
 }
 
+function startLogTrimmer() {
+    if (chrome.extension.getBackgroundPage() !== window) {
+        return;
+    }
+    setInterval(trimRunningLog, 30000);
+}
+
+function trimRunningLog() {
+    if (runningLog.length >= RUNNING_LOG_MAX_SIZE) {
+        console.log('trimmed running log: before', runningLog.length);
+        runningLog = runningLog.substring((runningLog.length - RUNNING_LOG_MAX_SIZE) + (RUNNING_LOG_MAX_SIZE * RUNNING_LOG_OVERTRIM_PCT));
+        console.log('trimmed running log: after', runningLog.length);
+    }
+}
 
 function getCallStack() {
     var stack;
@@ -152,8 +173,6 @@ function getCallStack() {
 
     return stack;
 }
-
-
 
 var StringifyReplacer = function (stack, undefined, r, i) {
   // a WebReflection hint to avoid recursion
