@@ -36,10 +36,13 @@ function onWindowRemoved(windowId)
     if (windowId == sidebarHandler.windowId)
     {
         if (sidebarHandler.removeInProgress) {
+            log('sidebar removeInProgress');
             // Already handling the window removal elsewhere, don't do it twice
             return;
         }
+        log('removing sidebar window');
         savePageTreeToLocalStorage(tree, 'pageTree', true);
+        sidebarHandler.removeInProgress = true;
         sidebarHandler.onRemoved();
         return;
     }
@@ -228,11 +231,7 @@ function onWindowFocusChanged(windowId)
 }
 
 function onWindowUpdateCheckInterval() {
-    if (sidebarHandler.resizingDockWindow) {
-        return;
-    }
-
-    if (sidebarHandler.matchingMinimizedStates) {
+    if (sidebarHandler.resizingDockWindow || sidebarHandler.matchingMinimizedStates || sidebarHandler.removeInProgress) {
         return;
     }
 

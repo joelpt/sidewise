@@ -153,11 +153,12 @@ SidebarHandler.prototype = {
     },
 
     onResize: function() {
-        if (this.dockState == 'undocked' || this.resizingSidebar) {
+        if (this.dockState == 'undocked' || this.resizingSidebar || this.removeInProgress || !this.windowId) {
             return;
         }
 
         var handler = this;
+
         chrome.windows.get(handler.windowId, function(sidebar) {
             if (handler.resizingSidebar || (sidebar.state == 'maximized' && PLATFORM != 'Mac')) {
                 return;
@@ -455,6 +456,9 @@ SidebarHandler.prototype = {
                 return;
             }
             chrome.windows.get(self.dockWindowId, function(dock) {
+                if (!dock || !self.windowId) {
+                    return;
+                }
                 chrome.windows.get(self.windowId, function(sidebar) {
                     if (!dock || !sidebar) {
                         return;
