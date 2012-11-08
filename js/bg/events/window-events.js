@@ -275,6 +275,11 @@ function onWindowUpdateCheckInterval() {
 
     chrome.windows.get(sidebarHandler.dockWindowId, function(dock) {
         if (!dock) {
+            // dock window appears to have been destroyed but we did not find out about it;
+            // update docked window now
+            log('Dock window has been destroyed; choose new dock window');
+            focusTracker.remove(sidebarHandler.dockWindowId);
+            sidebarHandler.redock(focusTracker.getFocused());
             return;
         }
 

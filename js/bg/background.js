@@ -270,25 +270,39 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
 function PageTreeCallbackProxy(methodName, args) {
     // log(methodName, args);
 
-    if (methodName == 'remove' || methodName == 'move') {
+    var node = args.element;
+
+    if (node instanceof WindowNode && !node.hibernated && methodName == 'remove') {
+        // when removing window nodes ensure they are also removed from focusTracker
+        var winId = getNumericId(node.id);
+        focusTracker.remove(winId);
+
+        // if dock window has been destroyed, perform an automatic redock
+        if (sidebarHandler.dockWindowId == winId) {
+            log('Dock window has been destroyed; choose new dock window');
+            sidebarHandler.redock(focusTracker.getFocused());
+        }
+    }
+    else if ((methodName == 'remove' || methodName == 'move')
+        && node.parent instanceof WindowNode
+        && !node.parent.hibernated
+        && node.parent.children.length == 0)
+    {
         // proactively remove window nodes that would have no children after tab removal;
         // under certain circumstances Chrome does not fire onWindowRemoved() so we need
         // a back-up plan
-        var node = args.element;
-        if (node.parent instanceof WindowNode && !node.parent.hibernated && node.parent.children.length == 0) {
-            TimeoutManager.reset('removeChildlessWindowNode_' + node.parent.id, function() {
-                if (node.parent instanceof WindowNode && !node.parent.hibernated && node.parent.children.length == 0) {
-                    // verify the parent node is still present in the tree
-                    var toRemove = tree.getNode(node.parent.id);
-                    if (toRemove && toRemove.children.length == 0) {
-                        log('Removing stale window ' + toRemove.id);
-                        tree.removeNode(toRemove, true);
-                        return;
-                    }
-                    log('Stale window ' + node.parent.id + ' is already removed or now has children');
+        TimeoutManager.reset('removeChildlessWindowNode_' + node.parent.id, function() {
+            if (node.parent instanceof WindowNode && !node.parent.hibernated && node.parent.children.length == 0) {
+                // verify the parent node is still present in the tree
+                var toRemove = tree.getNode(node.parent.id);
+                if (toRemove && toRemove.children.length == 0) {
+                    log('Removing stale window ' + toRemove.id);
+                    tree.removeNode(toRemove, true);
+                    return;
                 }
-            }, 1500);
-        }
+                log('Stale window ' + node.parent.id + ' is already removed or now has children');
+            }
+        }, 1500);
     }
 
     var pagesWindow = sidebarHandler.sidebarPanes['pages'];
