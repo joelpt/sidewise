@@ -39,6 +39,13 @@
         }
     },
     "prompt_awakenWindow": {
+        "message": "Wake up $COUNT$ hibernated $PAGES$?",
+        "placeholders": {
+            "count": { "content": "$1", "example": "4" },
+            "pages": { "content": "$2", "example": "pages" }
+        }
+    },
+    "prompt_restoreWindow": {
         "message": "Restore $COUNT$ open $PAGES$ from last session?",
         "placeholders": {
             "count": { "content": "$1", "example": "4" },

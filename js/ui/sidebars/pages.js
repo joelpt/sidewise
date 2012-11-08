@@ -957,7 +957,6 @@ function onFolderRowFormatTooltip(evt) {
 ///////////////////////////////////////////////////////////
 
 function onPageRowClick(evt) {
-    log(evt);
     var treeObj = evt.data.treeObj;
     var row = evt.data.row;
 
@@ -970,6 +969,9 @@ function onPageRowClick(evt) {
         }
         return;
     }
+
+    // set visual focus asap in ft
+    ft.focusRow(row);
 
     // actually set Chrome's focused tab
     chrome.tabs.update(getRowNumericId(row), { active: true }, function(tab) {
@@ -1157,16 +1159,25 @@ function onWindowRowClick(evt) {
         return;
     }
 
-    var childCount = treeObj.getChildrenContainer(row).find('.ftRowNode[rowtype=page][restorable=true]').length;
+    var childCount = treeObj.getChildrenContainer(row).find('.ftRowNode[rowtype=page][hibernated=true][restorable=true]').length;
+    var justRestorables;
 
-    var msg = getMessage('prompt_awakenWindow',
+    if (childCount == 0) {
+        childCount = treeObj.getChildrenContainer(row).find('.ftRowNode[rowtype=page][hibernated=true]').length;
+        justRestorables = false;
+    }
+    else {
+        justRestorables = true;
+    }
+
+    var msg = getMessage(justRestorables ? 'prompt_restoreWindow' : 'prompt_awakenWindow',
         [childCount, (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'))]);
 
     if (!confirm(msg)) {
         return;
     }
 
-    bg.tree.awakenWindow(row.attr('id'), function(e) { return e.restorable; });
+    bg.tree.awakenWindow(row.attr('id'), function(e) { return e.hibernated && (!justRestorables || e.restorable); });
 }
 
 function onWindowRowDoubleClick(evt) {
