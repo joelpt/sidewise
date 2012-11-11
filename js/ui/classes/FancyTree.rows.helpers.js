@@ -3,7 +3,7 @@
 // Row helper functions
 ///////////////////////////////////////////////////////////
 
-var TITLE_FORMAT_START_DELAY_MS = 40;
+var TITLE_FORMAT_START_DELAY_MS = 0;
 
 FancyTree.prototype.setRowButtonTooltips = function(row) {
     var rowType = row.attr('rowtype');
@@ -34,6 +34,9 @@ FancyTree.prototype.updateRowExpander = function(row) {
 };
 
 FancyTree.prototype.formatRowTitle = function(row) {
+    var id = row.attr('id');
+    if (!id) return;
+
     this.formatTitleQueue[row.attr('id')] = row;
     if (!this.formatTitleTimer) {
         var self = this;
@@ -58,10 +61,10 @@ FancyTree.prototype.processTitleFormatQueue = function() {
     this.formatTitleQueue = {};
 };
 
-// Call rowType.onFormatTitle() on the given row and all its parent rows
-FancyTree.prototype.formatLineageTitles = function(row) {
+// Call rowType.onFormatTitle() on the given rows and all its parent rows
+FancyTree.prototype.formatLineageTitles = function($rows) {
     var self = this;
-    row.parents('.ftRowNode').add(row).each(function(i, e) {
+    $rows.parents('.ftRowNode').add($rows).each(function(i, e) {
         var $e = $(e);
         self.formatRowTitle.call(self, $e);
     });
