@@ -1051,18 +1051,22 @@ function onPageRowFormatTitle(row, itemTextElem) {
         // trim common prefixes from child page titles vs. parent/preceding/next page titles
         var parent = row.parent().closest('.ftRowNode');
         if (parent.length > 0) { // && parent.attr('text').substring(0, 5) == text.substring(0, 5)) {
-            var nearby = row.preceding('.ftRowNode');
-            var nearbyTitle = nearby.attr('text');
-            var reformatPrev = true;
+            var nearby = $();
+            var nearbyTitle;
+            var reformatPrev;
+
+            var next = row.next();
+            if (next.is(row.following('.ftRowNode'))) {
+                nearby = next;
+                nearbyTitle = nearby.attr('text');
+                reformatPrev = false;
+            }
 
             if (nearby.length == 0 || nearbyTitle == text || nearbyTitle.substring(0, 5) != text.substring(0, 5))
             {
-                var next = row.next();
-                if (next.is(row.following('.ftRowNode'))) {
-                    nearby = next;
-                    nearbyTitle = nearby.attr('text');
-                    reformatPrev = false;
-                }
+                nearby = row.preceding('.ftRowNode');
+                nearbyTitle = nearby.attr('text');
+                reformatPrev = true;
             }
 
             if (nearby.length == 0 || nearbyTitle == text || nearbyTitle.substring(0, 5) != text.substring(0, 5)) {
