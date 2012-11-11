@@ -42,7 +42,8 @@ FancyTree.prototype.addRow = function($row, parentId, beforeSiblingId) {
 FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfiguration, skipRemoveFromMultiSelection) {
     var $row = this.getRow(id);
     var $parent = $row.parent().parent();
-    var $next = $row.next();
+    var $following = $row.following('.ftRowNode');
+    var $preceding = $row.preceding('.ftRowNode');
 
     // ensure button tooltips don't popup after the row is removed, after the tips' predelay
     this.getButtons($row).each(function(i, e) {
@@ -76,7 +77,7 @@ FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfigurat
     }
 
     this.updateRowExpander($parent);
-    this.formatLineageTitles($parent.add($next));
+    this.formatLineageTitles($parent.add($following).add($preceding));
 };
 
 FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChildren, skipRowReconfiguration) {
