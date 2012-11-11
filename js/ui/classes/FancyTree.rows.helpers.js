@@ -3,6 +3,8 @@
 // Row helper functions
 ///////////////////////////////////////////////////////////
 
+var TITLE_FORMAT_START_DELAY_MS = 40;
+
 FancyTree.prototype.setRowButtonTooltips = function(row) {
     var rowType = row.attr('rowtype');
     var buttons = this.getButtons(row);
@@ -32,10 +34,28 @@ FancyTree.prototype.updateRowExpander = function(row) {
 };
 
 FancyTree.prototype.formatRowTitle = function(row) {
-    var rowTypeParams = this.getRowTypeParams(row);
-    if (rowTypeParams && rowTypeParams.onFormatTitle) {
-        rowTypeParams.onFormatTitle(row);
+    this.formatTitleQueue[row.attr('id')] = row;
+    if (!this.formatTitleTimer) {
+        var self = this;
+        this.formatTitleTimer = setTimeout(function() {
+            self.processTitleFormatQueue.call(self);
+        }, TITLE_FORMAT_START_DELAY_MS);
     }
+};
+
+FancyTree.prototype.processTitleFormatQueue = function() {
+    clearTimeout(this.formatTitleTimer);
+    this.formatTitleTimer = null;
+
+    for (var id in this.formatTitleQueue) {
+        var row = this.formatTitleQueue[id];
+        var rowTypeParams = this.getRowTypeParams(row);
+        if (rowTypeParams && rowTypeParams.onFormatTitle) {
+            rowTypeParams.onFormatTitle(row);
+        }
+    }
+
+    this.formatTitleQueue = {};
 };
 
 // Call rowType.onFormatTitle() on the given row and all its parent rows
