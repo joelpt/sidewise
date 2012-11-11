@@ -1055,12 +1055,10 @@ function onPageRowFormatTitle(row, itemTextElem) {
             var nearbyTitle;
             var reformatPrev;
 
-            var prev = row.prev();
-            if (prev.is(row.preceding('.ftRowNode'))) {
-                nearby = row.prev();
-                nearbyTitle = nearby.attr('text');
-                reformatPrev = true;
-            }
+            var prev = row.preceding('.ftRowNode');
+            nearby = row.prev();
+            nearbyTitle = nearby.attr('text');
+            reformatPrev = true;
 
             if (nearby.length == 0 || nearbyTitle == text || nearbyTitle.substring(0, 5) != text.substring(0, 5))
             {
