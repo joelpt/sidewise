@@ -59,7 +59,9 @@ FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfigurat
         $row.remove();
     }
     else {
-        $row.replaceWith($row.children('.ftChildren').children());
+        var $children  = this.getChildrenContainer($row).children();
+        $row.replaceWith($children);
+        this.formatRowTitle($children);
     }
 
     if (!skipRemoveFromMultiSelection) {
@@ -73,7 +75,7 @@ FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfigurat
     }
 
     this.updateRowExpander($parent);
-    this.formatLineageTitles(this.getChildrenContainer($parent).children());
+    this.formatLineageTitles($parent);
 };
 
 FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChildren, skipRowReconfiguration) {
