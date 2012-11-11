@@ -73,7 +73,7 @@ FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfigurat
     }
 
     this.updateRowExpander($parent);
-    this.formatLineageTitles($parent);
+    this.formatLineageTitles(this.getChildrenContainer($parent).children());
 };
 
 FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChildren, skipRowReconfiguration) {
