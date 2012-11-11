@@ -343,7 +343,7 @@ PageTree.prototype = {
     hibernatePage: function(id, skipLastTabCheck)
     {
         var tabId = getNumericId(id);
-        var page = this.updatePage(tabId, { hibernated: true, restorable: false, id: 'pH' + generateGuid(), status: 'complete' });
+        var page = this.updatePage(tabId, { hibernated: true, restorable: false, id: 'pH' + generateGuid(), status: 'complete', mediaState: null, mediaTime: null });
 
         var self = this;
         function removeAfterHibernate() {
