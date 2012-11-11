@@ -291,6 +291,8 @@ function onCompleted(details)
 
 function onCompletedLateUpdateTimeout(tabId) {
     chrome.tabs.get(tabId, function(tab) {
+        if (!tab) return;
+
         var title = getBestPageTitle(tab.title, tab.url);
         var url = tab.url ? dropUrlHash(tab.url) : '';
         var favicon;
