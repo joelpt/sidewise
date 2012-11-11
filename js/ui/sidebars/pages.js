@@ -1077,7 +1077,9 @@ function onPageRowFormatTitle(row, itemTextElem) {
                             // just part of a word at the end of the prefix; we only want to trim whole words off
                             pos--;
                         }
-                        text = text.substring(pos).trim().replace(/^([^A-Za-z0-9]* )?(.+?)( [^A-Za-z0-9]*)?$/, '$2');
+                        if (pos >= 5) {
+                            text = text.substring(pos).trim().replace(/^([^A-Za-z0-9]* )?(.+?)( [^A-Za-z0-9]*)?$/, '$2');
+                        }
                     }
                 }
             }
