@@ -1051,14 +1051,9 @@ function onPageRowFormatTitle(row, itemTextElem) {
         // trim common prefixes from child page titles vs. parent/preceding/next page titles
         var parent = row.parent().closest('.ftRowNode');
         if (parent.length > 0) { // && parent.attr('text').substring(0, 5) == text.substring(0, 5)) {
-            var nearby = $();
-            var nearbyTitle;
-            var reformatPrev;
-
-            var prev = row.preceding('.ftRowNode');
-            nearby = row.prev();
-            nearbyTitle = nearby.attr('text');
-            reformatPrev = true;
+            var nearby = row.preceding('.ftRowNode');
+            var nearbyTitle = nearby.attr('text');
+            var reformatPrev = true;
 
             if (nearby.length == 0 || nearbyTitle == text || nearbyTitle.substring(0, 5) != text.substring(0, 5))
             {
