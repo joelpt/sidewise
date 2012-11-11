@@ -3,7 +3,7 @@
 // Row helper functions
 ///////////////////////////////////////////////////////////
 
-var TITLE_FORMAT_START_DELAY_MS = 0;
+var TITLE_FORMAT_START_DELAY_MS = 20;
 
 FancyTree.prototype.setRowButtonTooltips = function(row) {
     var rowType = row.attr('rowtype');
