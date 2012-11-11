@@ -189,6 +189,8 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     this.draggingJustCancelled = false;
     this.dragSelectedCollapsedRow = false;
     this.scrollToRowTimeout = null;
+    this.formatTitleQueue = {};
+    this.formatTitleTimer = null;
 
     // configure tooltip stuff
     this.tooltipTopOffset = options.tooltipTopOffset || 20;
