@@ -46,3 +46,10 @@ FancyTree.prototype.formatLineageTitles = function(row) {
         self.formatRowTitle.call(self, $e);
     });
 };
+
+FancyTree.prototype.formatAllRowTitles = function() {
+    var self = this;
+    this.root.find('.ftRowNode').each(function(i, e) {
+        self.formatRowTitle.call(self, $(e));
+    });
+};
