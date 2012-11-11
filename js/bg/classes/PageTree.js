@@ -219,6 +219,8 @@ PageTree.prototype = {
         if (!moving) {
             throw new Error('Could not find node to move', movingMatcher, relation, toMatcher);
         }
+        var fromParent = moving.parent;
+
         this.removeFromTabIndex(moving);
         var r = this.$super('moveNodeRel')(moving, relation, toMatcher, keepChildren);
         this.addToTabIndex(moving);
@@ -230,6 +232,12 @@ PageTree.prototype = {
                 beforeSiblingId: r[2] ? r[2].id : undefined,
                 keepChildren: keepChildren || false
             });
+
+            if (fromParent.collapsed && fromParent.children.length == 0) {
+                // automatically set .collapsed to false when removing the last child from the move-from parent
+                // so that it does not get "stuck on"
+                this.updateNode(fromParent, { collapsed: false });
+            }
         }
         return r;
     },
