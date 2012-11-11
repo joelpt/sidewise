@@ -1053,19 +1053,25 @@ function onPageRowFormatTitle(row, itemTextElem) {
         if (parent.length > 0) { // && parent.attr('text').substring(0, 5) == text.substring(0, 5)) {
             var nearby = row.prev();
             var reformatPrev = true;
-            if (nearby.length == 0 || nearby.attr('text') == text) {
+            var nearbyTitle = nearby.attr('text');
+
+            if (nearby.length == 0 || nearbyTitle == text || nearbyTitle.substring(0, 5) != text.substring(0, 5)) {
                 nearby = row.next();
+                nearbyTitle = nearby.attr('text');
                 var reformatPrev = false;
             }
-            if (nearby.length == 0 || nearby.attr('text') == text) {
+
+            if (nearby.length == 0 || nearbyTitle == text || nearbyTitle.substring(0, 5) != text.substring(0, 5)) {
                 nearby = parent;
+                nearbyTitle = nearby.attr('text');
                 var reformatPrev = false;
             }
+
             if (reformatPrev && nearby.index() == 0) {
                 onPageRowFormatTitle(nearby, nearby.find('> .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText'));
             }
+
             if (nearby && nearby.attr('rowtype') == 'page') {
-                var nearbyTitle = nearby.attr('text');
                 if (nearbyTitle != text) {
                     var pos = 0;
                     while (pos < text.length && pos < nearbyTitle.length && text[pos] == nearbyTitle[pos]) {
