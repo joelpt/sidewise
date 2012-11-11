@@ -1046,6 +1046,38 @@ function onPageRowFormatTitle(row, itemTextElem) {
         label = row.attr('id').slice(0, 5) + (label ? ': ' : '') + label;
     }
 
+    if (settings.get('pages_trimPageTitlePrefixes') && row.attr('url').indexOf(text) == -1) {
+        // trim common prefixes from child page titles vs. parent/preceding/next page titles
+        var parent = row.parent().closest('.ftRowNode');
+        if (parent.length > 0 && parent.attr('text').substring(0, 5) == text.substring(0, 5)) {
+            var nearby = row.prev();
+            var reformatPrev = true;
+            if (nearby.length == 0 || nearby.attr('text') == text) {
+                nearby = row.next();
+                var reformatPrev = false;
+            }
+            if (nearby.length == 0 || nearby.attr('text') == text) {
+                nearby = parent;
+                var reformatPrev = false;
+            }
+            if (reformatPrev && nearby.index() == 0) {
+                onPageRowFormatTitle(nearby, nearby.find('> .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText'));
+            }
+            if (nearby && nearby.attr('rowtype') == 'page') {
+                var nearbyTitle = nearby.attr('text');
+                if (nearbyTitle != text) {
+                    var pos = 0;
+                    while (pos < text.length && pos < nearbyTitle.length && text[pos] == nearbyTitle[pos]) {
+                        pos++;
+                    }
+                    if (pos >= 5) {
+                        text = text.substring(pos).trim().replace(/^([^A-Za-z0-9]* )?(.+?)( [^A-Za-z0-9]*)?$/, '$2');
+                    }
+                }
+            }
+        }
+    }
+
     itemTextElem.children('.ftItemTitle').text(text);
     itemTextElem.children('.ftItemLabel').html(label + (text && label ? ': ' : ''));
 

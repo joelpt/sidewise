@@ -98,6 +98,7 @@ Settings.prototype = {
             pages_clickOnHoverDelayMs: 250,
             pages_clickOnMouseWheel: false,
             pages_showMediaPlayTime: true,
+            pages_trimPageTitlePrefixes: true,
             smartFocusOnClose: false,
             smartFocusPrefersCousins: false,
             smartFocusPrefersParent: true,
@@ -184,7 +185,7 @@ Settings.prototype = {
                             clickOnHoverDelayMs = this.get('pages_clickOnHoverDelayMs');
                         }
                         domWindow.ft.clickOnHoverDelayMs = clickOnHoverDelayMs;
-
+                        domWindow.ft.formatAllRowTitles.call(domWindow.ft);
                     }
                     catch(ex) {}
 
