@@ -1072,7 +1072,7 @@ function onPageRowFormatTitle(row, itemTextElem) {
                         pos++;
                     }
                     if (pos >= 5) {
-                        while (text[pos].match(/[A-Za-z0-9]/)) {
+                        while (text[pos] != ' ') {
                             // Move pos back to last non alphanumeric char position so we don't trim title-prefixes that include
                             // just part of a word at the end of the prefix; we only want to trim whole words off
                             pos--;
