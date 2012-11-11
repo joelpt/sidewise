@@ -1073,11 +1073,13 @@ function onPageRowFormatTitle(row, itemTextElem) {
                     }
                     if (pos >= 5) {
                         while (text[pos] != ' ') {
-                            // Move pos back to last non alphanumeric char position so we don't trim title-prefixes that include
-                            // just part of a word at the end of the prefix; we only want to trim whole words off
+                            // Move pos back to last non space char so we don't include partial words at the end of the prefix
                             pos--;
+
                         }
-                        if (pos >= 5) {
+
+                        if (pos >= 5 && text[pos].match(/[^A-Za-z0-9]/) && text[pos-1].match(/[^A-Za-z0-9]/)) {
+                            // Only perform trimming when the prefix ends with two non-alphanumeric chars
                             text = text.substring(pos).trim().replace(/^([^A-Za-z0-9]* )?(.+?)( [^A-Za-z0-9]*)?$/, '$2');
                         }
                     }
