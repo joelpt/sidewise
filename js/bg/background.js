@@ -165,13 +165,20 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
     tree.loadTree(storedPageTree, casts);
 
     if (!rememberOpenPagesBetweenSessions) {
-        // set any non-hibernated window nodes which contain at least one
-        // hibernated child node to hibernated
         tree.tree.forEach(function(node) {
+            // clear media values on every page node we load
+            if (node instanceof PageNode) {
+                node.mediaState = null;
+                node.mediaTime = null;
+            }
+
+
             if (!(node instanceof WindowNode)) {
                 return;
             }
 
+            // set any non-hibernated window nodes which contain at least one
+            // hibernated child node to hibernated
             var hibernatedChild = tree.getNodeEx(function(e) { return e.hibernated }, node.children);
 
             if (hibernatedChild) {
