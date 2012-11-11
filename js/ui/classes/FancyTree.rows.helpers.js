@@ -33,13 +33,16 @@ FancyTree.prototype.updateRowExpander = function(row) {
     expander.removeClass('ftNode').addClass('ftExpander');
 };
 
-FancyTree.prototype.formatRowTitle = function(row) {
-    var id = row.attr('id');
-    if (!id) return;
+FancyTree.prototype.formatRowTitle = function($rows) {
+    var self = this;
+    $rows.each(function(i, e) {
+        var $row = $(e);
+        var id = $row.attr('id');
+        if (!id) return;
+        self.formatTitleQueue[id] = $row;
+    });
 
-    this.formatTitleQueue[row.attr('id')] = row;
     if (!this.formatTitleTimer) {
-        var self = this;
         this.formatTitleTimer = setTimeout(function() {
             self.processTitleFormatQueue.call(self);
         }, TITLE_FORMAT_START_DELAY_MS);
@@ -63,16 +66,9 @@ FancyTree.prototype.processTitleFormatQueue = function() {
 
 // Call rowType.onFormatTitle() on the given rows and all its parent rows
 FancyTree.prototype.formatLineageTitles = function($rows) {
-    var self = this;
-    $rows.parents('.ftRowNode').add($rows).each(function(i, e) {
-        var $e = $(e);
-        self.formatRowTitle.call(self, $e);
-    });
+    this.formatRowTitle($rows.parents('.ftRowNode').add($rows));
 };
 
 FancyTree.prototype.formatAllRowTitles = function() {
-    var self = this;
-    this.root.find('.ftRowNode').each(function(i, e) {
-        self.formatRowTitle.call(self, $(e));
-    });
+    this.formatRowTitle(this.root.find('.ftRowNode'));
 };
