@@ -404,24 +404,29 @@ DataTree.prototype = {
 
         var newRootNode = new DataTreeRootNode(this);
 
-        if (treeData instanceof Array) {
+        if (treeData) {
+            if (treeData instanceof Array) {
+                newRootNode.children = treeData;
+            }
+            else {
+                treeData = treeData.children;
+            }
+
+            treeData = this.mapTree(function(e) {
+                var castTo = casts[e.elemType];
+                if (castTo) {
+                    // pseudocast: doesn't actually change the object's type, but
+                    // will cause instanceof to report correct prototype inheritance
+                    e.__proto__ = castTo.prototype;
+                }
+                return e;
+            }, treeData);
             newRootNode.children = treeData;
         }
         else {
-            treeData = treeData.children;
+            newRootNode.children = [];
         }
 
-        treeData = this.mapTree(function(e) {
-            var castTo = casts[e.elemType];
-            if (castTo) {
-                // pseudocast: doesn't actually change the object's type, but
-                // will cause instanceof to report correct prototype inheritance
-                e.__proto__ = castTo.prototype;
-            }
-            return e;
-        }, treeData);
-
-        newRootNode.children = treeData;
         this.root = newRootNode;
         this.tree = this.root.children;
     },
