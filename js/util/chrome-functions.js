@@ -56,7 +56,7 @@ function refreshPageStatus(page) {
 // Repair the tab ordering of the given PageTreeNode with respect to
 // its pinned state versus the pinned state of other page nodes in the tree
 function fixPinnedUnpinnedTabOrder(page) {
-    log('doing fix un/pin tab order check', page.id, page);
+    // log('doing fix un/pin tab order check', page.id, page);
     // log(tree.dump());
     // log(tree.dumpTabIndexes());
 
@@ -89,6 +89,6 @@ function fixPinnedUnpinnedTabOrder(page) {
         return tree.moveNodeRel(page, 'before', topUnpinned);
     }
 
-    log('no un/pin fix made');
+    // log('no un/pin fix made');
     return undefined;
 }
