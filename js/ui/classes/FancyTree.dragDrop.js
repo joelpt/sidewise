@@ -321,7 +321,18 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
             drag = ['append', overItemRowContent];
         }
         else {
-            drag = ['after', overItemRowContent];
+            if (underRoot && !draggingParams.allowAtTopLevel) {
+                if (draggingParams.allowAtChildLevel) {
+                    drag = ['prepend', overItemRowContent];
+                }
+                else {
+                    treeObj.canAcceptDropTo = false;
+                    return;
+                }
+            }
+            else {
+                drag = ['after', overItemRowContent];
+            }
         }
     }
     else if (underRoot && !(draggingParams.allowAtChildLevel)) {
