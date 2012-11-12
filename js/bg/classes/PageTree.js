@@ -868,7 +868,7 @@ PageTree.prototype = {
             var self = this;
             TimeoutManager.reset('conformChromeTabIndexForPageNode_' + generateGuid(), function() {
                 self.conformChromeTabIndexForPageNode(node, conformDescendants, skipIndexRebuild, true);
-            }, 5000);
+            }, 1000);
             return;
         }
 
@@ -928,7 +928,7 @@ PageTree.prototype = {
         this.rebuildTabIndex();
 
         var windows = this.tree.filter(function(e) {
-            return e instanceof WindowNode && !e.hiberanted;
+            return e instanceof WindowNode && !e.hibernated;
         });
 
         for (var i = 0; i < windows.length; i++) {
