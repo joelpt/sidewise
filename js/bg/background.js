@@ -1,8 +1,19 @@
 ///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
+ var PAGETREE_NODE_TYPES = {
+    'window': WindowNode,
+    'page': PageNode,
+    'folder': FolderNode
+};
+
+///////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////
 
 var tree;
+var recentlyClosedTree;
 var sidebarHandler;
 var paneCatalog;
 var focusTracker;
@@ -26,6 +37,7 @@ function onLoad()
         tree = new PageTree(PageTreeCallbackProxy, function() {
             savePageTreeToLocalStorage(tree, 'pageTree', true);
         });
+        recentlyClosedTree = new DataTree();
         sidebarHandler = new SidebarHandler();
 
         // Call postLoad() after focusTracker initializes to do remaining initialization
@@ -69,6 +81,7 @@ function postLoad(focusedWin) {
         // load stored page tree and associate tabs to existing page nodes
         log('--- loading page tree from storage ---');
         loadPageTreeFromLocalStorage(storedPageTree);
+        loadTreeFromLocalStorage(recentlyClosedTree, 'recentlyClosedTree', PAGETREE_NODE_TYPES);
 
         if (settings.get('rememberOpenPagesBetweenSessions')) {
             setTimeout(startAssociationRun, 2000); // wait a couple seconds for content scripts to get going
@@ -153,16 +166,15 @@ function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
     }
 }
 
+function loadTreeFromLocalStorage(tree, settingKey, casts) {
+    tree.loadTree(settings.get(settingKey), casts);
+}
+
 // loads saved tree data from local storage and populates the tree with it
 function loadPageTreeFromLocalStorage(storedPageTree) {
     var rememberOpenPagesBetweenSessions = settings.get('rememberOpenPagesBetweenSessions');
-    var casts = {
-        'window': WindowNode,
-        'page': PageNode,
-        'folder': FolderNode
-    };
 
-    tree.loadTree(storedPageTree, casts);
+    tree.loadTree(storedPageTree, PAGETREE_NODE_TYPES);
 
     if (!rememberOpenPagesBetweenSessions) {
         tree.tree.forEach(function(node) {
@@ -278,6 +290,10 @@ function PageTreeCallbackProxy(methodName, args) {
     // log(methodName, args);
 
     var node = args.element;
+
+    if (methodName == 'remove') {
+        recentlyClosedTree.addNodeRel(node, 'prepend');
+    }
 
     if (node instanceof WindowNode && !node.hibernated && methodName == 'remove') {
         // when removing window nodes ensure they are also removed from focusTracker
