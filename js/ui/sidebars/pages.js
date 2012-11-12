@@ -1086,10 +1086,9 @@ function onPageRowFormatTitle(row, itemTextElem) {
                         pos++;
                     }
                     if (pos >= 5) {
-                        while (text[pos] != ' ') {
+                        while (text[pos] != ' ' && pos > 0) {
                             // Move pos back to last non space char so we don't include partial words at the end of the prefix
                             pos--;
-
                         }
 
                         if (pos >= 5 && text[pos].match(/[^A-Za-z0-9]/) && text[pos-1].match(/[^A-Za-z0-9]/)) {
