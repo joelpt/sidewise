@@ -14,6 +14,7 @@
 
 var tree;
 var recentlyClosedTree;
+var recentlyClosedGroupList = [];
 var sidebarHandler;
 var paneCatalog;
 var focusTracker;
@@ -291,8 +292,10 @@ function PageTreeCallbackProxy(methodName, args) {
 
     var node = args.element;
 
-    if (methodName == 'remove') {
+    if (methodName == 'remove' && (node instanceof PageNode || node instanceof FolderNode)) {
         recentlyClosedTree.addNodeRel(node, 'prepend');
+        recentlyClosedGroupList.push(node);
+        TimeoutManager.reset('prependRecentlyClosedGroupHeader', prependRecentlyClosedGroupHeader, 5000);
     }
 
     if (node instanceof WindowNode && !node.hibernated && methodName == 'remove') {
@@ -341,6 +344,25 @@ function PageTreeCallbackProxy(methodName, args) {
     // args.op = methodName;
     // chrome.extension.sendRequest(args);
 }
+
+
+function prependRecentlyClosedGroupHeader() {
+    // TODO group the items in the list by their pre-removal parent, and retain the
+    // inter-structure within below move orders; also closing pages from multiple windows
+    // should have separate headers for each window; by using a faster ~250ms restarting-timer
+    // we can wait to add groupList to the recentlyClosedTree until the timer hits, then add
+    // those pages on the basis of their original tree structure. Will need to propagate
+    // previousParent and previousIndex to here - store those values in in rcgList and
+    // make dataTree.removeNode return these values
+    if (recentlyClosedGroupList.length > 1) {
+        var header = new HeaderNode(recentlyClosedGroupList.length + ' closed items:');
+        recentlyClosedTree.addNodeRel(header, 'prepend');
+        for (var i = recentlyClosedGroupList.length - 1; i >= 0; i--) {
+            recentlyClosedTree.moveNodeRel(recentlyClosedGroupList[i], 'append', header);
+        }
+    }
+}
+
 
 // TODO move this to a new file
 // TODO probably wanna sort by tabs.index

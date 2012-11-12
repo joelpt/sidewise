@@ -233,6 +233,7 @@ DataTree.prototype = {
         node.root = this.root;
         this.idIndex[node.id] = node;
         this.updateLastModified();
+        // TODO make this { node: ..., parent: ..., ... }
         return [node, parent, beforeSibling ? beforeSibling.node : undefined];
     },
 
@@ -285,7 +286,11 @@ DataTree.prototype = {
     // removeChildren: if true, remove element's children; if false (default), splice them into element's old spot
     removeNode: function(matcher, removeChildren)
     {
+        // TODO don't use getNodeEx here, and possibly NOWHERE
         var found = this.getNodeEx(matcher);
+        var parent = found.parent;
+        var siblingIndex = found.siblingIndex();
+
         if (found === undefined) {
             console.error(matcher);
             throw new Error('Could not find requested element to remove matching above matcher');
@@ -304,6 +309,8 @@ DataTree.prototype = {
 
         this.updateLastModified();
         return found.node;
+        // TODO USE THIS
+        // return { node: found.node, oldParent: parent, oldSiblingIndex: siblingIndex };
     },
 
     // Move the node matching movingMatcher to reside under the node matching parentMatcher.
