@@ -868,7 +868,7 @@ PageTree.prototype = {
             var self = this;
             TimeoutManager.reset('conformChromeTabIndexForPageNode_' + generateGuid(), function() {
                 self.conformChromeTabIndexForPageNode(node, conformDescendants, skipIndexRebuild, true);
-            }, 1000);
+            }, 5500);
             return;
         }
 
@@ -921,7 +921,7 @@ PageTree.prototype = {
             var self = this;
             TimeoutManager.reset('conformAllChromeTabIndexes', function() {
                 self.conformAllChromeTabIndexes(true);
-            }, 2000);
+            }, 5000);
             return;
         }
 
