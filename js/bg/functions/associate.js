@@ -142,8 +142,11 @@ function endAssociationRun(runId) {
 
     tree.rebuildTabIndex();
     TimeoutManager.reset('conformAfterEndAssocationRun', function() {
-        tree.rebuildPageNodeWindowIds(function() { tree.conformAllChromeTabIndexes(true); });
-    }, 5000);
+        tree.rebuildPageNodeWindowIds(function() {
+            fixAllPinnedUnpinnedTabOrder();
+            tree.conformAllChromeTabIndexes(true);
+        });
+    }, 500);
 
     try {
         TimeoutManager.clear(runId);
