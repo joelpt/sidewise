@@ -53,6 +53,16 @@ function refreshPageStatus(page) {
     }, 100);
 }
 
+function fixAllPinnedUnpinnedTabOrder() {
+    tree.filter(function(e) { return e instanceof PageNode && !e.hibernated && e.pinned; })
+        .forEach(function(e) { fixPinnedUnpinnedTabOrder(e); }
+    );
+
+    tree.filter(function(e) { return e instanceof PageNode && !e.hibernated && !e.pinned; }).reverse()
+        .forEach(function(e) { fixPinnedUnpinnedTabOrder(e); }
+    );
+}
+
 // Repair the tab ordering of the given PageTreeNode with respect to
 // its pinned state versus the pinned state of other page nodes in the tree
 function fixPinnedUnpinnedTabOrder(page) {
