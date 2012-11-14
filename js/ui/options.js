@@ -611,7 +611,7 @@ function submitBugReport() {
 
 function exportState() {
     bg.savePageTreeToLocalStorage(bg.tree, 'pageTree', true);
-    copyTextToClipboard(JSON.stringify(bg.localStorage));
+    copyTextToClipboard(bg.settings.toJSON());
     alert('Sidewise\'s configuration and state data has been exported and copied to your clipboard.\n\nPaste this into a text file to save it.');
 }
 
