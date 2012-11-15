@@ -475,6 +475,6 @@ function formatSecondsAsHMS(seconds)
 
 function generateGuid() {
     var guid = Math.random().toString(36);
-    return guid.substring(2, 6) + '-' + guid.substring(6, 10) + '-' + guid.substring(10, 15);
+    return guid.substring(2, 6) + '-' + guid.substring(6, 15) + '-' + Math.random().toString(36).substring(2, 15);
 }
 
