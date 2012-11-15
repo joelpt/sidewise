@@ -215,8 +215,13 @@ function onBeforeNavigate(details)
         var checkPageStatusFn = function() {
             chrome.tabs.get(details.tabId, function(tab) {
                 if (tab) {
-                    tree.updateNode(page, { status: tab.status });
-                    if (tab.status == 'complete') {
+                    if (!tab.hibernated) {
+                        tree.updateNode(page, { status: tab.status });
+                    }
+                    else {
+                        tree.updateNode(page, { status: 'complete' });
+                    }
+                    if (tab.status == 'complete' || tab.hibernated) {
                         TimeoutManager.clear('checkPageStatus1_' + details.tabId);
                         TimeoutManager.clear('checkPageStatus2_' + details.tabId);
                         TimeoutManager.clear('checkPageStatus3_' + details.tabId);
