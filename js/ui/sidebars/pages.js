@@ -532,6 +532,13 @@ function allowDropHandler($fromRows, relation, $toRow) {
         if (relation == 'before' && $toRow.is('[rowtype=page][hibernated=false][pinned=true]')) {
             return false;
         }
+
+        if ((relation == 'before' || relation == 'prepend')
+            && $toRow.following('.ftRowNode[rowtype=page][hibernated=false][pinned=true]', $toRow.parentsUntil('.ftRoot > .ftChildren').last()).length > 0)
+        {
+            return false;
+        }
+
         if (relation == 'prepend' && $toRow.is('[rowtype=window]')) {
             var toNode = bg.tree.getNode($toRow.attr('id'));
             if (toNode.following(function(e) { return e.isTab() && e.pinned; }, toNode)) {
@@ -551,6 +558,17 @@ function allowDropHandler($fromRows, relation, $toRow) {
         if (relation != 'before' && $toRow.is('[rowtype=page][hibernated=false][pinned=false]')) {
             return false;
         }
+
+        if (relation == 'after' || relation == 'append') {
+            if ($toRow.preceding('.ftRowNode[rowtype=page][hibernated=false][pinned=false]', $toRow.parentsUntil('.ftRoot > .ftChildren').last()).length > 0) {
+                return false;
+            }
+
+            if ($toRow.hasClass('ftCollapsed') && $toRow.find('.ftRowNode[rowtype=page][hibernated=false][pinned=false]').length > 0) {
+                return false;
+            }
+        }
+
         if (relation == 'append' && $toRow.is('[rowtype=window]')) {
             return false;
         }
