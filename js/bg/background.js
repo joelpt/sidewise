@@ -42,11 +42,7 @@ function postLoad(focusedWin) {
         // If no focused win yet then there are no actual Chrome windows
         // open yet; wait for one to be created then reload the background
         // page to re-init everything cleanly
-        chrome.windows.onCreated.addListener(function(win) {
-            log('about to reload background page');
-            document.location.reload();
-            return;
-        });
+        chrome.windows.onCreated.addListener(function(win) { restartSidewise(); });
         return;
     }
 
@@ -113,6 +109,7 @@ function registerEventHandlers() {
     registerBrowserActionEvents();
     registerSnapInEvents();
     registerOmniboxEvents();
+    registerRuntimeEvents();
 }
 
 function createSidebarOnStartup() {
@@ -444,5 +441,45 @@ function findTabParents(tabs) {
         setTimeout(laterFn, 10000);
         setTimeout(laterFn, 16000);
     }
+
+}
+
+// Perform 'Chrome is shutting down' tasks.
+function shutdownSidewise() {
+    browserIsClosed = true;
+
+    // Prevent page tree from being saved from this point forward
+    TimeoutManager.clear('onPageTreeModified');
+    tree.onModifiedDelayed = function() {};
+
+    // Prevent further UI updates
+    tree.callbackProxyFn = function() {};
+
+    // Prevent onWindowUpdateCheckInterval from firing again
+    try {
+        clearInterval(windowUpdateCheckInterval);
+    } catch(err) { }
+
+    // Close any remaining (popup) windows
+    try {
+        sidebarHandler.remove();
+    } catch(err) { }
+
+    for (var i in wins) {
+        chrome.windows.remove(wins[i].id);
+    }
+}
+
+// Restart the extension completely.
+function restartSidewise() {
+    // Close any existing 'sidebar.html' popup windows
+    try { sidebarHandler.remove(); } catch(err) { }
+
+    chrome.tabs.query({ windowType: 'popup', url: chrome.extension.getURL('/sidebar.html') }, function(tabs) {
+        tabs.forEach(function(tab) {
+            try { chrome.windows.remove(tab.windowId); } catch(err) { }
+        });
+        document.location.reload();
+    });
 
 }

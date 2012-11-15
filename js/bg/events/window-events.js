@@ -41,7 +41,7 @@ function onWindowRemoved(windowId)
             return;
         }
         log('removing sidebar window');
-        savePageTreeToLocalStorage(tree, 'pageTree', true);
+        // savePageTreeToLocalStorage(tree, 'pageTree', true);
         sidebarHandler.removeInProgress = true;
         sidebarHandler.onRemoved();
         return;
@@ -82,12 +82,12 @@ function onWindowRemoved(windowId)
     }
 
     chrome.windows.getAll(null, function(wins) {
-        log('shutdown attempt', wins);
+        // log('shutdown attempt', wins);
         for (var i in wins) {
             if (wins[i].type == 'normal') {
                 // at least one normal window still exists aside
                 // from the one that was just removed
-                log('cancel shutdown', wins[i].type);
+                // log('cancel shutdown', wins[i].type);
                 focusCurrentTabInPageTree();
                 return;
             }
@@ -96,27 +96,8 @@ function onWindowRemoved(windowId)
         // Therefore we want Chrome to close, so we'll close any remaining
         // "popup" windows (such as the sidebar or dev-tools windows)
         // which should cause Chrome to exit.
-        log('do shutdown');
-
-        // Prevent page tree from being saved from this point forward
-        TimeoutManager.clear('onPageTreeModified');
-        tree.onModifiedDelayed = undefined;
-
-        // Prevent onWindowUpdateCheckInterval from firing
-        try {
-            clearInterval(windowUpdateCheckInterval);
-        } catch(err) { }
-
-        // Close any remaining (popup) windows
-        try {
-            sidebarHandler.remove();
-        } catch(err) { }
-
-        for (var i in wins) {
-            chrome.windows.remove(wins[i].id);
-        }
-
-        browserIsClosed = true;
+        log('chrome is shutting down');
+        shutdownSidewise();
     });
 
 }
