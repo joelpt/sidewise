@@ -363,16 +363,18 @@ function onTabRemoved(tabId, removeInfo)
 
     if (page.hibernated) {
         // page is set to be hibernated; since its tab has been closed, that means
-        // we are only removing the tab for purposes of hibernattion
+        // we are only removing the tab for purposes of hibernation
         return;
     }
+
+    var parent = page.parent;
 
     // remove the page element from the tree
     tree.removeNode(page);
 
     // also remove zero-child parent window nodes if necessary
-    if (page.parent instanceof WindowNode && page.parent.children.length == 0) {
-        tree.removeNode(page.parent);
+    if (parent instanceof WindowNode && parent.children.length == 0) {
+        tree.removeNode(parent);
     }
 }
 
