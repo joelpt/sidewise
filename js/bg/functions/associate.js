@@ -103,7 +103,7 @@ function startAssociationRun() {
 
         for (var i in tabs) {
             var tab = tabs[i];
-            if (sidebarHandler.tabId == tab.id) {
+            if (sidebarHandler.tabId == tab.id || tab.url == chrome.extension.getURL('/sidebar.html')) {
                 // this tab is the sidebar
                 continue;
             }
@@ -146,15 +146,18 @@ function endAssociationRun(runId) {
     // this is overkill, but it catches tricky edge cases which if not corrected now
     // will often lead to bizarre UI behavior/breakage later on.
     TimeoutManager.reset('conformAfterEndAssocationRun', function() {
-        tree.rebuildPageNodeWindowIds(function() {                              // obtain fresh tab windowIds and indexes
-            associateWindowstoWindowNodes(true, false, function() {             // associate or merge windows, stringent match
-                disambiguatePageNodesByWindowId(3);                             // move pages to be under correct window node based on .windowId
-                associateWindowstoWindowNodes(true, true, function() {          // associate windows, stringent match (no merging)
-                    disambiguatePageNodesByWindowId(3);                         // move pages to be under correct window node based on .windowId
-                    associateWindowstoWindowNodes(false, false, function() {    // associate or merge windows, relaxed match (safety check)
-                        disambiguatePageNodesByWindowId(3);                     // move pages to be under correct window node based on .windowId
-                        fixAllPinnedUnpinnedTabOrder();                         // correct ordering of pinned vs. unpinned tabs in the tree/tab order
-                        tree.conformAllChromeTabIndexes(true);                  // conform chrome's tab order to match the tree's order
+        tree.rebuildPageNodeWindowIds(function() {                                  // obtain fresh tab windowIds and indexes
+            associateWindowstoWindowNodes(true, false, function() {                 // associate OR merge windows, stringent match
+                disambiguatePageNodesByWindowId();                                  // disambiguate tabs
+                associateWindowstoWindowNodes(true, true, function() {              // associate windows, stringent match
+                    disambiguatePageNodesByWindowId();                              // disambiguate tabs
+                    associateWindowstoWindowNodes(false, true, function() {         // associate windows, relaxed match
+                        disambiguatePageNodesByWindowId();                          // disambiguate tabs
+                        associateWindowstoWindowNodes(false, false, function() {    // associate OR merge windows, relaxed match
+                            disambiguatePageNodesByWindowId();                      // move pages to be under correct window node based on .windowId
+                            fixAllPinnedUnpinnedTabOrder();                         // correct ordering of pinned vs. unpinned tabs in the tree/tab order
+                            tree.conformAllChromeTabIndexes(true);                  // conform chrome's tab order to match the tree's order
+                        });
                     });
                 });
             });
@@ -296,6 +299,15 @@ function associateExistingToRestorablePageNode(tab, referrer, historylength) {
     // TODO call associateWindowsToWindowNodes() iff all existing restorable windows
     // have zero .restorable children (and there is at least one such restorable window
     // still left to try and restore)
+    TimeoutManager.reset('WinAssociationForExistingRestorable', function() {
+        associateWindowstoWindowNodes(true, true, function() {
+            disambiguatePageNodesByWindowId();
+            associateWindowstoWindowNodes(true, false, function() {
+                disambiguatePageNodesByWindowId();
+                fixAllPinnedUnpinnedTabOrder();
+            });
+        });
+    }, 2000);
 }
 
 function associatePagesCheck(runId) {
@@ -303,7 +315,7 @@ function associatePagesCheck(runId) {
 
     if (!runInfo) {
         log('Association run is already ended', runId);
-        associateWindowstoWindowNodes();
+        // associateWindowstoWindowNodes();
         // log('Starting a slow tick loop of startAssociationRun');
         // setInterval(startAssociationRun, ASSOCIATE_PAGES_CHECK_INTERVAL_MS_SLOW);
         return;
@@ -731,9 +743,12 @@ function associateWindowstoWindowNodes(requireChildrenCountMatch, prohibitMergin
 // sets of matching-key nodes and swap their ids around to make things correct
 // Set iterations to the maximum number of times the function should re-call itself after completing, which it does
 //    only when there was at least one swap performed in this run; our logic sometimes does not get everything
-//    100% correct in the first round
+//    100% correct in the first round; defaults to 3 when undefined
 function disambiguatePageNodesByWindowId(iterations) {
     var swapCount = 0;
+
+    if (iterations === undefined) iterations = 3;
+
     // find all matching-key groups, removing those page nodes whose windowId already matches its parent window.id
     var groups = tree.groupBy(function(e) {
         if (!e.isTab()) {
