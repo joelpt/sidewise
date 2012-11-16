@@ -68,6 +68,7 @@ function postLoad(focusedWin) {
 
         if (settings.get('rememberOpenPagesBetweenSessions')) {
             setTimeout(startAssociationRun, 2000); // wait a couple seconds for content scripts to get going
+            populatePages(true);
         }
         else {
             populatePages();
@@ -330,7 +331,7 @@ function PageTreeCallbackProxy(methodName, args) {
 //      to parents that aren't yet in the tree. this should NOT be an issue though because
 //      all we do is add the tabs in one loop, THEN do parent-child relating in a second loop
 //      after all pages are in the tree. so NO this will be a non issue !
-function populatePages()
+function populatePages(incognito)
 {
     chrome.windows.getAll({ populate: true }, function(windows) {
         var numWindows = windows.length;
@@ -339,6 +340,11 @@ function populatePages()
 
         for (var i = 0; i < numWindows; i++) {
             var win = windows[i];
+
+            // Obey incognito condition, if present
+            if (incognito == true && !win.incognito) continue;
+            if (incognito == false && win.incognito) continue;
+
             var tabs = win.tabs;
             var numTabs = tabs.length;
             log('Populating tabs from window', 'windowId', win.id, 'number of tabs', numTabs);
