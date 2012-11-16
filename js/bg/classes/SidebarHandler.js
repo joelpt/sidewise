@@ -440,10 +440,12 @@ SidebarHandler.prototype = {
     // Ensure sidebar and dock window's minimized states are the same.
     matchSidebarDockMinimizedStates: function(callback) {
         if (this.dockState == 'undocked' || !this.dockWindowId || !this.windowId) {
+            if (callback) callback(false);
             return;
         }
 
         if (this.matchingMinimizedStates) {
+            if (callback) callback(false);
             return;
         }
 
@@ -453,18 +455,22 @@ SidebarHandler.prototype = {
         var self = this;
         setTimeout(function() {
             if (!self.dockWindowId || !self.windowId) {
+                if (callback) callback(false);
                 return;
             }
             chrome.windows.get(self.dockWindowId, function(dock) {
                 if (!dock || !self.windowId) {
+                    if (callback) callback(false);
                     return;
                 }
                 chrome.windows.get(self.windowId, function(sidebar) {
                     if (!dock || !sidebar) {
+                        if (callback) callback(false);
                         return;
                     }
 
                     if (self.matchingMinimizedStates) {
+                        if (callback) callback(false);
                         return;
                     }
 
