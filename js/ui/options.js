@@ -657,15 +657,6 @@ function doImportState(e,v,m,f) {
     }
     alert('Import successful!\nSidewise will now be restarted.');
 
-    var afterFn = function() {
-        bg.document.location.reload();
-        setTimeout(function() { document.location.reload(); }, 2000);
-    };
-
-    if (bg.sidebarHandler.sidebarExists()) {
-        bg.sidebarHandler.remove(afterFn);
-    }
-    else {
-        afterFn();
-    }
+    bg.restartSidewise();
+    setTimeout(function() { document.location.reload(); }, 3000);
 }
