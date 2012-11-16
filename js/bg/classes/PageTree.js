@@ -5,7 +5,8 @@
 var PAGETREE_ONMODIFIED_DELAY_ON_STARTUP_MS = 1500;
 var PAGETREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS = 1000;
 var PAGETREE_ONMODIFIED_STARTUP_DURATION_MS = 20000;
-
+var CONFORM_TAB_INDEX_DELAY_MS = 5500;
+var CONFORM_ALL_TAB_INDEX_DELAY_MS = 5000;
 
 ///////////////////////////////////////////////////////////
 // PageTree class
@@ -233,7 +234,7 @@ PageTree.prototype = {
                 keepChildren: keepChildren || false
             });
 
-            if (fromParent.collapsed && fromParent.children.length == 0) {
+            if (fromParent && fromParent.collapsed && fromParent.children.length == 0) {
                 // automatically set .collapsed to false when removing the last child from the move-from parent
                 // so that it does not get "stuck on"
                 this.updateNode(fromParent, { collapsed: false });
@@ -640,6 +641,12 @@ PageTree.prototype = {
         var pageNode = pageNode || new PageNode(tab);
         var winNode = this.getNode('w' + tab.windowId);
 
+        // If pageNode is already in the tree, remove it from the tree first
+        if (this.getNode(function(e) { return e === pageNode; })) {
+            log('page node is already in tree, remove it before adding it back to tree under new windowId', pageNode.id, tab.windowId);
+            this.removeNode(pageNode, false);
+        }
+
         if (!winNode) {
             log('window node does not exist, create it then add page to it', pageNode.id, tab.windowId);
             winNode = new WindowNode({ id: tab.windowId, incognito: tab.incognito, type: 'normal' });
@@ -868,7 +875,7 @@ PageTree.prototype = {
             var self = this;
             TimeoutManager.reset('conformChromeTabIndexForPageNode_' + generateGuid(), function() {
                 self.conformChromeTabIndexForPageNode(node, conformDescendants, skipIndexRebuild, true);
-            }, 5500);
+            }, CONFORM_TAB_INDEX_DELAY_MS);
             return;
         }
 
@@ -921,7 +928,7 @@ PageTree.prototype = {
             var self = this;
             TimeoutManager.reset('conformAllChromeTabIndexes', function() {
                 self.conformAllChromeTabIndexes(true);
-            }, 5000);
+            }, CONFORM_ALL_TAB_INDEX_DELAY_MS);
             return;
         }
 
