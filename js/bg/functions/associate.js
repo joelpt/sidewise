@@ -15,6 +15,9 @@ var ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_MS = 15000;
 var ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_ITERATIONS =
     ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_MS / ASSOCIATE_PAGES_CHECK_INTERVAL_MS;
 
+var CLEANUP_AFTER_ASSOCIATION_RUN_DELAY_MS = 500;
+var CLEANUP_AFTER_ASSOCIATE_EXISTING_PAGE_DELAY_MS = 5000;
+
 // When the referrer of a tab matches this regular expression, Chrome is
 // known to sometimes blank out such referrers of tabs created during
 // session restores or undo-closed-tabs
@@ -90,6 +93,8 @@ function startAssociationRun() {
         return;
     }
 
+    fixBadNodes(); // fix pages stuck at root before doing association to improve association accuracy in this bad case
+
     chrome.tabs.query({ }, function(tabs) {
         if (associationConcurrentRuns > 0) {
             return;
@@ -140,29 +145,7 @@ function endAssociationRun(runId) {
     associationConcurrentRuns--;
 
     tree.rebuildTabIndex();
-
-    // This ugly hunk of code cleans up the tree, getting it as accurately in sync
-    // with Chrome's current tab/window configuration as we can. Most of the time
-    // this is overkill, but it catches tricky edge cases which if not corrected now
-    // will often lead to bizarre UI behavior/breakage later on.
-    TimeoutManager.reset('conformAfterEndAssocationRun', function() {
-        tree.rebuildPageNodeWindowIds(function() {                                  // obtain fresh tab windowIds and indexes
-            associateWindowstoWindowNodes(true, false, function() {                 // associate OR merge windows, stringent match
-                disambiguatePageNodesByWindowId();                                  // disambiguate tabs
-                associateWindowstoWindowNodes(true, true, function() {              // associate windows, stringent match
-                    disambiguatePageNodesByWindowId();                              // disambiguate tabs
-                    associateWindowstoWindowNodes(false, true, function() {         // associate windows, relaxed match
-                        disambiguatePageNodesByWindowId();                          // disambiguate tabs
-                        associateWindowstoWindowNodes(false, false, function() {    // associate OR merge windows, relaxed match
-                            disambiguatePageNodesByWindowId();                      // move pages to be under correct window node based on .windowId
-                            fixAllPinnedUnpinnedTabOrder();                         // correct ordering of pinned vs. unpinned tabs in the tree/tab order
-                            tree.conformAllChromeTabIndexes(true);                  // conform chrome's tab order to match the tree's order
-                        });
-                    });
-                });
-            });
-        });
-    }, 500);
+    cleanUpAfterAssociation(CLEANUP_AFTER_ASSOCIATION_RUN_DELAY_MS);
 
     try {
         TimeoutManager.clear(runId);
@@ -178,6 +161,12 @@ function endAssociationRun(runId) {
 // call to the page's content script was required to do potential association later
 function tryAssociateTab(runInfo, tab) {
     var runId = runInfo.runId;
+
+    if (tab.incognito) {
+        // Since incognito tabs are never saved to disk they cannot be reassociated
+        // after loading the old tree from disk
+        return;
+    }
 
     if (tryFastAssociateTab(tab, true)) {
         return true;
@@ -296,18 +285,43 @@ function associateExistingToRestorablePageNode(tab, referrer, historylength) {
         match.historylength = historylength;
     }
 
-    // TODO call associateWindowsToWindowNodes() iff all existing restorable windows
+    // TODO call cleanup only iff all existing restorable windows
     // have zero .restorable children (and there is at least one such restorable window
-    // still left to try and restore)
-    TimeoutManager.reset('WinAssociationForExistingRestorable', function() {
-        associateWindowstoWindowNodes(true, true, function() {
-            disambiguatePageNodesByWindowId();
-            associateWindowstoWindowNodes(true, false, function() {
-                disambiguatePageNodesByWindowId();
-                fixAllPinnedUnpinnedTabOrder();
+    // still left to try and restore) ??
+    cleanUpAfterAssociation(CLEANUP_AFTER_ASSOCIATE_EXISTING_PAGE_DELAY_MS);
+}
+
+// Run a series of association, disambiguation, and guarantee steps to get the tree as accurate as possible when
+// it has gotten out of whack
+function cleanUpAfterAssociation(delay) {
+    TimeoutManager.reset('cleanUpAfterAssociation', function() {
+        tree.rebuildPageNodeWindowIds(function() {                                  // obtain fresh tab windowIds and indexes
+            associateWindowstoWindowNodes(true, false, function() {                 // associate OR merge windows, stringent match
+                disambiguatePageNodesByWindowId();                                  // disambiguate tabs
+                associateWindowstoWindowNodes(true, true, function() {              // associate windows, stringent match
+                    disambiguatePageNodesByWindowId();                              // disambiguate tabs
+                    associateWindowstoWindowNodes(false, true, function() {         // associate windows, relaxed match
+                        disambiguatePageNodesByWindowId();                          // disambiguate tabs
+                        associateWindowstoWindowNodes(false, false, function() {    // associate OR merge windows, relaxed match
+                            disambiguatePageNodesByWindowId();                      // move pages to be under correct window node based on .windowId
+                            movePageNodesToCorrectWindows(function() {              // ensure no page node is located under an incorrect (mismatched) window node
+                                fixBadNodes();                                      // fix page nodes that got stuck at the root level due to a previous bug
+                                tree.rebuildPageNodeWindowIds(function() {          // sanity guarantee
+                                    tree.rebuildTabIndex();                         // sanity guarantee
+                                    tree.rebuildIdIndex();                          // sanity guarantee
+                                    tree.rebuildParents();                          // sanity guarantee
+                                    fixAllPinnedUnpinnedTabOrder();                 // correct ordering of pinned vs. unpinned tabs in the tree/tab order
+                                    tree.conformAllChromeTabIndexes(true);          // conform chrome's tab order to match the tree's order
+                                    tree.conformAllChromeTabIndexes(false);         // conform chrome's tab order to match the tree's order again after standard delay
+                                    log('Post-association cleanup complete');
+                                });
+                            });
+                        });
+                    });
+                });
             });
         });
-    }, 2000);
+    }, delay || 0);
 }
 
 function associatePagesCheck(runId) {
@@ -589,6 +603,11 @@ function associateWindowstoWindowNodes(requireChildrenCountMatch, prohibitMergin
         return e.elemType == 'window' && e.restorable == true;
     });
 
+    if (resWindows.length == 0) {
+        if (onComplete) onComplete();
+        return;
+    }
+
     log('Restorable window set ids', resWindows.map(function(e) { return e.id; }));
 
     // THIS IS WRONG
@@ -754,7 +773,11 @@ function disambiguatePageNodesByWindowId(iterations) {
         if (!e.isTab()) {
             return undefined;
         }
-        if ('w' + e.windowId == e.topParent().id) {
+        var topParent = e.topParent();
+        if (!topParent) {
+            return undefined;
+        }
+        if ('w' + e.windowId == topParent.id) {
             return undefined;
         }
         var key = [e.url, e.referrer, e.historylength, e.pinned, e.incognito].join('|');
@@ -815,4 +838,85 @@ function swapPageNodeIdValues(a, b) {
     tree.updateNode(a, c);
     tree.updateNode(b, { id: origIdA });
     tree.updateNode(a, { id: origIdB });
+}
+
+function movePageNodesToCorrectWindows(onComplete) {
+    tree.rebuildPageNodeWindowIds(function() {
+        chrome.tabs.query({ }, function(tabs) {
+            tabs.forEach(function(tab) {
+                if (tab.url == chrome.extension.getURL('/sidebar.html')) {
+                    return;
+                }
+
+                var page = tree.getPage(tab.id);
+
+                if (!page) {
+                    console.error('Page with this open tab\'s id does not exist in tree', tab.id, tab);
+                    return;
+                }
+
+                var topParent = page.topParent();
+                if (!(topParent instanceof WindowNode && !topParent.isRoot) || topParent.hibernated) {
+                    return;
+                }
+
+                if (topParent.id == 'w' + tab.windowId) {
+                    return;
+                }
+
+                log('Page node is under wrong window node, moving it', tab.id, page.id, tab, page);
+
+                // look for a page that (according to Chrome) has the next .index in that window
+                var nextByIndex = tree.getNode(function(e) {
+                    return e.isTab() && e.windowId == tab.windowId && e.topParent().id == 'w' + tab.windowId && e.index == tab.index + 1;
+                });
+                if (nextByIndex) {
+                    log('Moving', page.id, 'before', nextByIndex);
+                    tree.moveNodeRel(page, 'before', nextByIndex);
+                    return;
+                }
+
+                // look for a page that (according to Chrome) has the previous .index in that window
+                var prevByIndex = tree.getNode(function(e) {
+                    return e.isTab() && e.windowId == tab.windowId && e.topParent().id == 'w' + tab.windowId && e.index == tab.index - 1;
+                });
+                if (prevByIndex) {
+                    log('Moving', page.id, 'after', prevByIndex);
+                    tree.moveNodeRel(page, 'after', prevByIndex);
+                    return;
+                }
+
+                // just add the this tab to the (possibly new) window node with this index
+                log('Moving', page.id, 'to possibly-new window node', tab.windowId);
+                tree.addTabToWindow(tab, page);
+                return;
+
+            });
+
+            if (onComplete) onComplete();
+        });
+    });
+}
+
+function fixBadNodes() {
+    // if a page/folder node got stuck at the root of the tree, fix this
+    var baddies = tree.root.children.filter(function(e) { return !(e instanceof WindowNode); });
+
+    if (baddies.length == 0) {
+        return;
+    }
+
+    for (var i = baddies.length - 1; i >= 0; i--) {
+        var baddy = baddies[i];
+        var winNode = baddy.preceding(function(e) { return e instanceof WindowNode && e.type != 'popup'; });
+        if (!winNode) {
+            winNode = baddy.following(function(e) { return e instanceof WindowNode && e.type != 'popup'; });
+        }
+        if (!winNode) {
+            console.error('No window to put bad node into!', baddy.id, baddy);
+            continue;
+        }
+        log('Fixing bad node', baddy.id, baddy, 'appending as child to', winNode.id);
+        tree.moveNodeRel(baddy, 'append', winNode);
+    }
 }
