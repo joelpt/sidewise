@@ -18,6 +18,10 @@ var PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP = {
     mediaTime: 'media-time'
 };
 
+// wait this long before accessing chrome://favicon cache to obtain
+// a working icon when the assigned favicon fails to load on the page
+var ICON_ERROR_FALLBACK_DELAY_MS = 10000;
+
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -1185,7 +1189,7 @@ function onPageRowFormatTooltip(evt) {
 function onPageRowIconError(evt) {
     setTimeout(function() {
         evt.target.src = getChromeFavIconUrl(evt.data.row.attr('url'));
-    }, 2000);
+    }, ICON_ERROR_FALLBACK_DELAY_MS);
 }
 
 function onPageRowCloseButton(evt) {
