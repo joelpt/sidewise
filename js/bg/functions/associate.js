@@ -453,7 +453,7 @@ function restoreParentWindowViaUniqueChildPageNode(parentWindowNode, childPageNo
     // When node is under a hibernated window node, we want to see if this tab/node has
     // a unique key amongst all nodes. If so, we know that this tab's .windowId
     // can definitively identify the parent hibernated window's new windowId.
-    if (!parentWindowNode instanceof WindowNode || !parentWindowNode.hibernated) {
+    if (!(parentWindowNode instanceof WindowNode) || !parentWindowNode.hibernated) {
         return;
     }
 
@@ -901,11 +901,6 @@ function movePageNodesToCorrectWindows(onComplete) {
 function fixBadNodes() {
     // if a page/folder node got stuck at the root of the tree, fix this
     var baddies = tree.root.children.filter(function(e) { return !(e instanceof WindowNode); });
-
-    if (baddies.length == 0) {
-        return;
-    }
-
     for (var i = baddies.length - 1; i >= 0; i--) {
         var baddy = baddies[i];
         var winNode = baddy.preceding(function(e) { return e instanceof WindowNode && e.type != 'popup'; });
@@ -913,10 +908,24 @@ function fixBadNodes() {
             winNode = baddy.following(function(e) { return e instanceof WindowNode && e.type != 'popup'; });
         }
         if (!winNode) {
-            console.error('No window to put bad node into!', baddy.id, baddy);
-            continue;
+            log('No window to put bad node into! Creating one...', baddy.id, baddy);
+            winNode = new WindowNode({ id: baddy.windowId, incognito: baddy.incognito, type: 'normal' });
+            tree.addNode(winNode);
         }
-        log('Fixing bad node', baddy.id, baddy, 'appending as child to', winNode.id);
-        tree.moveNodeRel(baddy, 'append', winNode);
+        log('Fixing bad page node', baddy.id, baddy, 'appending as child to', winNode.id);
+        tree.moveNodeRel(baddy, 'append', winNode, true);
+    }
+
+    // if a window node is not at the root, fix this
+    baddies = tree.filter(function(e) { return e instanceof WindowNode && (e.parent && !e.parent.isRoot); });
+    var movedWindow = false;
+    for (var i = baddies.length - 1; i >= 0; i--) {
+        var baddy = baddies[i];
+        log('Fixing bad window node', baddy.id, baddy, 'appending to root');
+        tree.moveNodeRel(baddy, 'append', tree.root, true);
+        movedWindow = true;
+    }
+    if (movedWindow) {
+        movePageNodesToCorrectWindows();
     }
 }
