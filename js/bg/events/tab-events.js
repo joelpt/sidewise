@@ -123,36 +123,16 @@ function onTabCreated(tab)
     // get updated page status in a moment, just in case Chrome fails to fire onTabUpdated subsequently
     refreshPageStatus(page);
 
-    // Special handling for extension pages
-    if (isExtensionUrl(tab.url)) {
-        if (tab.url.match(/options|prefs|settings/)) {
-            // Appears to be an extension options page.
-            // Tell smart focus to refocus the currently focused tab when the
-            // options page is closed.
-            log('Setting smart focus parent for an extension options page');
-            page.smartFocusParentTabId = tree.focusedTabId;
-            page.placed = true; // prevent tab from being moved by a later webnav/tabupdated event
-            tree.addTabToWindow(tab, page, function() {
-                focusCurrentTabInPageTree();
-            });
-            return;
-        }
-        // Appears to be a non-options extension page, make it a child of focused tab
-        // as long as they're in the same window
-        if (tab.windowId == focusTracker.getFocused()) {
-            // It's often logical for an extension page to appear as a child of
-            // the currently focused page, e.g. LastPass's Generate Password dialog.
-            log('Setting non-options extension page as child of focused tab');
-            tree.addNode(page, 'p' + tree.focusedTabId);
-            return;
-        }
-    }
-    else if (tab.url && tab.url.indexOf('view-source:') == 0 && tab.openerTabId) {
+
+    // view-source://*
+    if (tab.url && tab.url.indexOf('view-source:') == 0 && tab.openerTabId) {
         // view source pages should be nested under the parent always
         tree.addNode(page, 'p' + tab.openerTabId, undefined, true);
         return;
     }
-    else if (tab.url && !isScriptableUrl(tab.url)) {
+
+    // non scriptable urls, e.g. chrome://*
+    if (tab.url && !isScriptableUrl(tab.url)) {
         // Non scriptable tab; attempt to associate it with a restorable page node
         // even though it's possible the user just created this tab freshly. We do this
         // because onCommitted never fires for non scriptable tabs and therefore
