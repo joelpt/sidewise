@@ -305,7 +305,8 @@ function cleanUpAfterAssociation(delay) {
                         associateWindowstoWindowNodes(false, false, function() {    // associate OR merge windows, relaxed match
                             disambiguatePageNodesByWindowId();                      // move pages to be under correct window node based on .windowId
                             movePageNodesToCorrectWindows(function() {              // ensure no page node is located under an incorrect (mismatched) window node
-                                fixBadNodes();                                      // fix page nodes that got stuck at the root level due to a previous bug
+                                fixBadNodes();                                      // fix nodes being at a level of the tree they aren't permitted at
+                                removeZeroChildWindowNodes();                       // get rid of any zero-child window nodes stuck in the tree
                                 tree.rebuildPageNodeWindowIds(function() {          // sanity guarantee
                                     tree.rebuildTabIndex();                         // sanity guarantee
                                     tree.rebuildIdIndex();                          // sanity guarantee
@@ -321,7 +322,7 @@ function cleanUpAfterAssociation(delay) {
                 });
             });
         });
-    }, delay || 0);
+    }, delay || 1);
 }
 
 function associatePagesCheck(runId) {
@@ -927,5 +928,30 @@ function fixBadNodes() {
     }
     if (movedWindow) {
         movePageNodesToCorrectWindows();
+    }
+}
+
+function removeZeroChildWindowNodes() {
+    // if a window node has no children, remove it
+    var baddies = tree.filter(function(e) { return e instanceof WindowNode && e.children.length == 0; });
+    var removedWindow = false;
+    for (var i = baddies.length - 1; i >= 0; i--) {
+        var baddy = baddies[i];
+        log('Removing zero-child bad window node', baddy.id, baddy);
+        tree.removeNode(baddy);
+        removedWindow = true;
+    }
+    if (removedWindow) {
+        if (sidebarHandler.sidebarExists()) {
+            try {
+                // Redraw sidebar just in case the removed window node(s) had a duplicate ID of another
+                // window node; sidebar's method of accessing rows by id does not work in this case and
+                // visually corrupts the tree. Redrawing avoids this possibility.
+                setTimeout(function() {
+                    sidebarHandler.sidebarPanes['pages'].location.reload();
+                }, 500);
+            }
+            catch(ex) { }
+        }
     }
 }
