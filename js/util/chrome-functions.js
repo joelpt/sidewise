@@ -80,10 +80,8 @@ function fixPinnedUnpinnedTabOrder(page) {
         if (!lastPinned) {
             throw new Error('Could not find lastPinned but should have been able to');
         }
-        log('Moving non-pinned tab to be after last pinned tab', page.id, 'after', lastPinned.id);
-        return tree.moveNodeRel(page, 'after', lastPinned);
-        // TODO should it really be 'below', which would translate to 'prepend' if target has children
-        // or 'after' if not ... ??
+        log('Moving non-pinned tab to be below last pinned tab', page.id, 'after', lastPinned.id);
+        return tree.moveNodeRel(page, lastPinned.children.length == 0 ? 'after' : 'prepend', lastPinned);
     }
 
     if (page.pinned
