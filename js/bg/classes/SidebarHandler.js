@@ -230,11 +230,17 @@ SidebarHandler.prototype = {
 
     // redock the sidebar window to a different window
     redock: function(windowId, onAfter) {
+        if (!windowId) {
+            if (onAfter) onAfter();
+            return;
+        }
+
         if (!this.sidebarExists()) {
             throw new Error('Cannot redock a nonexistent sidebar');
         };
 
         if (this.dockState == 'undocked') {
+            if (onAfter) onAfter();
             return;
         }
 
@@ -280,9 +286,7 @@ SidebarHandler.prototype = {
             positionWindow(self.windowId, newSidebarMetrics, function() {
                 chrome.windows.update(self.windowId, { focused: true }, function() {
                     chrome.windows.update(self.dockWindowId, { focused: true }, function() {
-                        if (onAfter) {
-                          onAfter();
-                      }
+                        if (onAfter) onAfter();
                     });
                 });
             });
