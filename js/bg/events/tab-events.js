@@ -106,7 +106,6 @@ function onTabCreated(tab)
             page.unread = true;
             page.initialCreation = false;
             tree.addTabToWindow(tab, page);
-            fixPinnedUnpinnedTabOrder(page);
             log('New Tab added to end of window');
             return;
         }
@@ -128,7 +127,6 @@ function onTabCreated(tab)
     if (tab.url && tab.url.indexOf('view-source:') == 0 && tab.openerTabId) {
         // view source pages should be nested under the parent always
         tree.addNode(page, 'p' + tab.openerTabId, undefined, true);
-        fixPinnedUnpinnedTabOrder(page);
         return;
     }
 
@@ -160,7 +158,6 @@ function onTabCreated(tab)
             }
         }
 
-        fixPinnedUnpinnedTabOrder(page);
         associateExistingToRestorablePageNode(tab);
         return;
     }
@@ -178,26 +175,22 @@ function onTabCreated(tab)
         if (winTabs.length > 0 && tab.index == 0) {
             log('No openerTabId and index is at start of tree; prepending to window');
             tree.addNodeRel(page, 'prepend', tree.getNode('w' + tab.windowId));
-            fixPinnedUnpinnedTabOrder(page);
             return;
         }
         if (winTabs.length == 0 || winTabs.length == tab.index) {
             log('No openerTabId and index is at end of tree, or no tab indexes are found for hosting window; appending to window');
             tree.addTabToWindow(tab, page);
-            fixPinnedUnpinnedTabOrder(page);
             return;
         }
         var nextByIndex = winTabs[tab.index];
         if (!nextByIndex) {
             log('nextByIndex not found though it should have been; just adding tab to window and scheduling full rebuild');
             tree.addTabToWindow(tab, page);
-            fixPinnedUnpinnedTabOrder(page);
             tree.conformAllChromeTabIndexes(true);
             return;
         }
         log('No openerTabId and index is in middle of window\'s tabs; inserting before ' + nextByIndex.id, nextByIndex);
         tree.addNodeRel(page, 'before', nextByIndex);
-        fixPinnedUnpinnedTabOrder(page);
         return;
     }
 
@@ -205,7 +198,6 @@ function onTabCreated(tab)
     if (!opener) {
         log('Could not find node matching openerTabId; just adding tab to window', 'openerTabId', openerTabId);
         tree.addTabToWindow(tab, page);
-        fixPinnedUnpinnedTabOrder(page);
         tree.conformAllChromeTabIndexes(true);
         return;
     }
@@ -216,14 +208,12 @@ function onTabCreated(tab)
         if (opener === precedingByIndex) {
             log('openerTabId corresponds to preceding page by index; making a child of opener ' + opener);
             tree.addNodeRel(page, 'prepend', opener);
-            fixPinnedUnpinnedTabOrder(page);
             return;
         }
 
         if (opener === precedingByIndex.parent) {
             log('openerTabId corresponds to parent of preceding page by index; inserting after preceding ' + precedingByIndex.id);
             tree.addNodeRel(page, 'after', precedingByIndex);
-            fixPinnedUnpinnedTabOrder(page);
             return;
         }
     }
@@ -232,20 +222,17 @@ function onTabCreated(tab)
     if (nextByIndex) {
         log('openerTabId does not correspond to preceding page nor its parent; insert purely by index before following node ' + nextByIndex.id);
         tree.addNodeRel(page, 'before', nextByIndex);
-        fixPinnedUnpinnedTabOrder(page);
         return;
     }
 
     if (winTabs.length > 0 && tab.index == winTabs.length) {
         log('Tab appears to be created as last tab in window, so just appending it to the window');
         tree.addTabToWindow(tab, page);
-        fixPinnedUnpinnedTabOrder(page);
         return;
     }
 
     log('Could not find insert position on tab index basis, resorting to simple parent-append', opener, nextByIndex, precedingByIndex, winTabs);
     tree.addNodeRel(page, 'append', opener);
-    fixPinnedUnpinnedTabOrder(page);
     tree.conformAllChromeTabIndexes(true);
 }
 

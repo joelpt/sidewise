@@ -319,9 +319,9 @@ function PageTreeCallbackProxy(methodName, args) {
 
     pagesWindow.PageTreeCallbackProxyListener.call(pagesWindow, methodName, args);
 
-    // args.target = 'pages';
-    // args.op = methodName;
-    // chrome.extension.sendRequest(args);
+    if (node instanceof PageNode && node.isTab() && (methodName == 'move' || methodName == 'add')) {
+        fixPinnedUnpinnedTabOrder(node);
+    }
 }
 
 // TODO move this to a new file
