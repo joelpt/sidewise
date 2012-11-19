@@ -421,6 +421,22 @@ function last(array, matchFn) {
     }
 }
 
+function groupBy(array, groupFn) {
+    var r = [];
+    for (var i = array.length - 1; i >= 0; i--) {
+        var a = array[i];
+        if (a === undefined) continue;
+
+        var g = groupFn(a);
+        if (r[g]) {
+            r[g].push(a);
+            continue;
+        }
+        r[g] = [a];
+    }
+    return r;
+}
+
 function mostFrequent(arr) {
     var uniqs = {};
 
