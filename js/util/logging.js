@@ -162,9 +162,7 @@ function getCallStack() {
                 .split('\n');
 
         // discard unwanted calls from top of stack
-        while (stack[0].indexOf('log') == 0
-            || stack[0].indexOf('writeDiagnosticLog') == 0
-            || stack[0].indexOf('getCallStack') == 0
+        while (stack[0].indexOf('logging.js:') >= 0
             || stack[0].indexOf('Error') == 0)
         {
             stack.shift(1);
