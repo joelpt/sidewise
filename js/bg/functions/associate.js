@@ -600,69 +600,30 @@ function getGoogleTestUrl(url) {
 }
 
 function associateWindowstoWindowNodes(requireChildrenCountMatch, prohibitMergingWindows, onComplete) {
-    var resWindows = tree.filter(function(e) {
+    var wins = tree.filter(function(e) {
         return e.elemType == 'window' && e.restorable == true;
     });
 
-    if (resWindows.length == 0) {
+    if (wins.length == 0) {
         if (onComplete) onComplete();
         return;
     }
 
-    log('Restorable window set ids', resWindows.map(function(e) { return e.id; }));
+    log('Restorable window set ids', wins.map(function(e) { return e.id; }));
 
-    // THIS IS WRONG
-    // we have to:
-    //      for each restorable window calculate its most likely matching windowId
-    //      then we want to assign windowIds starting with the most-likely-candidate down
-    //      this maybe does not fix our problem: one window has 2 tabs, another has 3 tabs,
-    //      both have 2 .windowId-matching subtabs because of initial mis-association, so half the time
-    //      sidewise will assign the wrong windowId here by assigning a windowId to a window node
-    //      which has more awake children than the chrome window associated with .windowId (though 1 of those
-    //      children has the wrong .windowId); we could increase accuracy by
-    //          preferentially matching against page.index when guessing window node's windowId,
-    //          essentially scoring index matchers a little higher
-    //
-    //          not setting mostFrequentWindowId when the window node has too many awake tabs in it vs the chrome window
-    //              since this would indicate that we should instead pick another window node which MAY actually have fewer
-    //              windowId-matching pages in it right now, but because it has the right number of children, it is actually
-    //              the more likely match
-    //
-    //          thus in cases where two windows have each 4 tabs, and each get a frequency score of 2,
-    //          there is actually no way for sidewise to distinguish which window is which other than by conceivably
-    //              using their chrome.window.index values as a hint - which is a good idea actually
-    //
-    var tabs = chrome.tabs.query({ }, function(tabs) {
+    chrome.tabs.query({ }, function(tabs) {
         var windowTabCounts = {};
         for (var i = tabs.length - 1; i >= 0; i--) {
             windowTabCounts[tabs[i].windowId] = (windowTabCounts[tabs[i].windowId] || 0) + 1;
         }
 
-        // For each restorable window, find the windowId that is most common amongst its awake tabs
-        var associatedWindowIds = [];
-        var associatedNodes = [];
-        var scores = [];
+        var counts = {};
+        var winNodePageCounts = {};
 
-        // Compute best match scores
-        for (var i in resWindows) {
-            var resWindow = resWindows[i];
-            var resWindowTabCount = 0;
-            var resWindowPageCount = 0;
-
-            // console.log('--- try associating window ---', resWindow);
-
-            // count frequency of each windowId in resWindow's pages
-            var windowIdFrequencies = tree.reduce(function(last, e) {
-                if (!(e instanceof PageNode)) {
-                    return last;
-                }
-
-                resWindowPageCount++;
-
-                if (e.hibernated) {
-                    return last;
-                }
-
+        for (var i = wins.length - 1; i >= 0; i--) {
+            var win = wins[i];
+            var groups = tree.reduce(function(last, e) {
+                if (!e.isTab()) return last;
                 var tabId = getNumericId(e.id);
                 var tab = first(tabs, function(e) { return e.id == tabId; })[1];
                 var windowId = tab.windowId;
@@ -671,92 +632,209 @@ function associateWindowstoWindowNodes(requireChildrenCountMatch, prohibitMergin
                     return last;
                 }
 
+                winNodePageCounts[win.id] = (winNodePageCounts[win.id] || 0) + 1;
                 last[windowId] = (last[windowId] || 0.0) + 1.0 + (e.index == tab.index ? 0.00001 : 0);
-                resWindowTabCount++;
                 return last;
-            }, {}, resWindow.children);
-
-            // log('Window frequencies', resWindow.id, windowIdFrequencies);
-
-            // find the most frequent windowId
-            var mostFrequentWindowId = null;
-            var mostFrequentCount = 0;
-            for (var windowId in windowIdFrequencies) {
-                if (associatedWindowIds.indexOf(windowId) >= 0) {
-                    // don't associate with windowIds which have already been associated
-                    // log('skipping already-used windowId', windowId);
+            }, {}, win.children);
+            for (var g in groups) {
+                var count = groups[g].toString();
+                if (counts[count]) {
+                    counts[count].push([win, g]);
                     continue;
                 }
-                if (requireChildrenCountMatch && resWindowTabCount != windowTabCounts[windowId]) {
-                    // don't associate window nodes to chrome windows when we have more awake
-                    // tabs under the window node than we do in the actual chrome window; in this case
-                    // we have mis-associated some page nodes in the tree and will correct those later
-                    // in disambiguatePageNodesByWindowId().
-                    // log('not using window as it has different number of wake children than the chrome window', windowId);
+                counts[count] = [[win, g]];
+            }
+        }
+        log('Window association counts, window node vs. descendant tabs with matching .windowId', counts);
+        log('Window association counts, tabs per Chrome window', windowTabCounts);
+        log('Window association counts, total tabs per window node', winNodePageCounts);
+
+        var countValues = [];
+        for (var count in counts) {
+            countValues.push(parseFloat(count));
+        }
+        countValues.sort();
+
+        var usedWindowIds = [];
+        var usedWindowNodes = [];
+        for (var i = countValues.length - 1; i >= 0; i--) {
+            var countValue = countValues[i];
+            var countSet = counts[countValue.toString()];
+            for (var j = countSet.length - 1; j >= 0; j--) {
+                var pair = countSet[j];
+                var win = pair[0];
+                var windowId = pair[1];
+
+                if (usedWindowIds.indexOf(windowId) >= 0 || usedWindowNodes.indexOf(win) >= 0) {
+                    // this windowid or window node has already been associated this run, with a higher-scoring
+                    // windowid/node pairing than this
+                    log('Skipping win-to-node match because windowId or node has already been restored', win.id, windowId);
                     continue;
                 }
-                // if (resWindowPageCount < windowTabCounts[windowId]) {
-                //     // don't associate window nodes to chrome windows when we have fewer total awake+hibernated
-                //     // page nodes under the window node than exist in the proposed chrome window; could this catch us up
-                //     // if we are launching sidewise and we have created new tabs in a given existing window while it was
-                //     // shut down? then the window node will report having fewer tabs total than vs the chrome window
-                //     // and we would fail to associate here... hmmmmmmm
-                //     continue;
-                // }
-                var frequency = windowIdFrequencies[windowId];
-                if (mostFrequentCount < frequency) {
-                    mostFrequentCount = frequency;
-                    mostFrequentWindowId = windowId;
-                }
-            }
 
-            // TODO change the logic of this whole bloody function as follows:
-            // generate frequency-score for each proposed windownode-windowId pairing across the whole tree
-            // sort list by best score first:
-            //      +1 for a tab that matches a child page by windowId+pinned+incognito
-            //      +.0001 when that tab's index also matches
-            //      (+0.1) when chrome.window.index == windownode.index [later]
-            //
-            // go through the list and assign windowIds to window nodes starting with the highest frequency matcher first
-            // after each assignation add that windowId to the used-list
-            // and don't reuse the same windowId for more than one window node during this association process, and only assign
-            //      for each resWindow a single time as well
-
-            if (!mostFrequentWindowId) {
-                log('No most frequent windowId found', resWindow.id);
-                continue;
-            }
-
-            log('Most frequent found', 'resWindowId', resWindow.id, 'mostFrequentWindowId', mostFrequentWindowId, 'frequency', mostFrequentCount);
-
-            // does a WindowNode already exist matching the mostFrequentWindowId?
-            var winNode = tree.getNode('w' + mostFrequentWindowId);
-            if (winNode) {
-                if (!prohibitMergingWindows) {
-                    // already exists, so merge its children into our restorable window
-                    log('Merging windows', winNode.id, resWindow.id);
-                    tree.mergeNodes(winNode, resWindow);
-                }
-                else {
-                    // that is not allowed
-                    log('Merging windows not allowed, though we did find an existing node with this window id already in existence', winNode.id, resWindow.id);
+                if (requireChildrenCountMatch && winNodePageCounts[win.id] != windowTabCounts[windowId]) {
+                    log('Skipping win-to-node match due to differing wake tab child counts', win.id, windowId, 'counts', winNodePageCounts[win.id], windowTabCounts[windowId]);
                     continue;
                 }
+
+                // does a WindowNode already exist matching this windowId?
+                var existingWinNode = tree.getNode('w' + windowId);
+                if (existingWinNode) {
+                    if (!prohibitMergingWindows) {
+                        // already exists, so merge its children into our restorable window
+                        log('Merging windows', existingWinNode.id, win.id);
+                        tree.mergeNodes(existingWinNode, win);
+                    }
+                    else {
+                        // that is not allowed
+                        log('Merging windows not allowed, though we did find an existing node with this window id already in existence', winNode.id, win.id);
+                        continue;
+                    }
+                }
+
+                // update the restore window to look like the real window
+                log('Restoring window node', win.id, 'as window id', windowId);
+                var details = { restorable: false, hibernated: false, id: 'w' + windowId,
+                    title: WINDOW_DEFAULT_TITLE
+                };
+                tree.updateNode(win, details);
+                tree.expandNode(win);
+
+                usedWindowIds.push(windowId);
+                usedWindowNodes.push(win);
             }
-
-            // update the restore window to look like the real window
-            var details = { restorable: false, hibernated: false, id: 'w' + mostFrequentWindowId,
-                title: WINDOW_DEFAULT_TITLE
-            };
-            tree.updateNode(resWindow, details);
-            tree.expandNode(resWindow);
-
-            // record the windowId used so we don't try to use it again in an upcoming iteration
-            associatedWindowIds.push(mostFrequentWindowId);
         }
         if (onComplete) onComplete();
     });
+    return;
 }
+
+
+
+
+
+//         var windowTabCounts = {};
+//         for (var i = tabs.length - 1; i >= 0; i--) {
+//             windowTabCounts[tabs[i].windowId] = (windowTabCounts[tabs[i].windowId] || 0) + 1;
+//         }
+
+//         // For each restorable window, find the windowId that is most common amongst its awake tabs
+//         var associatedWindowIds = [];
+//         var associatedNodes = [];
+//         var scores = [];
+
+//             var win = wins[i];
+//             var winTabCount = 0;
+//             var winPageCount = 0;
+
+//             // console.log('--- try associating window ---', win);
+
+//             // count frequency of each windowId in win's pages
+//             var windowIdFrequencies = tree.reduce(function(last, e) {
+//                 if (!(e instanceof PageNode)) {
+//                     return last;
+//                 }
+
+//                 winPageCount++;
+
+//                 if (e.hibernated) {
+//                     return last;
+//                 }
+
+//                 var tabId = getNumericId(e.id);
+//                 var tab = first(tabs, function(e) { return e.id == tabId; })[1];
+//                 var windowId = tab.windowId;
+
+//                 if (e.pinned != tab.pinned || e.incognito != tab.incognito) {
+//                     return last;
+//                 }
+
+//                 last[windowId] = (last[windowId] || 0.0) + 1.0 + (e.index == tab.index ? 0.00001 : 0);
+//                 winTabCount++;
+//                 return last;
+//             }, {}, win.children);
+
+//             // log('Window frequencies', win.id, windowIdFrequencies);
+
+//             // find the most frequent windowId
+//             var mostFrequentWindowId = null;
+//             var mostFrequentCount = 0;
+//             for (var windowId in windowIdFrequencies) {
+//                 if (associatedWindowIds.indexOf(windowId) >= 0) {
+//                     // don't associate with windowIds which have already been associated
+//                     // log('skipping already-used windowId', windowId);
+//                     continue;
+//                 }
+//                 if (requireChildrenCountMatch && winTabCount != windowTabCounts[windowId]) {
+//                     // don't associate window nodes to chrome windows when we have more awake
+//                     // tabs under the window node than we do in the actual chrome window; in this case
+//                     // we have mis-associated some page nodes in the tree and will correct those later
+//                     // in disambiguatePageNodesByWindowId().
+//                     // log('not using window as it has different number of wake children than the chrome window', windowId);
+//                     continue;
+//                 }
+//                 // if (winPageCount < windowTabCounts[windowId]) {
+//                 //     // don't associate window nodes to chrome windows when we have fewer total awake+hibernated
+//                 //     // page nodes under the window node than exist in the proposed chrome window; could this catch us up
+//                 //     // if we are launching sidewise and we have created new tabs in a given existing window while it was
+//                 //     // shut down? then the window node will report having fewer tabs total than vs the chrome window
+//                 //     // and we would fail to associate here... hmmmmmmm
+//                 //     continue;
+//                 // }
+//                 var frequency = windowIdFrequencies[windowId];
+//                 if (mostFrequentCount < frequency) {
+//                     mostFrequentCount = frequency;
+//                     mostFrequentWindowId = windowId;
+//                 }
+//             }
+
+//             // TODO change the logic of this whole bloody function as follows:
+//             // generate frequency-score for each proposed windownode-windowId pairing across the whole tree
+//             // sort list by best score first:
+//             //      +1 for a tab that matches a child page by windowId+pinned+incognito
+//             //      +.0001 when that tab's index also matches
+//             //      (+0.1) when chrome.window.index == windownode.index [later]
+//             //
+//             // go through the list and assign windowIds to window nodes starting with the highest frequency matcher first
+//             // after each assignation add that windowId to the used-list
+//             // and don't reuse the same windowId for more than one window node during this association process, and only assign
+//             //      for each win a single time as well
+
+//             if (!mostFrequentWindowId) {
+//                 log('No most frequent windowId found', win.id);
+//                 continue;
+//             }
+
+//             log('Most frequent found', 'winId', win.id, 'mostFrequentWindowId', mostFrequentWindowId, 'frequency', mostFrequentCount);
+
+//             // does a WindowNode already exist matching the mostFrequentWindowId?
+//             var winNode = tree.getNode('w' + mostFrequentWindowId);
+//             if (winNode) {
+//                 if (!prohibitMergingWindows) {
+//                     // already exists, so merge its children into our restorable window
+//                     log('Merging windows', winNode.id, win.id);
+//                     tree.mergeNodes(winNode, win);
+//                 }
+//                 else {
+//                     // that is not allowed
+//                     log('Merging windows not allowed, though we did find an existing node with this window id already in existence', winNode.id, win.id);
+//                     continue;
+//                 }
+//             }
+
+//             // update the restore window to look like the real window
+//             var details = { restorable: false, hibernated: false, id: 'w' + mostFrequentWindowId,
+//                 title: WINDOW_DEFAULT_TITLE
+//             };
+//             tree.updateNode(win, details);
+//             tree.expandNode(win);
+
+//             // record the windowId used so we don't try to use it again in an upcoming iteration
+//             associatedWindowIds.push(mostFrequentWindowId);
+//         }
+//         if (onComplete) onComplete();
+//     });
+// }
 
 // When multiple page nodes have identical matching-keys during an association run, sometimes such a node
 // will get put into the tree under what eventually becomes the incorrect window node. Here we identify such
@@ -941,17 +1019,25 @@ function removeZeroChildWindowNodes() {
         tree.removeNode(baddy);
         removedWindow = true;
     }
-    if (removedWindow) {
-        if (sidebarHandler.sidebarExists()) {
-            try {
-                // Redraw sidebar just in case the removed window node(s) had a duplicate ID of another
-                // window node; sidebar's method of accessing rows by id does not work in this case and
-                // visually corrupts the tree. Redrawing avoids this possibility.
-                setTimeout(function() {
-                    sidebarHandler.sidebarPanes['pages'].location.reload();
-                }, 500);
+    if (removedWindow && sidebarHandler.sidebarExists()) {
+        // Reload sidebar if the removed window node(s) had a duplicate ID of another
+        // window node; sidebar's method of accessing rows by id does not work in this case and
+        // visually corrupts the tree. Redrawing the sidebar tree circumvents this uncommon case.
+        var needReload = false;
+        var duplicates = baddies.map(function(e) { return e.id; });
+        duplicates.sort();
+        var last = duplicates[0];
+        for (var i = 1; i < duplicates.length; i++) {
+            if (duplicates[i] == last) {
+                try {
+                    setTimeout(function() {
+                        sidebarHandler.sidebarPanes['pages'].location.reload();
+                    }, 500);
+                }
+                catch(ex) { }
+                break;
             }
-            catch(ex) { }
+            last = duplicates[i];
         }
     }
 }
