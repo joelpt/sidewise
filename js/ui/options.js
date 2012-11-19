@@ -23,10 +23,17 @@ var donationPageNumber;
 
 function initOptionsPage() {
     bg = chrome.extension.getBackgroundPage();
+
+    if (!bg) {
+        // background page not ready yet, try again in a bit
+        setTimeout(initOptionsPage, 2000);
+        return;
+    }
+
     settings = bg.settings;
 
-    if (!bg || !settings) {
-        // background page not ready yet, try again in a bit
+    if (!settings) {
+        // settings object not ready yet, try again in a bit
         setTimeout(initOptionsPage, 2000);
         return;
     }
