@@ -611,7 +611,12 @@ function onTabUpdated(tabId, changeInfo, tab)
 function onTabMoved(tabId, moveInfo) {
     log(tabId, moveInfo);
     if (removeFromExpectingTabMoves(tabId)) {
-        log('Was expecting this tab move, doing nothing');
+        log('Was expecting this tab move, just updating windowId and index');
+        var page = tree.getPage(tabId);
+        tree.removeFromTabIndex(page);
+        page.index = moveInfo.toIndex;
+        page.windowId = moveInfo.windowId;
+        tree.addToTabIndex(page);
         return;
     }
     tree.updatePageIndex(tabId, moveInfo.windowId, moveInfo.fromIndex, moveInfo.toIndex);
