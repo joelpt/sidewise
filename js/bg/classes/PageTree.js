@@ -192,10 +192,24 @@ PageTree.prototype = {
         }
 
         log('moving node', 'moving', moving, 'parent', parent, 'beforeSiblingMatcher', beforeSiblingMatcher, 'keepChildren', keepChildren, 'preferChromeTabIndex', preferChromeTabIndex);
-        var r = this.$super('moveNode')(moving, parent, beforeSiblingMatcher, keepChildren);
-        if (r === undefined) {
-            log('$super.move returned undefined');
+
+        if (keepChildren) {
+            var descendants = this.filter(function(e) { return e instanceof PageNode; }, moving.children);
+            for (var i = descendants.length - 1; i >= 0; i--) {
+                this.removeFromTabIndex(descendants[i]);
+            }
         }
+        this.removeFromTabIndex(moving);
+
+        var r = this.$super('moveNode')(moving, parent, beforeSiblingMatcher, keepChildren);
+
+        this.addToTabIndex(moving);
+        if (keepChildren) {
+            for (var i = 0; i < descendants.length; i++) {
+                this.addToTabIndex(descendants[i]);
+            }
+        }
+
         if (r !== undefined && !blockCallback) {
             this.callbackProxyFn('move', {
                 element: r[0],
@@ -222,9 +236,22 @@ PageTree.prototype = {
         }
         var fromParent = moving.parent;
 
+        if (keepChildren) {
+            var descendants = this.filter(function(e) { return e instanceof PageNode; }, moving.children);
+            for (var i = descendants.length - 1; i >= 0; i--) {
+                this.removeFromTabIndex(descendants[i]);
+            }
+        }
         this.removeFromTabIndex(moving);
+
         var r = this.$super('moveNodeRel')(moving, relation, toMatcher, keepChildren);
+
         this.addToTabIndex(moving);
+        if (keepChildren) {
+            for (var i = 0; i < descendants.length; i++) {
+                this.addToTabIndex(descendants[i]);
+            }
+        }
 
         if (r !== undefined && !blockCallback) {
             this.callbackProxyFn('move', {
@@ -505,7 +532,7 @@ PageTree.prototype = {
         nodes.forEach(function(e) { self.awakeningPages.push(e); });
 
         if (existingWindowNode.hibernated) {
-            // need a new window to load page(s) into
+            // need a new Chrome window to load tabs into
             var newWinMetrics;
             if (sidebarHandler.dockState != 'undocked') {
                 newWinMetrics = clone(sidebarHandler.currentDockWindowMetrics);
@@ -711,7 +738,7 @@ PageTree.prototype = {
 
     // Add the given node to the tab index based on its .index
     addToTabIndex: function(node) {
-        log(node.id, node.index, node);
+        // log(node.id, node.index, node);
         if (!node.isTab()) {
             return;
         }
