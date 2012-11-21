@@ -150,7 +150,7 @@ PageTree.prototype = {
             var descendants = this.filter(function(e) { return e; }, node.children);
             for (var i = descendants.length - 1; i >= 0; i--) {
                 this.removeFromTabIndex(descendants[i]);
-            };
+            }
         }
 
         var r = this.$super('removeNode')(node, removeChildren);
@@ -234,7 +234,10 @@ PageTree.prototype = {
         if (!moving) {
             throw new Error('Could not find node to move', movingMatcher, relation, toMatcher);
         }
-        var fromParent = moving.parent;
+        var fromParent;
+        if (moving.parent && !moving.parent.isRoot) {
+            fromParent = moving.parent;
+        }
 
         if (keepChildren) {
             var descendants = this.filter(function(e) { return e instanceof PageNode; }, moving.children);
@@ -533,22 +536,7 @@ PageTree.prototype = {
 
         if (existingWindowNode.hibernated) {
             // need a new Chrome window to load tabs into
-            var newWinMetrics;
-            if (sidebarHandler.dockState != 'undocked') {
-                newWinMetrics = clone(sidebarHandler.currentDockWindowMetrics);
-                delete newWinMetrics.state;
-            }
-            else {
-                // TODO get monitor info of monitor that sidebar is on
-                // and put us on the same monitor
-                newWinMetrics = {
-                    left: monitorInfo.monitors[0].left,
-                    top: monitorInfo.monitors[0].top,
-                    width: monitorInfo.monitors[0].availWidth,
-                    height: monitorInfo.monitors[0].availHeight
-                };
-            }
-
+            var newWinMetrics = sidebarHandler.getIdealNewWindowMetrics();
             var newWinCreateDetails = clone(newWinMetrics);
             newWinCreateDetails.type = 'normal';
             newWinCreateDetails.url = urls;
@@ -595,14 +583,10 @@ PageTree.prototype = {
                     self.mergeNodes(newWinNode, existingWindowNode);
                 }
 
-                self.updateNode(existingWindowNode, {
-                    id: 'w' + win.id,
-                    restored: true,
-                    restorable: false,
-                    hibernated: false,
-                    title: WINDOW_DEFAULT_TITLE
-                });
+                self.setWindowToAwake(existingWindowNode, win.id);
                 self.expandNode(existingWindowNode);
+
+                cleanUpAfterAssociation(1000);
             });
             return;
         }
@@ -652,7 +636,17 @@ PageTree.prototype = {
                 active: activateAfter || false,
                 pinned: e.pinned,
                 index: index
-            });
+            }, function() { cleanUpAfterAssociation(1000); });
+        });
+    },
+
+    setWindowToAwake: function(winNode, newWindowId) {
+        this.updateNode(winNode, {
+            id: 'w' + newWindowId,
+            restored: true,
+            restorable: false,
+            hibernated: false,
+            title: WINDOW_DEFAULT_TITLE
         });
     },
 
