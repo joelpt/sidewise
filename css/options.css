@@ -512,3 +512,8 @@ input.invalid {
 #panePicker td[role=gridcell]:nth-child(3) {
     padding-left: 4px;
 }
+
+
+#importBox {
+    font-size: 11px;
+}

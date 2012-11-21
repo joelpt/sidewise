@@ -618,12 +618,14 @@ function submitBugReport() {
 
 function exportState() {
     bg.savePageTreeToLocalStorage(bg.tree, 'pageTree', true);
-    copyTextToClipboard(bg.settings.toJSON());
+    var head = '/* Sidewise Data Export: v' + getVersion() + ' exported on ' + Date().toString() + ' */ ';
+    var tail = ' /* End Sidewise Data */';
+    copyTextToClipboard(head + bg.settings.toJSON() + tail);
     alert('Sidewise\'s configuration and state data has been exported and copied to your clipboard.\n\nPaste this into a text file to save it.');
 }
 
 function importState() {
-    var html = 'Paste the previously exported Sidewise data into the box below:<br/><textarea rows="8" cols="30" id="importBox" name="data"></textarea>';
+    var html = 'Paste the previously exported Sidewise data into the box below:<br/><textarea rows="10" cols="34" id="importBox" name="data"></textarea>';
     var importPrompt = $.prompt(html, { prefix: 'cleanblue', buttons: { 'OK': true, 'Cancel': false }, callback: doImportState });
     importPrompt.bind('promptloaded', function(e) {
         $('#importBox').focus();
@@ -641,6 +643,9 @@ function doImportState(e,v,m,f) {
         alert('No data pasted. Import aborted.');
         return;
     }
+
+    data = data.replace(/^\/\*.+?\*\/\s*/, '');
+    data = data.replace(/\/\*.+?\*\/\s*$/, '');
 
     try {
         data = JSON.parse(data);
