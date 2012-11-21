@@ -531,5 +531,26 @@ SidebarHandler.prototype = {
                 });
             });
         }, 50);
+    },
+
+    getIdealNewWindowMetrics: function() {
+        var newWinMetrics;
+        if (this.dockState != 'undocked') {
+            newWinMetrics = clone(this.currentDockWindowMetrics);
+            delete newWinMetrics.state;
+        }
+        else {
+            // TODO use exact dims of most recently focused window instead of the whole screen that it or the sidebar
+            // is on: this will require chrome.windows.get() and thus return value of getIdealNewWindowMetrics()
+            // has to be passed via callback
+            var monitor = monitorInfo.getMonitorFromLeftCoord(this.currentSidebarMetrics.left);
+            newWinMetrics = {
+                left: monitor.left,
+                top: monitor.top,
+                width: monitor.availWidth,
+                height: monitor.availHeight
+            };
+        }
+        return newWinMetrics;
     }
 }
