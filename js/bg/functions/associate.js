@@ -687,7 +687,7 @@ function associateWindowstoWindowNodes(requireChildrenCountMatch, prohibitMergin
                     }
                     else {
                         // that is not allowed
-                        log('Merging windows not allowed, though we did find an existing node with this window id already in existence', winNode.id, win.id);
+                        log('Merging windows not allowed, though we did find an existing node with this window id already in existence', existingWinNode.id, win.id);
                         continue;
                     }
                 }
