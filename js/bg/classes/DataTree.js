@@ -98,6 +98,10 @@ DataTree.prototype = {
                 throw new Error('Unrecognized relation ' + relation);
         }
 
+        if (parent && parent.isRoot) {
+            parent = undefined;
+        }
+
         return { parent: parent, following: following, to: to };
     },
 
@@ -285,25 +289,29 @@ DataTree.prototype = {
     // removeChildren: if true, remove element's children; if false (default), splice them into element's old spot
     removeNode: function(matcher, removeChildren)
     {
-        var found = this.getNodeEx(matcher);
-        if (found === undefined) {
+        var node = this.getNode(matcher);
+        if (!node) {
             console.error(matcher);
             throw new Error('Could not find requested element to remove matching above matcher');
         }
 
         if (removeChildren) {
             // remove all children
-            found.siblings.splice(found.index, 1);
+            node.siblings().splice(node.siblingIndex(), 1);
+            var descendants = this.filter(function(e) { return e; }, node.children);
+            for (var i = descendants.length - 1; i >= 0; i--) {
+                delete this.idIndex[descendants[i].id];
+            }
         }
         else {
-            found.node.children.forEach(function(e) { e.parent = found.parent; });
-            Array.prototype.splice.apply(found.siblings, [found.index, 1].concat(found.node.children));
+            node.children.forEach(function(e) { e.parent = node.parent; });
+            Array.prototype.splice.apply(node.siblings(), [node.siblingIndex(), 1].concat(node.children));
         }
 
-        delete this.idIndex[found.node.id];
+        delete this.idIndex[node.id];
 
         this.updateLastModified();
-        return found.node;
+        return node;
     },
 
     // Move the node matching movingMatcher to reside under the node matching parentMatcher.
@@ -424,6 +432,8 @@ DataTree.prototype = {
         newRootNode.children = treeData;
         this.root = newRootNode;
         this.tree = this.root.children;
+        this.rebuildIdIndex();
+        this.rebuildParents();
     },
 
     // rebuild the id index
@@ -438,7 +448,7 @@ DataTree.prototype = {
     rebuildParents: function(startingParent) {
         var children;
         if (!startingParent) {
-            startingParent = null;
+            startingParent = this.root;
             children = this.tree;
         }
         else {
