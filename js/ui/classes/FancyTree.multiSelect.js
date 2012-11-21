@@ -150,6 +150,10 @@ FancyTree.prototype.setMultiSelectedChildrenUnderRow = function($underRow, $newS
 
 FancyTree.prototype.addSelectionEffect = function($row) {
     var rowTypeParams = this.getRowTypeParams($row);
+    if (!rowTypeParams) {
+        console.error('Could not add selection effect due to missing row type params for', $row);
+        return;
+    }
     if (!rowTypeParams.multiselectable) {
         return;
     }
