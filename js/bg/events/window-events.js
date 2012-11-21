@@ -228,19 +228,23 @@ function onWindowUpdateCheckInterval() {
 
             // Update stored metrics for undocked sidebar as needed
             if (sidebar.left != settings.get('undockedLeft')) {
+                sidebarHandler.currentSidebarMetrics.left = sidebar.left;
                 settings.set('undockedLeft', sidebar.left);
             }
 
             if (sidebar.top != settings.get('undockedTop')) {
+                sidebarHandler.currentSidebarMetrics.top = sidebar.top;
                 settings.set('undockedTop', sidebar.top);
             }
 
             if (sidebar.width != settings.get('sidebarTargetWidth')) {
+                sidebarHandler.currentSidebarMetrics.width = sidebar.width;
                 settings.set('sidebarTargetWidth', sidebar.width);
                 sidebarHandler.targetWidth = sidebar.width;
             }
 
             if (sidebar.height != settings.get('undockedHeight')) {
+                sidebarHandler.currentSidebarMetrics.height = sidebar.height;
                 settings.set('undockedHeight', sidebar.height);
             }
 
