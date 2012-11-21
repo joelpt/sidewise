@@ -98,10 +98,6 @@ DataTree.prototype = {
                 throw new Error('Unrecognized relation ' + relation);
         }
 
-        if (parent && parent.isRoot) {
-            parent = undefined;
-        }
-
         return { parent: parent, following: following, to: to };
     },
 
@@ -203,7 +199,7 @@ DataTree.prototype = {
         }
 
         if (beforeSiblingMatcher) {
-            beforeSibling = this.getNodeEx(beforeSiblingMatcher);
+            beforeSibling = this.getNode(beforeSiblingMatcher);
 
             if (!beforeSibling) {
                 throw new Error('Could not find element matching beforeSiblingMatcher');
@@ -214,9 +210,9 @@ DataTree.prototype = {
             }
         }
 
-        if (parent) {
+        if (parent && !parent.isRoot) {
             if (beforeSibling) {
-                parent.children.splice(beforeSibling.index, 0, node);
+                parent.children.splice(beforeSibling.siblingIndex(), 0, node);
             }
             else {
                 parent.children.push(node);
@@ -225,7 +221,7 @@ DataTree.prototype = {
         }
         else {
             if (beforeSibling) {
-                beforeSibling.siblings.splice(beforeSibling.index, 0, node);
+                beforeSibling.siblings().splice(beforeSibling.siblingIndex(), 0, node);
                 node.parent = beforeSibling.parent;
             }
             else {
@@ -237,7 +233,7 @@ DataTree.prototype = {
         node.root = this.root;
         this.idIndex[node.id] = node;
         this.updateLastModified();
-        return [node, parent, beforeSibling ? beforeSibling.node : undefined];
+        return [node, parent, beforeSibling];
     },
 
     addNodeRel: function(node, relation, toMatcher) {
@@ -338,6 +334,11 @@ DataTree.prototype = {
         if (keepChildren) {
             this.removeNode(moving, true);
             r = this.addNode(moving, parent, beforeSiblingMatcher);
+
+            var descendants = this.filter(function(e) { return e; }, moving.children);
+            for (var i = descendants.length - 1; i >= 0; i--) {
+                this.idIndex[descendants[i].id] = descendants[i];
+            }
         }
         else {
             this.removeNode(moving, false);
@@ -356,12 +357,15 @@ DataTree.prototype = {
 
         if (keepChildren) {
             this.removeNode(moving, true);
+            var descendants = this.filter(function(e) { return e; }, moving.children);
+            for (var i = descendants.length - 1; i >= 0; i--) {
+                this.idIndex[descendants[i].id] = descendants[i];
+            }
         }
         else {
             this.removeNode(moving, false);
             moving.children = []; // remove all of its children
         }
-
 
         var rel = this.getNodeRel(relation, toMatcher);
         return this.addNode(moving, rel.parent, rel.following);
