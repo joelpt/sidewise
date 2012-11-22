@@ -604,7 +604,8 @@ function submitBugReport() {
         'OS: ' + navigator.platform,
     ].join('\n'));
 
-    var data = (getVersion() + ' - ' + Date() + '\n' + desc + '\n\n' + bg.runningLog).substr(0, BUG_REPORT_MAX_SIZE);
+    var data = (getVersion() + ' - ' + Date() + '\n' + desc + '\n\n' + bg.runningLog);
+    data = data.substr(data.length > BUG_REPORT_MAX_SIZE ? data.length - BUG_REPORT_MAX_SIZE : 0);
     // alert(data.length);
     $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': data }, function(data, textStatus, jqXHR) {
         alert('Diagnostic report sent. Thank you for the report.\n\nServer response:\n' + data);
