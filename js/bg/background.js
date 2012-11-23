@@ -471,9 +471,11 @@ function shutdownSidewise() {
         sidebarHandler.remove();
     } catch(err) { }
 
-    for (var i in wins) {
-        chrome.windows.remove(wins[i].id);
-    }
+    chrome.windows.getAll(function(wins) {
+        for (var i in wins) {
+            chrome.windows.remove(wins[i].id);
+        }
+    });
 }
 
 // Restart the extension completely.
