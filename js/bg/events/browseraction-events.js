@@ -8,6 +8,10 @@ function onBrowserActionClicked()
     var action = settings.get('browserActionButtonBehavior');
     log('browser action button clicked', 'configured action:', action);
 
+    if (sidebarHandler.creatingSidebar || sidebarHandler.removeInProgress) {
+        return;
+    }
+
     if (sidebarHandler.sidebarExists()) {
         if (action == 'toggle') {
             // sidebar exists, so remove it
