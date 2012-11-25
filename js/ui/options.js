@@ -5,7 +5,7 @@
 var CARD_SLIDE_DURATION_MS = 450;
 var DONATION_LINK_VARIETIES = 6;
 var DONATION_PAGE_VARIETIES = 5;
-var BUG_REPORT_MAX_SIZE = 0.75 * 1024 * 1024;
+var BUG_REPORT_MAX_SIZE = 0.74 * 1024 * 1024;
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -592,7 +592,7 @@ function submitBugReport() {
 
 
     bg.log('--- monitorInfo ---');
-    bg.log(JSON.stringify(bg.monitorInfo));
+    bg.log(JSON.stringify(bg.monitorInfo.monitors));
 
     bg.log('--- Settings ---');
     bg.log(settings.dump(1000));
@@ -605,7 +605,26 @@ function submitBugReport() {
     ].join('\n'));
 
     var data = (getVersion() + ' - ' + Date() + '\n' + desc + '\n\n' + bg.runningLog);
+
+    // htmlencode the data
+    data = $('<div/>').text(data).html();
+
+    // turn call stacks into classed divs
+    data = data.replace(/((^\s{4}.+\n)+)/mg, '<div class="stack">$1</div>');
+
+    // trim data length to something that won't throw an exception on the server
     data = data.substr(data.length > BUG_REPORT_MAX_SIZE ? data.length - BUG_REPORT_MAX_SIZE : 0);
+
+    // add JS/CSS for stacks
+    data =
+        '<style>* { font-family: Lucida Console; font-size: 12px; } .stack { font-size: 11px; color: #bbb; }</style>'
+        + data;
+    // Below code collapses stack divs and reveals on hover + 'show all call stacks' link; found this to be more of a nuisance than a help
+    // data =
+    //     '<style>* { font-family: Lucida Console; font-size: 12px; } .stack { color: blue; height: 12px; overflow: hidden; } .stack:hover { height: inherit; }</style>'
+    //     + '<a href="#" onclick="var stacks = document.getElementsByClassName(\'stack\'); for (var i = 0; i < stacks.length; i++) { stacks[i].style.height = \'inherit\'; }">Show all call stacks</a><br><br>'
+    //     + data;
+
     // alert(data.length);
     $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': data }, function(data, textStatus, jqXHR) {
         alert('Diagnostic report sent. Thank you for the report.\n\nServer response:\n' + data);
