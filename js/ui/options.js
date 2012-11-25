@@ -619,13 +619,7 @@ function submitBugReport() {
     data =
         '<style>* { font-family: Lucida Console; font-size: 12px; } .stack { font-size: 11px; color: #bbb; }</style>'
         + data;
-    // Below code collapses stack divs and reveals on hover + 'show all call stacks' link; found this to be more of a nuisance than a help
-    // data =
-    //     '<style>* { font-family: Lucida Console; font-size: 12px; } .stack { color: blue; height: 12px; overflow: hidden; } .stack:hover { height: inherit; }</style>'
-    //     + '<a href="#" onclick="var stacks = document.getElementsByClassName(\'stack\'); for (var i = 0; i < stacks.length; i++) { stacks[i].style.height = \'inherit\'; }">Show all call stacks</a><br><br>'
-    //     + data;
 
-    // alert(data.length);
     $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': data }, function(data, textStatus, jqXHR) {
         alert('Diagnostic report sent. Thank you for the report.\n\nServer response:\n' + data);
     });
