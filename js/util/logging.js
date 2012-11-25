@@ -1,3 +1,27 @@
+// Custom error handler
+var nativeError = Error;
+Error = function(message) {
+    try {
+        log('*THROWN ERROR* ' + message);
+    }
+    catch(ex) {
+        console.error('Error in custom Error() handler!', ex);
+    }
+    return new nativeError(message);
+};
+
+var nativeConsoleError = console.error;
+console.error = function() {
+    try {
+        log.apply(this, ['*CONSOLE ERROR*'].concat(arguments));
+    }
+    catch(ex) {
+        console.error('Error in custom console.error() handler!', ex);
+    }
+    nativeConsoleError.apply(console, arguments);
+};
+
+
 var RUNNING_LOG_MAX_SIZE = 1.0 * 1024 * 1024;
 var RUNNING_LOG_OVERTRIM_PCT = 0.25;
 var MAX_JSON_ARG_LENGTH = 250;
@@ -147,7 +171,7 @@ function getCallStack() {
     var stack;
     try {
         // induce an exception so we can capture the call stack
-        throw new Error();
+        throw new nativeError();
     }
     catch(ex) {
         stack = ex.stack;
