@@ -75,15 +75,12 @@ function postLoad(focusedWin) {
         }
 
         // Show What's New pane after Sidewise is updated
-        try {
-            var newsPane = paneCatalog.getPane('whatsnew');
-        }
-        catch(ex) {
+        var newsPane = paneCatalog.getPane('whatsnew');
+        if (!newsPane) {
             if (!newsPane && updatedSidewise && settings.get('showWhatsNewPane') ) {
                 paneCatalog.addPane('whatsnew', true, '/sidebars/whatsnew.html', 'What\'s New', '/images/nav/whatsnew.gif');
             }
         }
-
     }
 
     reportEvent('sidewise', 'loaded');

@@ -76,11 +76,7 @@ function onPortDisconnect(port) {
 }
 
 function getPort(tabId) {
-    var port = connectedTabs[tabId];
-    if (!port) {
-        throw new Error('Port not found');
-    }
-    return port;
+    return connectedTabs[tabId];
 }
 
 
@@ -162,8 +158,14 @@ function onGetIsFullScreenMessage(tab, request) {
 ///////////////////////////////////////////////////////////
 
 function getPageDetails(tabId, params) {
+    var port = getPort(tabId);
+    if (!port) {
+        log('Cannot get page details due to unavailable port for tab', 'tabId', tabId);
+        return;
+    }
+
     params.op = 'getPageDetails';
-    getPort(tabId).postMessage(params);
+    port.postMessage(params);
 }
 
 // function getPageDetails(tab, action) {
