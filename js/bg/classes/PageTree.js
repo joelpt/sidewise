@@ -1055,7 +1055,7 @@ PageTree.prototype = {
             var indexes = this.tabIndexes[windowId];
             for (var i = 0; i < indexes.length; i++) {
                 var tab = indexes[i];
-                s += '    ' + tab.id + ':' + i + '(' + tab.index + ') ' + tab.url + '\n';
+                s += '  ' + tab.id + ':' + i + '(' + tab.index + ') ' + tab.url + '\n';
             }
         }
         return s;
