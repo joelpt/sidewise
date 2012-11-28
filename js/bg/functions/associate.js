@@ -185,15 +185,8 @@ function tryAssociateTab(runInfo, tab) {
     runInfo.tabIds.push(tab.id);
 
     // ask the tab for more details via its content_script.js connected port
-    try {
-        getPageDetails(tab.id, { action: 'associate', runId: runId });
-    }
-    catch(ex) {
-        if (ex.message == 'Port not found') {
-            log('Port does not exist for association yet', 'tabId', tab.id, 'runId', runId);
-            return;
-        }
-        throw ex;
+    if (!getPageDetails(tab.id, { action: 'associate', runId: runId })) {
+        log('Port does not exist for association yet', 'tabId', tab.id, 'runId', runId);
     }
     return false;
 }
@@ -222,10 +215,7 @@ function tryFastAssociateTab(tab, mustBeRestorable) {
         // in this case we only need them to store on the node in case a successive
         // assocation run fails to do fast association
         if (isScriptableUrl(tab.url)) {
-            try {
-                getPageDetails(tab.id, { action: 'store' });
-            }
-            catch(ex) { }
+            getPageDetails(tab.id, { action: 'store' });
         }
         return match;
     }
@@ -236,18 +226,12 @@ function tryAssociateExistingToRestorablePageNode(existingPage) {
     var tabId = getNumericId(existingPage.id);
 
     // ask the tab for more details via its content_script.js connected port
-    try {
-        getPageDetails(tabId, { action: 'associate_existing' });
-    }
-    catch(ex) {
-        if (ex.message == 'Port not found') {
-            log('Port does not exist for existing-to-restorable association yet, retrying in 1s', 'tabId', tabId, 'existing page', existingPage);
-            setTimeout(function() {
-                tryAssociateExistingToRestorablePageNode(existingPage);
-            }, 1000);
-            return;
-        }
-        throw ex; // unhandled exception here
+    if (!getPageDetails(tabId, { action: 'associate_existing' })) {
+        log('Port does not exist for existing-to-restorable association yet, retrying in 1s', 'tabId', tabId, 'existing page', existingPage);
+        setTimeout(function() {
+            tryAssociateExistingToRestorablePageNode(existingPage);
+        }, 1000);
+        return;
     }
 }
 

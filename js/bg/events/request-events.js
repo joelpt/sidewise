@@ -161,20 +161,20 @@ function getPageDetails(tabId, params) {
     var port = getPort(tabId);
     if (!port) {
         log('Cannot get page details due to unavailable port for tab', 'tabId', tabId);
-        return;
+        return false;
     }
 
     params.op = 'getPageDetails';
-    port.postMessage(params);
-}
+    try {
+        port.postMessage(params);
+    }
+    catch (ex) {
+        console.error(ex);
+        return false;
+    }
 
-// function getPageDetails(tab, action) {
-//     log_brief(tab.id);
-//     var scriptBody = GET_PAGE_DETAILS_SCRIPT.replace('<ACTION>', action);
-//     chrome.tabs.executeScript(tab.id, { code: scriptBody }, function() {
-//         onGetPageDetailsScriptExecuted(tab, action);
-//     });
-// }
+    return true;
+}
 
 function onGetPageDetailsMessage(tab, msg) {
     // log(tab, msg);

@@ -398,25 +398,11 @@ function findTabParents(tabs) {
             continue;
         }
         // try to guess child/parent tab relationships by getting details from page
-        try {
-            log('Asking for page details to find best-matching parent page', 'tabId', tab.id, 'tab', tab);
-            getPageDetails(tab.id, { action: 'find_parent' });
-        }
-        catch(ex) {
-            if (ex.message == 'Port not found') {
-                // Port isn't available yet; try again in a bit
-                // TODO implement intervals in TimeoutManager and let an interval-called function
-                // clear its own hosting interval when it wants to; might be nice if we can
-                // wrap the interval-function such that it gets passed an argument 'hostingIntervalLabel'
-                // which it can optionally use to do so without having to know anything more about
-                // who set what interval
-                // TODO make this here an interval which tries several times before giving up, right now
-                // we are just hoping that it's "enough" of a delay to not miss the port twice
-                log('Port not found, will try calling getPageDetails again later', 'tabId', tab.id);
-                tabsToRequery.push(tab);
-                continue;
-            }
-            throw ex;
+        log('Asking for page details to find best-matching parent page', 'tabId', tab.id, 'tab', tab);
+        if (!getPageDetails(tab.id, { action: 'find_parent' })) {
+            log('Port not found, will try calling getPageDetails again later', 'tabId', tab.id);
+            tabsToRequery.push(tab);
+            continue;
         }
     }
 

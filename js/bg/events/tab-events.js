@@ -604,13 +604,9 @@ function onTabUpdated(tabId, changeInfo, tab)
     // Some pages, e.g. maps.google.com, modify the history without triggering any
     // content-script-detectable events that we would otherwise use to detect such a modification.
     // So we always ask pages for current details here.
-    try {
-        getPageDetails(tab.id, { action: 'store' });
-    }
-    catch(ex) {
-        // getPageDetails won't work if a page was just created because the port hasn't been established
-        // yet, but this is okay because the page's content script will send us details anyway
-    }
+    // Though getPageDetails won't work here if a page was just created (as the port hasn't been established
+    // yet), this is okay because the page's content script will send us details anyway once the page is loaded
+    getPageDetails(tab.id, { action: 'store' });
 }
 
 function onTabMoved(tabId, moveInfo) {
