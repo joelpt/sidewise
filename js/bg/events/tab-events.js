@@ -502,17 +502,22 @@ function onTabUpdated(tabId, changeInfo, tab)
             favicon = getBestFavIconUrl('', url);
         }
     }
-    else {
-        var tabUrlDomain = splitUrl(url).domain;
-        var pageUrlDomain = splitUrl(page.url).domain;
+    else if (url && page.url) {
+        var tabUrlSplit = splitUrl(url);
+        var pageUrlSplit = splitUrl(page.url);
 
-        if (tabUrlDomain != pageUrlDomain) {
-            // changing domains, blank out the favicon until we get a new favicon
-            favicon = 'chrome://favicon/';
-        }
-        else {
-            // keep the existing favicon
-            favicon = page.favicon;
+        if (tabUrlSplit && pageUrlSplit) {
+            var tabUrlDomain = tabUrlSplit.domain;
+            var pageUrlDomain = pageUrlSplit.domain;
+
+            if (tabUrlDomain != pageUrlDomain) {
+                // changing domains, blank out the favicon until we get a new favicon
+                favicon = 'chrome://favicon/';
+            }
+            else {
+                // keep the existing favicon
+                favicon = page.favicon;
+            }
         }
     }
 
