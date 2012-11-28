@@ -71,6 +71,9 @@ function debugBarClickPromoteIframe() {
 }
 
 function debugBarClickResetTree() {
+    if (!confirm('This will completely delete your existing tree and rebuild it from scratch. All existing hibernated rows will be lost. Are you sure you want to continue?')) {
+        return;
+    }
     ft.clear();
     bg.tree.clear();
     bg.injectContentScriptInExistingTabs('content_script.js');
