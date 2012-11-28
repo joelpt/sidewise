@@ -6,6 +6,8 @@ var CARD_SLIDE_DURATION_MS = 450;
 var DONATION_LINK_VARIETIES = 6;
 var DONATION_PAGE_VARIETIES = 5;
 var BUG_REPORT_MAX_SIZE = 0.74 * 1024 * 1024;
+var OPTIONS_INIT_RETRY_DELAY_MS = 1500;
+
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -21,12 +23,12 @@ var donationPageNumber;
 // Initialization
 ///////////////////////////////////////////////////////////
 
-function initOptionsPage() {
+function initOptionsPage(onComplete) {
     bg = chrome.extension.getBackgroundPage();
 
     if (!bg) {
         // background page not ready yet, try again in a bit
-        setTimeout(initOptionsPage, 2000);
+        retriggerInitOptionsPage(onComplete);
         return;
     }
 
@@ -34,8 +36,13 @@ function initOptionsPage() {
 
     if (!settings) {
         // settings object not ready yet, try again in a bit
-        setTimeout(initOptionsPage, 2000);
+        retriggerInitOptionsPage(onComplete);
         return;
+    }
+
+    var delayMsg = $('#initDelayed');
+    if (delayMsg.length > 0) {
+        delayMsg.remove();
     }
 
     setI18NText();
@@ -55,6 +62,15 @@ function initOptionsPage() {
         // delay to avoid F5 (reload) spuriously triggering keyup
         $(document).on('keyup', 'input[type=text]', onSettingModified);
     }, 250);
+
+    if (onComplete) onComplete();
+}
+
+function retriggerInitOptionsPage(onComplete) {
+    if ($('#initDelayed').length == 0) {
+        $('body').append($('<div id="initDelayed">').text('Just a moment...'));
+    }
+    setTimeout(function() { initOptionsPage(onComplete); }, OPTIONS_INIT_RETRY_DELAY_MS);
 }
 
 function onDonateLinkClick(evt) {
