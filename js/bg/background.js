@@ -74,13 +74,10 @@ function postLoad(focusedWin) {
             populatePages();
         }
 
-        // Show What's New pane after Sidewise is updated
-        var newsPane = paneCatalog.getPane('whatsnew');
-        if (!newsPane) {
-            if (!newsPane && updatedSidewise && settings.get('showWhatsNewPane') ) {
-                paneCatalog.addPane('whatsnew', true, '/sidebars/whatsnew.html', 'What\'s New', '/images/nav/whatsnew.gif');
-            }
+        if (updatedSidewise) {
+            showWhatsNewPane();
         }
+        showPromoPageAnnually();
     }
 
     reportEvent('sidewise', 'loaded');
@@ -474,3 +471,45 @@ function restartSidewise() {
     });
 
 }
+
+// Show What's New pane after Sidewise is updated
+function showWhatsNewPane() {
+    var newsPane = paneCatalog.getPane('whatsnew');
+    if (!newsPane) {
+        if (!newsPane && settings.get('showWhatsNewPane') ) {
+            paneCatalog.addPane('whatsnew', true, '/sidebars/whatsnew.html', 'What\'s New', '/images/nav/whatsnew.gif');
+        }
+    }
+}
+
+// Show promo page once a year in late December
+function showPromoPageAnnually() {
+    var now = new Date();
+    var nowMonth = now.getMonth();
+    var nowDay = now.getDate();
+    if (nowMonth == 11 && nowDay >= 15) {
+        var promoDateStr = settings.get('lastPromoPageShownDate');
+        var showPromo = false;
+        if (!promoDateStr) {
+            showPromo = true;
+        }
+        else {
+            var promoDate = new Date(promoDateStr);
+            if (daysBetween(promoDate, now) > 60) {
+                showPromo = true;
+            }
+        }
+
+        if (showPromo) {
+            settings.set('lastPromoPageShownDate', now);
+            setTimeout(function() {
+                chrome.tabs.create({ 'url': 'http://www.sidewise.info/pay/?which=365', active: true }, function(tab) {
+                    setTimeout(function() {
+                        tree.updatePage(tab.id, { status: 'loaded' });
+                    }, 500);
+                });
+            }, 5000);
+        }
+    }
+}
+
