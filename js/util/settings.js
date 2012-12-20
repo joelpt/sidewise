@@ -122,7 +122,8 @@ Settings.prototype = {
             autoSelectChildrenOnDrag: true,
             reportUsageStatistics: true,
             multiSelectActionConfirmThreshold: 5,
-            showWhatsNewPane: true
+            showWhatsNewPane: true,
+            lastPromoPageShownDate: null
         };
 
         for (var setting in defaultSettings) {
