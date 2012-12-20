@@ -67,12 +67,13 @@ function onCreatedNavigationTarget(details)
             log('Not moving because could not find sourceTabId ' + details.sourceTabId);
             return;
         }
-        if (to.windowId != details.windowId) {
-            log('Not moving because opener and opened tabs are in different windows');
+        if (to.windowId != page.windowId) {
+            log('Not moving because opener and opened tabs are in different windows', to.windowId, page.windowId, to, page, details);
             return;
         }
         log('Moving page to be child of its sourceTabId', details.tabId, details.sourceTabId, details);
         tree.moveNode(page, 'p' + details.sourceTabId);
+        tree.conformChromeTabIndexForPageNode(page, true, false, true);
         return;
     }
     log('Not moving because page is already a child of some other page');
