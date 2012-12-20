@@ -909,18 +909,25 @@ PageTree.prototype = {
                         self.rebuildTabIndex();
                     }
                     if (!tab) {
+                        log('Tab not found to conform', node.id);
                         return;
                     }
                     var indexes = self.tabIndexes[topParent.id];
                     if (indexes) {
                         var newIndex = indexes.indexOf(node);
                         if (tab.index != newIndex) {
-                            // log('Conforming chrome tab index', 'id', tab.id, 'tab.index', tab.index, 'target index', newIndex);
+                            log('Conforming chrome tab index', 'id', tab.id, 'tab.index', tab.index, 'target index', newIndex);
                             expectingTabMoves.push(tab.id);
                             chrome.tabs.move(tab.id, { index: newIndex }, function() {
                                 setTimeout(function() { removeFromExpectingTabMoves(tab.id); }, 250);
                             });
                         }
+                        else {
+                            // log('Not conforming tab', tab.id, tab, node.id, node);
+                        }
+                    }
+                    else {
+                        log('Could not find index', topParent.id, topParent);
                     }
                 });
             }
