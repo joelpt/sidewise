@@ -592,7 +592,7 @@ var BUG_REPORT_SIDEBARHANDLER_PROPS = ['creatingSidebar', 'currentDockWindowMetr
     ];
 
 function submitBugReport() {
-    var desc = prompt('This sends a log of Sidewise\'s recent activity to the author for diagnostic purposes. It is best used immediately after you experience a problem.\n\nPlease clearly describe the problem below. Include row IDs from the tree when pertinent.');
+    var desc = prompt('This sends a log of Sidewise\'s recent activity to the author for diagnostic purposes. It is best used immediately after you experience a problem.\n\nPlease clearly describe the problem below. Include row IDs from the tree when pertinent.\n\nNote that this report includes a list of everything in your sidebar panes/trees.');
     if (!desc) {
         alert('Diagnostic report cancelled.');
         return;
