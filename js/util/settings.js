@@ -58,6 +58,14 @@ Settings.prototype = {
         return defaultValue;
     },
 
+    toJSON: function() {
+        return '{' +
+            mapObjectProps(this.cache, function(k, v) {
+                return '"' + k + '": ' + JSON.stringify(JSON.stringify(v));
+            }).join(',') +
+            '}';
+    },
+
     dump: function(maxElemLength) {
         return mapObjectProps(this.cache, function(k, v) {
             var o = JSON.stringify(v, StringifyReplacer);
@@ -67,6 +75,7 @@ Settings.prototype = {
             return k + ': ' + o;
         }).join('\n');
     },
+
 
     ///////////////////////////////////////////////////////////
     // Settings initialization
@@ -113,7 +122,8 @@ Settings.prototype = {
             autoSelectChildrenOnDrag: true,
             reportUsageStatistics: true,
             multiSelectActionConfirmThreshold: 5,
-            showWhatsNewPane: true
+            showWhatsNewPane: true,
+            lastPromoPageShownDate: null
         };
 
         for (var setting in defaultSettings) {

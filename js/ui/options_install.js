@@ -1,6 +1,9 @@
 $(document).ready(function() {
+    initOptionsPage(postInit);
+});
+
+function postInit() {
     reportEvent('install', 'viewed_first_time_install');
-    initOptionsPage();
 
     if (getURLParameter('page') == 'donate') {
         settings.set('firstTimeInstallDonatePageShown', true);
@@ -18,7 +21,7 @@ $(document).ready(function() {
     });
 
     setTimeout(drawInstallIndicatorArrow, 100);
-});
+}
 
 function styleOptionsNavButton() {
     var button = $('img[src="/images/nav/settings.png"]');

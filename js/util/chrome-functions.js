@@ -53,10 +53,20 @@ function refreshPageStatus(page) {
     }, 100);
 }
 
+function fixAllPinnedUnpinnedTabOrder() {
+    tree.filter(function(e) { return e instanceof PageNode && !e.hibernated && e.pinned; })
+        .forEach(function(e) { fixPinnedUnpinnedTabOrder(e); }
+    );
+
+    tree.filter(function(e) { return e instanceof PageNode && !e.hibernated && !e.pinned; }).reverse()
+        .forEach(function(e) { fixPinnedUnpinnedTabOrder(e); }
+    );
+}
+
 // Repair the tab ordering of the given PageTreeNode with respect to
 // its pinned state versus the pinned state of other page nodes in the tree
 function fixPinnedUnpinnedTabOrder(page) {
-    log('doing fix un/pin tab order check', page.id, page);
+    // log('doing fix un/pin tab order check', page.id, page);
     // log(tree.dump());
     // log(tree.dumpTabIndexes());
 
@@ -70,10 +80,8 @@ function fixPinnedUnpinnedTabOrder(page) {
         if (!lastPinned) {
             throw new Error('Could not find lastPinned but should have been able to');
         }
-        log('Moving non-pinned tab to be after last pinned tab', page.id, 'after', lastPinned.id);
-        return tree.moveNodeRel(page, 'after', lastPinned);
-        // TODO should it really be 'below', which would translate to 'prepend' if target has children
-        // or 'after' if not ... ??
+        log('Moving non-pinned tab to be below last pinned tab', page.id, 'after', lastPinned.id);
+        return tree.moveNodeRel(page, lastPinned.children.length == 0 ? 'after' : 'prepend', lastPinned);
     }
 
     if (page.pinned
@@ -89,6 +97,6 @@ function fixPinnedUnpinnedTabOrder(page) {
         return tree.moveNodeRel(page, 'before', topUnpinned);
     }
 
-    log('no un/pin fix made');
+    // log('no un/pin fix made');
     return undefined;
 }

@@ -18,7 +18,8 @@ SidebarPaneCatalog.prototype = {
                 return pane;
             }
         }
-        throw new Error('Could not find pane with specified id ' + id);
+        return undefined;
+        // throw new Error('Could not find pane with specified id ' + id);
     },
 
     getPaneIds: function() {

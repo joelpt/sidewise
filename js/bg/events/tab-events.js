@@ -123,36 +123,15 @@ function onTabCreated(tab)
     // get updated page status in a moment, just in case Chrome fails to fire onTabUpdated subsequently
     refreshPageStatus(page);
 
-    // Special handling for extension pages
-    if (isExtensionUrl(tab.url)) {
-        if (tab.url.match(/options|prefs|settings/)) {
-            // Appears to be an extension options page.
-            // Tell smart focus to refocus the currently focused tab when the
-            // options page is closed.
-            log('Setting smart focus parent for an extension options page');
-            page.smartFocusParentTabId = tree.focusedTabId;
-            page.placed = true; // prevent tab from being moved by a later webnav/tabupdated event
-            tree.addTabToWindow(tab, page, function() {
-                focusCurrentTabInPageTree();
-            });
-            return;
-        }
-        // Appears to be a non-options extension page, make it a child of focused tab
-        // as long as they're in the same window
-        if (tab.windowId == focusTracker.getFocused()) {
-            // It's often logical for an extension page to appear as a child of
-            // the currently focused page, e.g. LastPass's Generate Password dialog.
-            log('Setting non-options extension page as child of focused tab');
-            tree.addNode(page, 'p' + tree.focusedTabId);
-            return;
-        }
-    }
-    else if (tab.url && tab.url.indexOf('view-source:') == 0 && tab.openerTabId) {
+    // view-source://*
+    if (tab.url && tab.url.indexOf('view-source:') == 0 && tab.openerTabId) {
         // view source pages should be nested under the parent always
         tree.addNode(page, 'p' + tab.openerTabId, undefined, true);
         return;
     }
-    else if (tab.url && !isScriptableUrl(tab.url)) {
+
+    // non scriptable urls, e.g. chrome://*
+    if (tab.url && !isScriptableUrl(tab.url)) {
         // Non scriptable tab; attempt to associate it with a restorable page node
         // even though it's possible the user just created this tab freshly. We do this
         // because onCommitted never fires for non scriptable tabs and therefore
@@ -217,7 +196,7 @@ function onTabCreated(tab)
 
     var opener = tree.getNode('p' + tab.openerTabId);
     if (!opener) {
-        log('Could not find node matching openerTabId; just adding tab to window and scheduling full rebuild', 'openerTabId', openerTabId);
+        log('Could not find node matching openerTabId; just adding tab to window', 'openerTabId', openerTabId);
         tree.addTabToWindow(tab, page);
         tree.conformAllChromeTabIndexes(true);
         return;
@@ -252,7 +231,7 @@ function onTabCreated(tab)
         return;
     }
 
-    log('Could not find insert position on tab index basis, resorting to simple parent-append followed by a rebuild', opener, nextByIndex, precedingByIndex, winTabs);
+    log('Could not find insert position on tab index basis, resorting to simple parent-append', opener, nextByIndex, precedingByIndex, winTabs);
     tree.addNodeRel(page, 'append', opener);
     tree.conformAllChromeTabIndexes(true);
 }
@@ -363,16 +342,18 @@ function onTabRemoved(tabId, removeInfo)
 
     if (page.hibernated) {
         // page is set to be hibernated; since its tab has been closed, that means
-        // we are only removing the tab for purposes of hibernattion
+        // we are only removing the tab for purposes of hibernation
         return;
     }
+
+    var parent = page.parent;
 
     // remove the page element from the tree
     tree.removeNode(page);
 
     // also remove zero-child parent window nodes if necessary
-    if (page.parent instanceof WindowNode && page.parent.children.length == 0) {
-        tree.removeNode(page.parent);
+    if (parent instanceof WindowNode && parent.children.length == 0) {
+        tree.removeNode(parent);
     }
 }
 
@@ -521,17 +502,22 @@ function onTabUpdated(tabId, changeInfo, tab)
             favicon = getBestFavIconUrl('', url);
         }
     }
-    else {
-        var tabUrlDomain = splitUrl(url).domain;
-        var pageUrlDomain = splitUrl(page.url).domain;
+    else if (url && page.url) {
+        var tabUrlSplit = splitUrl(url);
+        var pageUrlSplit = splitUrl(page.url);
 
-        if (tabUrlDomain != pageUrlDomain) {
-            // changing domains, blank out the favicon until we get a new favicon
-            favicon = 'chrome://favicon/';
-        }
-        else {
-            // keep the existing favicon
-            favicon = page.favicon;
+        if (tabUrlSplit && pageUrlSplit) {
+            var tabUrlDomain = tabUrlSplit.domain;
+            var pageUrlDomain = pageUrlSplit.domain;
+
+            if (tabUrlDomain != pageUrlDomain) {
+                // changing domains, blank out the favicon until we get a new favicon
+                favicon = 'chrome://favicon/';
+            }
+            else {
+                // keep the existing favicon
+                favicon = page.favicon;
+            }
         }
     }
 
@@ -618,19 +604,20 @@ function onTabUpdated(tabId, changeInfo, tab)
     // Some pages, e.g. maps.google.com, modify the history without triggering any
     // content-script-detectable events that we would otherwise use to detect such a modification.
     // So we always ask pages for current details here.
-    try {
-        getPageDetails(tab.id, { action: 'store' });
-    }
-    catch(ex) {
-        // getPageDetails won't work if a page was just created because the port hasn't been established
-        // yet, but this is okay because the page's content script will send us details anyway
-    }
+    // Though getPageDetails won't work here if a page was just created (as the port hasn't been established
+    // yet), this is okay because the page's content script will send us details anyway once the page is loaded
+    getPageDetails(tab.id, { action: 'store' });
 }
 
 function onTabMoved(tabId, moveInfo) {
     log(tabId, moveInfo);
     if (removeFromExpectingTabMoves(tabId)) {
-        log('Was expecting this tab move, doing nothing');
+        log('Was expecting this tab move, just updating windowId and index');
+        var page = tree.getPage(tabId);
+        tree.removeFromTabIndex(page);
+        page.index = moveInfo.toIndex;
+        page.windowId = moveInfo.windowId;
+        tree.addToTabIndex(page);
         return;
     }
     tree.updatePageIndex(tabId, moveInfo.windowId, moveInfo.fromIndex, moveInfo.toIndex);

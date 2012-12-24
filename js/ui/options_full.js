@@ -1,7 +1,9 @@
 $(document).ready(function() {
     reportEvent('options', 'viewed_options');
-    initOptionsPage();
+    initOptionsPage(postInit);
+});
 
+function postInit() {
     // hide this option on Macs, for which we ignore it anyway
     if (PLATFORM == 'Mac') {
         $('#allowAutoUnmaximize').parents('.optionsRow').first().hide();
@@ -35,7 +37,7 @@ $(document).ready(function() {
     $('#version').text(getMessage('text_Version') + ' ' + getVersion());
     setMonitorCountInfo(settings.get('monitorMetrics').length, false);
     initGooglePlusElement();
-});
+}
 
 
 function onLoggingEnabledClick(evt) {
@@ -47,5 +49,5 @@ function setSubmitBugReportButtonDisabledState() {
     var disabled = !$('#loggingEnabled').is(':checked');
     $button
         .attr('disabled', disabled)
-        .attr('title', disabled ? 'To send diagnostic reports, check the "Enable diagnostics" checkbox option above. Reproduce the problem you were having, then click this button to send a report.' : '');
+        .attr('title', getMessage('option_submitBugReportButton_hint'));
 }

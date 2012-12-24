@@ -57,7 +57,11 @@ jQuery.fn.insertAt = function(index, element) {
   return this;
 };
 
-jQuery.fn.following = function(selector) {
+jQuery.fn.following = function(selector, topParent) {
+    if (topParent && !this.parentsUntil(topParent).parent().is(topParent)) {
+        return $();
+    }
+
     if (!selector) {
         selector = '*';
     }
@@ -75,14 +79,14 @@ jQuery.fn.following = function(selector) {
             return $next;
         }
 
-        $next = $next.following(selector);
+        $next = $next.following(selector, topParent);
         if ($next.length == 1) {
             return $next;
         }
     }
 
-    var parent = this.parent();
-    while (parent.length > 0) {
+    var parent = this.parentsUntil(selector).parent();
+    while (parent.length > 0 && !parent.is(topParent)) {
         var $afters = parent.nextAll();
         for (var i = 0; i < $afters.length; i++) {
             var $after = $($afters[i]);
@@ -99,7 +103,11 @@ jQuery.fn.following = function(selector) {
     return $();
 };
 
-jQuery.fn.preceding = function(selector) {
+jQuery.fn.preceding = function(selector, topParent) {
+    if (topParent && !this.parentsUntil(topParent).parent().is(topParent)) {
+        return $();
+    }
+
     if (!selector) {
         selector = '*';
     }
@@ -117,7 +125,11 @@ jQuery.fn.preceding = function(selector) {
         }
     }
 
-    var $parent = this.parent();
+    var $parent = this.parentsUntil(selector).parent();
+
+    if ($parent.is(topParent)) {
+        return $();
+    }
 
     if ($parent.length > 0) {
         if ($parent.is(selector)) {

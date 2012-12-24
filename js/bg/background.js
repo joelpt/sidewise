@@ -55,11 +55,7 @@ function postLoad(focusedWin) {
         // If no focused win yet then there are no actual Chrome windows
         // open yet; wait for one to be created then reload the background
         // page to re-init everything cleanly
-        chrome.windows.onCreated.addListener(function(win) {
-            log('about to reload background page');
-            document.location.reload();
-            return;
-        });
+        chrome.windows.onCreated.addListener(function(win) { restartSidewise(); });
         return;
     }
 
@@ -86,21 +82,16 @@ function postLoad(focusedWin) {
 
         if (settings.get('rememberOpenPagesBetweenSessions')) {
             setTimeout(startAssociationRun, 2000); // wait a couple seconds for content scripts to get going
+            populatePages(true);
         }
         else {
             populatePages();
         }
 
-        // Show What's New pane after Sidewise is updated
-        try {
-            var newsPane = paneCatalog.getPane('whatsnew');
+        if (updatedSidewise) {
+            showWhatsNewPane();
         }
-        catch(ex) {
-            if (!newsPane && updatedSidewise && settings.get('showWhatsNewPane') ) {
-                paneCatalog.addPane('whatsnew', true, '/sidebars/whatsnew.html', 'What\'s New', '/images/nav/whatsnew.gif');
-            }
-        }
-
+        showPromoPageAnnually();
     }
 
     reportEvent('sidewise', 'loaded');
@@ -127,6 +118,7 @@ function registerEventHandlers() {
     registerBrowserActionEvents();
     registerSnapInEvents();
     registerOmniboxEvents();
+    registerRuntimeEvents();
 }
 
 function createSidebarOnStartup() {
@@ -340,9 +332,9 @@ function PageTreeCallbackProxy(methodName, args) {
 
     pagesWindow.PageTreeCallbackProxyListener.call(pagesWindow, methodName, args);
 
-    // args.target = 'pages';
-    // args.op = methodName;
-    // chrome.extension.sendRequest(args);
+    if (node instanceof PageNode && node.isTab() && (methodName == 'move' || methodName == 'add')) {
+        fixPinnedUnpinnedTabOrder(node);
+    }
 }
 
 
@@ -371,7 +363,7 @@ function prependRecentlyClosedGroupHeader() {
 //      to parents that aren't yet in the tree. this should NOT be an issue though because
 //      all we do is add the tabs in one loop, THEN do parent-child relating in a second loop
 //      after all pages are in the tree. so NO this will be a non issue !
-function populatePages()
+function populatePages(incognito)
 {
     chrome.windows.getAll({ populate: true }, function(windows) {
         var numWindows = windows.length;
@@ -380,6 +372,11 @@ function populatePages()
 
         for (var i = 0; i < numWindows; i++) {
             var win = windows[i];
+
+            // Obey incognito condition, if present
+            if (incognito == true && !win.incognito) continue;
+            if (incognito == false && win.incognito) continue;
+
             var tabs = win.tabs;
             var numTabs = tabs.length;
             log('Populating tabs from window', 'windowId', win.id, 'number of tabs', numTabs);
@@ -436,25 +433,11 @@ function findTabParents(tabs) {
             continue;
         }
         // try to guess child/parent tab relationships by getting details from page
-        try {
-            log('Asking for page details to find best-matching parent page', 'tabId', tab.id, 'tab', tab);
-            getPageDetails(tab.id, { action: 'find_parent' });
-        }
-        catch(ex) {
-            if (ex.message == 'Port not found') {
-                // Port isn't available yet; try again in a bit
-                // TODO implement intervals in TimeoutManager and let an interval-called function
-                // clear its own hosting interval when it wants to; might be nice if we can
-                // wrap the interval-function such that it gets passed an argument 'hostingIntervalLabel'
-                // which it can optionally use to do so without having to know anything more about
-                // who set what interval
-                // TODO make this here an interval which tries several times before giving up, right now
-                // we are just hoping that it's "enough" of a delay to not miss the port twice
-                log('Port not found, will try calling getPageDetails again later', 'tabId', tab.id);
-                tabsToRequery.push(tab);
-                continue;
-            }
-            throw ex;
+        log('Asking for page details to find best-matching parent page', 'tabId', tab.id, 'tab', tab);
+        if (!getPageDetails(tab.id, { action: 'find_parent' })) {
+            log('Port not found, will try calling getPageDetails again later', 'tabId', tab.id);
+            tabsToRequery.push(tab);
+            continue;
         }
     }
 
@@ -484,3 +467,87 @@ function findTabParents(tabs) {
     }
 
 }
+
+// Perform 'Chrome is shutting down' tasks.
+function shutdownSidewise() {
+    browserIsClosed = true;
+
+    // Prevent page tree from being saved from this point forward
+    TimeoutManager.clear('onPageTreeModified');
+    tree.onModifiedDelayed = function() {};
+
+    // Prevent further UI updates
+    tree.callbackProxyFn = function() {};
+
+    // Prevent onWindowUpdateCheckInterval from firing again
+    try {
+        clearInterval(windowUpdateCheckInterval);
+    } catch(err) { }
+
+    // Close any remaining (popup) windows
+    try {
+        sidebarHandler.remove();
+    } catch(err) { }
+
+    chrome.windows.getAll(function(wins) {
+        for (var i in wins) {
+            chrome.windows.remove(wins[i].id);
+        }
+    });
+}
+
+// Restart the extension completely.
+function restartSidewise() {
+    // Close any existing 'sidebar.html' popup windows
+    try { sidebarHandler.remove(); } catch(err) { }
+
+    chrome.tabs.query({ windowType: 'popup', url: chrome.extension.getURL('/sidebar.html') }, function(tabs) {
+        tabs.forEach(function(tab) {
+            try { chrome.windows.remove(tab.windowId); } catch(err) { }
+        });
+        document.location.reload();
+    });
+
+}
+
+// Show What's New pane after Sidewise is updated
+function showWhatsNewPane() {
+    var newsPane = paneCatalog.getPane('whatsnew');
+    if (!newsPane) {
+        if (!newsPane && settings.get('showWhatsNewPane') ) {
+            paneCatalog.addPane('whatsnew', true, '/sidebars/whatsnew.html', 'What\'s New', '/images/nav/whatsnew.gif');
+        }
+    }
+}
+
+// Show promo page once a year in late December
+function showPromoPageAnnually() {
+    var now = new Date();
+    var nowMonth = now.getMonth();
+    var nowDay = now.getDate();
+    if (nowMonth == 11 && nowDay >= 15) {
+        var promoDateStr = settings.get('lastPromoPageShownDate');
+        var showPromo = false;
+        if (!promoDateStr) {
+            showPromo = true;
+        }
+        else {
+            var promoDate = new Date(promoDateStr);
+            if (daysBetween(promoDate, now) > 60) {
+                showPromo = true;
+            }
+        }
+
+        if (showPromo) {
+            settings.set('lastPromoPageShownDate', now);
+            setTimeout(function() {
+                chrome.tabs.create({ 'url': 'http://www.sidewise.info/pay/?which=365', active: true }, function(tab) {
+                    setTimeout(function() {
+                        tree.updatePage(tab.id, { status: 'loaded' });
+                    }, 500);
+                });
+            }, 5000);
+        }
+    }
+}
+

@@ -18,10 +18,19 @@ var WindowNode = function(win)
     this.$base();
 
     this.elemType = 'window';
-    this.id = 'w' + win.id;
     this.title = WINDOW_DEFAULT_TITLE;
-    this.incognito = win.incognito;
-    this.type = win.type;
+
+    if (win) {
+        this.id = 'w' + win.id;
+        this.incognito = win.incognito;
+        this.type = win.type;
+        return;
+    }
+
+    this.id = 'wH' + this.UUID;
+    this.incognito = false;
+    this.type = 'normal';
+    this.hibernated = true;
 };
 
 extendClass(WindowNode, PageTreeNode, {});

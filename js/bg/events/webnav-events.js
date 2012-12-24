@@ -2,13 +2,10 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-// delay before asking Chrome for favicon again in onComplete
-var ONCOMPLETED_LATE_UPDATE_DELAY_MS = 2000;
-
-// additional delay before setting a favicon to chrome://favicon/<url> in onCompletedLateUpdateTimeout
-// due to Chrome being slow to make these properly available and providing no means of determining
-// when the icon will be 'ready'
-var ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS = 5000;
+// delays before asking Chrome for favicon again after onComplete
+var ONCOMPLETED_POST_UPDATE_DELAY_MS = 3000;
+var ONCOMPLETED_S2_FAVICON_UPDATE_DELAY_MS = 0;
+var ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS = 10000;
 
 
 ///////////////////////////////////////////////////////////
@@ -70,12 +67,13 @@ function onCreatedNavigationTarget(details)
             log('Not moving because could not find sourceTabId ' + details.sourceTabId);
             return;
         }
-        if (to.windowId != details.windowId) {
-            log('Not moving because opener and opened tabs are in different windows');
+        if (to.windowId != page.windowId) {
+            log('Not moving because opener and opened tabs are in different windows', to.windowId, page.windowId, to, page, details);
             return;
         }
         log('Moving page to be child of its sourceTabId', details.tabId, details.sourceTabId, details);
         tree.moveNode(page, 'p' + details.sourceTabId);
+        tree.conformChromeTabIndexForPageNode(page, true, false, true);
         return;
     }
     log('Not moving because page is already a child of some other page');
@@ -215,8 +213,13 @@ function onBeforeNavigate(details)
         var checkPageStatusFn = function() {
             chrome.tabs.get(details.tabId, function(tab) {
                 if (tab) {
-                    tree.updateNode(page, { status: tab.status });
-                    if (tab.status == 'complete') {
+                    if (!tab.hibernated) {
+                        tree.updateNode(page, { status: tab.status });
+                    }
+                    else {
+                        tree.updateNode(page, { status: 'complete' });
+                    }
+                    if (tab.status == 'complete' || tab.hibernated) {
                         TimeoutManager.clear('checkPageStatus1_' + details.tabId);
                         TimeoutManager.clear('checkPageStatus2_' + details.tabId);
                         TimeoutManager.clear('checkPageStatus3_' + details.tabId);
@@ -282,10 +285,10 @@ function onCompleted(details)
         }
 
         // Delay a bit, then ask for the favicon again; if we don't get one we'll try to fall back
-        // on the (sometimes unavailable) chrome://favicon/URL icon cache
+        // on the Google S2 or chrome://favicon/URL icon cache
         setTimeout(function() {
             onCompletedLateUpdateTimeout(details.tabId)
-        }, ONCOMPLETED_LATE_UPDATE_DELAY_MS);
+        }, ONCOMPLETED_POST_UPDATE_DELAY_MS);
     });
 }
 
@@ -295,24 +298,42 @@ function onCompletedLateUpdateTimeout(tabId) {
 
         var title = getBestPageTitle(tab.title, tab.url);
         var url = tab.url ? dropUrlHash(tab.url) : '';
-        var favicon;
+
         if (isStaticFavIconUrl(tab.favIconUrl)) {
             // static favicon url has been provided by site, use that
-            favicon = getBestFavIconUrl(tab.favIconUrl, url);
-            tree.updatePage(tabId, { favicon: favicon, title: title });
+            tree.updatePage(tabId, { favicon: getBestFavIconUrl(tab.favIconUrl, url), title: title });
             return;
         }
 
-        // no static favicon url available, fall back on chrome://favicon/URL icon cache
+        // initially fall back on Google S2 cache if possible
         var split = splitUrl(url);
         if (split) {
-            favicon = 'http://www.google.com/s2/favicons?domain=' + split.domain;
+            var favicon = 'http://www.google.com/s2/favicons?domain=' + split.domain;
+            setTimeout(function() { tree.updatePage(tabId, { favicon: favicon, title: title }); },
+                ONCOMPLETED_S2_FAVICON_UPDATE_DELAY_MS);
         }
-        else {
-            favicon = getChromeFavIconUrl(url);
-        }
-        setTimeout(function() { tree.updatePage(tabId, { favicon: favicon, title: title }); },
-            ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS);
+
+        // eventually use chrome://favicon cache which can be slow to populate, but should always
+        // be more accurate than the S2 version
+        setTimeout(function() {
+            // ask one more time for a static favicon url from chrome
+            chrome.tabs.get(tabId, function(tab) {
+                if (!tab) return;
+
+                var page = tree.getPage(tabId);
+
+                if (page && (!isStaticFavIconUrl(page.favicon) || page.favicon.indexOf('http://www.google.com/s2/favicons') == 0)) {
+                    if (isStaticFavIconUrl(tab.favIconUrl) && tab.favIconUrl != page.favicon) {
+                        // finally got a static one from chrome, use that
+                        tree.updatePage(page, { favicon: tab.favIconUrl });
+                        return;
+                    }
+                    // chrome still doesn't have a static favicon url for us, so use chrome://favicon cache now
+                    tree.updatePage(page, { favicon: getChromeFavIconUrl(page.url) });
+                    return;
+                }
+            });
+        }, ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS);
 
     });
 }

@@ -31,6 +31,21 @@ MonitorInfo.prototype = {
 
 
     ///////////////////////////////////////////////////////////
+    // Utility functions
+    ///////////////////////////////////////////////////////////
+
+    getMonitorFromLeftCoord: function(left) {
+        for (var i = 0; i < this.monitors.length; i++) {
+            var monitor = this.monitors[i];
+            if (left < monitor.left + monitor.width - 1) {
+                return monitor;
+            }
+        }
+        console.error('getMonitorFromLeftCoord failed, returning fallback value of the first monitor');
+        return this.monitors[0];
+    },
+
+    ///////////////////////////////////////////////////////////
     // Main UI entry point for monitor detection routine
     ///////////////////////////////////////////////////////////
 

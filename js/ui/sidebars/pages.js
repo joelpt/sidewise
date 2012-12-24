@@ -18,6 +18,10 @@ var PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP = {
     mediaTime: 'media-time'
 };
 
+// wait this long before accessing chrome://favicon cache to obtain
+// a working icon when the assigned favicon fails to load on the page
+var ICON_ERROR_FALLBACK_DELAY_MS = 10000;
+
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -67,6 +71,9 @@ function debugBarClickPromoteIframe() {
 }
 
 function debugBarClickResetTree() {
+    if (!confirm('This will completely delete your existing tree and rebuild it from scratch. All existing hibernated rows will be lost. Are you sure you want to continue?')) {
+        return;
+    }
     ft.clear();
     bg.tree.clear();
     bg.injectContentScriptInExistingTabs('content_script.js');
@@ -352,6 +359,9 @@ function onRowsMoved(moves) {
     log(moves);
     var windowToWindowMoves = {};
     var windowToWindowMovesCount = 0;
+    var $toTopParent;
+    var needNewWindow = false;
+
     for (var i = 0; i < moves.length; i++) {
         var move = moves[i];
         var $row = move.$row;
@@ -380,33 +390,36 @@ function onRowsMoved(moves) {
                 // TODO when moving tabs between windows we wont generate a move event for selected tabs
                 // which are direct children of other selected tabs; these come with due to keepChildren=true
                 // and therefore do not generate a move event. Move these properly.
-                var $moveTopParent = $to.parents('.ftRowNode').last();
-                if ($moveTopParent.length == 0) {
-                    $moveTopParent = $to; // $to is at the topmost tree depth
+                $toTopParent = $to.parents('.ftRowNode').last();
+                if ($toTopParent.length == 0) {
+                    $toTopParent = $to; // $to is at the topmost tree depth
                 }
                 var $oldTopParent = move.$oldAncestors.last();
 
                 // if we are moving row to a branch with a different non hibernated window row at the top ...
-                if ($moveTopParent.attr('rowtype') == 'window'
-                    && $moveTopParent.attr('hibernated') != 'true'
-                    && !($moveTopParent.is($oldTopParent)))
+                if ($toTopParent.attr('rowtype') == 'window'
+                    && !($toTopParent.is($oldTopParent)))
                 {
                     // this works, but has the gray-window problem which we should be able to fix by building out winToWinMoves array again
                     // and using this here technique for doing the moves, but doing the temp-tab create-and-destroy crap in addition as needed
                     // (and possibly activating moved tabs after always, too)
-                    //
                     var movingTabId = getRowNumericId($row);
                     var fromWindowId = getRowNumericId($oldTopParent);
-                    var toWindowId = getRowNumericId($moveTopParent);
                     var node = bg.tree.getNode(rowId);
-                    node.windowId = toWindowId;
+
+                    if ($toTopParent.attr('hibernated') == 'false') {
+                        node.windowId = getRowNumericId($toTopParent);
+                    }
+                    else {
+                        needNewWindow = true;
+                    }
 
                     if (windowToWindowMoves[fromWindowId] === undefined) {
                         windowToWindowMoves[fromWindowId] = [];
                         windowToWindowMovesCount++;
                     }
 
-                    windowToWindowMoves[fromWindowId].push({ node: node, movingTabId: movingTabId, toWindowId: toWindowId });
+                    windowToWindowMoves[fromWindowId].push({ node: node, movingTabId: movingTabId });
                 }
             }
         });
@@ -415,11 +428,49 @@ function onRowsMoved(moves) {
     if (windowToWindowMovesCount > 0) {
         // perform window-to-window moves
         bg.tree.rebuildTabIndex();
-        for (var fromWindowId in windowToWindowMoves) {
-            if (!windowToWindowMoves.hasOwnProperty(fromWindowId)) {
-                continue;
+        var newWindowCreated = false;
+        var toWindowId = getRowNumericId($toTopParent);
+
+        var fn = function(onCompleteFn) {
+            var i = 0;
+            for (var fromWindowId in windowToWindowMoves) {
+                if (!windowToWindowMoves.hasOwnProperty(fromWindowId)) {
+                    continue;
+                }
+                i++;
+                if (i == windowToWindowMovesCount) {
+                    // last iteration
+                    moveTabsBetweenWindows(parseInt(fromWindowId), toWindowId, windowToWindowMoves[fromWindowId], onCompleteFn);
+                    continue;
+                }
+                moveTabsBetweenWindows(parseInt(fromWindowId), toWindowId, windowToWindowMoves[fromWindowId], undefined);
             }
-            moveTabsBetweenWindows(parseInt(fromWindowId), windowToWindowMoves[fromWindowId]);
+        };
+
+        if (needNewWindow) {
+            var createDetails = bg.sidebarHandler.getIdealNewWindowMetrics();
+                createDetails.url = 'about:blank';
+                createDetails.type = 'normal';
+                chrome.windows.create(createDetails, function(win) {
+                    chrome.windows.update(win.id, bg.sidebarHandler.getIdealNewWindowMetrics()); // make sure specified metrics are really used
+                    chrome.tabs.query({ windowId: win.id }, function(tabs) {
+                        if (tabs.length != 1) {
+                            console.error('Wrong number of tabs under new waking-window, should be exactly one', win, tabs.length, tabs);
+                        }
+                        var removeTabId = tabs[0].id;
+                        toWindowId = win.id;
+                        var existingWinNode = bg.tree.getNode('w' + toWindowId);
+                        if (existingWinNode) {
+                            bg.tree.updateNode(existingWinNode, { id: 'X' + generateGuid() });
+                            bg.tree.removeNode(existingWinNode, true);
+                        }
+                        bg.tree.setWindowToAwake($toTopParent.attr('id'), toWindowId);
+                        fn(function() { chrome.tabs.remove(removeTabId); });
+                    });
+                });
+        }
+        else {
+            fn();
         }
     }
     else {
@@ -427,7 +478,7 @@ function onRowsMoved(moves) {
     }
 }
 
-function moveTabsBetweenWindows(fromWindowId, moves) {
+function moveTabsBetweenWindows(fromWindowId, toWindowId, moves, onComplete) {
     var multiSelection = ft.multiSelection;
 
     chrome.tabs.query({ windowId: fromWindowId }, function(tabs) {
@@ -437,14 +488,15 @@ function moveTabsBetweenWindows(fromWindowId, moves) {
                     bg.tree.rebuildPageNodeWindowIds(function() {
                         bg.tree.conformAllChromeTabIndexes(true);
                         ft.setMultiSelectedChildrenUnderRow(ft.root, multiSelection);
+                        if (onComplete) onComplete();
                     });
                 }, 500);
             };
             for (var i in moves) {
                 var move = moves[i];
                 var toPosition = bg.tree.getTabIndex(move.node) || 0;
-                log('win to win move', 'moving', move.node.id, 'to', move.toWindowId, 'index', toPosition);
-                moveTabToWindow(move.movingTabId, move.toWindowId, toPosition,
+                log('win to win move', 'moving', move.node.id, 'to', toWindowId, 'index', toPosition);
+                moveTabToWindow(move.movingTabId, toWindowId, toPosition,
                     i == moves.length - 1 ? onCompleteFn : undefined);
             }
             return;
@@ -460,14 +512,15 @@ function moveTabsBetweenWindows(fromWindowId, moves) {
                 setTimeout(function() {
                     bg.tree.rebuildPageNodeWindowIds(function() {
                         bg.tree.conformAllChromeTabIndexes(true);
+                        if (onComplete) onComplete();
                     });
                 }, 500);
             };
             for (var i in moves) {
                 var move = moves[i];
                 var toPosition = bg.tree.getTabIndex(move.node) || 0;
-                log('win to win move + last-tab hack', 'moving', move.node.id, 'to', move.toWindowId, 'index', toPosition);
-                moveTabToWindow(move.movingTabId, move.toWindowId, toPosition,
+                log('win to win move + last-tab hack', 'moving', move.node.id, 'to', toWindowId, 'index', toPosition);
+                moveTabToWindow(move.movingTabId, toWindowId, toPosition,
                     i == moves.length - 1 ? onCompleteFn : undefined);
             }
         });
@@ -532,6 +585,13 @@ function allowDropHandler($fromRows, relation, $toRow) {
         if (relation == 'before' && $toRow.is('[rowtype=page][hibernated=false][pinned=true]')) {
             return false;
         }
+
+        if ((relation == 'before' || relation == 'prepend')
+            && $toRow.following('.ftRowNode[rowtype=page][hibernated=false][pinned=true]', $toRow.parentsUntil('.ftRoot > .ftChildren').last()).length > 0)
+        {
+            return false;
+        }
+
         if (relation == 'prepend' && $toRow.is('[rowtype=window]')) {
             var toNode = bg.tree.getNode($toRow.attr('id'));
             if (toNode.following(function(e) { return e.isTab() && e.pinned; }, toNode)) {
@@ -551,6 +611,17 @@ function allowDropHandler($fromRows, relation, $toRow) {
         if (relation != 'before' && $toRow.is('[rowtype=page][hibernated=false][pinned=false]')) {
             return false;
         }
+
+        if (relation == 'after' || relation == 'append') {
+            if ($toRow.preceding('.ftRowNode[rowtype=page][hibernated=false][pinned=false]', $toRow.parentsUntil('.ftRoot > .ftChildren').last()).length > 0) {
+                return false;
+            }
+
+            if ($toRow.hasClass('ftCollapsed') && $toRow.find('.ftRowNode[rowtype=page][hibernated=false][pinned=false]').length > 0) {
+                return false;
+            }
+        }
+
         if (relation == 'append' && $toRow.is('[rowtype=window]')) {
             return false;
         }
@@ -1048,58 +1119,7 @@ function onPageRowFormatTitle(row, itemTextElem) {
     }
 
     if (settings.get('pages_trimPageTitlePrefixes') && row.attr('url').indexOf(text) == -1) {
-        // trim common prefixes from child page titles vs. parent/preceding/next page titles
-        var parent = row.parent().closest('.ftRowNode');
-        if (parent.length > 0) { // && parent.attr('text').substring(0, 5) == text.substring(0, 5)) {
-            var nearby = $();
-            var nearbyTitle;
-            var reformatPrev;
-
-            var next = row.next();
-            if (next.is(row.following('.ftRowNode'))) {
-                nearby = next;
-                nearbyTitle = nearby.attr('text');
-                reformatPrev = false;
-            }
-
-            if (nearby.length == 0 || nearbyTitle == text || nearbyTitle.substring(0, 5) != text.substring(0, 5))
-            {
-                nearby = row.preceding('.ftRowNode');
-                nearbyTitle = nearby.attr('text');
-                reformatPrev = true;
-            }
-
-            if (nearby.length == 0 || nearbyTitle == text || nearbyTitle.substring(0, 5) != text.substring(0, 5)) {
-                nearby = parent;
-                nearbyTitle = nearby.attr('text');
-                reformatPrev = false;
-            }
-
-            if (reformatPrev && nearby.index() == 0) {
-                onPageRowFormatTitle(nearby, nearby.find('> .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText'));
-            }
-
-            if (nearby && nearby.attr('rowtype') == 'page') {
-                if (nearbyTitle != text) {
-                    var pos = 0;
-                    while (pos < text.length && pos < nearbyTitle.length && text[pos] == nearbyTitle[pos]) {
-                        pos++;
-                    }
-                    if (pos >= 5) {
-                        while (text[pos] != ' ') {
-                            // Move pos back to last non space char so we don't include partial words at the end of the prefix
-                            pos--;
-
-                        }
-
-                        if (pos >= 5 && text[pos].match(/[^A-Za-z0-9]/) && text[pos-1].match(/[^A-Za-z0-9]/)) {
-                            // Only perform trimming when the prefix ends with two non-alphanumeric chars
-                            text = text.substring(pos).trim().replace(/^([^A-Za-z0-9]* )?(.+?)( [^A-Za-z0-9]*)?$/, '$2');
-                        }
-                    }
-                }
-            }
-        }
+        text = getTrimmedPageTitle(row);
     }
 
     itemTextElem.children('.ftItemTitle').text(text);
@@ -1129,6 +1149,63 @@ function onPageRowFormatTitle(row, itemTextElem) {
             existingPin.remove();
         }
     }
+
+}
+
+function getTrimmedPageTitle(row) {
+    // trim common prefixes from child page titles vs. parent/preceding/next page titles
+    var text = row.attr('text');
+    var parent = row.parent().closest('.ftRowNode');
+    if (parent.length > 0) { // && parent.attr('text').substring(0, 5) == text.substring(0, 5)) {
+        var nearby = $();
+        var nearbyTitle;
+        var reformatPrev;
+
+        var next = row.next();
+        if (next.is(row.following('.ftRowNode'))) {
+            nearby = next;
+            nearbyTitle = nearby.attr('text');
+            reformatPrev = false;
+        }
+
+        if (nearby.length == 0 || nearbyTitle == text || nearbyTitle.substring(0, 5) != text.substring(0, 5))
+        {
+            nearby = row.preceding('.ftRowNode');
+            nearbyTitle = nearby.attr('text');
+            reformatPrev = true;
+        }
+
+        if (nearby.length == 0 || nearbyTitle == text || nearbyTitle.substring(0, 5) != text.substring(0, 5)) {
+            nearby = parent;
+            nearbyTitle = nearby.attr('text');
+            reformatPrev = false;
+        }
+
+        if (reformatPrev && nearby.index() == 0) {
+            onPageRowFormatTitle(nearby, nearby.find('> .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText'));
+        }
+
+        if (nearby && nearby.attr('rowtype') == 'page') {
+            if (nearbyTitle != text) {
+                var pos = 0;
+                while (pos < text.length && pos < nearbyTitle.length && text[pos] == nearbyTitle[pos]) {
+                    pos++;
+                }
+                if (pos >= 5) {
+                    while (text[pos] != ' ' && pos > 0) {
+                        // Move pos back to last non space char so we don't include partial words at the end of the prefix
+                        pos--;
+                    }
+
+                    if (pos >= 5 && text[pos].match(/[^A-Za-z0-9,]/) && text[pos-1].match(/[^A-Za-z0-9,]/)) {
+                        // Only perform trimming when the prefix ends with two non-alphanumeric chars
+                        text = text.substring(pos).trim().replace(/^([^A-Za-z0-9]* )?(.+?)( [^A-Za-z0-9]*)?$/, '$2');
+                    }
+                }
+            }
+        }
+    }
+    return text;
 }
 
 function onPageRowFormatTooltip(evt) {
@@ -1168,7 +1245,7 @@ function onPageRowFormatTooltip(evt) {
 function onPageRowIconError(evt) {
     setTimeout(function() {
         evt.target.src = getChromeFavIconUrl(evt.data.row.attr('url'));
-    }, 2000);
+    }, ICON_ERROR_FALLBACK_DELAY_MS);
 }
 
 function onPageRowCloseButton(evt) {

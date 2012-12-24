@@ -421,6 +421,22 @@ function last(array, matchFn) {
     }
 }
 
+function groupBy(array, groupFn) {
+    var r = [];
+    for (var i = array.length - 1; i >= 0; i--) {
+        var a = array[i];
+        if (a === undefined) continue;
+
+        var g = groupFn(a);
+        if (r[g]) {
+            r[g].push(a);
+            continue;
+        }
+        r[g] = [a];
+    }
+    return r;
+}
+
 function mostFrequent(arr) {
     var uniqs = {};
 
@@ -468,6 +484,21 @@ function formatSecondsAsHMS(seconds)
     return '[' + hours + mins + ':' + secs + ']';
 }
 
+function daysBetween(date1, date2) {
+
+    // The number of milliseconds in one day
+    var ONE_DAY = 1000 * 60 * 60 * 24;
+
+    // Convert both dates to milliseconds
+    var date1_ms = date1.getTime();
+    var date2_ms = date2.getTime();
+
+    // Calculate the difference in milliseconds
+    var difference_ms = Math.abs(date1_ms - date2_ms);
+
+    // Convert back to days and return
+    return Math.round(difference_ms/ONE_DAY);
+}
 
 ///////////////////////////////////////////////////////////
 // GUID generation
@@ -475,6 +506,6 @@ function formatSecondsAsHMS(seconds)
 
 function generateGuid() {
     var guid = Math.random().toString(36);
-    return guid.substring(2, 6) + '-' + guid.substring(6, 10) + '-' + guid.substring(10, 15);
+    return guid.substring(2, 6) + '-' + guid.substring(6, 15) + '-' + Math.random().toString(36).substring(2, 15);
 }
 

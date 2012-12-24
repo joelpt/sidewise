@@ -5,7 +5,9 @@
 var CARD_SLIDE_DURATION_MS = 450;
 var DONATION_LINK_VARIETIES = 6;
 var DONATION_PAGE_VARIETIES = 5;
-var BUG_REPORT_MAX_SIZE = 0.75 * 1024 * 1024;
+var BUG_REPORT_MAX_SIZE = 0.74 * 1024 * 1024;
+var OPTIONS_INIT_RETRY_DELAY_MS = 1500;
+
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -21,14 +23,26 @@ var donationPageNumber;
 // Initialization
 ///////////////////////////////////////////////////////////
 
-function initOptionsPage() {
+function initOptionsPage(onComplete) {
     bg = chrome.extension.getBackgroundPage();
+
+    if (!bg) {
+        // background page not ready yet, try again in a bit
+        retriggerInitOptionsPage(onComplete);
+        return;
+    }
+
     settings = bg.settings;
 
-    if (!bg || !settings) {
-        // background page not ready yet, try again in a bit
-        setTimeout(initOptionsPage, 2000);
+    if (!settings) {
+        // settings object not ready yet, try again in a bit
+        retriggerInitOptionsPage(onComplete);
         return;
+    }
+
+    var delayMsg = $('#initDelayed');
+    if (delayMsg.length > 0) {
+        delayMsg.remove();
     }
 
     setI18NText();
@@ -48,6 +62,15 @@ function initOptionsPage() {
         // delay to avoid F5 (reload) spuriously triggering keyup
         $(document).on('keyup', 'input[type=text]', onSettingModified);
     }, 250);
+
+    if (onComplete) onComplete();
+}
+
+function retriggerInitOptionsPage(onComplete) {
+    if ($('#initDelayed').length == 0) {
+        $('body').append($('<div id="initDelayed">').text('Just a moment...'));
+    }
+    setTimeout(function() { initOptionsPage(onComplete); }, OPTIONS_INIT_RETRY_DELAY_MS);
 }
 
 function onDonateLinkClick(evt) {
@@ -569,7 +592,7 @@ var BUG_REPORT_SIDEBARHANDLER_PROPS = ['creatingSidebar', 'currentDockWindowMetr
     ];
 
 function submitBugReport() {
-    var desc = prompt('This sends a log of Sidewise\'s recent activity to the author for diagnostic purposes. It is best used immediately after you experience a problem.\n\nPlease clearly describe the problem below. Include row IDs from the tree when pertinent.');
+    var desc = prompt('This sends a log of Sidewise\'s recent activity to the author for diagnostic purposes. It is best used immediately after you experience a problem.\n\nPlease clearly describe the problem below. Include row IDs from the tree when pertinent.\n\nNote that this report includes a list of everything in your sidebar panes/trees.');
     if (!desc) {
         alert('Diagnostic report cancelled.');
         return;
@@ -585,7 +608,7 @@ function submitBugReport() {
 
 
     bg.log('--- monitorInfo ---');
-    bg.log(JSON.stringify(bg.monitorInfo));
+    bg.log(JSON.stringify(bg.monitorInfo.monitors));
 
     bg.log('--- Settings ---');
     bg.log(settings.dump(1000));
@@ -597,8 +620,22 @@ function submitBugReport() {
         'OS: ' + navigator.platform,
     ].join('\n'));
 
-    var data = (getVersion() + ' - ' + Date() + '\n' + desc + '\n\n' + bg.runningLog).substr(0, BUG_REPORT_MAX_SIZE);
-    // alert(data.length);
+    var data = (getVersion() + ' - ' + Date() + '\n' + desc + '\n\n' + bg.runningLog);
+
+    // htmlencode the data
+    data = $('<div/>').text(data).html();
+
+    // turn call stacks into classed divs
+    data = data.replace(/((^\s{4}.+\n)+)/mg, '<div class="stack">$1</div>');
+
+    // trim data length to something that won't throw an exception on the server
+    data = data.substr(data.length > BUG_REPORT_MAX_SIZE ? data.length - BUG_REPORT_MAX_SIZE : 0);
+
+    // add JS/CSS for stacks
+    data =
+        '<style>* { font-family: Lucida Console; font-size: 12px; } .stack { font-size: 11px; color: #bbb; }</style>'
+        + data;
+
     $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': data }, function(data, textStatus, jqXHR) {
         alert('Diagnostic report sent. Thank you for the report.\n\nServer response:\n' + data);
     });
@@ -611,12 +648,14 @@ function submitBugReport() {
 
 function exportState() {
     bg.savePageTreeToLocalStorage(bg.tree, 'pageTree', true);
-    copyTextToClipboard(JSON.stringify(bg.localStorage));
+    var head = '/* Sidewise Data Export: v' + getVersion() + ' exported on ' + Date().toString() + ' */ ';
+    var tail = ' /* End Sidewise Data */';
+    copyTextToClipboard(head + bg.settings.toJSON() + tail);
     alert('Sidewise\'s configuration and state data has been exported and copied to your clipboard.\n\nPaste this into a text file to save it.');
 }
 
 function importState() {
-    var html = 'Paste the previously exported Sidewise data into the box below:<br/><textarea rows="8" cols="30" id="importBox" name="data"></textarea>';
+    var html = 'Paste the previously exported Sidewise data into the box below:<br/><textarea rows="10" cols="34" id="importBox" name="data"></textarea>';
     var importPrompt = $.prompt(html, { prefix: 'cleanblue', buttons: { 'OK': true, 'Cancel': false }, callback: doImportState });
     importPrompt.bind('promptloaded', function(e) {
         $('#importBox').focus();
@@ -634,6 +673,9 @@ function doImportState(e,v,m,f) {
         alert('No data pasted. Import aborted.');
         return;
     }
+
+    data = data.replace(/^\/\*.+?\*\/\s*/, '');
+    data = data.replace(/\/\*.+?\*\/\s*$/, '');
 
     try {
         data = JSON.parse(data);
@@ -657,15 +699,6 @@ function doImportState(e,v,m,f) {
     }
     alert('Import successful!\nSidewise will now be restarted.');
 
-    var afterFn = function() {
-        bg.document.location.reload();
-        setTimeout(function() { document.location.reload(); }, 2000);
-    };
-
-    if (bg.sidebarHandler.sidebarExists()) {
-        bg.sidebarHandler.remove(afterFn);
-    }
-    else {
-        afterFn();
-    }
+    bg.restartSidewise();
+    setTimeout(function() { document.location.reload(); }, 3000);
 }

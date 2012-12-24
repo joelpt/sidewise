@@ -76,11 +76,7 @@ function onPortDisconnect(port) {
 }
 
 function getPort(tabId) {
-    var port = connectedTabs[tabId];
-    if (!port) {
-        throw new Error('Port not found');
-    }
-    return port;
+    return connectedTabs[tabId];
 }
 
 
@@ -162,17 +158,23 @@ function onGetIsFullScreenMessage(tab, request) {
 ///////////////////////////////////////////////////////////
 
 function getPageDetails(tabId, params) {
-    params.op = 'getPageDetails';
-    getPort(tabId).postMessage(params);
-}
+    var port = getPort(tabId);
+    if (!port) {
+        log('Cannot get page details due to unavailable port for tab', 'tabId', tabId);
+        return false;
+    }
 
-// function getPageDetails(tab, action) {
-//     log_brief(tab.id);
-//     var scriptBody = GET_PAGE_DETAILS_SCRIPT.replace('<ACTION>', action);
-//     chrome.tabs.executeScript(tab.id, { code: scriptBody }, function() {
-//         onGetPageDetailsScriptExecuted(tab, action);
-//     });
-// }
+    params.op = 'getPageDetails';
+    try {
+        port.postMessage(params);
+    }
+    catch (ex) {
+        console.error(ex);
+        return false;
+    }
+
+    return true;
+}
 
 function onGetPageDetailsMessage(tab, msg) {
     // log(tab, msg);

@@ -230,11 +230,17 @@ SidebarHandler.prototype = {
 
     // redock the sidebar window to a different window
     redock: function(windowId, onAfter) {
+        if (!windowId) {
+            if (onAfter) onAfter();
+            return;
+        }
+
         if (!this.sidebarExists()) {
             throw new Error('Cannot redock a nonexistent sidebar');
         };
 
         if (this.dockState == 'undocked') {
+            if (onAfter) onAfter();
             return;
         }
 
@@ -280,9 +286,7 @@ SidebarHandler.prototype = {
             positionWindow(self.windowId, newSidebarMetrics, function() {
                 chrome.windows.update(self.windowId, { focused: true }, function() {
                     chrome.windows.update(self.dockWindowId, { focused: true }, function() {
-                        if (onAfter) {
-                          onAfter();
-                      }
+                        if (onAfter) onAfter();
                     });
                 });
             });
@@ -440,10 +444,12 @@ SidebarHandler.prototype = {
     // Ensure sidebar and dock window's minimized states are the same.
     matchSidebarDockMinimizedStates: function(callback) {
         if (this.dockState == 'undocked' || !this.dockWindowId || !this.windowId) {
+            if (callback) callback(false);
             return;
         }
 
         if (this.matchingMinimizedStates) {
+            if (callback) callback(false);
             return;
         }
 
@@ -453,18 +459,22 @@ SidebarHandler.prototype = {
         var self = this;
         setTimeout(function() {
             if (!self.dockWindowId || !self.windowId) {
+                if (callback) callback(false);
                 return;
             }
             chrome.windows.get(self.dockWindowId, function(dock) {
                 if (!dock || !self.windowId) {
+                    if (callback) callback(false);
                     return;
                 }
                 chrome.windows.get(self.windowId, function(sidebar) {
                     if (!dock || !sidebar) {
+                        if (callback) callback(false);
                         return;
                     }
 
                     if (self.matchingMinimizedStates) {
+                        if (callback) callback(false);
                         return;
                     }
 
@@ -521,5 +531,26 @@ SidebarHandler.prototype = {
                 });
             });
         }, 50);
+    },
+
+    getIdealNewWindowMetrics: function() {
+        var newWinMetrics;
+        if (this.dockState != 'undocked') {
+            newWinMetrics = clone(this.currentDockWindowMetrics);
+            delete newWinMetrics.state;
+        }
+        else {
+            // TODO use exact dims of most recently focused window instead of the whole screen that it or the sidebar
+            // is on: this will require chrome.windows.get() and thus return value of getIdealNewWindowMetrics()
+            // has to be passed via callback
+            var monitor = monitorInfo.getMonitorFromLeftCoord(this.currentSidebarMetrics.left);
+            newWinMetrics = {
+                left: monitor.left,
+                top: monitor.top,
+                width: monitor.availWidth,
+                height: monitor.availHeight
+            };
+        }
+        return newWinMetrics;
     }
 }

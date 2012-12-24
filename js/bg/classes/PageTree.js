@@ -5,7 +5,8 @@
 var PAGETREE_ONMODIFIED_DELAY_ON_STARTUP_MS = 1500;
 var PAGETREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS = 1000;
 var PAGETREE_ONMODIFIED_STARTUP_DURATION_MS = 20000;
-
+var CONFORM_TAB_INDEX_DELAY_MS = 5500;
+var CONFORM_ALL_TAB_INDEX_DELAY_MS = 5000;
 
 ///////////////////////////////////////////////////////////
 // PageTree class
@@ -149,7 +150,7 @@ PageTree.prototype = {
             var descendants = this.filter(function(e) { return e; }, node.children);
             for (var i = descendants.length - 1; i >= 0; i--) {
                 this.removeFromTabIndex(descendants[i]);
-            };
+            }
         }
 
         var r = this.$super('removeNode')(node, removeChildren);
@@ -191,10 +192,24 @@ PageTree.prototype = {
         }
 
         log('moving node', 'moving', moving, 'parent', parent, 'beforeSiblingMatcher', beforeSiblingMatcher, 'keepChildren', keepChildren, 'preferChromeTabIndex', preferChromeTabIndex);
-        var r = this.$super('moveNode')(moving, parent, beforeSiblingMatcher, keepChildren);
-        if (r === undefined) {
-            log('$super.move returned undefined');
+
+        if (keepChildren) {
+            var descendants = this.filter(function(e) { return e instanceof PageNode; }, moving.children);
+            for (var i = descendants.length - 1; i >= 0; i--) {
+                this.removeFromTabIndex(descendants[i]);
+            }
         }
+        this.removeFromTabIndex(moving);
+
+        var r = this.$super('moveNode')(moving, parent, beforeSiblingMatcher, keepChildren);
+
+        this.addToTabIndex(moving);
+        if (keepChildren) {
+            for (var i = 0; i < descendants.length; i++) {
+                this.addToTabIndex(descendants[i]);
+            }
+        }
+
         if (r !== undefined && !blockCallback) {
             this.callbackProxyFn('move', {
                 element: r[0],
@@ -219,11 +234,27 @@ PageTree.prototype = {
         if (!moving) {
             throw new Error('Could not find node to move', movingMatcher, relation, toMatcher);
         }
-        var fromParent = moving.parent;
+        var fromParent;
+        if (moving.parent && !moving.parent.isRoot) {
+            fromParent = moving.parent;
+        }
 
+        if (keepChildren) {
+            var descendants = this.filter(function(e) { return e instanceof PageNode; }, moving.children);
+            for (var i = descendants.length - 1; i >= 0; i--) {
+                this.removeFromTabIndex(descendants[i]);
+            }
+        }
         this.removeFromTabIndex(moving);
+
         var r = this.$super('moveNodeRel')(moving, relation, toMatcher, keepChildren);
+
         this.addToTabIndex(moving);
+        if (keepChildren) {
+            for (var i = 0; i < descendants.length; i++) {
+                this.addToTabIndex(descendants[i]);
+            }
+        }
 
         if (r !== undefined && !blockCallback) {
             this.callbackProxyFn('move', {
@@ -233,7 +264,7 @@ PageTree.prototype = {
                 keepChildren: keepChildren || false
             });
 
-            if (fromParent.collapsed && fromParent.children.length == 0) {
+            if (fromParent && fromParent.collapsed && fromParent.children.length == 0) {
                 // automatically set .collapsed to false when removing the last child from the move-from parent
                 // so that it does not get "stuck on"
                 this.updateNode(fromParent, { collapsed: false });
@@ -504,23 +535,8 @@ PageTree.prototype = {
         nodes.forEach(function(e) { self.awakeningPages.push(e); });
 
         if (existingWindowNode.hibernated) {
-            // need a new window to load page(s) into
-            var newWinMetrics;
-            if (sidebarHandler.dockState != 'undocked') {
-                newWinMetrics = clone(sidebarHandler.currentDockWindowMetrics);
-                delete newWinMetrics.state;
-            }
-            else {
-                // TODO get monitor info of monitor that sidebar is on
-                // and put us on the same monitor
-                newWinMetrics = {
-                    left: monitorInfo.monitors[0].left,
-                    top: monitorInfo.monitors[0].top,
-                    width: monitorInfo.monitors[0].availWidth,
-                    height: monitorInfo.monitors[0].availHeight
-                };
-            }
-
+            // need a new Chrome window to load tabs into
+            var newWinMetrics = sidebarHandler.getIdealNewWindowMetrics();
             var newWinCreateDetails = clone(newWinMetrics);
             newWinCreateDetails.type = 'normal';
             newWinCreateDetails.url = urls;
@@ -567,14 +583,10 @@ PageTree.prototype = {
                     self.mergeNodes(newWinNode, existingWindowNode);
                 }
 
-                self.updateNode(existingWindowNode, {
-                    id: 'w' + win.id,
-                    restored: true,
-                    restorable: false,
-                    hibernated: false,
-                    title: WINDOW_DEFAULT_TITLE
-                });
+                self.setWindowToAwake(existingWindowNode, win.id);
                 self.expandNode(existingWindowNode);
+
+                cleanUpAfterAssociation(1000);
             });
             return;
         }
@@ -624,7 +636,17 @@ PageTree.prototype = {
                 active: activateAfter || false,
                 pinned: e.pinned,
                 index: index
-            });
+            }, function() { cleanUpAfterAssociation(1000); });
+        });
+    },
+
+    setWindowToAwake: function(winNode, newWindowId) {
+        this.updateNode(winNode, {
+            id: 'w' + newWindowId,
+            restored: true,
+            restorable: false,
+            hibernated: false,
+            title: WINDOW_DEFAULT_TITLE
         });
     },
 
@@ -639,6 +661,12 @@ PageTree.prototype = {
     addTabToWindow: function(tab, pageNode, onAdded) {
         var pageNode = pageNode || new PageNode(tab);
         var winNode = this.getNode('w' + tab.windowId);
+
+        // If pageNode is already in the tree, remove it from the tree first
+        if (this.getNode(function(e) { return e === pageNode; })) {
+            log('page node is already in tree, remove it before adding it back to tree under new windowId', pageNode.id, tab.windowId);
+            this.removeNode(pageNode, false);
+        }
 
         if (!winNode) {
             log('window node does not exist, create it then add page to it', pageNode.id, tab.windowId);
@@ -704,7 +732,7 @@ PageTree.prototype = {
 
     // Add the given node to the tab index based on its .index
     addToTabIndex: function(node) {
-        log(node.id, node.index, node);
+        // log(node.id, node.index, node);
         if (!node.isTab()) {
             return;
         }
@@ -868,7 +896,7 @@ PageTree.prototype = {
             var self = this;
             TimeoutManager.reset('conformChromeTabIndexForPageNode_' + generateGuid(), function() {
                 self.conformChromeTabIndexForPageNode(node, conformDescendants, skipIndexRebuild, true);
-            }, 5000);
+            }, CONFORM_TAB_INDEX_DELAY_MS);
             return;
         }
 
@@ -881,18 +909,25 @@ PageTree.prototype = {
                         self.rebuildTabIndex();
                     }
                     if (!tab) {
+                        log('Tab not found to conform', node.id);
                         return;
                     }
                     var indexes = self.tabIndexes[topParent.id];
                     if (indexes) {
                         var newIndex = indexes.indexOf(node);
                         if (tab.index != newIndex) {
-                            // log('Conforming chrome tab index', 'id', tab.id, 'tab.index', tab.index, 'target index', newIndex);
+                            log('Conforming chrome tab index', 'id', tab.id, 'tab.index', tab.index, 'target index', newIndex);
                             expectingTabMoves.push(tab.id);
                             chrome.tabs.move(tab.id, { index: newIndex }, function() {
                                 setTimeout(function() { removeFromExpectingTabMoves(tab.id); }, 250);
                             });
                         }
+                        else {
+                            // log('Not conforming tab', tab.id, tab, node.id, node);
+                        }
+                    }
+                    else {
+                        log('Could not find index', topParent.id, topParent);
                     }
                 });
             }
@@ -921,14 +956,14 @@ PageTree.prototype = {
             var self = this;
             TimeoutManager.reset('conformAllChromeTabIndexes', function() {
                 self.conformAllChromeTabIndexes(true);
-            }, 2000);
+            }, CONFORM_ALL_TAB_INDEX_DELAY_MS);
             return;
         }
 
         this.rebuildTabIndex();
 
         var windows = this.tree.filter(function(e) {
-            return e instanceof WindowNode && !e.hiberanted;
+            return e instanceof WindowNode && !e.hibernated;
         });
 
         for (var i = 0; i < windows.length; i++) {
@@ -1027,7 +1062,7 @@ PageTree.prototype = {
             var indexes = this.tabIndexes[windowId];
             for (var i = 0; i < indexes.length; i++) {
                 var tab = indexes[i];
-                s += '    ' + tab.id + ':' + i + '(' + tab.index + ') ' + tab.url + '\n';
+                s += '  ' + tab.id + ':' + i + '(' + tab.index + ') ' + tab.url + '\n';
             }
         }
         return s;
