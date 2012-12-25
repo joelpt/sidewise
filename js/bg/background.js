@@ -5,8 +5,12 @@
  var PAGETREE_NODE_TYPES = {
     'window': WindowNode,
     'page': PageNode,
-    'folder': FolderNode
+    'folder': FolderNode,
+    'header': HeaderNode
 };
+
+var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 1000;
+
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -38,7 +42,15 @@ function onLoad()
         tree = new PageTree(PageTreeCallbackProxy, function() {
             savePageTreeToLocalStorage(tree, 'pageTree', true);
         });
-        recentlyClosedTree = new DataTree();
+
+        recentlyClosedTree = new PageTree(RecentlyClosedTreeCallbackProxy, function() {
+            savePageTreeToLocalStorage(recentlyClosedTree, 'recentlyClosedTree', true);
+        });
+
+        tree.name = 'pageTree';
+        recentlyClosedTree.name = 'recentlyClosedTree';
+
+        // recentlyClosedTree = new DataTree();
         sidebarHandler = new SidebarHandler();
 
         // Call postLoad() after focusTracker initializes to do remaining initialization
@@ -148,8 +160,8 @@ function createSidebarOnStartup() {
 ///////////////////////////////////////////////////////////
 
 function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
-    if (tree.lastModified != tree.lastSaved) {
-        log('--- saving tree to local storage ---');
+    if (!tree.lastModified || !tree.lastSaved || tree.lastModified != tree.lastSaved) {
+        log('--- saving ' + settingName + ' to local storage ---');
         var saveTree = clone(tree.tree, ['parent', 'root', 'hostTree']);
         if (excludeIncognitoNodes) {
             saveTree = saveTree.filter(function(e) { return !e.incognito; });
@@ -284,10 +296,10 @@ function PageTreeCallbackProxy(methodName, args) {
 
     var node = args.element;
 
-    if (methodName == 'remove' && (node instanceof PageNode || node instanceof FolderNode)) {
+    if (methodName == 'remove') {
         recentlyClosedTree.addNodeRel(node, 'prepend');
         recentlyClosedGroupList.push(node);
-        TimeoutManager.reset('prependRecentlyClosedGroupHeader', prependRecentlyClosedGroupHeader, 5000);
+        TimeoutManager.reset('prependRecentlyClosedGroupHeader', prependRecentlyClosedGroupHeader, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
     }
 
     if (node instanceof WindowNode && !node.hibernated && methodName == 'remove') {
@@ -324,35 +336,73 @@ function PageTreeCallbackProxy(methodName, args) {
     }
 
     var pagesWindow = sidebarHandler.sidebarPanes['pages'];
+    if (pagesWindow) {
+        pagesWindow.PageTreeCallbackProxyListener.call(pagesWindow, methodName, args);
 
-    if (!pagesWindow) {
-        log('proxy target does not yet exist', methodName, args);
-        return;
     }
-
-    pagesWindow.PageTreeCallbackProxyListener.call(pagesWindow, methodName, args);
 
     if (node instanceof PageNode && node.isTab() && (methodName == 'move' || methodName == 'add')) {
         fixPinnedUnpinnedTabOrder(node);
     }
+
 }
 
+function RecentlyClosedTreeCallbackProxy(methodName, args) {
+    log(methodName, args);
+
+    if (methodName == 'add' && args.element instanceof PageNode) {
+        args.element.status = 'complete';
+    }
+
+    var closedWindow = sidebarHandler.sidebarPanes['closed'];
+    if (closedWindow) {
+        closedWindow.PageTreeCallbackProxyListener.call(closedWindow, methodName, args);
+    }
+}
 
 function prependRecentlyClosedGroupHeader() {
-    // TODO group the items in the list by their pre-removal parent, and retain the
-    // inter-structure within below move orders; also closing pages from multiple windows
-    // should have separate headers for each window; by using a faster ~250ms restarting-timer
-    // we can wait to add groupList to the recentlyClosedTree until the timer hits, then add
-    // those pages on the basis of their original tree structure. Will need to propagate
-    // previousParent and previousIndex to here - store those values in in rcgList and
-    // make dataTree.removeNode return these values
-    if (recentlyClosedGroupList.length > 1) {
-        var header = new HeaderNode(recentlyClosedGroupList.length + ' closed items:');
-        recentlyClosedTree.addNodeRel(header, 'prepend');
-        for (var i = recentlyClosedGroupList.length - 1; i >= 0; i--) {
-            recentlyClosedTree.moveNodeRel(recentlyClosedGroupList[i], 'append', header);
-        }
+    // TODO group the items in the list by their pre-removal parents/children, retroactively if needed
+
+    if (recentlyClosedGroupList.length == 0) {
+        return;
     }
+
+    if (recentlyClosedGroupList.length <= 2) {
+        var header;
+        var needHeader = false;
+        if (recentlyClosedTree.root.children.length == 0) {
+            needHeader = true;
+        }
+        else {
+            var firstHeader = recentlyClosedTree.getNode(function(e) { return e instanceof HeaderNode; })
+            if (!firstHeader || !firstHeader.collecting) {
+                needHeader = true;
+            }
+        }
+
+        if (needHeader) {
+            header = new HeaderNode('');
+            header.collecting = true;
+            recentlyClosedTree.addNodeRel(header, 'prepend');
+        }
+        else {
+            header = firstHeader;
+        }
+
+        for (var i = recentlyClosedGroupList.length - 1; i >= 0; i--) {
+            recentlyClosedTree.moveNodeRel(recentlyClosedGroupList[i], 'prepend', header);
+        };
+        recentlyClosedGroupList = [];
+        return;
+    }
+
+    var header = new HeaderNode('');
+    recentlyClosedTree.addNodeRel(header, 'prepend');
+    for (var i = recentlyClosedGroupList.length - 1; i >= 0; i--) {
+        recentlyClosedTree.moveNodeRel(recentlyClosedGroupList[i], 'append', header);
+    }
+    recentlyClosedGroupList = [];
+    return;
 }
 
 
