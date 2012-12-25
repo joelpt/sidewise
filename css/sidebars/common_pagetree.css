@@ -157,6 +157,10 @@ section#main.debugEnabled {
     display: none;
 }
 
+.ftRowNode[rowtype=header] > .ftChildren {
+    margin-bottom: 1px;
+}
+
 /*
 .ftRowNode[rowtype=header] > .ftItemRow {
     display: none;
@@ -211,7 +215,7 @@ section#main.debugEnabled {
 .ftRowNode[rowtype=header]:hover > .ftChildren:not(:hover) {
     border-left: none;
     margin-left: -2px;
-    background: #ffb;
+    background: rgba(255, 255, 187, 0.5);
 }
 
 .ftRowNode[rowtype=header]+.ftRowNode[rowtype=header] {
