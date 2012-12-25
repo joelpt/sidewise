@@ -345,6 +345,7 @@ DataTree.prototype = {
             moving.children = []; // remove all of its children
             r = this.addNode(moving, parent, beforeSiblingMatcher);
         }
+        this.updateLastModified();
         return r;
     },
 
@@ -368,6 +369,7 @@ DataTree.prototype = {
         }
 
         var rel = this.getNodeRel(relation, toMatcher);
+        this.updateLastModified();
         return this.addNode(moving, rel.parent, rel.following);
     },
 
@@ -443,6 +445,7 @@ DataTree.prototype = {
         this.tree = this.root.children;
         this.rebuildIdIndex();
         this.rebuildParents();
+        this.lastModified = Date.now();
     },
 
     // rebuild the id index
