@@ -22,6 +22,9 @@ var PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP = {
 // a working icon when the assigned favicon fails to load on the page
 var ICON_ERROR_FALLBACK_DELAY_MS = 10000;
 
+// wait this long between 'update all page row titles' intervals;
+// this is done to keep offset times shown reasonably accurate
+var REFORMAT_ALL_ROW_TITLES_INTERVAL_MS = 50000;
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -52,6 +55,11 @@ $(document).ready(function() {
     }
 
     $(document).on('dblclick', 'body, .ftBottomPadding', onBodyDoubleClick);
+
+    setInterval(function() {
+        if (ft.filtering) return;
+        ft.formatAllRowTitles();
+    }, REFORMAT_ALL_ROW_TITLES_INTERVAL_MS);
 });
 
 function initDebugBar() {
@@ -257,7 +265,8 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId, beforeSiblingId)
                 hibernated: node.hibernated,
                 restorable: node.restorable,
                 highlighted: node.highlighted,
-                incognito: node.incognito
+                incognito: node.incognito,
+                removedAt: node.removedAt
             },
             node.collapsed);
     }
@@ -1123,21 +1132,9 @@ function onPageRowFormatTitle(row, itemTextElem) {
 
     var textAffix = '';
 
-    if (settings.get('pages_showMediaPlayTime')) {
-        var mediaState = row.attr('media-state');
-        if (mediaState == 'playing') {
-            var mediaTime = parseInt(row.attr('media-time'));
-            if (mediaTime > 0) {
-                textAffix = formatSecondsAsHMS(mediaTime);
-            }
-        }
-    }
-
-    if (row.hasClass('ftCollapsed')) {
-        var childCount = row.children('.ftChildren').find('.ftRowNode').length;
-        if (childCount > 0) {
-            textAffix += (textAffix == '' ? '' : ' ') + '(' + childCount + ')';
-        }
+    var removedAt = row.attr('removedAt');
+    if (removedAt) {
+        textAffix = getTimeDeltaAbbreviated(removedAt, Date.now(), false) || '<1m';
     }
 
     if (loggingEnabled) {
@@ -1250,7 +1247,7 @@ function onPageRowFormatTooltip(evt) {
     }
 
     if (loggingEnabled) {
-        var page = bg.tree.getNode(row.attr('id'));
+        var page = bg.recentlyClosedTree.getNode(row.attr('id'));
         url += '<br/><br/>Id: ' + page.id
             + '<br/>History length: ' + page.historylength
             + '<br/>Referrer: ' + (page.referrer || "''")
