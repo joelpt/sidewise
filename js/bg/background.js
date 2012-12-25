@@ -9,8 +9,9 @@
     'header': HeaderNode
 };
 
-var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 1000;
-
+var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 750;
+var GROUPING_ROW_COUNT_THRESHOLD = 3;
+var GROUPING_ROW_COUNT_WAIT_THRESHOLD = 5;
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -19,6 +20,7 @@ var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 1000;
 var tree;
 var recentlyClosedTree;
 var recentlyClosedGroupList = [];
+var recentlyClosedGroupListLastCount = 0;
 var sidebarHandler;
 var paneCatalog;
 var focusTracker;
@@ -348,10 +350,15 @@ function PageTreeCallbackProxy(methodName, args) {
 }
 
 function RecentlyClosedTreeCallbackProxy(methodName, args) {
-    log(methodName, args);
+    // log(methodName, args);
+
+    if (args.element.incognito) {
+        return;
+    }
 
     if (methodName == 'add' && args.element instanceof PageNode) {
         args.element.status = 'complete';
+        args.element.unread = false;
     }
 
     var closedWindow = sidebarHandler.sidebarPanes['closed'];
@@ -367,7 +374,7 @@ function prependRecentlyClosedGroupHeader() {
         return;
     }
 
-    if (recentlyClosedGroupList.length <= 2) {
+    if (recentlyClosedGroupList.length <= GROUPING_ROW_COUNT_THRESHOLD) {
         var header;
         var needHeader = false;
         if (recentlyClosedTree.root.children.length == 0) {
@@ -394,6 +401,23 @@ function prependRecentlyClosedGroupHeader() {
         };
         recentlyClosedGroupList = [];
         return;
+    }
+
+    // Retrigger this function instead of performing a grouping if there are more than GROUPING_ROW_COUNT_WAIT_THRESHOLD
+    // tabs in the group list; once the number of tabs in the group list does not change between successive checks here,
+    // we'll do the groupification. This helps to prevent unwanted splitting of a large multiple-tab-close operation
+    // into multiple groups in the recently closed tree.
+    if (recentlyClosedGroupList.length >= GROUPING_ROW_COUNT_WAIT_THRESHOLD) {
+        if (recentlyClosedGroupListLastCount != recentlyClosedGroupList.length) {
+            recentlyClosedGroupListLastCount = recentlyClosedGroupList.length;
+            TimeoutManager.reset('prependRecentlyClosedGroupHeader', prependRecentlyClosedGroupHeader, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
+            log('Retriggering prependRecentlyClosedGroupHeader()');
+            return;
+        }
+        // Tab count in group list didn't change between successive calls, so just reset the counter and
+        // perform groupification as normal
+        recentlyClosedGroupListLastCount = 0;
+        log('Large group list count has not changed since last check, groupifying now');
     }
 
     var header = new HeaderNode('');
