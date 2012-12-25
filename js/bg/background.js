@@ -47,11 +47,18 @@ function onLoad()
             savePageTreeToLocalStorage(tree, 'pageTree', true);
         });
 
-        recentlyClosedTree = new PageTree(RecentlyClosedTreeCallbackProxy, function() {
-            // var fixIds = recentlyClosedTree.filter(function(e) { return e instanceof PageNode && e.id[0] == 'p'; });
-            // fixIds.forEach(function(e) { recentlyClosedTree.updateNode(e, { id: 'R' + e.UUID }); });
-            savePageTreeToLocalStorage(recentlyClosedTree, 'recentlyClosedTree', true);
-        });
+        recentlyClosedTree = new UiDataTree(
+            RecentlyClosedTreeCallbackProxy,
+            undefined,
+            function() {
+                // var fixIds = recentlyClosedTree.filter(function(e) { return e instanceof PageNode && e.id[0] == 'p'; });
+                // fixIds.forEach(function(e) { recentlyClosedTree.updateNode(e, { id: 'R' + e.UUID }); });
+                savePageTreeToLocalStorage(recentlyClosedTree, 'recentlyClosedTree', true);
+            },
+            config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS,
+            config.TREE_ONMODIFIED_STARTUP_DURATION_MS,
+            config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS
+        );
 
         tree.name = 'pageTree';
         recentlyClosedTree.name = 'recentlyClosedTree';
