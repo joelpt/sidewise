@@ -427,6 +427,7 @@ function restoreAssociatedPage(tab, page) {
         hibernated: false,
         restorable: false,
         id: 'p' + tab.id,
+        chromeId: tab.id,
         windowId: tab.windowId,
         index: tab.index,
         pinned: tab.pinned
@@ -494,6 +495,7 @@ function restoreParentWindowViaUniqueChildPageNode(parentWindowNode, childPageNo
         restorable: false,
         hibernated: false,
         id: 'w' + childWindowId,
+        chromeId: childWindowId,
         title: WINDOW_DEFAULT_TITLE
     });
     tree.expandNode(parentWindowNode);
@@ -696,7 +698,11 @@ function associateWindowstoWindowNodes(requireChildrenCountMatch, prohibitMergin
 
                 // update the restore window to look like the real window
                 log('Restoring window node', win.id, 'as window id', windowId);
-                var details = { restorable: false, hibernated: false, id: 'w' + windowId,
+                var details = {
+                    restorable: false,
+                    hibernated: false,
+                    id: 'w' + windowId,
+                    chromeId: windowId,
                     title: WINDOW_DEFAULT_TITLE
                 };
                 tree.updateNode(win, details);
@@ -898,6 +904,7 @@ function disambiguatePageNodesByWindowId(iterations) {
                 }
             }
             log('Swapping for disambiguation:', swapCount, 'page ids', item.id, swapWith[0].id, '.windowIds', item.windowId, swapWith[0].windowId, 'topParentIds', item.topParent().id, swapWith[0].topParent().id, 'group', g, items);
+            /* TODO should not need to do this when using .chromeId; may still want to swap .chromeIds though */
             swapPageNodeIdValues(item, swapWith[0]);
         }
     }

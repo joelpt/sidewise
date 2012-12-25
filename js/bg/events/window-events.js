@@ -58,8 +58,11 @@ function onWindowRemoved(windowId)
         // convert the window node to a hibernated window node rather than
         // removing it
         if (node.children.length > 0) {
-            tree.updateNode(node, { hibernated: true, title: getMessage('text_hibernatedWindow'),
-                id: 'wR' + node.UUID
+            tree.updateNode(node, {
+                hibernated: true,
+                title: getMessage('text_hibernatedWindow'),
+                id: 'wR' + node.UUID,
+                chromeId: null
             });
         }
         else {

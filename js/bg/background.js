@@ -168,7 +168,7 @@ function createSidebarOnStartup() {
 function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
     if (!tree.lastModified || !tree.lastSaved || tree.lastModified != tree.lastSaved) {
         log('--- saving ' + settingName + ' to local storage ---');
-        var saveTree = clone(tree.tree, ['parent', 'root', 'hostTree']);
+        var saveTree = clone(tree.tree, ['parent', 'root', 'hostTree', 'chromeId']);
         if (excludeIncognitoNodes) {
             saveTree = saveTree.filter(function(e) { return !e.incognito; });
         }

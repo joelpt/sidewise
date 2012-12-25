@@ -71,6 +71,7 @@ function onTabCreated(tab)
         log('associating waking tab to existing hibernated page element', tab, wakingPage);
         tree.updatePage(wakingPage, {
             id: 'p' + tab.id,
+            chromeId: tab.id,
             windowId: tab.windowId,
             hibernated: false,
             unread: true,

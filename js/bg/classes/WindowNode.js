@@ -22,6 +22,7 @@ var WindowNode = function(win)
 
     if (win) {
         this.id = 'w' + win.id;
+        this.chromeId = win.id;
         this.incognito = win.incognito;
         this.type = win.type;
         return;

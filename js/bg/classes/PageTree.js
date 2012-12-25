@@ -382,7 +382,14 @@ PageTree.prototype = {
     hibernatePage: function(id, skipLastTabCheck)
     {
         var tabId = getNumericId(id);
-        var page = this.updatePage(tabId, { hibernated: true, restorable: false, id: 'pH' + generateGuid(), status: 'complete', mediaState: null, mediaTime: null });
+        var page = this.updatePage(tabId, {
+            hibernated: true,
+            restorable: false,
+            id: 'pH' + generateGuid(),
+            chromeId: null,
+            status: 'complete',
+            mediaState: null,
+            mediaTime: null });
 
         var self = this;
         function removeAfterHibernate() {
@@ -495,7 +502,8 @@ PageTree.prototype = {
         var hibernatingTabIds = hibernating.map(function(e) { return getNumericId(e.id); });
 
         var self = this;
-        function hibernateWindowTabs() {
+
+        function _hibernateWindowTabs() {
             for (var i = 0; i < hibernating.length; i++) {
                 self.hibernatePage(hibernating[i].id, true);
             }
@@ -510,7 +518,7 @@ PageTree.prototype = {
                 // open the New Tab page to prevent Chrome auto-exiting upon
                 // hibernating the last open tab
                 chrome.tabs.create({ url: 'chrome://newtab' }, function() {
-                    hibernateWindowTabs();
+                    _hibernateWindowTabs();
                     if (!settings.get('shown_prompt_hibernatingLastTab')) {
                         alert(getMessage('prompt_hibernatingLastTab'));
                         settings.set('shown_prompt_hibernatingLastTab', true);
@@ -518,7 +526,7 @@ PageTree.prototype = {
                 });
                 return;
             }
-            hibernateWindowTabs();
+            _hibernateWindowTabs();
         });
 
         this.updateLastModified();
@@ -643,6 +651,7 @@ PageTree.prototype = {
     setWindowToAwake: function(winNode, newWindowId) {
         this.updateNode(winNode, {
             id: 'w' + newWindowId,
+            chromeId: newWindowId,
             restored: true,
             restorable: false,
             hibernated: false,
@@ -1041,16 +1050,23 @@ PageTree.prototype = {
                 index += '=' + index2.slice(index2.length - 3);
             }
 
+            if (e.chromeId) {
+                var chromeId = '     ' + e.chromeId;
+                index += ' #' + chromeId.slice(chromeId.length - 5);
+            }
+            else {
+                index += '       ';
+            }
 
             return lastValue + '\n'
                 + index + '|'
                 + Array(-4 + 1 + (1 + depth) * 4).join(' ')
                 + e.id + ': '
                 + (e.id[0] == 'p' ? e.title : 'window ' + e.type + (e.incognito ? ' incognito' : ''))
-                + ' +' + e.children.length + ''
-                + (e.placed ? ' P' : ' -')
-                + ' R:' + e.referrer
-                + '@' + e.historylength;
+                // + ' +' + e.children.length + ''
+                // + (e.placed ? ' P' : ' -')
+                + ' @' + e.historylength
+                + ' R:' + e.referrer;
         }
         return this.reduce(dumpFn, '');
     },
