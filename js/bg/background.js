@@ -9,9 +9,10 @@
     'header': HeaderNode
 };
 
-var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 750;
+var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 500;
 var GROUPING_ROW_COUNT_THRESHOLD = 3;
-var GROUPING_ROW_COUNT_WAIT_THRESHOLD = 5;
+var GROUPING_ROW_COUNT_WAIT_THRESHOLD = 4;
+var GROUPING_ROW_COUNT_WAIT_ITERATIONS = 4;
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -21,6 +22,7 @@ var tree;
 var recentlyClosedTree;
 var recentlyClosedGroupList = [];
 var recentlyClosedGroupListLastCount = 0;
+var recentlyClosedGroupWaitIteration = 0;
 var sidebarHandler;
 var paneCatalog;
 var focusTracker;
@@ -46,6 +48,8 @@ function onLoad()
         });
 
         recentlyClosedTree = new PageTree(RecentlyClosedTreeCallbackProxy, function() {
+            // var fixIds = recentlyClosedTree.filter(function(e) { return e instanceof PageNode && e.id[0] == 'p'; });
+            // fixIds.forEach(function(e) { recentlyClosedTree.updateNode(e, { id: 'R' + e.UUID }); });
             savePageTreeToLocalStorage(recentlyClosedTree, 'recentlyClosedTree', true);
         });
 
@@ -298,7 +302,7 @@ function PageTreeCallbackProxy(methodName, args) {
 
     var node = args.element;
 
-    if (methodName == 'remove') {
+    if (methodName == 'remove' && !(args.element instanceof WindowNode)) {
         recentlyClosedTree.addNodeRel(node, 'prepend');
         recentlyClosedGroupList.push(node);
         TimeoutManager.reset('prependRecentlyClosedGroupHeader', prependRecentlyClosedGroupHeader, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
@@ -350,7 +354,7 @@ function PageTreeCallbackProxy(methodName, args) {
 }
 
 function RecentlyClosedTreeCallbackProxy(methodName, args) {
-    // log(methodName, args);
+    log(methodName, args);
 
     if (args.element.incognito) {
         return;
@@ -359,6 +363,21 @@ function RecentlyClosedTreeCallbackProxy(methodName, args) {
     if (methodName == 'add' && args.element instanceof PageNode) {
         args.element.status = 'complete';
         args.element.unread = false;
+        args.element.removedAt = Date.now();
+
+        var deduplicate = true;
+        if (deduplicate) {
+            var dupes = recentlyClosedTree.filter(function(e) {
+                return e !== args.element && e.url == args.element.url;
+            });
+            dupes.forEach(function(e) {
+                var parent = e.parent;
+                recentlyClosedTree.removeNode(e);
+                if (parent.children.length == 0) {
+                    recentlyClosedTree.removeNode(parent);
+                }
+            });
+        }
     }
 
     var closedWindow = sidebarHandler.sidebarPanes['closed'];
@@ -409,14 +428,22 @@ function prependRecentlyClosedGroupHeader() {
     // into multiple groups in the recently closed tree.
     if (recentlyClosedGroupList.length >= GROUPING_ROW_COUNT_WAIT_THRESHOLD) {
         if (recentlyClosedGroupListLastCount != recentlyClosedGroupList.length) {
+            recentlyClosedGroupWaitIteration = 0;
             recentlyClosedGroupListLastCount = recentlyClosedGroupList.length;
             TimeoutManager.reset('prependRecentlyClosedGroupHeader', prependRecentlyClosedGroupHeader, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
             log('Retriggering prependRecentlyClosedGroupHeader()');
             return;
         }
-        // Tab count in group list didn't change between successive calls, so just reset the counter and
-        // perform groupification as normal
+        // Tab count in group list didn't change between successive calls
+        if (recentlyClosedGroupWaitIteration < GROUPING_ROW_COUNT_WAIT_ITERATIONS) {
+            recentlyClosedGroupWaitIteration++;
+            TimeoutManager.reset('prependRecentlyClosedGroupHeader', prependRecentlyClosedGroupHeader, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
+            log('Retriggering prependRecentlyClosedGroupHeader() due to wait iteration');
+            return;
+        }
+
         recentlyClosedGroupListLastCount = 0;
+        recentlyClosedGroupWaitIteration = 0;
         log('Large group list count has not changed since last check, groupifying now');
     }
 
