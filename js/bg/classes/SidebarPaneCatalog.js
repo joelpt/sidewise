@@ -1,12 +1,5 @@
-var AVAILABLE_PANES = [
-    { enabled: true, id: 'pages', url: 'sidebars/pages.html', label: getMessage('sidebarLabel_Pages'), icon: 'images/nav/pages.png' },
-    { enabled: true, id: 'notepad', url: 'sidebars/notepad.html', label: getMessage('sidebarLabel_Notepad'), icon: 'images/nav/notepad.png' },
-    { enabled: false, id: 'reddit', url: 'sidebars/external-site.html#http://i.reddit.com', label: 'Reddit', icon: 'images/nav/reddit.png' },
-    { enabled: false, id: 'grooveshark', url: 'sidebars/external-site.html#http://html5.grooveshark.com/#!/music/stations', label: 'Grooveshark', icon: 'images/nav/grooveshark.ico' }
-];
-
 var SidebarPaneCatalog = function() {
-    this.panes = AVAILABLE_PANES;
+    this.panes = config.AVAILABLE_PANES;
 };
 
 SidebarPaneCatalog.prototype = {
@@ -36,7 +29,7 @@ SidebarPaneCatalog.prototype = {
         this.panes = [];
         var seenPanes = [];
 
-        var availPanes = clone(AVAILABLE_PANES);
+        var availPanes = clone(config.AVAILABLE_PANES);
         var availPaneIds = availPanes.map(function(e) { return e.id; });
         var lastEnabledPaneIndex = -1;
 
