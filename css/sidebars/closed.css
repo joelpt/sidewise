@@ -16,7 +16,13 @@ section#main.debugEnabled {
     bottom: 20px;
 }
 
-/*
-.ftRowNode {
-    margin-left: -7px;
-}*/
+.ftItemTextAffix {
+    font-style: italic;
+    color: green;
+}
+
+.ftRoot > .ftChildren > .ftRowNode > .ftItemRow > .ftNode,
+.ftRowNode[rowtype=header] > .ftChildren > .ftRowNode > .ftItemRow > .ftNode {
+    width: 0px;
+    margin-right: 2px;
+}
