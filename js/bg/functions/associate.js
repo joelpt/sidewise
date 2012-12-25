@@ -18,6 +18,9 @@ var ASSOCIATE_STUBBORN_TAB_FALLBACK_THRESHOLD_ITERATIONS =
 var CLEANUP_AFTER_ASSOCIATION_RUN_DELAY_MS = 500;
 var CLEANUP_AFTER_ASSOCIATE_EXISTING_PAGE_DELAY_MS = 5000;
 
+var ASSOCIATE_GET_DETAILS_MAX_RETRIES = 10;
+var ASSOCIATE_GET_DETAILS_RETRY_WAIT_MS = 1500;
+
 // When the referrer of a tab matches this regular expression, Chrome is
 // known to sometimes blank out such referrers of tabs created during
 // session restores or undo-closed-tabs
@@ -32,7 +35,7 @@ var CHROME_BLANKABLE_REFERRER_REGEXP = new RegExp(
 var associationRuns = {};
 var associationStubbornTabIds = {};
 var associationConcurrentRuns = 0;
-
+var associationGetDetailsRetryList = {};
 
 ///////////////////////////////////////////////////////////
 // Association functions
@@ -225,14 +228,29 @@ function tryFastAssociateTab(tab, mustBeRestorable) {
 function tryAssociateExistingToRestorablePageNode(existingPage) {
     var tabId = getNumericId(existingPage.id);
 
-    // ask the tab for more details via its content_script.js connected port
-    if (!getPageDetails(tabId, { action: 'associate_existing' })) {
-        log('Port does not exist for existing-to-restorable association yet, retrying in 1s', 'tabId', tabId, 'existing page', existingPage);
-        setTimeout(function() {
-            tryAssociateExistingToRestorablePageNode(existingPage);
-        }, 1000);
+    if (!tabId) {
+        console.error('tabId not available for provided existingPage', existingPage.id, existingPage);
         return;
     }
+
+    // ask the tab for more details via its content_script.js connected port
+    if (!getPageDetails(tabId, { action: 'associate_existing' })) {
+        var tries = associationGetDetailsRetryList[tabId] || 0;
+
+        if (tries >= ASSOCIATE_GET_DETAILS_MAX_RETRIES) {
+            console.error('Exceeded max retries for getting page details', tabId, existingPage);
+            delete associationGetDetailsRetryList[tabId];
+            return;
+        }
+
+        log('Port does not exist for existing-to-restorable association yet, retrying shortly', 'tabId', tabId, 'existing page', existingPage);
+        associationGetDetailsRetryList[tabId] = tries + 1;
+        setTimeout(function() {
+            tryAssociateExistingToRestorablePageNode(existingPage);
+        }, ASSOCIATE_GET_DETAILS_RETRY_WAIT_MS);
+        return;
+    }
+    delete associationGetDetailsRetryList[tabId];
 }
 
 function associateExistingToRestorablePageNode(tab, referrer, historylength) {
