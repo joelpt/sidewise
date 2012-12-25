@@ -1,0 +1,18 @@
+body {
+    font-family: 'Segoe UI', 'MS Sans Serif', sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+    font-size: 16px;
+    overflow: hidden;
+}
+
+#heading {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.hint {
+    font-size: 11px;
+    margin-top: 0.5em;
+    color: #999;
+}

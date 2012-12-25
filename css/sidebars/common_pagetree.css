@@ -1,0 +1,416 @@
+header {
+    position: absolute;
+    top: 0px;
+    width: 100%;
+    height: 30px;
+    overflow: hidden;
+}
+
+footer {
+    display: none;
+}
+
+footer.debugEnabled {
+    display: block;
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
+    height: 20px;
+    overflow: hidden;
+    background: hsl(60, 80%, 80%);
+}
+
+section#main {
+    position: absolute;
+    top: 30px;
+    bottom: 0px;
+    width: 100%;
+    overflow: auto;
+}
+
+section#main.debugEnabled {
+    bottom: 20px;
+}
+
+#debugLinks {
+    font-family: Verdana, sans-serif;
+    border-top: 1px solid black;
+    /*padding: 0.5em 0.5em 0em 0.5em;*/
+    /*box-shadow: 2px 2px 11px #666;*/
+    text-align: center;
+}
+
+#debugLinks span {
+    padding: 1px;
+    color: black;
+    text-decoration: none;
+    clear: none;
+    font-size: 11px;
+
+}
+
+#debugLinks span+span:before {
+    content: '  ';
+}
+
+#debugLinks span:hover {
+    background: hsl(50, 100%, 90%);
+    outline: 1px solid hsl(50, 100%, 20%);
+    cursor: pointer;
+}
+
+#heading {
+    margin-left: 5px;
+    margin-top: 5px;
+}
+
+.hint {
+    margin-left: 5px;
+}
+
+/* window tree rows */
+
+.ftRowNode[rowtype=window] > .ftItemRow {
+    background: #ffc;
+    border-top: 1px solid #ccc;
+    border-bottom: 1px solid #ccc;
+    padding-top: 4px;
+    padding-bottom: 0px;
+    margin-bottom: 2px;
+    height: 21px;
+}
+
+.ftRowNode[rowtype=window][hibernated=true] > .ftItemRow {
+    background: #ddd;
+}
+
+.ftRowNode[rowtype=window][hibernated=true] > .ftItemRow:hover {
+    background: #e2e2e2;
+}
+
+.ftRowNode[rowtype=window] > .ftItemRow .ftItemTitle {
+    font-style: italic;
+}
+
+.ftRowNode[rowtype=window] > .ftItemRow > .ftItemRowContent {
+    border: none;
+    padding-left: 3px;
+}
+
+.ftRowNode[rowtype=window] > .ftItemRow:hover {
+    background: #ffb;
+}
+
+.ftRowNode[rowtype=window] > .ftItemRow:hover > .ftItemRowContent {
+    background: inherit;
+    border: none;
+    border-radius: 0;
+}
+
+.ftRowNode[rowtype=window] > .ftChildren {
+    padding-top: 0px;
+    margin-top: 0px;
+    margin-left: -3px;
+}
+
+.ftRowNode[rowtype=window] > .ftChildren:hover {
+    border-left: none;
+    margin-left: -2px;
+}
+
+.ftRowNode[rowtype=window]+.ftRowNode[rowtype=window] {
+    margin-top: 12px;
+}
+
+.ftFiltering .ftRowNode[rowtype=window]+.ftRowNode[rowtype=window] {
+    margin-top: 0em;
+}
+
+.ftRowNode[rowtype=window] > .ftItemRow > .ftExpander {
+    position: relative;
+    top: -1px;
+}
+
+.ftDragToChild[rowtype=window] > .ftItemRow > .ftItemRowContent {
+    border-width: 0px !important;
+    outline: 2px solid blue;
+}
+
+#ftDragInsertBar[targetrowtype=window] {
+    margin-top: 2px;
+}
+
+
+/* header tree rows */
+
+.ftRowNode[rowtype=header] > .ftItemRow {
+    background: #eee;
+    border-top: 1px solid #ccc;
+    border-bottom: 1px solid #ccc;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    margin-bottom: 0px;
+    height: 2px;
+}
+
+.ftRowNode[rowtype=header] > .ftItemRow > .ftItemRowContent {
+    display: none;
+}
+
+/*
+.ftRowNode[rowtype=header] > .ftItemRow {
+    display: none;
+}
+
+.ftRowNode[rowtype=header] > .ftChildren {
+    border-bottom: 1px solid #ccc;
+    margin-left: 0px;
+    padding-left: 0px;
+}
+
+.ftRowNode[rowtype=header]:first-of-type > .ftChildren {
+}
+
+.ftRowNode[rowtype=header]+.ftRowNode[rowtype=header] > .ftChildren {
+}
+*/
+
+.ftRowNode[rowtype=header][hibernated=true] > .ftItemRow {
+    background: #ddd;
+}
+
+.ftRowNode[rowtype=header][hibernated=true] > .ftItemRow:hover {
+    background: #e2e2e2;
+}
+
+.ftRowNode[rowtype=header] > .ftItemRow .ftItemTitle {
+    font-style: italic;
+}
+
+.ftRowNode[rowtype=header] > .ftItemRow > .ftItemRowContent {
+    border: none;
+    padding-left: 3px;
+}
+
+.ftRowNode[rowtype=header] > .ftItemRow:hover {
+    background: #ffb;
+}
+
+.ftRowNode[rowtype=header] > .ftItemRow:hover > .ftItemRowContent {
+    background: inherit;
+    border: none;
+    border-radius: 0;
+}
+
+.ftRowNode[rowtype=header] > .ftChildren {
+    padding-top: 0px;
+    margin-top: 0px;
+    margin-left: -3px;
+}
+
+.ftRowNode[rowtype=header]:hover > .ftChildren:not(:hover) {
+    border-left: none;
+    margin-left: -2px;
+    background: #ffb;
+}
+
+.ftRowNode[rowtype=header]+.ftRowNode[rowtype=header] {
+    margin-top: 0px;
+}
+
+.ftFiltering .ftRowNode[rowtype=header]+.ftRowNode[rowtype=header] {
+    margin-top: 0em;
+}
+
+.ftRowNode[rowtype=header] > .ftItemRow > .ftExpander {
+    display: none;
+}
+
+.ftDragToChild[rowtype=header] > .ftItemRow > .ftItemRowContent {
+    border-width: 0px !important;
+    outline: 2px solid blue;
+}
+
+#ftDragInsertBar[targetrowtype=header] {
+    margin-top: 2px;
+}
+
+
+/* folder tree rows */
+
+/*.ftRowNode[rowtype=folder] > .ftItemRow .ftItemLabel {
+    font-style: italic;
+}*/
+
+
+/* page tree rows */
+
+.ftRowNode[rowtype=page][unread=true] > .ftItemRow {
+    color: blue;
+}
+
+.ftRowNode[rowtype=page].closing > .ftItemRow {
+    display: none;
+}
+
+.ftRowNode[rowtype=page][hibernated=true] > .ftItemRow > .ftItemRowContent {
+    color: hsl(0, 0%, 45%);
+    font-style: italic;
+    background: hsl(0, 0%, 97%);
+}
+
+.ftRowNode[rowtype=page][hibernated=true] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
+    -webkit-filter: grayscale(100%);
+}
+
+.ftRoot:not(.ftMultiselecting) .ftRowNode[rowtype=page][hibernated=true].ftFocused > .ftItemRow > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #dadada),color-stop(1, white));
+    border: 1px dotted rgb(40, 40, 40);
+}
+
+.ftRoot:not(.ftMultiselecting) .ftRowNode[rowtype=page][hibernated=true].ftFocused > .ftItemRow:hover > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #cacaca),color-stop(1, white));
+    border: 1px dotted rgb(0, 0, 0);
+}
+
+.pinned {
+    padding-left: 3px;
+}
+
+.pinned+.ftItemText {
+    margin-left: 2px;
+}
+
+
+/* row highlighting */
+
+.ftRowNode[highlighted=true]:not(.ftFocused):not(.ftSelected) > .ftItemRow > .ftItemRowContent {
+    background: hsl(59, 90%, 77%);
+}
+
+.ftRowNode[highlighted=true]:not(.ftFocused):not(.ftSelected) > .ftItemRow:hover > .ftItemRowContent {
+    background: hsl(59, 100%, 79%);
+    border: 1px solid hsl(59, 90%, 48%);
+}
+
+.ftRowNode[highlighted=true].ftFocused > .ftItemRow > .ftItemRowContent,
+.ftRowNode[highlighted=true].ftSelected > .ftItemRow > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(59, 90%, 55%)),color-stop(1, white));
+    border: 1px solid hsl(59, 90%, 35%);
+}
+
+.ftRowNode[highlighted=true].ftFocused > .ftItemRow:hover > .ftItemRowContent,
+.ftRowNode[highlighted=true].ftSelected > .ftItemRow:hover > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(59, 90%, 49%)),color-stop(1, white));
+    border: 1px solid hsl(59, 90%, 25%);
+}
+
+.ftRowNode[highlighted=true].ftFocused.ftSelected > .ftItemRow > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(59, 100%, 42%)),color-stop(1, white));
+    border: 1px solid hsl(59, 90%, 0%);
+}
+
+.ftRowNode[highlighted=true].ftFocused.ftSelected > .ftItemRow:hover > .ftItemRowContent {
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsl(59, 100%, 39%)),color-stop(1, white));
+    border: 1px solid hsl(59, 90%, 0%);
+}
+
+.ftMultiselecting .ftFocused[highlighted=true]:not(.ftSelected) > .ftItemRow > .ftItemRowContent {
+    background: hsl(59, 90%, 90%);
+    border: 1px dashed rgb(0, 0, 0);
+}
+
+
+/* tooltip styling */
+
+#ftTooltip[rowtype=page] .ftBigTip {
+    margin: 10px 8px 10px 8px;
+    font-size: 8pt;
+}
+
+#ftTooltip[rowtype=page] .ftBigTipBody {
+    font-family: Consolas, "Lucida Console", monospace;
+    font-size: 11px;
+    line-height: 1.1em;
+    max-height: 2.2em;
+    overflow: hidden;
+    color: #333;
+}
+
+/*
+#ftTooltip[rowtype=page] .ftBigTipHeader {
+}
+*/
+
+#ftTooltip[rowtype=page] td:first-child {
+    border-right: 1px solid #ccc;
+}
+
+#ftTooltip[rowtype=window] .ftBigTip, #ftTooltip[rowtype=folder] .ftBigTip {
+    margin: 0.25em 0.75em 0.25em 0.25em;
+}
+
+#ftTooltip[rowtype=window] .ftBigTipImage {
+    height: 32px;
+    width: 32px;
+}
+
+#ftTooltip[rowtype=window] td {
+    vertical-align: middle;
+}
+
+.hibernatedHint {
+    font-style: italic;
+    font-weight: normal;
+    margin-bottom: 0.5em;
+}
+
+
+/* page icon status effects */
+
+.ftRowNode[rowtype=page][status=loading] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
+    -webkit-animation-name: 'spin-throbber';
+    -webkit-animation-iteration-count: 30;
+    -webkit-animation-direction: normal;
+    -webkit-animation-timing-function: linear;
+    -webkit-animation-duration: 1.2s;
+}
+
+@-webkit-keyframes spin-throbber {
+    0%   { -webkit-transform: rotate(0deg); }
+    100%  { -webkit-transform: rotate(360deg); }
+}
+
+.ftRowNode[rowtype=page][status=preload] > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
+    -webkit-animation-name: 'spin-throbber-preload';
+    -webkit-animation-iteration-count: 10;
+    -webkit-animation-direction: opposite;
+    -webkit-animation-timing-function: linear;
+    -webkit-animation-duration: 2.4s;
+}
+
+@-webkit-keyframes spin-throbber-preload {
+    0%   { -webkit-transform: rotate(360deg); }
+    100%  { -webkit-transform: rotate(0deg); }
+}
+
+
+/* .ftBottomPadding */
+
+.ftBottomPadding {
+    opacity: 0.0;
+    transition: opacity .5s ease 0s;
+    -webkit-transition: opacity .5s ease 0s;
+    padding: 1.5em 1em;
+    text-align: center;
+    font-style: italic;
+    font-family: Verdana, sans-serif;
+    font-size: 12px;
+    /*cursor: pointer;*/
+}
+
+.ftBottomPadding:hover {
+    opacity: 0.5;
+    transition: opacity 1s ease 3s;
+    -webkit-transition: opacity 1s ease 3s;
+}
