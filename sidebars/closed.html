@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link type="text/css" rel="stylesheet" href="/css/reset.css"/>
+    <link type="text/css" rel="stylesheet" href="/css/fancytree.css"/>
+    <link type="text/css" rel="stylesheet" href="/css/sidebars/common_pane.css"/>
+    <link type="text/css" rel="stylesheet" href="/css/sidebars/common_pagetree.css"/>
+    <link type="text/css" rel="stylesheet" href="/css/sidebars/closed.css"/>
+
+    <script type="text/javascript" src="/js/lib/ga.js"></script>
+
+    <script type="text/javascript" src="/js/jquery/jquery-1.7.2.min.js"></script>
+    <script type='text/javascript' src='/js/jquery/jquery-ui-1.8.23.complete.min.js'></script>
+    <script type='text/javascript' src='/js/jquery/jquery.easing.js'></script>
+    <script type='text/javascript' src='/js/jquery/jquery.scrollTo-min.js'></script>
+    <script type="text/javascript" src="/js/jquery/jquery.tools.min.js"></script>
+    <script type="text/javascript" src="/js/jquery/jquery-helpers.js"></script>
+
+    <script type="text/javascript" src="/js/util/marked.js"></script>
+    <script type="text/javascript" src="/js/util/i18n.js"></script>
+    <script type="text/javascript" src="/js/util/logging.js"></script>
+    <script type="text/javascript" src="/js/util/util.js"></script>
+    <script type="text/javascript" src="/js/util/ui-util.js"></script>
+
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.init.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.contextMenu.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.dragDrop.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.events.body.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.events.row.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.events.rowClick.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.filtering.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.misc.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.multiSelect.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.rows.ops.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.rows.html.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.rows.helpers.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.rowType.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.tooltips.js"></script>
+    <script type="text/javascript" src="/js/ui/classes/FancyTree.effects.js"></script>
+
+    <script type="text/javascript" src="/js/ui/classes/SidebarPaneFancyTreeBinder.js"></script>
+
+    <script type="text/javascript" src="/js/ui/sidebar-init.js"></script>
+    <script type="text/javascript" src="/js/ui/sidebars/closed.js"></script>
+
+</head>
+<body>
+
+<header>
+    <div id="heading" i18n="notepad_heading">Recently closed</div>
+    <div class="hint" i18n="notepad_hint">Double-click a row to restore it.</div>
+    <div id="filterBoxPlaceholder"></div>
+</header>
+
+<section id="main">
+    <div id="treePlaceholder"></div>
+</section>
+
+<footer>
+    <div id="debugLinks">
+        <span id="debug_promoteIframe">promote iframe</span>
+        <span id="debug_resetTree">reset tree</span>
+    </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+header {
+    height: 70px;
+}
+
+footer.debugEnabled {
+    height: 20px;
+}
+
+section#main {
+    top: 70px;
+    bottom: 0px;
+}
+
+section#main.debugEnabled {
+    top: 70px;
+    bottom: 20px;
+}
+
+/*
+.ftRowNode {
+    margin-left: -7px;
+}*/
