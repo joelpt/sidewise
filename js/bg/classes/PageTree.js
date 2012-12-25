@@ -1076,8 +1076,8 @@ PageTree.prototype = {
             return;
         }
         var self = this;
-        TimeoutManager.reset('onPageTreeModified', function() {
-            // log('doing tree post-modification stuff');
+        TimeoutManager.reset('onModifiedPageTree_' + this.name, function() {
+            // log('doing tree post-modification stuff', self);
             self.conformAllChromeTabIndexes();
             self.rebuildPageNodeWindowIds(function() {
                 self.onModifiedDelayed();
