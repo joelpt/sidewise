@@ -500,6 +500,40 @@ function daysBetween(date1, date2) {
     return Math.round(difference_ms/ONE_DAY);
 }
 
+// Returns the difference between two times in abbreviated form, e.g. -2m, -3h, -10w, etc.
+// Arguments can be either Dates or ints (as milliseconds since the epoch)
+function getTimeDeltaAbbreviated(a, b, showSeconds) {
+    // Convert both dates to milliseconds
+    if (a instanceof Date) a = a.getTime();
+    if (b instanceof Date) b = b.getTime();
+
+    // Calculate the difference in seconds
+    var sign = b > a ? '' : '-';
+    var delta = Math.abs(b - a) / 1000;
+
+    // Show as numeric offset in largest time-unit that is at least 1.0 units
+    if (delta >= 60 * 60 * 24 * 365) {
+        return sign + Math.floor(delta / (60 * 60 * 24 * 365)) + 'y';
+    }
+    if (delta >= 60 * 60 * 24 * 7) {
+        return sign + Math.floor(delta / (60 * 60 * 24 * 7)) + 'w';
+    }
+    if (delta >= 60 * 60 * 24) {
+        return sign + Math.floor(delta / (60 * 60 * 24)) + 'd';
+    }
+    if (delta >= 60 * 60) {
+        return sign + Math.floor(delta / (60 * 60)) + 'h';
+    }
+    if (delta >= 60) {
+        return sign + Math.floor(delta / (60)) + 'm';
+    }
+    if (showSeconds) {
+        return sign + Math.floor(delta) + 's';
+    }
+    return undefined;
+}
+
+
 ///////////////////////////////////////////////////////////
 // GUID generation
 ///////////////////////////////////////////////////////////
