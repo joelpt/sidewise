@@ -4,6 +4,15 @@
 
 var IS_SCRIPTABLE_URL_REGEX = new RegExp(/^((about|file|view-source|chrome.*):|https?:\/\/chrome.google.com\/webstore)/);
 
+var SECOND_MS = 1000;
+var MINUTE_MS = SECOND_MS * 60;
+var HOUR_MS = MINUTE_MS * 60;
+var DAY_MS = HOUR_MS * 24;
+var WEEK_MS = DAY_MS * 7;
+var MONTH_MS = WEEK_MS * 4;
+var YEAR_MS = DAY_MS * 365;
+
+
 ///////////////////////////////////////////////////////////
 // Constants
 ///////////////////////////////////////////////////////////
@@ -487,7 +496,7 @@ function formatSecondsAsHMS(seconds)
 function daysBetween(date1, date2) {
 
     // The number of milliseconds in one day
-    var ONE_DAY = 1000 * 60 * 60 * 24;
+    var DAY_MS = 1000 * 60 * 60 * 24;
 
     // Convert both dates to milliseconds
     var date1_ms = date1.getTime();
@@ -497,7 +506,7 @@ function daysBetween(date1, date2) {
     var difference_ms = Math.abs(date1_ms - date2_ms);
 
     // Convert back to days and return
-    return Math.round(difference_ms/ONE_DAY);
+    return Math.round(difference_ms/DAY_MS);
 }
 
 // Returns the difference between two times in abbreviated form, e.g. -2m, -3h, -10w, etc.
@@ -509,26 +518,26 @@ function getTimeDeltaAbbreviated(a, b, showSeconds) {
 
     // Calculate the difference in seconds
     var sign = b > a ? '' : '-';
-    var delta = Math.abs(b - a) / 1000;
+    var delta = Math.abs(b - a);
 
     // Show as numeric offset in largest time-unit that is at least 1.0 units
-    if (delta >= 60 * 60 * 24 * 365) {
-        return sign + Math.floor(delta / (60 * 60 * 24 * 365)) + 'y';
+    if (delta >= YEAR_MS) {
+        return sign + Math.floor(delta / YEAR_MS) + 'y';
     }
-    if (delta >= 60 * 60 * 24 * 7) {
-        return sign + Math.floor(delta / (60 * 60 * 24 * 7)) + 'w';
+    if (delta >= WEEK_MS) {
+        return sign + Math.floor(delta / WEEK_MS) + 'w';
     }
-    if (delta >= 60 * 60 * 24) {
-        return sign + Math.floor(delta / (60 * 60 * 24)) + 'd';
+    if (delta >= DAY_MS) {
+        return sign + Math.floor(delta / DAY_MS) + 'd';
     }
-    if (delta >= 60 * 60) {
-        return sign + Math.floor(delta / (60 * 60)) + 'h';
+    if (delta >= HOUR_MS) {
+        return sign + Math.floor(delta / HOUR_MS) + 'h';
     }
-    if (delta >= 60) {
-        return sign + Math.floor(delta / (60)) + 'm';
+    if (delta >= MINUTE_MS) {
+        return sign + Math.floor(delta / MINUTE_MS) + 'm';
     }
     if (showSeconds) {
-        return sign + Math.floor(delta) + 's';
+        return sign + Math.floor(delta / SECOND_MS) + 's';
     }
     return undefined;
 }
