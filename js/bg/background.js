@@ -2,11 +2,15 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
- var PAGETREE_NODE_TYPES = {
+var PAGETREE_NODE_TYPES = {
     'window': WindowNode,
     'page': PageNode,
     'folder': FolderNode,
     'header': HeaderNode
+};
+
+var GHOSTTREE_NODE_TYPES = {
+    'ghost': GhostNode
 };
 
 var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 1000;
@@ -23,6 +27,7 @@ var recentlyClosedTree;
 var recentlyClosedGroupList = [];
 var recentlyClosedGroupListLastCount = 0;
 var recentlyClosedGroupWaitIteration = 0;
+var ghostTree;
 var sidebarHandler;
 var paneCatalog;
 var focusTracker;
@@ -66,8 +71,11 @@ function onLoad()
             config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS
         );
 
+        ghostTree = new DataTree();
+
         tree.name = 'pageTree';
         recentlyClosedTree.name = 'recentlyClosedTree';
+        ghostTree.name = 'ghostTree';
 
         sidebarHandler = new SidebarHandler();
 
@@ -106,6 +114,14 @@ function postLoad(focusedWin) {
     }
     var fixIds = recentlyClosedTree.filter(function(e) { return e instanceof PageNode && e.id[0] == 'p'; });
     fixIds.forEach(function(e) { recentlyClosedTree.updateNode(e, { id: 'R' + e.UUID }); });
+
+    loadTreeFromLocalStorage(ghostTree, 'ghostTree', GHOSTTREE_NODE_TYPES);
+
+    if (ghostTree.length == 0) {
+        // initial population of ghost tree
+        // tree.mapTree(function(e) { return new GhostNode(e.id, e.elemType); })
+        // etc
+    }
 
     var storedPageTree = settings.get('pageTree', []);
     if (storedPageTree.length == 0) {
@@ -321,6 +337,22 @@ function PageTreeCallbackProxy(methodName, args) {
     // log(methodName, args);
 
     var node = args.element;
+
+    switch (methodName) {
+        case 'add':
+            var ghost = new GhostNode(node.id, node.elemType);
+            // var ghostParent = args.parentId ? ghostTree.getNode(args.parentId) : undefined;
+            // var ghostBefore = args.beforeSiblingId ? ghostTree.getNode(args.beforeSiblingId) : undefined;
+            // log("wtf", ghost, ghostParent, ghostBefore);
+            ghostTree.addNode(ghost, ghostParentId, ghostBeforeSiblingId);
+            break;
+        // case 'move':
+        //     ghostTree.moveNode(node.id, args.newParentId, args.beforeSiblingId, args.keepChildren);
+        //     break;
+        // case 'merge':
+        //     ghostTree.mergeNodes(args.fromId, args.toId);
+        //     break;
+    }
 
     if (methodName == 'remove' && !(args.element instanceof WindowNode)) {
         addNodeToRecentlyClosedTree(node);
