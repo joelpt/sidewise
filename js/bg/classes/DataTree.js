@@ -194,7 +194,8 @@ DataTree.prototype = {
             parent = this.getNode(parentMatcher);
 
             if (!parent) {
-                throw new Error('Could not find element matching parentMatcher');
+                console.error(parentMatcher);
+                throw new Error('For adding node ' + node.id + ', could not find element matching parentMatcher');
             }
         }
 
@@ -202,11 +203,12 @@ DataTree.prototype = {
             beforeSibling = this.getNode(beforeSiblingMatcher);
 
             if (!beforeSibling) {
-                throw new Error('Could not find element matching beforeSiblingMatcher');
+                console.error(beforeSiblingMatcher);
+                throw new Error('For adding node ' + node.id + ', could not find element matching beforeSiblingMatcher');
             }
 
             if (parent && beforeSibling.parent !== parent) {
-                throw new Error('Specified sibling is not a child of specified parent');
+                throw new Error('For adding node ' + node.id + ', specified sibling ' + beforeSibling.id + ' is not a child of specified parent ' + parent.id + '; sibling\'s real parent is ' + beforeSibling.parent.id);
             }
         }
 
