@@ -611,27 +611,14 @@ DataTree.prototype = {
     // Returns full contents of tree formatted as a string. Useful for debugging.
     dump: function()
     {
-        // Quick and dirty cloneObject().
-        var cloneObject = function(obj) {
-            var clone = {};
-            for(var i in obj) {
-                if(typeof(obj[i])=="object")
-                    clone[i] = cloneObject(obj[i]);
-                else
-                    clone[i] = obj[i];
-            }
-            return clone;
-        }
-
         var dumpFn = function(lastValue, node, depth) {
             // Clone node and strip its children off before JSON.stringifying.
-            var cloned = cloneObject(node);
-            delete cloned.children;
+            var cloned = clone(node, ['parent', 'root', 'children']);
 
             return lastValue + '\n'
                 + Array(1 + (1 + depth) * 4).join(' ')
-                + JSON.stringify(cloned)
-                + ' [' + node.children.length + ' children]';
+                + JSON.stringify(cloned);
+
         }
         return this.reduce(dumpFn, '');
     },
