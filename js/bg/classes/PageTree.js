@@ -239,12 +239,13 @@ PageTree.prototype = {
             }
         }
 
-        if (r !== undefined && !blockCallback) {
+        if (r !== undefined) {
             this.callbackProxyFn('move', {
                 element: r[0],
                 newParentId: parentMatcher ? r[1].id : undefined,
                 beforeSiblingId: beforeSiblingMatcher ? r[2].id : undefined,
-                keepChildren: keepChildren || false
+                keepChildren: keepChildren || false,
+                callbackBlocked: blockCallback
             });
         }
         return r;
@@ -285,12 +286,13 @@ PageTree.prototype = {
             }
         }
 
-        if (r !== undefined && !blockCallback) {
+        if (r !== undefined) {
             this.callbackProxyFn('move', {
                 element: r[0],
                 newParentId: r[1] ? r[1].id : undefined,
                 beforeSiblingId: r[2] ? r[2].id : undefined,
-                keepChildren: keepChildren || false
+                keepChildren: keepChildren || false,
+                callbackBlocked: blockCallback
             });
 
             if (fromParent && fromParent.collapsed && fromParent.children.length == 0) {
