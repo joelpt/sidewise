@@ -414,10 +414,28 @@ function remove(array, from, to) {
     return array.push.apply(array, rest);
 }
 
+function removeElemFromArray(array, elem) {
+    var index = array.indexOf(elem);
+
+    if (index == -1) {
+        return undefined;
+    }
+
+    return array.splice(index, 1);
+}
+
 function first(array, matchFn) {
     for (var i = 0; i < array.length; i++) {
         if (matchFn(array[i])) {
             return [i, array[i]];
+        }
+    }
+}
+
+function firstElem(array, matchFn) {
+    for (var i = 0; i < array.length; i++) {
+        if (matchFn(array[i])) {
+            return array[i];
         }
     }
 }
