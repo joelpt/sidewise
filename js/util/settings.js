@@ -108,6 +108,7 @@ Settings.prototype = {
             pages_clickOnMouseWheel: false,
             pages_showMediaPlayTime: true,
             pages_trimPageTitlePrefixes: true,
+            closed_maxPagesRemembered: 200,
             smartFocusOnClose: false,
             smartFocusPrefersCousins: false,
             smartFocusPrefersParent: true,
