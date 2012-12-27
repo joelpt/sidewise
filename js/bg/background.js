@@ -17,6 +17,13 @@ var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 1000;
 var GROUPING_ROW_COUNT_THRESHOLD = 3;
 var GROUPING_ROW_COUNT_WAIT_THRESHOLD = 4;
 var GROUPING_ROW_COUNT_WAIT_ITERATIONS = 4;
+var RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS = MINUTE_MS * 10;  // Nodes in the recently closed tree must be at most no older than this many ms
+                                                                    // to qualify for having another node matched to an associated position vs. them,
+                                                                    // e.g. a new recently-closed node being made a child of an existing recently-closed node.
+                                                                    // When a recently-closed node can't be placed in relative positioning to another node due
+                                                                    // to exceeding this timeout or just not finding any qualifying nodes, the fallback
+                                                                    // behavior is simply to prepend it to the top .collecting=true HeaderNode in the recently
+                                                                    // closed tree (creating one if needed).
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -117,13 +124,8 @@ function postLoad(focusedWin) {
 
     loadTreeFromLocalStorage(ghostTree, 'ghostTree', GHOSTTREE_NODE_TYPES);
 
-    if (ghostTree.length == 0) {
-        // initial population of ghost tree
-        // tree.mapTree(function(e) { return new GhostNode(e.id, e.elemType); })
-        // etc
-    }
-
     var storedPageTree = settings.get('pageTree', []);
+
     if (storedPageTree.length == 0) {
         // first time population of page tree
         log('--- first time population of page tree ---');
@@ -133,6 +135,14 @@ function postLoad(focusedWin) {
         // load stored page tree and associate tabs to existing page nodes
         log('--- loading page tree from storage ---');
         loadPageTreeFromLocalStorage(storedPageTree);
+
+        if (ghostTree.root.children.length == 0) {
+            // first time population of ghost tree for users who already had stored tree data
+            var ghosts = tree.mapTree(function(e) {
+                return new GhostNode(e.id, e.elemType);
+            });
+            ghostTree.loadTree(ghosts, GHOSTTREE_NODE_TYPES);
+        }
 
         if (settings.get('rememberOpenPagesBetweenSessions')) {
             setTimeout(startAssociationRun, 2000); // wait a couple seconds for content scripts to get going
@@ -338,23 +348,52 @@ function PageTreeCallbackProxy(methodName, args) {
 
     var node = args.element;
 
-    switch (methodName) {
-        case 'add':
-            var ghost = new GhostNode(node.id, node.elemType);
-            // var ghostParent = args.parentId ? ghostTree.getNode(args.parentId) : undefined;
-            // var ghostBefore = args.beforeSiblingId ? ghostTree.getNode(args.beforeSiblingId) : undefined;
-            // log("wtf", ghost, ghostParent, ghostBefore);
-            ghostTree.addNode(ghost, ghostParentId, ghostBeforeSiblingId);
-            break;
-        // case 'move':
-        //     ghostTree.moveNode(node.id, args.newParentId, args.beforeSiblingId, args.keepChildren);
-        //     break;
-        // case 'merge':
-        //     ghostTree.mergeNodes(args.fromId, args.toId);
-        //     break;
+    // Update the ghost tree with add/move/merges
+    if (node && !node.incognito) {
+        switch (methodName) {
+            case 'add':
+                var ghost = new GhostNode(node.id, node.elemType);
+                try {
+                    ghostTree.addNode(ghost, args.parentId, args.beforeSiblingId);
+                }
+                catch (ex) {
+                    ghostTree.addNode(ghost);
+                }
+                break;
+            case 'move':
+                try {
+                    ghostTree.moveNode(node.id, args.newParentId, args.beforeSiblingId, args.keepChildren);
+                }
+                catch (ex) {}
+                break;
+            case 'merge':
+                try {
+                    ghostTree.mergeNodes(args.fromId, args.toId);
+                }
+                catch (ex) {}
+                break;
+            case 'update':
+                if (args.element.id) {
+                    try {
+                        ghostTree.updateNode(args.id, { id: args.element.id });
+                    }
+                    catch (ex) {}
+                }
+                break;
+        }
+    }
+
+    if (methodName == 'move' && args.callbackBlocked) {
+        // TODO change callbackBlocked/blockCallback to a callbackData arg that we pass in as-needed by callers
+        // and gets passed into callbackProxy; eventually add this arg to all UiDataTree methods that do callbacking
+        return;
     }
 
     if (methodName == 'remove' && !(args.element instanceof WindowNode)) {
+        var ghost = ghostTree.getNode(args.element.id);
+        if (ghost) {
+            ghost.alive = false;
+        }
         addNodeToRecentlyClosedTree(node);
     }
 
@@ -420,11 +459,9 @@ function RecentlyClosedTreeCallbackProxy(methodName, args) {
         closedWindow.PageTreeCallbackProxyListener.call(closedWindow, methodName, args);
     }
 
-    setTimeout(function() {
-        deduplicateRecentlyClosedPageNode(args.element);
-    }, 1000);
-
-
+    // setTimeout(function() {
+    //     deduplicateRecentlyClosedPageNode(args.element);
+    // }, 1000);
 }
 
 function deduplicateRecentlyClosedPageNode(node) {
@@ -445,66 +482,77 @@ function deduplicateRecentlyClosedPageNode(node) {
 }
 
 function addNodeToRecentlyClosedTree(node) {
-    if (node.removedFromParentId) {
-        var beforeSibling = recentlyClosedTree.getNode(function(e) {
-            return node.removedBeforeSiblingId == e.id;
-        });
-        if (beforeSibling && beforeSibling.removedFromParentId == node.removedFromParentId) {
-            log('put after previous before-sibling with common parent', node.id, node, beforeSibling.id, beforeSibling);
-            recentlyClosedTree.addNodeRel(node, 'after', beforeSibling);
-            requestAutoGroupingForNode(node);
-            return;
-        }
+    var ghost = ghostTree.getNode(node.id);
+    var added = false;
+    var now = Date.now();
 
-        var afterSibling = recentlyClosedTree.getNode(function(e) {
-            return node.removedAfterSiblingId == e.id;
-        });
-        if (afterSibling && afterSibling.removedFromParentId == node.removedFromParentId) {
-            log('put before previous after-sibling with common parent', node.id, node, afterSibling.id, afterSibling);
-            recentlyClosedTree.addNodeRel(node, 'before', afterSibling);
-            requestAutoGroupingForNode(node);
-            return;
-        }
-    }
-
-    if (node.removedPreviousParentId) {
-        var prevParent = recentlyClosedTree.getNode(node.removedPreviousParentId);
-        // Nest node under previous parent if previous parent is found AND was either
-        // closed in the last minute or is a descendant of the topmost HeaderNode in rctree
-        if (prevParent
-            && (node.removedAt - prevParent.removedAt < MINUTE_MS
-                || prevParent.topParent() === recentlyClosedTree.root.children[0]
-                ))
-        {
-            var beforeSibling = recentlyClosedTree.getNode(function(e) {
-                return node.removedBeforeSiblingId == e.id;
+    if (ghost) {
+        // Find insert position by looking for another dead ghost node that
+        // we have a positional relationship to
+        try {
+            var before = firstElem(ghost.beforeSiblings(), function(e) {
+                return !e.alive;
             });
-            if (beforeSibling && beforeSibling.removedPreviousParentId == node.removedPreviousParentId) {
-                log('put after previous before-sibling with previous parent', node.id, node, beforeSibling.id, beforeSibling);
-                recentlyClosedTree.addNodeRel(node, 'after', beforeSibling);
-                requestAutoGroupingForNode(node);
-                return;
+            if (before && now - before.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                before = recentlyClosedTree.getNode(before.id);
+                if (before && !(before.parent instanceof HeaderNode)) {
+                    recentlyClosedTree.addNodeRel(node, 'after', before);
+                    added = true;
+                }
             }
 
-            var afterSibling = recentlyClosedTree.getNode(function(e) {
-                return node.removedAfterSiblingId == e.id;
-            });
-            if (afterSibling && afterSibling.removedPreviousParentId == node.removedPreviousParentId) {
-                log('put before previous after-sibling with previous parent', node.id, node, afterSibling.id, afterSibling);
-                recentlyClosedTree.addNodeRel(node, 'before', afterSibling);
-                requestAutoGroupingForNode(node);
-                return;
+            if (!added) {
+                var after = firstElem(ghost.afterSiblings(), function(e) {
+                    return !e.alive;
+                });
+                if (after && now - after.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                    after = recentlyClosedTree.getNode(after.id);
+                    if (after && !(after.parent instanceof HeaderNode)) {
+                        recentlyClosedTree.addNodeRel(node, 'before', after);
+                        added = true;
+                    }
+                }
             }
 
-            log('prepend to previous parent', node.id, node, prevParent.id, prevParent);
-            recentlyClosedTree.addNodeRel(node, 'prepend', prevParent);
-            requestAutoGroupingForNode(node);
-            return;
-        }
-    }
+            if (!added) {
+                var parent = firstElem(ghost.parents(), function(e) {
+                    return !e.alive;
+                });
+                if (parent && !parent.isRoot) {
+                    parent = recentlyClosedTree.getNode(parent.id);
+                    if (parent && now - parent.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                        recentlyClosedTree.addNodeRel(node, 'append', parent);
+                        added = true;
+                    }
+                }
+            }
 
-    // prepend our node to the top existing .collecting=true HeaderNode, or create such a HeaderNode if
-    // we don't find one
+        }
+        catch (ex) { }
+
+        if (!added) {
+            // Fallback approach
+            var header = getOrCreateTopCollectingHeaderNode();
+            recentlyClosedTree.addNodeRel(node, 'prepend', header);
+        }
+
+        requestAutoGroupingForNode(node);
+
+        // move ghost's dead children to under it
+        ghost.children.forEach(function(e) {
+            if (e.alive) return;
+            var child = recentlyClosedTree.getNode(e.id);
+            if (child && now - child.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                recentlyClosedTree.moveNodeRel(child, 'append', node, true);
+                requestAutoGroupingForNode(child);
+            }
+        });
+
+        recentlyClosedTree.removeZeroChildTopNodes();
+    }
+}
+
+function getOrCreateTopCollectingHeaderNode() {
     var header = recentlyClosedTree.root.children[0];
     if (!header || !header.collecting) {
         header = new HeaderNode();
@@ -512,41 +560,7 @@ function addNodeToRecentlyClosedTree(node) {
         recentlyClosedTree.addNodeRel(header, 'prepend');
         log('created collecting HeaderNode', header.id);
     }
-    recentlyClosedTree.addNodeRel(node, 'prepend', header);
-    requestAutoGroupingForNode(node);
-    log('prepended node to header', node.id, node, header.id);
-
-    // check for any node in rctree whose .removedFromParentId refers to our node (ex-children of our node)
-    // TODO implement multiple non-unique indexes on DataTree and accept ('key', 'value', inArray) args
-    var prevChildren = recentlyClosedTree.filter(function(e) {
-        return e.removedFromParentId == node.id
-            && (node.removedAt - e.removedAt < MINUTE_MS
-                || e.topParent() === recentlyClosedTree.root.children[0]);
-    });
-
-    // nest all ex-children of our node under it
-    prevChildren.forEach(function(child) {
-        var beforeSibling = firstElem(node.children, function(e) {
-            return child.removedBeforeSiblingId == e.id;
-        });
-        if (beforeSibling) {
-            log('move ex-child after previous before-sibling', child.id, child, beforeSibling.id, beforeSibling);
-            recentlyClosedTree.moveNodeRel(child, 'after', beforeSibling);
-            return;
-        }
-
-        var afterSibling = firstElem(node.children, function(e) {
-            return child.removedAfterSiblingId == e.id;
-        });
-        if (afterSibling) {
-            log('move ex-child before previous after-sibling', child.id, child, afterSibling.id, afterSibling);
-            recentlyClosedTree.moveNodeRel(child, 'before', afterSibling);
-            return;
-        }
-
-        log('append ex-child under previous parent', child.id, 'parent', node.id);
-        recentlyClosedTree.moveNodeRel(child, 'append', node);
-    });
+    return header;
 }
 
 function requestAutoGroupingForNode(node) {
@@ -595,6 +609,7 @@ function autoGroupRecentlyClosedTreeNodes() {
 
     // Create a new non collecting HeaderNode group
     var header = new HeaderNode();
+    header.collecting = false;
     recentlyClosedTree.addNodeRel(header, 'prepend');
 
     // Get a rctree-ordered version of recentlyClosedGroupList so that our upcoming move ops
