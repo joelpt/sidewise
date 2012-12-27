@@ -1428,7 +1428,8 @@ function closeRow($row) {
     }
     else {
         $row.addClass('closing'); // "about to close" styling
-        chrome.tabs.remove(getRowNumericId($row));
+        bg.tree.removeNode($row.attr('id'));
+        setTimeout(function(e) { chrome.tabs.remove(getRowNumericId($row)); }, 0);
     }
     if ($parent.attr('rowtype') == 'window' && $parent.find('.ftRowNode').length == 0) {
         bg.tree.removeNode($parent.attr('id'), true);
