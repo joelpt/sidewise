@@ -144,6 +144,26 @@ PageTree.prototype = {
             throw new Error('Node not found to remove');
         }
 
+        // record removed-details on the node being removed for use by caller
+        node.removedAt = Date.now();
+        if (!(node.parent instanceof WindowNode)) {
+            node.removedFromParentId = node.parent.id;
+        }
+
+        var topParent = node.topParent();
+        node.removedFromTopParentId = topParent ? topParent.id : null;
+
+        // record removed-sibling details on ex-siblings
+        var beforeSibling = node.beforeSibling();
+        if (beforeSibling) {
+            beforeSibling.removedAfterSiblingId = node.id;
+        }
+
+        var afterSibling = node.afterSibling();
+        if (afterSibling) {
+            afterSibling.removedBeforeSiblingId = node.id;
+        }
+
         this.removeFromTabIndex(node);
 
         if (removeChildren) {
@@ -151,6 +171,15 @@ PageTree.prototype = {
             for (var i = descendants.length - 1; i >= 0; i--) {
                 this.removeFromTabIndex(descendants[i]);
             }
+        }
+        else {
+            if (!(node instanceof WindowNode)) {
+                // record removed-parent details on ex-children
+                for (var i = 0; i < node.children.length; i++) {
+                    node.children[i].removedPreviousParentId = node.id;
+                };
+            }
+            node.children = [];
         }
 
         var r = this.$super('removeNode')(node, removeChildren);
@@ -767,21 +796,35 @@ PageTree.prototype = {
 
     // Remove the given node from the tab index
     removeFromTabIndex: function(node) {
-        var topParent = node.topParent();
-
-        if (!(topParent instanceof WindowNode)) {
+        if (!(node instanceof PageNode)) {
             return;
         }
 
-        if (!this.tabIndexes[topParent.id]) {
+        var windowId = node.windowId;
+        if (windowId) {
+            windowId = 'w' + windowId;
+        }
+        else {
+            log('No .windowId on node to reference for tab index removal, will try topParent', node.id, node);
+
+            var topParent = node.topParent();
+            if (!topParent || !(topParent instanceof WindowNode)) {
+                console.error('No .windowId and topParent is not a WindowNode', node.id, node, 'topParent', topParent);
+                return;
+            }
+            windowId = topParent.id;
+        }
+
+        if (!this.tabIndexes[windowId]) {
+            console.error('No tab index found for windowId ' + windowId, 'node', node.id, node);
             return;
         }
 
-        var index = this.tabIndexes[topParent.id].indexOf(node);
+        var index = this.tabIndexes[windowId].indexOf(node);
         if (index > -1) {
-            this.tabIndexes[topParent.id].splice(index, 1);
-            if (this.tabIndexes[topParent.id].length == 0) {
-                delete this.tabIndexes[topParent.id];
+            this.tabIndexes[windowId].splice(index, 1);
+            if (this.tabIndexes[windowId].length == 0) {
+                delete this.tabIndexes[windowId];
             }
         }
     },
@@ -806,21 +849,6 @@ PageTree.prototype = {
 
     // rebuild the tab index
     rebuildTabIndex: function() {
-        // useChromeOrder) {
-        // if (useChromeOrder) {
-        //     chrome.tabs.get({ }, function(tabs) {
-        //         this.tabIndexes = {};
-        //         for (var i = 0; i < tabs.length; i++) {
-        //             var tab = tabs[i];
-        //             if (this.tabIndexes['w' + tab.windowId] === undefined) {
-        //                 this.tabIndexes['w' + tab.windowId] = [];
-        //             }
-        //             this.tabIndexes['w' + tab.windowId].push(tab.id);
-        //         }
-        //     });
-        //     return;
-        // }
-
         this.tabIndexes = this.groupBy(function(e) {
             if (e.isTab()) {
                 return 'w' + e.windowId;
