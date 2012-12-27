@@ -9,7 +9,7 @@
     'header': HeaderNode
 };
 
-var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 500;
+var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 1000;
 var GROUPING_ROW_COUNT_THRESHOLD = 3;
 var GROUPING_ROW_COUNT_WAIT_THRESHOLD = 4;
 var GROUPING_ROW_COUNT_WAIT_ITERATIONS = 4;
@@ -51,8 +51,14 @@ function onLoad()
             RecentlyClosedTreeCallbackProxy,
             undefined,
             function() {
-                // var fixIds = recentlyClosedTree.filter(function(e) { return e instanceof PageNode && e.id[0] == 'p'; });
-                // fixIds.forEach(function(e) { recentlyClosedTree.updateNode(e, { id: 'R' + e.UUID }); });
+                var nodes = recentlyClosedTree.filter(function(e) { return !(e instanceof HeaderNode); });
+                var max = settings.get('closed_maxPagesRemembered');
+                if (nodes.length > max) {
+                    for (var i = nodes.length - 1; i >= max; i--) {
+                        recentlyClosedTree.removeNode(nodes[i]);
+                    };
+                    recentlyClosedTree.removeZeroChildTopNodes();
+                }
                 savePageTreeToLocalStorage(recentlyClosedTree, 'recentlyClosedTree', true);
             },
             config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS,
@@ -63,7 +69,6 @@ function onLoad()
         tree.name = 'pageTree';
         recentlyClosedTree.name = 'recentlyClosedTree';
 
-        // recentlyClosedTree = new DataTree();
         sidebarHandler = new SidebarHandler();
 
         // Call postLoad() after focusTracker initializes to do remaining initialization
@@ -93,6 +98,15 @@ function postLoad(focusedWin) {
     registerEventHandlers();
     injectContentScriptInExistingTabs('content_script.js');
 
+    loadTreeFromLocalStorage(recentlyClosedTree, 'recentlyClosedTree', PAGETREE_NODE_TYPES);
+    recentlyClosedTree.removeZeroChildTopNodes();
+    var first = recentlyClosedTree.root.children[0];
+    if (first && first.collecting) {
+        first.collecting = false;
+    }
+    var fixIds = recentlyClosedTree.filter(function(e) { return e instanceof PageNode && e.id[0] == 'p'; });
+    fixIds.forEach(function(e) { recentlyClosedTree.updateNode(e, { id: 'R' + e.UUID }); });
+
     var storedPageTree = settings.get('pageTree', []);
     if (storedPageTree.length == 0) {
         // first time population of page tree
@@ -103,7 +117,6 @@ function postLoad(focusedWin) {
         // load stored page tree and associate tabs to existing page nodes
         log('--- loading page tree from storage ---');
         loadPageTreeFromLocalStorage(storedPageTree);
-        loadTreeFromLocalStorage(recentlyClosedTree, 'recentlyClosedTree', PAGETREE_NODE_TYPES);
 
         if (settings.get('rememberOpenPagesBetweenSessions')) {
             setTimeout(startAssociationRun, 2000); // wait a couple seconds for content scripts to get going
@@ -310,9 +323,7 @@ function PageTreeCallbackProxy(methodName, args) {
     var node = args.element;
 
     if (methodName == 'remove' && !(args.element instanceof WindowNode)) {
-        recentlyClosedTree.addNodeRel(node, 'prepend');
-        recentlyClosedGroupList.push(node);
-        TimeoutManager.reset('prependRecentlyClosedGroupHeader', prependRecentlyClosedGroupHeader, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
+        addNodeToRecentlyClosedTree(node);
     }
 
     if (node instanceof WindowNode && !node.hibernated && methodName == 'remove') {
@@ -370,61 +381,157 @@ function RecentlyClosedTreeCallbackProxy(methodName, args) {
     if (methodName == 'add' && args.element instanceof PageNode) {
         args.element.status = 'complete';
         args.element.unread = false;
-        args.element.removedAt = Date.now();
-
-        var deduplicate = true;
-        if (deduplicate) {
-            var dupes = recentlyClosedTree.filter(function(e) {
-                return e !== args.element && e.url == args.element.url;
-            });
-            dupes.forEach(function(e) {
-                var parent = e.parent;
-                recentlyClosedTree.removeNode(e);
-                if (parent.children.length == 0) {
-                    recentlyClosedTree.removeNode(parent);
-                }
-            });
-        }
     }
 
     var closedWindow = sidebarHandler.sidebarPanes['closed'];
     if (closedWindow) {
         closedWindow.PageTreeCallbackProxyListener.call(closedWindow, methodName, args);
     }
+
+    setTimeout(function() {
+        deduplicateRecentlyClosedPageNode(args.element);
+    }, 1000);
+
+
 }
 
-function prependRecentlyClosedGroupHeader() {
-    // TODO group the items in the list by their pre-removal parents/children, retroactively if needed
+function deduplicateRecentlyClosedPageNode(node) {
+    var deduplicate = false;
+    if (!deduplicate) return;
 
+    var count = 0;
+    var dupes = recentlyClosedTree.filter(function(e) {
+        return e.url == node.url && count++ > 0;
+    });
+    dupes.forEach(function(e) {
+        var parent = e.parent;
+        recentlyClosedTree.removeNode(e);
+        if (parent.children.length == 0) {
+            recentlyClosedTree.removeNode(parent);
+        }
+    });
+}
+
+function addNodeToRecentlyClosedTree(node) {
+    if (node.removedFromParentId) {
+        var beforeSibling = recentlyClosedTree.getNode(function(e) {
+            return node.removedBeforeSiblingId == e.id;
+        });
+        if (beforeSibling && beforeSibling.removedFromParentId == node.removedFromParentId) {
+            log('put after previous before-sibling with common parent', node.id, node, beforeSibling.id, beforeSibling);
+            recentlyClosedTree.addNodeRel(node, 'after', beforeSibling);
+            requestAutoGroupingForNode(node);
+            return;
+        }
+
+        var afterSibling = recentlyClosedTree.getNode(function(e) {
+            return node.removedAfterSiblingId == e.id;
+        });
+        if (afterSibling && afterSibling.removedFromParentId == node.removedFromParentId) {
+            log('put before previous after-sibling with common parent', node.id, node, afterSibling.id, afterSibling);
+            recentlyClosedTree.addNodeRel(node, 'before', afterSibling);
+            requestAutoGroupingForNode(node);
+            return;
+        }
+    }
+
+    if (node.removedPreviousParentId) {
+        var prevParent = recentlyClosedTree.getNode(node.removedPreviousParentId);
+        // Nest node under previous parent if previous parent is found AND was either
+        // closed in the last minute or is a descendant of the topmost HeaderNode in rctree
+        if (prevParent
+            && (node.removedAt - prevParent.removedAt < MINUTE_MS
+                || prevParent.topParent() === recentlyClosedTree.root.children[0]
+                ))
+        {
+            var beforeSibling = recentlyClosedTree.getNode(function(e) {
+                return node.removedBeforeSiblingId == e.id;
+            });
+            if (beforeSibling && beforeSibling.removedPreviousParentId == node.removedPreviousParentId) {
+                log('put after previous before-sibling with previous parent', node.id, node, beforeSibling.id, beforeSibling);
+                recentlyClosedTree.addNodeRel(node, 'after', beforeSibling);
+                requestAutoGroupingForNode(node);
+                return;
+            }
+
+            var afterSibling = recentlyClosedTree.getNode(function(e) {
+                return node.removedAfterSiblingId == e.id;
+            });
+            if (afterSibling && afterSibling.removedPreviousParentId == node.removedPreviousParentId) {
+                log('put before previous after-sibling with previous parent', node.id, node, afterSibling.id, afterSibling);
+                recentlyClosedTree.addNodeRel(node, 'before', afterSibling);
+                requestAutoGroupingForNode(node);
+                return;
+            }
+
+            log('prepend to previous parent', node.id, node, prevParent.id, prevParent);
+            recentlyClosedTree.addNodeRel(node, 'prepend', prevParent);
+            requestAutoGroupingForNode(node);
+            return;
+        }
+    }
+
+    // prepend our node to the top existing .collecting=true HeaderNode, or create such a HeaderNode if
+    // we don't find one
+    var header = recentlyClosedTree.root.children[0];
+    if (!header || !header.collecting) {
+        header = new HeaderNode();
+        header.collecting = true;
+        recentlyClosedTree.addNodeRel(header, 'prepend');
+        log('created collecting HeaderNode', header.id);
+    }
+    recentlyClosedTree.addNodeRel(node, 'prepend', header);
+    requestAutoGroupingForNode(node);
+    log('prepended node to header', node.id, node, header.id);
+
+    // check for any node in rctree whose .removedFromParentId refers to our node (ex-children of our node)
+    // TODO implement multiple non-unique indexes on DataTree and accept ('key', 'value', inArray) args
+    var prevChildren = recentlyClosedTree.filter(function(e) {
+        return e.removedFromParentId == node.id
+            && (node.removedAt - e.removedAt < MINUTE_MS
+                || e.topParent() === recentlyClosedTree.root.children[0]);
+    });
+
+    // nest all ex-children of our node under it
+    prevChildren.forEach(function(child) {
+        var beforeSibling = firstElem(node.children, function(e) {
+            return child.removedBeforeSiblingId == e.id;
+        });
+        if (beforeSibling) {
+            log('move ex-child after previous before-sibling', child.id, child, beforeSibling.id, beforeSibling);
+            recentlyClosedTree.moveNodeRel(child, 'after', beforeSibling);
+            return;
+        }
+
+        var afterSibling = firstElem(node.children, function(e) {
+            return child.removedAfterSiblingId == e.id;
+        });
+        if (afterSibling) {
+            log('move ex-child before previous after-sibling', child.id, child, afterSibling.id, afterSibling);
+            recentlyClosedTree.moveNodeRel(child, 'before', afterSibling);
+            return;
+        }
+
+        log('append ex-child under previous parent', child.id, 'parent', node.id);
+        recentlyClosedTree.moveNodeRel(child, 'append', node);
+    });
+}
+
+function requestAutoGroupingForNode(node) {
+    recentlyClosedGroupList.push(node);
+    scheduleAutoGrouping();
+}
+
+function scheduleAutoGrouping() {
+   TimeoutManager.reset('autoGroupRecentlyClosedTreeNodes', autoGroupRecentlyClosedTreeNodes, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
+}
+
+function autoGroupRecentlyClosedTreeNodes() {
     if (recentlyClosedGroupList.length == 0) {
         return;
     }
 
     if (recentlyClosedGroupList.length <= GROUPING_ROW_COUNT_THRESHOLD) {
-        var header;
-        var needHeader = false;
-        if (recentlyClosedTree.root.children.length == 0) {
-            needHeader = true;
-        }
-        else {
-            var firstHeader = recentlyClosedTree.getNode(function(e) { return e instanceof HeaderNode; })
-            if (!firstHeader || !firstHeader.collecting) {
-                needHeader = true;
-            }
-        }
-
-        if (needHeader) {
-            header = new HeaderNode('');
-            header.collecting = true;
-            recentlyClosedTree.addNodeRel(header, 'prepend');
-        }
-        else {
-            header = firstHeader;
-        }
-
-        for (var i = recentlyClosedGroupList.length - 1; i >= 0; i--) {
-            recentlyClosedTree.moveNodeRel(recentlyClosedGroupList[i], 'prepend', header);
-        };
         recentlyClosedGroupList = [];
         return;
     }
@@ -437,15 +544,15 @@ function prependRecentlyClosedGroupHeader() {
         if (recentlyClosedGroupListLastCount != recentlyClosedGroupList.length) {
             recentlyClosedGroupWaitIteration = 0;
             recentlyClosedGroupListLastCount = recentlyClosedGroupList.length;
-            TimeoutManager.reset('prependRecentlyClosedGroupHeader', prependRecentlyClosedGroupHeader, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
-            log('Retriggering prependRecentlyClosedGroupHeader()');
+            TimeoutManager.reset('autoGroupRecentlyClosedTreeNodes', autoGroupRecentlyClosedTreeNodes, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
+            log('Retriggering autoGroupRecentlyClosedTreeNodes()');
             return;
         }
         // Tab count in group list didn't change between successive calls
         if (recentlyClosedGroupWaitIteration < GROUPING_ROW_COUNT_WAIT_ITERATIONS) {
             recentlyClosedGroupWaitIteration++;
-            TimeoutManager.reset('prependRecentlyClosedGroupHeader', prependRecentlyClosedGroupHeader, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
-            log('Retriggering prependRecentlyClosedGroupHeader() due to wait iteration');
+            TimeoutManager.reset('autoGroupRecentlyClosedTreeNodes', autoGroupRecentlyClosedTreeNodes, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
+            log('Retriggering autoGroupRecentlyClosedTreeNodes() due to wait iteration');
             return;
         }
 
@@ -454,12 +561,26 @@ function prependRecentlyClosedGroupHeader() {
         log('Large group list count has not changed since last check, groupifying now');
     }
 
-    var header = new HeaderNode('');
+    // Create a new non collecting HeaderNode group
+    var header = new HeaderNode();
     recentlyClosedTree.addNodeRel(header, 'prepend');
-    for (var i = recentlyClosedGroupList.length - 1; i >= 0; i--) {
-        recentlyClosedTree.moveNodeRel(recentlyClosedGroupList[i], 'append', header);
+
+    // Get a rctree-ordered version of recentlyClosedGroupList so that our upcoming move ops
+    // don't mess up the preexisting node-ordering
+    var orderedList = recentlyClosedTree.filter(function(e) {
+        return recentlyClosedGroupList.indexOf(e) > -1 && e.parent instanceof HeaderNode;
+    });
+
+    // Move all the nodes from the group list to the new header
+    for (var i = orderedList.length - 1; i >= 0; i--) {
+        var node = recentlyClosedTree.getNode(orderedList[i].id);
+        if (node && node.parent instanceof HeaderNode) {
+            recentlyClosedTree.moveNodeRel(node, 'prepend', header, true);
+        }
     }
+
     recentlyClosedGroupList = [];
+    recentlyClosedTree.removeZeroChildTopNodes();
     return;
 }
 
