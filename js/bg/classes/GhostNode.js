@@ -9,6 +9,7 @@ var GhostNode = function(id, elemType)
     this.elemType = 'ghost';
     this.id = id;
     this.ghostType = elemType;
+    this.alive = true;
 };
 
 GhostNode.prototype = {
