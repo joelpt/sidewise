@@ -3,17 +3,6 @@
 // Basic operations on tree rows (get, add, remove, ...)
 ///////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////
-// Constants
-///////////////////////////////////////////////////////////
-
-var REMOVE_ROW_ANIMATE_DURATION_MS = 200;
-
-
-///////////////////////////////////////////////////////////
-// Functions
-///////////////////////////////////////////////////////////
-
 FancyTree.prototype.getRow = function(idOrElem) {
     if (idOrElem instanceof jQuery) {
         return idOrElem;
@@ -50,8 +39,7 @@ FancyTree.prototype.addRow = function($row, parentId, beforeSiblingId) {
     this.formatLineageTitles($parent);
 };
 
-FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfiguration, skipRemoveFromMultiSelection, noAnimate) {
-    var self = this;
+FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfiguration, skipRemoveFromMultiSelection) {
     var $row = this.getRow(id);
     var $parent = $row.parent().parent();
     var $following = $row.following('.ftRowNode');
@@ -66,33 +54,16 @@ FancyTree.prototype.removeRow = function(id, removeChildren, skipRowReconfigurat
     });
 
     if (removeChildren) {
-        if (noAnimate) {
-            _afterRemoveChildren();
-        }
-        else {
-            $row.slideUp(REMOVE_ROW_ANIMATE_DURATION_MS, _afterRemoveChildren);
-        }
-
-        function _afterRemoveChildren() {
-            $row.find('.ftRowNode').each(function(i, e) {
-                self.removeMultiSelectionSingle($(e));
-            });
-            $row.remove();
-        }
+        var self = this;
+        $row.find('.ftRowNode').each(function(i, e) {
+            self.removeMultiSelectionSingle($(e));
+        });
+        $row.remove();
     }
     else {
         var $children  = this.getChildrenContainer($row).children();
-        if (noAnimate) {
-            _afterRemoveSingle();
-        }
-        else {
-            $row.children('.ftItemRow').slideUp(REMOVE_ROW_ANIMATE_DURATION_MS, _afterRemoveSingle);
-        }
-
-        function _afterRemoveSingle() {
-            $row.replaceWith($children);
-            self.formatRowTitle($children);
-        }
+        $row.replaceWith($children);
+        this.formatRowTitle($children);
     }
 
     if (!skipRemoveFromMultiSelection) {
@@ -122,7 +93,7 @@ FancyTree.prototype.moveRow = function(id, newParentId, beforeSiblingId, keepChi
         $newParent = this.getRow(newParentId);
     }
 
-    this.removeRow(id, keepChildren, true, true, true); // prevents possible DOM_HIERARCHY exceptions
+    this.removeRow(id, keepChildren, true, true); // prevents possible DOM_HIERARCHY exceptions
 
     var $newParentChildren = this.getChildrenContainer($newParent);
     var $sibling;
@@ -173,7 +144,7 @@ FancyTree.prototype.moveRowRel = function(id, relation, toId, keepChildren, skip
     var $oldParent = this.getParentRowNode($row.parent());
     var $oldAncestors = $row.parents('.ftRowNode');
 
-    this.removeRow($row, keepChildren, true, true, true); // prevents possible DOM_HIERARCHY exceptions
+    this.removeRow($row, keepChildren, true, true); // prevents possible DOM_HIERARCHY exceptions
 
     if (relation == 'before') {
         $to.before($row);
