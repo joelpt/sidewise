@@ -201,6 +201,15 @@ UiDataTree.prototype = {
         this.callbackProxyFn('collapse', { id: node.id });
     },
 
+    removeZeroChildTopNodes: function() {
+        for (var i = this.root.children.length - 1; i >= 0; i--) {
+            var child = this.root.children[i];
+            if (child.children.length == 0) {
+                this.removeNode(child);
+            }
+        }
+    },
+
     // Handles onModified event for UiDataTree, updating a timer and calling
     // this.onModifiedDelayed after the timeout; prevents executing
     // this.onModifiedDelayed every time tree is updated
