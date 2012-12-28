@@ -227,6 +227,15 @@ UiDataTree.prototype = {
         this.onModifiedTimer = setTimeout(function() {
             self.onModifiedDelayed();
         }, this.onModifiedDelayedWaitMs);
+    },
+
+    // Permanently disables all callbacks by this object.
+    disableCallbacks: function() {
+        this.$super('shutdown')();
+        this.onModifiedDelayed = function() {};
+        this.onModifiedImmediate = function() {};
+        this.callbackProxyFn = function() {};
+        clearTimeout(this.onModifiedTimer);
     }
 
 }

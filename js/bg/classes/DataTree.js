@@ -645,6 +645,10 @@ DataTree.prototype = {
         }
     },
 
+    // Prohibits this.onModified() from getting called ever again.
+    disableCallbacks: function() {
+        this.onModified = function() {};
+    },
 
     /////////////////////////////////////////////////////
     // Matchers

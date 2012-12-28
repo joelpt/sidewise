@@ -1131,6 +1131,14 @@ PageTree.prototype = {
         }, this.onModifiedDelayedWaitMs);
     },
 
+    // Permanently disables all callbacks by this object.
+    disableCallbacks: function() {
+        this.callbackProxyFn = function() {};
+        this.onModified = function() {};
+        this.onModifiedDelayed = function() {};
+        TimeoutManager.clear('onModifiedPageTree_' + this.name);
+    },
+
 
     ///////////////////////////////////////////////////////////
     // Matchers, to be passed into .getNode(), et al.
