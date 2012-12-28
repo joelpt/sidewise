@@ -25,11 +25,15 @@ ChromeWindowFocusTracker.prototype = {
                 self.windowIds.push(wins[i].id);
             }
 
-            // set currently focused window
-            chrome.windows.getLastFocused(null, function(win) {
+            function _retry() {
+                // try again in a bit
+                setTimeout(function() { self.init(onInitialized); }, 5000);
+                return;
+            }
+
+            function _gotLastFocused(win) {
                 if (!win) {
-                    // try again in a bit
-                    setTimeout(function() { self.init(onInitialized); }, 5000);
+                    _retry();
                     return;
                 }
                 self.setFocused(win.id);
@@ -37,6 +41,16 @@ ChromeWindowFocusTracker.prototype = {
                 if (onInitialized) {
                     onInitialized(win);
                 }
+                return;
+            }
+
+            // set currently focused window
+            chrome.windows.getAll(function(wins) {  // use .getAll() first so we can avoid exception in .getLastFocused
+                if (!wins || wins.length == 0) {    // when .getAll() returns no windows
+                    _retry();
+                    return;
+                }
+                chrome.windows.getLastFocused(null, _gotLastFocused);
             });
         });
     },

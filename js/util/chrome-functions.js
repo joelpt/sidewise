@@ -47,6 +47,12 @@ function refreshPageStatus(page) {
         return;
     }
     setTimeout(function() {
+        var pageId = page.id;
+        page = tree.getNode(pageId);
+        if (!page) {
+            log('Aborting page status refresh because page no longer exists in tree', pageId);
+            return;
+        }
         chrome.tabs.get(getNumericId(page.id), function(tab) {
             tree.updateNode(page, { status: tab.status });
         });

@@ -235,6 +235,14 @@ function tryAssociateExistingToRestorablePageNode(existingPage) {
 
     // ask the tab for more details via its content_script.js connected port
     if (!getPageDetails(tabId, { action: 'associate_existing' })) {
+        var existingPageId = existingPage.id;
+        existingPage = tree.getNode(existingPageId);
+
+        if (!existingPage) {
+            log('Page no longer exists to get page details from', existingPageId);
+            return;
+        }
+
         var tries = associationGetDetailsRetryList[tabId] || 0;
 
         if (tries >= ASSOCIATE_GET_DETAILS_MAX_RETRIES) {
