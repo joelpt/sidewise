@@ -102,7 +102,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             permitAutoSelectChildren: true,
             alwaysMoveChildren: false,
             multiselectable: true,
-            allowedDropTargets: ['window', 'page', 'folder'],
+            allowedDropTargets: [],
             onClick: onPageRowClick,
             onDoubleClick: onPageRowDoubleClick,
             onMiddleClick: onPageRowMiddleClick,
@@ -114,8 +114,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             filterByExtraParams: ['url'],
             tooltipMaxWidthPercent: 0.95,
             buttons: [
-                {id: 'hibernate', icon: '/images/hibernate_wake.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
-                {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
+                {id: 'close', icon: '/images/close.png', tooltip: getMessage('closed_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
             ]
         },
         'folder': {
@@ -127,7 +126,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             permitAutoSelectChildren: true,
             alwaysMoveChildren: false,
             multiselectable: true,
-            allowedDropTargets: ['window', 'page', 'folder'],
+            allowedDropTargets: [],
             // onClick: onPageRowClick,
             onDoubleClick: onFolderRowDoubleClick,
             onMiddleClick: onFolderRowMiddleClick,
@@ -173,7 +172,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             permitAutoSelectChildren: false,
             alwaysMoveChildren: true,
             multiselectable: false,
-            allowedDropTargets: ['ROOT', 'window'],
+            allowedDropTargets: [],
             onClick: onWindowRowClick,
             onDoubleClick: onWindowRowDoubleClick,
             onMiddleClick: onWindowRowMiddleClick,
@@ -1451,18 +1450,8 @@ function onWindowRowFormatTooltip(evt) {
 ///////////////////////////////////////////////////////////
 
 function closeRow($row) {
-    var $parent = ft.getParentRowNode($row.parent());
-    if ($row.attr('rowtype') != 'page' || $row.attr('hibernated') == 'true' || $row.hasClass('closing')) {
-        // row has no corresponding tab so just remove it from the tree
-        bg.tree.removeNode($row.attr('id'));
-    }
-    else {
-        $row.addClass('closing'); // "about to close" styling
-        chrome.tabs.remove(getRowNumericId($row));
-    }
-    if ($parent.attr('rowtype') == 'window' && $parent.find('.ftRowNode').length == 0) {
-        bg.tree.removeNode($parent.attr('id'), true);
-    }
+    bg.recentlyClosedTree.removeNode($row.attr('id'));
+    bg.recentlyClosedTree.removeZeroChildTopNodes();
 }
 
 function closeWindowRow(row) {
