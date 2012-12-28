@@ -387,7 +387,7 @@ function onResizeTooltip(evt) {
 }
 
 function onRowExpanderClick(evt) {
-    bg.tree.updateNode(evt.data.row.attr('id'), { collapsed: !(evt.data.expanded) });
+    bg.recentlyClosedTree.updateNode(evt.data.row.attr('id'), { collapsed: !(evt.data.expanded) });
 }
 
 function onRowsMoved(moves) {
@@ -1147,6 +1147,13 @@ function onPageRowFormatTitle(row, itemTextElem) {
 
     itemTextElem.children('.ftItemTitle').text(text);
     itemTextElem.children('.ftItemLabel').html(label + (text && label ? ': ' : ''));
+
+    if (row.hasClass('ftCollapsed')) {
+        var childCount = row.children('.ftChildren').find('.ftRowNode').length;
+        if (childCount > 0) {
+            textAffix = '(' + childCount + ')' + (textAffix == '' ? '' : ' ') + textAffix;
+        }
+    }
 
     var itemTextAffix = row.children('.ftItemRow').find('.ftItemTextAffix');
     if (textAffix) {
