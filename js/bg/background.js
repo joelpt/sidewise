@@ -482,6 +482,10 @@ function deduplicateRecentlyClosedPageNode(node) {
 }
 
 function addNodeToRecentlyClosedTree(node) {
+    node = clone(node, ['root', 'parent', 'children']);
+    node.__proto__ = PAGETREE_NODE_TYPES[node.elemType].prototype;
+    node.children = [];
+
     var ghost = ghostTree.getNode(node.id);
     var added = false;
     var now = Date.now();
@@ -493,9 +497,9 @@ function addNodeToRecentlyClosedTree(node) {
             var before = firstElem(ghost.beforeSiblings(), function(e) {
                 return !e.alive;
             });
-            if (before && now - before.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+            if (before) {
                 before = recentlyClosedTree.getNode(before.id);
-                if (before && !(before.parent instanceof HeaderNode)) {
+                if (before && !(before.parent instanceof HeaderNode) && now - before.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
                     recentlyClosedTree.addNodeRel(node, 'after', before);
                     added = true;
                 }
@@ -505,9 +509,9 @@ function addNodeToRecentlyClosedTree(node) {
                 var after = firstElem(ghost.afterSiblings(), function(e) {
                     return !e.alive;
                 });
-                if (after && now - after.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                if (after) {
                     after = recentlyClosedTree.getNode(after.id);
-                    if (after && !(after.parent instanceof HeaderNode)) {
+                    if (after && !(after.parent instanceof HeaderNode) && now - after.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
                         recentlyClosedTree.addNodeRel(node, 'before', after);
                         added = true;
                     }
@@ -526,7 +530,6 @@ function addNodeToRecentlyClosedTree(node) {
                     }
                 }
             }
-
         }
         catch (ex) { }
 
@@ -749,11 +752,9 @@ function shutdownSidewise() {
     browserIsClosed = true;
 
     // Prevent page tree from being saved from this point forward
-    TimeoutManager.clear('onPageTreeModified');
-    tree.onModifiedDelayed = function() {};
-
-    // Prevent further UI updates
-    tree.callbackProxyFn = function() {};
+    tree.disableCallbacks();
+    recentlyClosedTree.disableCallbacks();
+    ghostTree.disableCallbacks();
 
     // Prevent onWindowUpdateCheckInterval from firing again
     try {
