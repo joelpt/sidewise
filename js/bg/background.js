@@ -392,7 +392,7 @@ function PageTreeCallbackProxy(methodName, args) {
     if (methodName == 'remove' && !(args.element instanceof WindowNode)) {
         var ghost = ghostTree.getNode(args.element.id);
         if (ghost) {
-            ghost.alive = false;
+            ghostTree.updateNode(ghost, { alive: false });
         }
         addNodeToRecentlyClosedTree(node);
     }
