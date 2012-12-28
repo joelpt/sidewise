@@ -26,7 +26,7 @@ var PageTree = function(callbackProxyFn, onModifiedDelayed)
     // Initialization
     ///////////////////////////////////////////////////////////
 
-    this.$base();
+    this.$base(['id', 'chromeId']);
     this.callbackProxyFn = callbackProxyFn; // callback proxy function for page/window functions
     this.focusedTabId = null;
     this.lastFocusedTabId = null;
