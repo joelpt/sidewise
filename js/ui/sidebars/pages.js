@@ -769,7 +769,7 @@ function onContextMenuItemCloseWindow($rows) {
 }
 
 function onContextMenuItemClosePages($rows) {
-    $rows.each(function(i, e) { closeRow($(e)); });
+    $rows.reverse().each(function(i, e) { closeRow($(e)); });
 }
 
 function onContextMenuItemCloseBranches($rows) {
@@ -783,7 +783,7 @@ function onContextMenuItemCloseBranches($rows) {
         return;
     }
 
-    $rows.add($children).each(function(i, e) { closeRow($(e)); });
+    $rows.add($children).reverse().each(function(i, e) { closeRow($(e)); });
 }
 
 function onContextMenuItemWakeWindow($rows) {
