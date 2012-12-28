@@ -78,7 +78,16 @@ function onLoad()
             config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS
         );
 
-        ghostTree = new DataTree();
+        ghostTree = new UiDataTree(
+            function() {},
+            undefined,
+            function() {
+                savePageTreeToLocalStorage(ghostTree, 'ghostTree', false);
+            },
+            config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS,
+            config.TREE_ONMODIFIED_STARTUP_DURATION_MS,
+            config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS  // store this less frequently all the time
+        );
 
         tree.name = 'pageTree';
         recentlyClosedTree.name = 'recentlyClosedTree';
