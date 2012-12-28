@@ -55,7 +55,7 @@ UiDataTree.prototype = {
       */
     addNode: function(node, parentMatcher, beforeSiblingMatcher)
     {
-        var r = this.$super('addNode')(node, parent, beforeSiblingMatcher);
+        var r = this.$super('addNode')(node, parentMatcher, beforeSiblingMatcher);
 
         this.callbackProxyFn('add', {
             element: node,
