@@ -231,7 +231,7 @@ UiDataTree.prototype = {
 
     // Permanently disables all callbacks by this object.
     disableCallbacks: function() {
-        this.$super('shutdown')();
+        this.$super('disableCallbacks')();
         this.onModifiedDelayed = function() {};
         this.onModifiedImmediate = function() {};
         this.callbackProxyFn = function() {};
