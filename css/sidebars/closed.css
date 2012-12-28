@@ -16,6 +16,10 @@ section#main.debugEnabled {
     bottom: 20px;
 }
 
+.ftItemRowContent {
+    margin-left: 3px;
+}
+
 .ftItemTextAffix {
     font-style: italic;
     color: green;
@@ -37,10 +41,28 @@ section#main.debugEnabled {
 }*/
 
 .ftNode, .ftExpander {
-    display: none;
+    position: relative;
+    left: 21px;
+    margin-left: -16px;
+    opacity: 0.0;
 }
 
-.ftItemRowContent {
-    margin-left: 3px;
+.ftExpander:hover {
+    opacity: 1.0;
 }
 
+.ftExpander:hover + .ftItemRowContent > .ftInnerRow > .ftRowIcon {
+    visibility: hidden;
+}
+
+.ftRowIcon {
+    opacity: 1.0;
+}
+
+.ftRowNode.ftCollapsed > .ftItemRow:hover > .ftExpander {
+    opacity: 1.0;
+}
+
+.ftRowNode.ftCollapsed > .ftItemRow:hover > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
+    visibility: hidden;
+}
