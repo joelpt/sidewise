@@ -179,7 +179,6 @@ PageTree.prototype = {
                     node.children[i].removedPreviousParentId = node.id;
                 };
             }
-            node.children = [];
         }
 
         var r = this.$super('removeNode')(node, removeChildren);
@@ -818,7 +817,7 @@ PageTree.prototype = {
         }
 
         if (!this.tabIndexes[windowId]) {
-            console.error('No tab index found for windowId ' + windowId, 'node', node.id, node);
+            console.error('No tab index found for windowId ' + windowId, 'node', node.id, node, this.tabIndexes);
             return;
         }
 
