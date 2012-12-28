@@ -17,13 +17,17 @@ var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 1000;
 var GROUPING_ROW_COUNT_THRESHOLD = 3;
 var GROUPING_ROW_COUNT_WAIT_THRESHOLD = 4;
 var GROUPING_ROW_COUNT_WAIT_ITERATIONS = 4;
-var RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS = MINUTE_MS * 10;  // Nodes in the recently closed tree must be at most no older than this many ms
-                                                                    // to qualify for having another node matched to an associated position vs. them,
-                                                                    // e.g. a new recently-closed node being made a child of an existing recently-closed node.
-                                                                    // When a recently-closed node can't be placed in relative positioning to another node due
-                                                                    // to exceeding this timeout or just not finding any qualifying nodes, the fallback
-                                                                    // behavior is simply to prepend it to the top .collecting=true HeaderNode in the recently
-                                                                    // closed tree (creating one if needed).
+
+// Nodes in the recently closed tree must be at most no older than this many
+// ms to qualify for having another node matched to an associated position vs.
+// them, e.g. a new recently-closed node being made a child of an existing
+// recently-closed node. When a recently-closed node can't be placed in
+// relative positioning to another node due to exceeding this timeout or just
+// not finding any qualifying nodes, the fallback behavior is simply to
+// prepend it to the top .collecting=true HeaderNode in the recently closed
+// tree (creating one if needed).
+var RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS = MINUTE_MS * 10;
+
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -63,19 +67,12 @@ function onLoad()
             RecentlyClosedTreeCallbackProxy,
             undefined,
             function() {
-                var nodes = recentlyClosedTree.filter(function(e) { return !(e instanceof HeaderNode); });
-                var max = settings.get('closed_maxPagesRemembered');
-                if (nodes.length > max) {
-                    for (var i = nodes.length - 1; i >= max; i--) {
-                        recentlyClosedTree.removeNode(nodes[i]);
-                    };
-                    recentlyClosedTree.removeZeroChildTopNodes();
-                }
+                truncateRecentlyClosedTree(settings.get('closed_maxPagesRemembered'));
                 savePageTreeToLocalStorage(recentlyClosedTree, 'recentlyClosedTree', true);
             },
-            config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS,
+            config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS * 3,
             config.TREE_ONMODIFIED_STARTUP_DURATION_MS,
-            config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS
+            config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS * 3
         );
 
         ghostTree = new UiDataTree(
@@ -84,9 +81,9 @@ function onLoad()
             function() {
                 savePageTreeToLocalStorage(ghostTree, 'ghostTree', false);
             },
-            config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS,
+            config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS * 2,
             config.TREE_ONMODIFIED_STARTUP_DURATION_MS,
-            config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS  // store this less frequently all the time
+            config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS * 2
         );
 
         tree.name = 'pageTree';
@@ -99,10 +96,6 @@ function onLoad()
         focusTracker = new ChromeWindowFocusTracker(postLoad);
     });
 }
-
-// IDEA for warmup executescript association fails:
-// - use c.ext.onConnect to establish a port first?
-//   - keep retrying on chrome.ext.lastError, esp. if lastError is something meaningful that can distinguish this case?
 
 function postLoad(focusedWin) {
     if (!focusedWin) {
@@ -128,10 +121,9 @@ function postLoad(focusedWin) {
     if (first && first.collecting) {
         first.collecting = false;
     }
-    var fixIds = recentlyClosedTree.filter(function(e) { return e instanceof PageNode && e.id[0] == 'p'; });
-    fixIds.forEach(function(e) { recentlyClosedTree.updateNode(e, { id: 'R' + e.UUID }); });
 
     loadTreeFromLocalStorage(ghostTree, 'ghostTree', GHOSTTREE_NODE_TYPES);
+    setInterval(cleanGhostTree, HOUR_MS);
 
     var storedPageTree = settings.get('pageTree', []);
 
@@ -463,6 +455,13 @@ function RecentlyClosedTreeCallbackProxy(methodName, args) {
         args.element.unread = false;
     }
 
+    if (methodName == 'remove' && !(args.element instanceof HeaderNode)) {
+        try {
+            ghostTree.removeNode(args.element.id);
+        }
+        catch (ex) {}
+    }
+
     var closedWindow = sidebarHandler.sidebarPanes['closed'];
     if (closedWindow) {
         closedWindow.PageTreeCallbackProxyListener.call(closedWindow, methodName, args);
@@ -643,6 +642,28 @@ function autoGroupRecentlyClosedTreeNodes() {
     return;
 }
 
+// Trim nodes from bottom of tree when tree total node count exceeds max.
+function truncateRecentlyClosedTree(max) {
+    var nodes = recentlyClosedTree.filter(function(e) { return !(e instanceof HeaderNode); });
+    if (nodes.length > max) {
+        for (var i = nodes.length - 1; i >= max; i--) {
+            recentlyClosedTree.removeNode(nodes[i]);
+        };
+        recentlyClosedTree.removeZeroChildTopNodes();
+    }
+}
+
+// Remove nodes from ghost tree which are no longer present in either the pages or
+// recently closed trees.
+function cleanGhostTree() {
+    var nodes = ghostTree.filter(function(e) { return true; });
+    for (var i = nodes.length - 1; i >= 0; i--) {
+        var node = nodes[i];
+        if (tree.getNode(node.id)) continue;
+        if (recentlyClosedTree.getNode(node.id)) continue;
+        ghostTree.removeNode(node, false);
+    }
+}
 
 // TODO move this to a new file
 // TODO probably wanna sort by tabs.index
