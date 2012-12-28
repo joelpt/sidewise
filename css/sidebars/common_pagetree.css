@@ -146,11 +146,16 @@ section#main.debugEnabled {
 .ftRowNode[rowtype=header] > .ftItemRow {
     background: #eee;
     border-top: 1px solid #ccc;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 2px solid #ccc;
     padding-top: 0px;
     padding-bottom: 0px;
     margin-bottom: 0px;
     height: 2px;
+}
+
+.ftRowNode[rowtype=header]:hover > .ftItemRow {
+    border-top: 1px solid #b8b8b8;
+    border-bottom: 2px solid #b8b8b8;
 }
 
 .ftRowNode[rowtype=header] > .ftItemRow > .ftItemRowContent {
