@@ -335,7 +335,7 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
         });
 
         // rebuild the indexes
-        tree.rebuildIdIndex();
+        tree.rebuildIndexes();
         tree.rebuildTabIndex();
         tree.rebuildParents();
 
@@ -345,7 +345,7 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
 }
 
 function PageTreeCallbackProxy(methodName, args) {
-    // log(methodName, args);
+    log(methodName, args);
 
     var node = args.element;
 
@@ -390,12 +390,9 @@ function PageTreeCallbackProxy(methodName, args) {
         return;
     }
 
-    if (methodName == 'remove' && !(args.element instanceof WindowNode)) {
-        var ghost = ghostTree.getNode(args.element.id);
-        if (ghost) {
-            ghostTree.updateNode(ghost, { alive: false });
-        }
-        addNodeToRecentlyClosedTree(node);
+    if (methodName == 'remove') {
+        addNodeToRecentlyClosedTree(node, args.removeChildren);
+        recentlyClosedTree.removeZeroChildTopNodes();
     }
 
     if (node instanceof WindowNode && !node.hibernated && methodName == 'remove') {
@@ -433,14 +430,17 @@ function PageTreeCallbackProxy(methodName, args) {
 
     var pagesWindow = sidebarHandler.sidebarPanes['pages'];
     if (pagesWindow) {
-        pagesWindow.PageTreeCallbackProxyListener.call(pagesWindow, methodName, args);
-
+        try {
+            pagesWindow.PageTreeCallbackProxyListener.call(pagesWindow, methodName, args);
+        }
+        catch (ex) {
+            console.error(ex.message);
+        }
     }
 
     if (node instanceof PageNode && node.isTab() && (methodName == 'move' || methodName == 'add')) {
         fixPinnedUnpinnedTabOrder(node);
     }
-
 }
 
 function RecentlyClosedTreeCallbackProxy(methodName, args) {
@@ -464,7 +464,12 @@ function RecentlyClosedTreeCallbackProxy(methodName, args) {
 
     var closedWindow = sidebarHandler.sidebarPanes['closed'];
     if (closedWindow) {
-        closedWindow.PageTreeCallbackProxyListener.call(closedWindow, methodName, args);
+        try {
+            closedWindow.PageTreeCallbackProxyListener.call(closedWindow, methodName, args);
+        }
+        catch (ex) {
+            console.error(ex.message);
+        }
     }
 
     // setTimeout(function() {
@@ -489,18 +494,33 @@ function deduplicateRecentlyClosedPageNode(node) {
     });
 }
 
-function addNodeToRecentlyClosedTree(node) {
-    node = clone(node, ['root', 'parent', 'children']);
-    node.__proto__ = PAGETREE_NODE_TYPES[node.elemType].prototype;
-    node.children = [];
-
+function addNodeToRecentlyClosedTree(node, addDescendants) {
     var ghost = ghostTree.getNode(node.id);
-    var added = false;
-    var now = Date.now();
+    if (!ghost) {
+        console.warn('Did not find ghost node matching', node.id);
+        return;
+    }
 
-    if (ghost) {
+    ghostTree.updateNode(ghost, { alive: false });
+
+    if (node instanceof WindowNode) {
+        // don't add WindowNodes to the tree, instead just disable .collecting
+        // on the top HeaderNode
+        var first = recentlyClosedTree.root.children[0];
+        if (first && first instanceof HeaderNode) {
+            recentlyClosedTree.updateNode(first, { collecting: false });
+        }
+    }
+    else {
+        // Clone the node so we don't get weird "shared between trees" behavior
+        node = clone(node, ['root', 'parent', 'children']);
+        node.__proto__ = PAGETREE_NODE_TYPES[node.elemType].prototype;
+        node.children = [];
+
         // Find insert position by looking for another dead ghost node that
         // we have a positional relationship to
+        var now = Date.now();
+        var added = false;
         try {
             var before = firstElem(ghost.beforeSiblings(), function(e) {
                 return !e.alive;
@@ -558,8 +578,13 @@ function addNodeToRecentlyClosedTree(node) {
                 requestAutoGroupingForNode(child);
             }
         });
+    }
 
-        recentlyClosedTree.removeZeroChildTopNodes();
+    // if requested, also add all descendant nodes to recently closed tree
+    if (addDescendants) {
+        node.children.forEach(function(e) {
+            addNodeToRecentlyClosedTree(e, true);
+        });
     }
 }
 
