@@ -5,7 +5,7 @@
   * @requires DataTreeNode
   * @constructor
   */
-var DataTree = function() {
+var DataTree = function(indexKeys) {
 
     /////////////////////////////////////////////////////
     // Intialization
@@ -15,7 +15,18 @@ var DataTree = function() {
     this.tree = this.root.children; // root level children
     this.lastModified = null;
     this.onModified = null;
-    this.idIndex = {};
+    this.indexes = {};
+
+    if (!indexKeys) {
+        indexKeys = [];
+    }
+    if (indexKeys.indexOf('id') == -1) {
+        indexKeys.push('id');
+    }
+
+    for (var i = indexKeys.length - 1; i >= 0; i--) {
+        this.addIndex(indexKeys[i]);
+    }
 };
 
 DataTree.prototype = {
@@ -27,13 +38,37 @@ DataTree.prototype = {
     /**
       * Find a node in the tree.
       * @param matcher Used to identify the sought node; may be one of:
-      *                Function: it is passed the node to test; return true to indicate a match.
-      *                String: treated as an id and an id index lookup is performed.
-      *                Object: matcher is assumed to be the node sought and is just returned.
+      *                Function(e):  Passed the node to test; return true to indicate a match.
+      *                String:       Treated as an id and an id index lookup is performed.
+      *                [key, value]: Pass a key(string)/value(non-object) pair to search the tree for.
+      *                              If an index exists for the specified key, it will be used and the first
+      *                              matching node will be returned. If no index exists a tree scan is performed
+      *                              instead.
+      *                Object:       The matcher arg is assumed to be the node sought and is just returned.
+      *                              This does not verify that the node exists in the tree! For that use
+      *                              t.getNode(node.id) or t.getNode(t.getObjectIdentityMatcher(node)).
       */
     getNode: function(matcher) {
         if (typeof(matcher) == 'string') {
-            return this.idIndex[matcher];
+            var r = this.indexes['id'][matcher];
+            if (!r) {
+                return undefined;
+            }
+            return r[0];
+        }
+
+        if (Array.isArray(matcher)) {
+            var index = this.indexes[matcher[0]];
+            if (!index) {
+                // no index for the requested key so just scan the tree for a match
+                return this.getNodeStep(this.getKeyMatcherFn(matcher[0], matcher[1]));
+            }
+            var r = index[matcher[1]];
+            if (!r) {
+                // node does not exist
+                return undefined;
+            }
+            return r[0]; // return first node matching specified key/value pairing
         }
 
         if (matcher instanceof DataTreeNode) {
@@ -188,7 +223,7 @@ DataTree.prototype = {
       *                             node that matches beforeSiblingMatcher.
       * @returns [node, parent, beforeSibling], where parent/beforeSibling may be undefined
       */
-    addNode: function(node, parentMatcher, beforeSiblingMatcher)
+    addNode: function(node, parentMatcher, beforeSiblingMatcher, skipIndexing)
     {
         var parent, beforeSibling;
 
@@ -196,7 +231,7 @@ DataTree.prototype = {
             parent = this.getNode(parentMatcher);
 
             if (!parent) {
-                console.error(parentMatcher);
+                console.error(JSON.stringify(parentMatcher));
                 throw new Error('For adding node ' + node.id + ', could not find element matching parentMatcher');
             }
         }
@@ -235,12 +270,16 @@ DataTree.prototype = {
         }
 
         node.root = this.root;
-        this.idIndex[node.id] = node;
+
+        if (!skipIndexing) {
+            this.indexNode(node);
+        }
+
         this.updateLastModified();
         return [node, parent, beforeSibling];
     },
 
-    addNodeRel: function(node, relation, toMatcher) {
+    addNodeRel: function(node, relation, toMatcher, skipIndexing) {
         var parent;
         var beforeSibling;
 
@@ -257,37 +296,38 @@ DataTree.prototype = {
             parent = rel.parent;
             beforeSibling = rel.following;
         }
-        log(node, relation, toMatcher, 'parent id', parent ? parent.id : 'none', 'before sibling id', beforeSibling ? beforeSibling.id : 'none');
-        return this.addNode(node, parent, beforeSibling);
+        log(node.id, relation, toMatcher ? toMatcher.id : 'none', '- parent id', parent ? parent.id : 'none', 'before sibling id', beforeSibling ? beforeSibling.id : 'none', node, toMatcher);
+        return this.addNode(node, parent, beforeSibling, skipIndexing);
     },
 
     // Update the first element that matches matcher
-    updateNode: function(matcher, details, blockUpdateLastModified)
+    updateNode: function(matcher, details, blockUpdateLastModified, skipIndexing)
     {
-        var elem = this.getNode(matcher);
-        if (elem === undefined) {
-            throw new Error('updateNode could not find a matching element to update');
+        var node = this.getNode(matcher);
+        if (node === undefined) {
+            throw new Error('updateNode could not find a matching node to update');
         }
-        if (details.id && details.id != elem.id) {
-            delete this.idIndex[elem.id];
-            elem.id = details.id;
-            this.idIndex[details.id] = elem;
+
+        if (!skipIndexing) {
+            this.updateIndexForNode(node, details);
         }
+
         for (var key in details)
         {
-            elem[key] = details[key];
+            node[key] = details[key];
         }
 
         if (!blockUpdateLastModified) {
             this.updateLastModified();
         }
 
-        return elem;
+        return node;
     },
+
 
     // remove the first element from the tree matching matcher
     // removeChildren: if true, remove element's children; if false (default), splice them into element's old spot
-    removeNode: function(matcher, removeChildren)
+    removeNode: function(matcher, removeChildren, skipDeindexing)
     {
         var node = this.getNode(matcher);
         if (!node) {
@@ -298,9 +338,11 @@ DataTree.prototype = {
         if (removeChildren) {
             // remove all children
             node.siblings().splice(node.siblingIndex(), 1);
-            var descendants = this.filter(function(e) { return e; }, node.children);
-            for (var i = descendants.length - 1; i >= 0; i--) {
-                delete this.idIndex[descendants[i].id];
+            if (!skipDeindexing) {
+                var descendants = this.filter(function(e) { return e; }, node.children);
+                for (var i = descendants.length - 1; i >= 0; i--) {
+                    this.deindexNode(descendants[i]);
+                }
             }
         }
         else {
@@ -308,7 +350,9 @@ DataTree.prototype = {
             Array.prototype.splice.apply(node.siblings(), [node.siblingIndex(), 1].concat(node.children));
         }
 
-        delete this.idIndex[node.id];
+        if (!skipDeindexing) {
+            this.deindexNode(node);
+        }
 
         this.updateLastModified();
         return node;
@@ -336,18 +380,13 @@ DataTree.prototype = {
 
         var r;
         if (keepChildren) {
-            this.removeNode(moving, true);
-            r = this.addNode(moving, parent, beforeSiblingMatcher);
-
-            var descendants = this.filter(function(e) { return e; }, moving.children);
-            for (var i = descendants.length - 1; i >= 0; i--) {
-                this.idIndex[descendants[i].id] = descendants[i];
-            }
+            this.removeNode(moving, true, true);
+            r = this.addNode(moving, parent, beforeSiblingMatcher, true);
         }
         else {
-            this.removeNode(moving, false);
+            this.removeNode(moving, false, true);
             moving.children = []; // remove all of its children
-            r = this.addNode(moving, parent, beforeSiblingMatcher);
+            r = this.addNode(moving, parent, beforeSiblingMatcher, true);
         }
         this.updateLastModified();
         return r;
@@ -361,20 +400,16 @@ DataTree.prototype = {
         }
 
         if (keepChildren) {
-            this.removeNode(moving, true);
-            var descendants = this.filter(function(e) { return e; }, moving.children);
-            for (var i = descendants.length - 1; i >= 0; i--) {
-                this.idIndex[descendants[i].id] = descendants[i];
-            }
+            this.removeNode(moving, true, true);
         }
         else {
-            this.removeNode(moving, false);
+            this.removeNode(moving, false, true);
             moving.children = []; // remove all of its children
         }
 
         var rel = this.getNodeRel(relation, toMatcher);
         this.updateLastModified();
-        return this.addNode(moving, rel.parent, rel.following);
+        return this.addNode(moving, rel.parent, rel.following, true);
     },
 
     // Merge the node matching fromNodeMatcher and all its children into the node matching toNodeMatcher.
@@ -413,7 +448,6 @@ DataTree.prototype = {
     ///////////////////////////////////////////////////////////
 
     // Load contents of tree in bulk.
-    // Make sure to call rebuildIdIndex() and updateLastModified() afterwards.
     loadTree: function(treeData, casts) {
         if (!casts) {
             // Default cast
@@ -447,17 +481,9 @@ DataTree.prototype = {
 
         this.root = newRootNode;
         this.tree = this.root.children;
-        this.rebuildIdIndex();
+        this.rebuildIndexes();
         this.rebuildParents();
         this.lastModified = Date.now();
-    },
-
-    // rebuild the id index
-    rebuildIdIndex: function() {
-        this.idIndex = this.reduce(function(last, e) {
-            last[e.id] = e;
-            return last;
-        }, {});
     },
 
     // rebuild .parent relations
@@ -605,6 +631,116 @@ DataTree.prototype = {
         });
     },
 
+    ///////////////////////////////////////////////////////////
+    // Index handling
+    ///////////////////////////////////////////////////////////
+
+    addIndex: function(key) {
+        this.indexes[key] = {};
+    },
+
+    indexNode: function(node) {
+        for (var key in this.indexes) {
+            var value = node[key];
+            if (value === undefined) {
+                continue;
+            }
+            var index = this.indexes[key];
+            if (index === undefined) {
+                throw new Error('Index not defined for given index key', key);
+            }
+            var ary = index[value];
+            if (ary === undefined) {
+                ary = [];
+                index[value] = ary;
+            }
+            ary.push(node);
+        }
+    },
+
+    updateIndexForNode: function(node, details) {
+        for (var key in details) {
+            var index = this.indexes[key];
+            if (index === undefined) {
+                continue;
+            }
+
+            var newValue = details[key];
+            var oldValue = node[key];
+            if (newValue == oldValue) {
+                continue;
+            }
+
+            // remove previous indexed value
+            if (oldValue !== undefined) {
+                var oldAry = index[oldValue];
+                if (oldAry !== undefined) {
+                    var oldIndexOf = oldAry.indexOf(node);
+                    if (oldIndexOf > -1) {
+                        oldAry.splice(oldIndexOf, 1);
+                        if (oldAry.length == 0) {
+                            delete index[oldValue];
+                        }
+                    }
+                }
+            }
+
+            // add new indexed value
+            if (newValue !== undefined) {
+                var newAry = index[newValue];
+                if (newAry === undefined) {
+                    newAry = [];
+                    index[newValue] = newAry;
+                }
+                newAry.push(node);
+            }
+        }
+    },
+
+    deindexNode: function(node) {
+        for (var key in this.indexes) {
+            var value = node[key];
+            if (value === undefined) {
+                continue;
+            }
+            var index = this.indexes[key];
+            if (index === undefined) {
+                throw new Error('Index not defined for given index key', key);
+            }
+            var ary = index[value];
+            if (ary === undefined) {
+                continue;
+            }
+            var indexOf = ary.indexOf(node);
+            if (indexOf > -1) {
+                ary.splice(indexOf, 1);
+                if (ary.length == 0) {
+                    delete index[value];
+                }
+            }
+        }
+    },
+
+    rebuildIndexes: function() {
+        for (var key in this.indexes) {
+            if (this.indexes[key] === undefined) {
+                throw new Error('Could not find key in indexes to populate', key);
+            }
+            this.indexes[key] = this.reduce(function(last, e) {
+                var value = e[key];
+                if (value === undefined) {
+                    return last;
+                }
+                var ary = last[value];
+                if (ary === undefined) {
+                    ary = [];
+                    last[value] = ary;
+                }
+                ary.push(e);
+                return last;
+            }, {});
+        }
+    },
 
     /////////////////////////////////////////////////////
     // Miscellaneous
@@ -629,7 +765,10 @@ DataTree.prototype = {
     clear: function() {
         this.root = new DataTreeRootNode(this);
         this.tree = this.root.children;
-        this.idIndex = [];
+        this.indexes = this.indexes.reduce(function(last, e) {
+            last[e] = {};
+            return last;
+        }, {});
         this.updateLastModified();
     },
 

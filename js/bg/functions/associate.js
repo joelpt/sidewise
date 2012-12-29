@@ -302,7 +302,7 @@ function associateExistingToRestorablePageNode(tab, referrer, historylength) {
 }
 
 // Run a series of association, disambiguation, and guarantee steps to get the tree as accurate as possible when
-// it has gotten out of whack
+// there are ambiguous tab-to-page mappings, window nodes with no children, improperly ordered tabs on Chrome's tabbar, etc.
 function cleanUpAfterAssociation(delay) {
     TimeoutManager.reset('cleanUpAfterAssociation', function() {
         tree.rebuildPageNodeWindowIds(function() {                                  // obtain fresh tab windowIds and indexes
@@ -319,7 +319,7 @@ function cleanUpAfterAssociation(delay) {
                                 removeZeroChildWindowNodes();                       // get rid of any zero-child window nodes stuck in the tree
                                 tree.rebuildPageNodeWindowIds(function() {          // sanity guarantee
                                     tree.rebuildTabIndex();                         // sanity guarantee
-                                    tree.rebuildIdIndex();                          // sanity guarantee
+                                    tree.rebuildIndexes();                          // sanity guarantee
                                     tree.rebuildParents();                          // sanity guarantee
                                     fixAllPinnedUnpinnedTabOrder();                 // correct ordering of pinned vs. unpinned tabs in the tree/tab order
                                     tree.conformAllChromeTabIndexes(true);          // conform chrome's tab order to match the tree's order
