@@ -1063,40 +1063,15 @@ function onFolderRowFormatTooltip(evt) {
 ///////////////////////////////////////////////////////////
 
 function onPageRowClick(evt) {
-    var treeObj = evt.data.treeObj;
-    var row = evt.data.row;
-
-    if (row.attr('hibernated') == 'true') {
-        // row is hibernated, show its tooltip extra quickly
-        treeObj.startTooltipTimer(row, evt, 500);
-        if (settings.get('wakeHibernatedPagesOnClick') && !evt.data.clickedViaHover && !evt.data.clickedViaScroll) {
-            // also wake it up
-            bg.tree.awakenPages([row.attr('id')], true);
-        }
-        return;
-    }
-
-    // set visual focus asap in ft
-    ft.focusRow(row);
-
-    // actually set Chrome's focused tab
-    chrome.tabs.update(getRowNumericId(row), { active: true }, function(tab) {
-        // if the tab's hosting window is currently minimized, un-minimize it
-        chrome.windows.get(tab.windowId, function(win) {
-            if (win.state == 'minimized') {
-                chrome.windows.update(win.id, { state: 'normal' });
-            }
-        });
-    });
-
-    // trigger page row tooltip to appear after 2s
-    treeObj.startTooltipTimer(row, evt, 2000);
-
+    return;
 }
 
 function onPageRowDoubleClick(evt) {
-    var action = settings.get('pages_doubleClickAction');
-    handlePageRowAction(action, evt);
+    restoreRow(evt.data.row);
+}
+
+function restoreRow($row) {
+    // bg.restoreNodeFromRecentlyClosedTree($row.attr('id'));
 }
 
 function onPageRowMiddleClick(evt) {
