@@ -55,6 +55,10 @@ FancyTree.prototype.addRowType = function(name, params) {
     // construct empty HTML element for this rowtype
     params.baseElement = this.buildRowTypeElem(name);
 
+    if (params.multiselectable !== false) {
+        this.multiSelectableRowTypes.push(name);
+    }
+
     if (!params.allowedDropTargets || params.allowedDropTargets.length == 0) {
         return;
     }
@@ -62,9 +66,4 @@ FancyTree.prototype.addRowType = function(name, params) {
     // configure draggable and droppable parameters
     params.draggableParams = this.getDraggableParams();
     params.droppableParams = this.getDroppableParams(params.allowedDropTargets);
-
-    if (params.multiselectable !== false) {
-        this.multiSelectableRowTypes.push(name);
-    }
-
 };
