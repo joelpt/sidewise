@@ -912,8 +912,10 @@ function disambiguatePageNodesByWindowId(iterations) {
                 }
             }
             log('Swapping for disambiguation:', swapCount, 'page ids', item.id, swapWith[0].id, '.windowIds', item.windowId, swapWith[0].windowId, 'topParentIds', item.topParent().id, swapWith[0].topParent().id, 'group', g, items);
-            /* TODO should not need to do this when using .chromeId; may still want to swap .chromeIds though */
-            swapPageNodeIdValues(item, swapWith[0]);
+
+            var temp = item.chromeId;
+            item.chromeId = swapWith[0].chromeId;
+            swapWith[0].chromeId = temp;
         }
     }
     if (swapCount > 0 && iterations > 1) {
@@ -922,18 +924,6 @@ function disambiguatePageNodesByWindowId(iterations) {
         return;
     }
     // log('Disambiguation complete');
-}
-
-function swapPageNodeIdValues(a, b) {
-    var origIdA = a.id;
-    var origIdB = b.id;
-    var tempIdA = generateGuid();
-    var tempIdB = generateGuid();
-    var c = { id: tempIdB, windowId: b.windowId, index: b.index };
-    tree.updateNode(b, { id: tempIdA, windowId: a.windowId, index: a.index });
-    tree.updateNode(a, c);
-    tree.updateNode(b, { id: origIdA });
-    tree.updateNode(a, { id: origIdB });
 }
 
 function movePageNodesToCorrectWindows(onComplete) {
