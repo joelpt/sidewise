@@ -2,26 +2,6 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-var PAGETREE_FANCYTREE_UPDATE_DETAILS_MAP = {
-    id: 'id',
-    url: 'url',
-    favicon: 'icon',
-    label: 'label',
-    title: 'text',
-    status: 'status',
-    pinned: 'pinned',
-    unread: 'unread',
-    hibernated: 'hibernated',
-    restorable: 'restorable',
-    highlighted: 'highlighted',
-    mediaState: 'media-state',
-    mediaTime: 'media-time'
-};
-
-// wait this long before accessing chrome://favicon cache to obtain
-// a working icon when the assigned favicon fails to load on the page
-var ICON_ERROR_FALLBACK_DELAY_MS = 10000;
-
 // wait this long between 'update all page row titles' intervals;
 // this is done to keep offset times shown reasonably accurate
 var REFORMAT_ALL_ROW_TITLES_INTERVAL_MS = 50000;
