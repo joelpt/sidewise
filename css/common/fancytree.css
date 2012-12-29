@@ -183,22 +183,22 @@
 }
 
 .ftExpander {
-    background-image: url('../images/toggle_arrow_expanded.png');
+    background-image: url('/images/toggle_arrow_expanded.png');
     cursor: pointer;
     position: relative;
     top: 1px;
 }
 
 .ftExpander:hover {
-    background-image: url('../images/toggle_arrow_expanded_hover.png');
+    background-image: url('/images/toggle_arrow_expanded_hover.png');
 }
 
 .ftCollapsed > .ftItemRow > .ftExpander {
-    background-image: url('../images/toggle_arrow_collapsed.png');
+    background-image: url('/images/toggle_arrow_collapsed.png');
 }
 
 .ftCollapsed > .ftItemRow > .ftExpander:hover {
-    background-image: url('../images/toggle_arrow_collapsed_hover.png');
+    background-image: url('/images/toggle_arrow_collapsed_hover.png');
 }
 
 
