@@ -53,14 +53,6 @@ function debugBarClickResetTree() {
 function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     var rowTypes = {
         'page': {
-            allowAtTopLevel: false,
-            allowAtChildLevel: true,
-            autofocusOnClick: true,
-            allowClickOnHover: true,
-            allowClickOnScroll: true,
-            permitAutoSelectChildren: true,
-            alwaysMoveChildren: false,
-            multiselectable: true,
             allowedDropTargets: ['window', 'page', 'folder'],
             onClick: onPageRowClick,
             onDoubleClick: onPageRowDoubleClick,
@@ -69,46 +61,23 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onIconError: onPageRowIconError,
             onFormatTitle: onPageRowFormatTitle,
             onFormatTooltip: onPageRowFormatTooltip,
-            onResizeTooltip: onResizeTooltip,
-            filterByExtraParams: ['url'],
-            tooltipMaxWidthPercent: 0.95,
             buttons: [
                 {id: 'hibernate', icon: '/images/hibernate_wake.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
                 {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
             ]
         },
         'folder': {
-            allowAtTopLevel: false,
-            allowAtChildLevel: true,
-            autofocusOnClick: true,
-            allowClickOnHover: false,
-            allowClickOnScroll: false,
-            permitAutoSelectChildren: true,
-            alwaysMoveChildren: false,
-            multiselectable: true,
             allowedDropTargets: ['window', 'page', 'folder'],
-            // onClick: onPageRowClick,
             onDoubleClick: onFolderRowDoubleClick,
             onMiddleClick: onFolderRowMiddleClick,
             onExpanderClick: onRowExpanderClick,
-            // onIconError: onPageRowIconError,
             onFormatTitle: onFolderRowFormatTitle,
             onFormatTooltip: onFolderRowFormatTooltip,
-            onResizeTooltip: onResizeTooltip,
-            tooltipMaxWidthPercent: 0.95,
             buttons: [
                 {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_folderRowButtonTip_close'), onClick: onFolderRowCloseButton }
             ]
         },
         'window': {
-            allowAtTopLevel: true,
-            allowAtChildLevel: false,
-            autofocusOnClick: false,
-            allowClickOnHover: false,
-            allowClickOnScroll: false,
-            permitAutoSelectChildren: false,
-            alwaysMoveChildren: true,
-            multiselectable: false,
             allowedDropTargets: ['ROOT', 'window'],
             onClick: onWindowRowClick,
             onDoubleClick: onWindowRowDoubleClick,
@@ -116,15 +85,14 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onExpanderClick: onRowExpanderClick,
             onFormatTitle: onWindowRowFormatTitle,
             onFormatTooltip: onWindowRowFormatTooltip,
-            onResizeTooltip: onResizeTooltip,
-            tooltipMaxWidthPercent: 0.95,
+            onShowButtons: onWindowShowButtons,
             buttons: [
                 {id: 'createTab', icon: '/images/create_tab.png', tooltip: getMessage('pages_windowRowButtonTip_createTab'), onClick: onWindowRowCreateTabButton },
                 {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_windowRowButtonTip_close'), onClick: onWindowRowCloseButton }
-            ],
-            onShowButtons: onWindowShowButtons
+            ]
         }
     };
+    copyObjectSubProps(PageTreeRowTypes, rowTypes, false);
 
     var clickOnHoverDelayMs;
     if (settings.get('pages_clickOnHoverDelay')) {
@@ -149,7 +117,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
 
     $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));
 
-    populateFancyTreeFromPageTree(fancyTree, pageTree);
+    setTimeout(function() { populateFancyTreeFromPageTree(fancyTree, pageTree); }, 0);
 
     return fancyTree;
 }
@@ -187,7 +155,8 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId, beforeSiblingId)
             {
                 incognito: node.incognito,
                 hibernated: node.hibernated,
-                type: node.type
+                type: node.type,
+                chromeid: node.chromeId
             },
             node.collapsed);
     }
@@ -201,7 +170,8 @@ function addPageTreeNodeToFancyTree(fancyTree, node, parentId, beforeSiblingId)
                 hibernated: node.hibernated,
                 restorable: node.restorable,
                 highlighted: node.highlighted,
-                incognito: node.incognito
+                incognito: node.incognito,
+                chromeid: node.chromeId
             },
             node.collapsed);
     }
@@ -311,12 +281,6 @@ function onBodyDoubleClick(evt) {
 ///////////////////////////////////////////////////////////
 // FancyTree general event handlers
 ///////////////////////////////////////////////////////////
-
-function onResizeTooltip(evt) {
-    // Manually set a fixed width for the tooltip's text content region; without this
-    // the CSS 'word-wrap: break-word' has no effect
-    evt.data.tooltip.find('td:nth-child(2) > div').width(evt.data.width - 47);
-}
 
 function onRowExpanderClick(evt) {
     bg.tree.updateNode(evt.data.row.attr('id'), { collapsed: !(evt.data.expanded) });
@@ -1195,6 +1159,7 @@ function onPageRowFormatTooltip(evt) {
         url += '<br/><br/>Id: ' + page.id
             + '<br/>History length: ' + page.historylength
             + '<br/>Referrer: ' + (page.referrer || "''")
+            + '<br/>Chrome ID: ' + (page.chromeId || "''")
             + '<br/>WinId/index: ' + page.windowId + '/' + page.index;
     }
 

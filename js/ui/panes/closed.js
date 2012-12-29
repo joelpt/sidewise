@@ -6,36 +6,14 @@
 // this is done to keep offset times shown reasonably accurate
 var REFORMAT_ALL_ROW_TITLES_INTERVAL_MS = 50000;
 
-///////////////////////////////////////////////////////////
-// Globals
-///////////////////////////////////////////////////////////
-
-var ft;
-initSidebarPane();
-
 
 ///////////////////////////////////////////////////////////
 // Initialization
 ///////////////////////////////////////////////////////////
 
 $(document).ready(function() {
-
     initDebugBar();
-
-    ft = initTree('#treePlaceholder', '#filterBoxPlaceholder', bg.recentlyClosedTree);
-
-    var binder = new SidebarPaneFancyTreeBinder(ft, bg);
-    binder.bind();
-
-    bg.sidebarHandler.registerSidebarPane('closed', window);
-    bg.focusCurrentTabInPageTree(true);
-
-    if (!settings.get('createdNewTabViaDoubleClick')) {
-        $('.ftBottomPadding').text('Double-click to create a new tab');
-    }
-
-    $(document).on('dblclick', 'body, .ftBottomPadding', onBodyDoubleClick);
-
+    initPageTree(bg.recentlyClosedTree, 'closed');
     setInterval(function() {
         if (ft.filtering) return;
         ft.formatAllRowTitles();
@@ -74,14 +52,6 @@ function debugBarClickResetTree() {
 function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     var rowTypes = {
         'page': {
-            allowAtTopLevel: false,
-            allowAtChildLevel: true,
-            autofocusOnClick: true,
-            allowClickOnHover: true,
-            allowClickOnScroll: true,
-            permitAutoSelectChildren: true,
-            alwaysMoveChildren: false,
-            multiselectable: true,
             allowedDropTargets: [],
             onClick: onPageRowClick,
             onDoubleClick: onPageRowDoubleClick,
@@ -90,84 +60,35 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onIconError: onPageRowIconError,
             onFormatTitle: onPageRowFormatTitle,
             onFormatTooltip: onPageRowFormatTooltip,
-            onResizeTooltip: onResizeTooltip,
-            filterByExtraParams: ['url'],
-            tooltipMaxWidthPercent: 0.95,
             buttons: [
                 {id: 'close', icon: '/images/close.png', tooltip: getMessage('closed_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
             ]
         },
         'folder': {
-            allowAtTopLevel: false,
-            allowAtChildLevel: true,
-            autofocusOnClick: true,
-            allowClickOnHover: false,
-            allowClickOnScroll: false,
-            permitAutoSelectChildren: true,
-            alwaysMoveChildren: false,
-            multiselectable: true,
             allowedDropTargets: [],
-            // onClick: onPageRowClick,
             onDoubleClick: onFolderRowDoubleClick,
             onMiddleClick: onFolderRowMiddleClick,
             onExpanderClick: onRowExpanderClick,
-            // onIconError: onPageRowIconError,
             onFormatTitle: onFolderRowFormatTitle,
             onFormatTooltip: onFolderRowFormatTooltip,
-            onResizeTooltip: onResizeTooltip,
-            tooltipMaxWidthPercent: 0.95,
             buttons: [
                 {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_folderRowButtonTip_close'), onClick: onFolderRowCloseButton }
             ]
         },
         'header': {
-            allowAtTopLevel: true,
-            allowAtChildLevel: false,
-            autofocusOnClick: false,
-            allowClickOnHover: false,
-            allowClickOnScroll: false,
-            permitAutoSelectChildren: true,
-            alwaysMoveChildren: true,
-            multiselectable: false,
             allowedDropTargets: [],
-            // onClick: onPageRowClick,
             onDoubleClick: onFolderRowDoubleClick,
             onMiddleClick: onFolderRowMiddleClick,
             onExpanderClick: onRowExpanderClick,
-            // onIconError: onPageRowIconError,
             onFormatTitle: onFolderRowFormatTitle,
             onFormatTooltip: onFolderRowFormatTooltip,
-            onResizeTooltip: onResizeTooltip,
-            tooltipMaxWidthPercent: 0.95,
             buttons: [
                 {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_folderRowButtonTip_close'), onClick: onFolderRowCloseButton }
             ]
-        },
-        'window': {
-            allowAtTopLevel: true,
-            allowAtChildLevel: false,
-            autofocusOnClick: false,
-            allowClickOnHover: false,
-            allowClickOnScroll: false,
-            permitAutoSelectChildren: false,
-            alwaysMoveChildren: true,
-            multiselectable: false,
-            allowedDropTargets: [],
-            onClick: onWindowRowClick,
-            onDoubleClick: onWindowRowDoubleClick,
-            onMiddleClick: onWindowRowMiddleClick,
-            onExpanderClick: onRowExpanderClick,
-            onFormatTitle: onWindowRowFormatTitle,
-            onFormatTooltip: onWindowRowFormatTooltip,
-            onResizeTooltip: onResizeTooltip,
-            tooltipMaxWidthPercent: 0.95,
-            buttons: [
-                {id: 'createTab', icon: '/images/create_tab.png', tooltip: getMessage('pages_windowRowButtonTip_createTab'), onClick: onWindowRowCreateTabButton },
-                {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_windowRowButtonTip_close'), onClick: onWindowRowCloseButton }
-            ],
-            onShowButtons: onWindowShowButtons
         }
     };
+    copyObjectSubProps(PageTreeRowTypes, rowTypes, false);
+
 
     var clickOnHoverDelayMs;
     if (settings.get('pages_clickOnHoverDelay')) {
@@ -192,7 +113,7 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
 
     $('.ftFilterStatus').attr('title', getMessage('pages_omniboxTip'));
 
-    populateFancyTreeFromPageTree(fancyTree, pageTree);
+    setTimeout(function() { populateFancyTreeFromPageTree(fancyTree, pageTree); }, 0);
 
     return fancyTree;
 }
@@ -358,12 +279,6 @@ function onBodyDoubleClick(evt) {
 ///////////////////////////////////////////////////////////
 // FancyTree general event handlers
 ///////////////////////////////////////////////////////////
-
-function onResizeTooltip(evt) {
-    // Manually set a fixed width for the tooltip's text content region; without this
-    // the CSS 'word-wrap: break-word' has no effect
-    evt.data.tooltip.find('td:nth-child(2) > div').width(evt.data.width - 47);
-}
 
 function onRowExpanderClick(evt) {
     bg.recentlyClosedTree.updateNode(evt.data.row.attr('id'), { collapsed: !(evt.data.expanded) });
@@ -1576,8 +1491,4 @@ function getBigTooltipContent(header, icon, body, headerPrefix) {
     table.append(tr);
     elem.append(table);
     return elem;
-}
-
-function getRowNumericId(pageRow) {
-    return parseInt(pageRow.attr('id').slice(1));
 }
