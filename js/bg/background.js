@@ -430,12 +430,9 @@ function PageTreeCallbackProxy(methodName, args) {
 
     var pagesWindow = sidebarHandler.sidebarPanes['pages'];
     if (pagesWindow) {
-        try {
+        setTimeout(function() {
             pagesWindow.PageTreeCallbackProxyListener.call(pagesWindow, methodName, args);
-        }
-        catch (ex) {
-            console.error(ex.message);
-        }
+        }, 0);
     }
 
     if (node instanceof PageNode && node.isTab() && (methodName == 'move' || methodName == 'add')) {
@@ -464,12 +461,9 @@ function RecentlyClosedTreeCallbackProxy(methodName, args) {
 
     var closedWindow = sidebarHandler.sidebarPanes['closed'];
     if (closedWindow) {
-        try {
+        setTimeout(function() {
             closedWindow.PageTreeCallbackProxyListener.call(closedWindow, methodName, args);
-        }
-        catch (ex) {
-            console.error(ex.message);
-        }
+        }, 0);
     }
 
     // setTimeout(function() {
