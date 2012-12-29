@@ -316,6 +316,38 @@ function mapObjectProps(object, mapFn) {
     return ary;
 }
 
+// Copies all properties defined on fromObject onto toObject.
+// Leaves from unchanged.
+function copyObjectProps(fromObject, toObject, overwriteExisting) {
+    for (var k in fromObject) {
+        if (!fromObject.hasOwnProperty(k) ) {
+            continue;
+        }
+        if (!overwriteExisting && toObject.hasOwnProperty(k)) {
+            continue;
+        }
+        toObject[k] = fromObject[k];
+    }
+}
+
+// Like copyObjectProps but works instead on each property of from/toObject
+// which is itself an object.
+function copyObjectSubProps(fromObject, toObject, overwriteExisting) {
+    for (var k in fromObject) {
+        if (!fromObject.hasOwnProperty(k) ) {
+            continue;
+        }
+        if (!(fromObject[k] instanceof Object)) {
+            continue;
+        }
+        if (toObject[k] === undefined) {
+            toObject[k] = fromObject[k];
+            continue;
+        }
+        copyObjectProps(fromObject[k], toObject[k], overwriteExisting);
+    }
+}
+
 
 ///////////////////////////////////////////////////////////
 // Javascript object subclassing
