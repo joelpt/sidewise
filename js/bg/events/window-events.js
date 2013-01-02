@@ -41,7 +41,6 @@ function onWindowRemoved(windowId)
             return;
         }
         log('removing sidebar window');
-        // savePageTreeToLocalStorage(tree, 'pageTree', true);
         sidebarHandler.removeInProgress = true;
         sidebarHandler.onRemoved();
         return;
@@ -52,7 +51,11 @@ function onWindowRemoved(windowId)
 
     focusTracker.remove(windowId);
 
-    var node = tree.getNode('w' + windowId);
+    // temporarily make tree.onModifiedDelayWaitMs larger to prevent
+    // unwanted saving of the tree during a shutdown operation
+    tree.onModifiedDelayedWaitMs = config.TREE_ONMODIFIED_SAVE_AFTER_WINDOW_CLOSE_MS;
+
+    var node = tree.getNode(['chromeId', windowId]);
     if (node) {
         // If the window node of the window being removed still has some children,
         // convert the window node to a hibernated window node rather than
