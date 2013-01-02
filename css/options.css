@@ -429,7 +429,7 @@ input.invalid {
     left: -10000px;
     background-image: url(/images/cloud1.png);
     -webkit-animation-timing-function: linear;
-    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-iteration-count: 3;
     -webkit-animation-delay: 90s;
 }
 
