@@ -72,7 +72,7 @@ function onCreatedNavigationTarget(details)
             return;
         }
         log('Moving page to be child of its sourceTabId', details.tabId, details.sourceTabId, details);
-        tree.moveNode(page, 'p' + details.sourceTabId);
+        tree.moveNode(page, ['chromeId', details.sourceTabId]);
         tree.conformChromeTabIndexForPageNode(page, true, false, true);
         return;
     }
@@ -148,7 +148,7 @@ function onCommitted(details)
         // address bar under their parent window, rather than potentially
         // beneath the page which the user was viewing at the time of
         // typing into the address bar and hitting alt+enter
-        var winNode = tree.getNode('w' + page.windowId);
+        var winNode = tree.getNode(['chromeId', page.windowId]);
         if (!winNode) {
             throw new Error('Could not find WindowNode to put page under that was opened via url bar alt-enter');
         }

@@ -1127,6 +1127,7 @@ function onPageRowFormatTooltip(evt) {
         url += '<br/><br/>Id: ' + page.id
             + '<br/>History length: ' + page.historylength
             + '<br/>Referrer: ' + (page.referrer || "''")
+            + '<br/>Chrome ID: ' + (page.chromeId || "''")
             + '<br/>WinId/index: ' + page.windowId + '/' + page.index;
     }
 
