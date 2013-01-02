@@ -13,9 +13,9 @@ var GHOSTTREE_NODE_TYPES = {
     'ghost': GhostNode
 };
 
-var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 1000;
-var GROUPING_ROW_COUNT_THRESHOLD = 3;
-var GROUPING_ROW_COUNT_WAIT_THRESHOLD = 4;
+var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 750;
+var GROUPING_ROW_COUNT_THRESHOLD = 7;
+var GROUPING_ROW_COUNT_WAIT_THRESHOLD = 8;
 var GROUPING_ROW_COUNT_WAIT_ITERATIONS = 4;
 
 // Nodes in the recently closed tree must be at most no older than this many
@@ -25,9 +25,10 @@ var GROUPING_ROW_COUNT_WAIT_ITERATIONS = 4;
 // relative positioning to another node due to exceeding this timeout or just
 // not finding any qualifying nodes, the fallback behavior is simply to
 // prepend it to the top .collecting=true HeaderNode in the recently closed
-// tree (creating one if needed).
+// tree.
 var RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS = MINUTE_MS * 10;
 
+var RECENTLY_CLOSED_GROUP_AFTER_REMOVE_IDLE_MS = HOUR_MS * 3;
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -61,6 +62,7 @@ function onLoad()
         settings = new Settings();
         tree = new PageTree(PageTreeCallbackProxy, function() {
             savePageTreeToLocalStorage(tree, 'pageTree', true);
+            tree.onModifiedDelayedWaitMs = config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS;
         });
 
         recentlyClosedTree = new UiDataTree(
@@ -70,9 +72,9 @@ function onLoad()
                 truncateRecentlyClosedTree(settings.get('closed_maxPagesRemembered'));
                 savePageTreeToLocalStorage(recentlyClosedTree, 'recentlyClosedTree', true);
             },
-            config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS * 3,
+            config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS * 0.9,
             config.TREE_ONMODIFIED_STARTUP_DURATION_MS,
-            config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS * 3
+            config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS * 0.9
         );
 
         ghostTree = new UiDataTree(
@@ -81,9 +83,9 @@ function onLoad()
             function() {
                 savePageTreeToLocalStorage(ghostTree, 'ghostTree', false);
             },
-            config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS * 2,
+            config.TREE_ONMODIFIED_DELAY_ON_STARTUP_MS * 0.95,
             config.TREE_ONMODIFIED_STARTUP_DURATION_MS,
-            config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS * 2
+            config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS * 0.95
         );
 
         tree.name = 'pageTree';
@@ -242,6 +244,8 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
                 node.mediaTime = null;
             }
 
+            node.chromeId = undefined;
+            node.windowId = undefined;
 
             if (!(node instanceof WindowNode)) {
                 return;
@@ -397,7 +401,7 @@ function PageTreeCallbackProxy(methodName, args) {
 
     if (node instanceof WindowNode && !node.hibernated && methodName == 'remove') {
         // when removing window nodes ensure they are also removed from focusTracker
-        var winId = getNumericId(node.id);
+        var winId = node.chromeId;
         focusTracker.remove(winId);
 
         // if dock window has been destroyed, perform an automatic redock
@@ -428,15 +432,13 @@ function PageTreeCallbackProxy(methodName, args) {
         }, 1500);
     }
 
-    var pagesWindow = sidebarHandler.sidebarPanes['pages'];
-    if (pagesWindow) {
-        setTimeout(function() {
-            pagesWindow.PageTreeCallbackProxyListener.call(pagesWindow, methodName, args);
-        }, 0);
+    if (node instanceof PageNode && node.isTab() && (methodName == 'move' || methodName == 'add')) {
+        setTimeout(function() { fixPinnedUnpinnedTabOrder(node); }, 0);
     }
 
-    if (node instanceof PageNode && node.isTab() && (methodName == 'move' || methodName == 'add')) {
-        fixPinnedUnpinnedTabOrder(node);
+    var pagesWindow = sidebarHandler.sidebarPanes['pages'];
+    if (pagesWindow) {
+        pagesWindow.PageTreeCallbackProxyListener.call(pagesWindow, methodName, args);
     }
 }
 
@@ -461,9 +463,7 @@ function RecentlyClosedTreeCallbackProxy(methodName, args) {
 
     var closedWindow = sidebarHandler.sidebarPanes['closed'];
     if (closedWindow) {
-        setTimeout(function() {
-            closedWindow.PageTreeCallbackProxyListener.call(closedWindow, methodName, args);
-        }, 0);
+        closedWindow.PageTreeCallbackProxyListener.call(closedWindow, methodName, args);
     }
 
     // setTimeout(function() {
@@ -489,6 +489,7 @@ function deduplicateRecentlyClosedPageNode(node) {
 }
 
 function addNodeToRecentlyClosedTree(node, addDescendants) {
+    var originalChildren = node.children;
     var ghost = ghostTree.getNode(node.id);
     if (!ghost) {
         console.warn('Did not find ghost node matching', node.id);
@@ -563,6 +564,7 @@ function addNodeToRecentlyClosedTree(node, addDescendants) {
 
         requestAutoGroupingForNode(node);
 
+        log('Added to rctree', node.id, 'addDescendants', addDescendants);
         // move ghost's dead children to under it
         ghost.children.forEach(function(e) {
             if (e.alive) return;
@@ -576,7 +578,8 @@ function addNodeToRecentlyClosedTree(node, addDescendants) {
 
     // if requested, also add all descendant nodes to recently closed tree
     if (addDescendants) {
-        node.children.forEach(function(e) {
+        originalChildren.forEach(function(e) {
+            log('Add children to rctree', 'parent', node.id, 'doing child', e.id);
             addNodeToRecentlyClosedTree(e, true);
         });
     }
@@ -600,6 +603,14 @@ function requestAutoGroupingForNode(node) {
 
 function scheduleAutoGrouping() {
    TimeoutManager.reset('autoGroupRecentlyClosedTreeNodes', autoGroupRecentlyClosedTreeNodes, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
+   TimeoutManager.reset('autoGroupRecentlyClosedTreeAfterIdle', autoGroupRecentlyClosedTreeAfterIdle, RECENTLY_CLOSED_GROUP_AFTER_REMOVE_IDLE_MS);
+}
+
+function autoGroupRecentlyClosedTreeAfterIdle() {
+    var first = recentlyClosedTree.root.children[0];
+    if (first && first instanceof HeaderNode) {
+        recentlyClosedTree.updateNode(first, { collecting: false });
+    }
 }
 
 function autoGroupRecentlyClosedTreeNodes() {
@@ -714,7 +725,7 @@ function populatePages(incognito)
                 continue;
             }
 
-            var winNode = tree.getNode('w' + win.id);
+            var winNode = tree.getNode(['chromeId', win.id]);
             if (!winNode) {
                 winNode = new WindowNode(win);
                 tree.addNode(winNode);
@@ -723,7 +734,7 @@ function populatePages(incognito)
             for (var j = 0; j < numTabs; j++) {
                 var tab = tabs[j];
                 log('Populating', tab.id, tab.title, tab.url, tab);
-                var pageNode = tree.getNode('p' + tab.id);
+                var pageNode = tree.getNode(['chromeId', tab.id]);
                 if (!pageNode) {
                     tree.addNode(new PageNode(tab), winNode);
                 }
@@ -753,7 +764,7 @@ function findTabParents(tabs) {
 
         if (!isScriptableUrl(tab.url)) {
             // will never be able to obtain details from this page so just call it done
-            var page = tree.getNode('p' + tab.id);
+            var page = tree.getNode(['chromeId', tab.id]);
             if (page) {
                 log('Populating non scriptable page without asking for page details', page.id, page);
                 tree.updateNode(page, { placed: true });
@@ -799,6 +810,10 @@ function findTabParents(tabs) {
 // Perform 'Chrome is shutting down' tasks.
 function shutdownSidewise() {
     browserIsClosed = true;
+
+    // Ensure ghost and rctree get saved immediately
+    savePageTreeToLocalStorage(recentlyClosedTree, 'recentlyClosedTree', true);
+    savePageTreeToLocalStorage(ghostTree, 'ghostTree', true);
 
     // Prevent page tree from being saved from this point forward
     tree.disableCallbacks();
