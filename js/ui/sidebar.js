@@ -57,9 +57,11 @@ function onReady() {
 //////////////////////////////////////////
 
 function onDocumentKeyDown(evt) {
-    if (evt.keyCode == 27
-        || (evt.ctrlKey && evt.keyCode == 70)
-        || (!evt.ctrlKey && !evt.altKey && evt.keyCode >= 48 && evt.keyCode <= 90))
+    if (evt.keyCode == 27 // esc
+        || (evt.ctrlKey && evt.keyCode == 70) // ctrl-f
+        || (!evt.ctrlKey && !evt.altKey && evt.keyCode >= 48 && evt.keyCode <= 90) // non modified printable
+        || (evt.ctrlKey && evt.keyCode == 86) // ctrl-w
+        || (evt.ctrlKey && evt.keyCode == 115)) // ctrl-f4
     {
         try {
             // transmit keydown events to the sidebar pane via jQuery.trigger()

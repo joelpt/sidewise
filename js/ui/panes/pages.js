@@ -19,7 +19,19 @@ $(document).ready(function() {
     }
 
     $(document).on('dblclick', 'body, .ftBottomPadding', onBodyDoubleClick);
+    $(document).on('keydown', 'body', onBodyKeyDown);
+
 });
+
+function onBodyKeyDown(evt) {
+    console.log(evt.ctrlKey, evt.keyCode);
+    if (evt.ctrlKey && (evt.keyCode == 87 || evt.keyCode == 115)) {
+        if (bg.tree.focusedTabId) {
+            chrome.tabs.remove(bg.tree.focusedTabId);
+        }
+        return false;
+    }
+}
 
 function initDebugBar() {
     if (!loggingEnabled) {
@@ -252,8 +264,11 @@ function PageTreeCallbackProxyListener(op, args)
             ft.collapseRow(args.id);
             break;
         case 'multiSelectInWindow':
-            var $win = ft.getRow('w' + args.windowId);
-            var $kids = $('#p' + args.tabIds.join(',#p'));
+            var $win = ft.getRow(args.windowNodeId);
+            if ($win.length == 0) {
+                break;
+            }
+            var $kids = $('#' + args.pageNodeIds.join(',#'));
             ft.setMultiSelectedChildrenUnderRow($win, $kids, '[rowtype=page][hibernated=false]');
             break;
     }
@@ -1392,16 +1407,10 @@ function closeWindowRow(row) {
 
         chrome.windows.get(windowId, function(win) {
             if (win) {
+                row.find('.ftRowNode[rowtype=page][hibernated=false]').each(function(i, e) {
+                    closeRow($(e));
+                });
                 chrome.windows.remove(windowId);
-                setTimeout(function() {
-                    var checkWinNode = bg.tree.getNode(row.attr('id'));
-                    if (checkWinNode) {
-                        log('Removing window node from tree', checkWinNode.id);
-                        bg.tree.removeNode(checkWinNode, true);
-                        return;
-                    }
-                    log('Window node already removed from tree', id);
-                }, 100);
             }
         });
     });
@@ -1427,7 +1436,7 @@ function togglePageRowsHibernated($rows, hibernateAwakeState, activateAfterWakin
         return;
     }
 
-    var ids = $awakeRows.map(function(i, e) { return $(e).attr('id'); });
+    var ids = $awakeRows.map(function(i, e) { return parseInt($(e).attr('chromeid')); });
     bg.tree.hibernatePages(ids);
 }
 
