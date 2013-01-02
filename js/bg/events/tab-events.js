@@ -39,27 +39,36 @@ function onTabCreated(tab)
         return;
     }
 
+    var ignoredPreloadedTab = false;
+
     if (expectingNavigationTabIdSwap) {
         // tab id swapping is probably about to occur
-        if (expectingNavigationOldTabId) {
-            // it did occur; swap tab ids
-            log('Swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id);
-            var page = tree.getPage(expectingNavigationOldTabId);
-            tree.updatePage(page, {
-                id: 'p' + tab.id,
-                url: tab.url,
-                windowId: tab.windowId
-            });
-            refreshPageStatus(page);
-            resetExpectingNavigation();
-            return;
-        }
+        if (expectingNavigationPossibleNewTabIds.indexOf(tab.id) >= 0) {
+            if (expectingNavigationOldTabId) {
+                // it did occur; swap tab ids
+                log('Swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id);
+                var page = tree.getPage(expectingNavigationOldTabId);
+                tree.updatePage(page, {
+                    id: 'p' + tab.id,
+                    chromeId: tab.id,
+                    url: tab.url,
+                    windowId: tab.windowId
+                });
+                refreshPageStatus(page);
+                resetExpectingNavigation();
+                return;
+            }
 
-        // we thought a swap might occur but the old (replaceable) tab never was reported
-        // as removed, so the user must have actually created a new tab (alt+enter) from
-        // the tab that Chrome was preloading
-        log('Cancelling expected tab id swap');
-        resetExpectingNavigation();
+            // the preloaded tab has been created as a new normal tab, because we do not have
+            // expectingNavigationOldTabId here which we otherwise would have if a swap was going on
+            log('Expected preloaded tab created as a new normal tab');
+            ignoredPreloadedTab = true;
+            resetExpectingNavigation(); // TODO just substract our tab.id from expectingPossibleNewTabIds, don't do a full reset?
+                                        // sounds reasonable although it seems chrome only ever has one preload-tab open at once
+        }
+        else {
+            log('Was expecting a tab id swap, but some other tab was created in the meantime');
+        }
     }
 
     // TODO do referrer/historylength retrieval for awakening pages in order to do a better
@@ -91,7 +100,7 @@ function onTabCreated(tab)
             // New Tab has been added as last node of the window
             // Try to associate to a hibernated New Tab node that is the last
             // child row of the window, if such exists
-            var children = tree.getNode('w' + tab.windowId).children;
+            var children = tree.getNode(['chromeId', tab.windowId]).children;
             if (children.length > 0) {
                 var last = children[children.length - 1];
                 if (last.children.length == 0 && last.hibernated && last.restorable
@@ -127,7 +136,7 @@ function onTabCreated(tab)
     // view-source://*
     if (tab.url && tab.url.indexOf('view-source:') == 0 && tab.openerTabId) {
         // view source pages should be nested under the parent always
-        tree.addNode(page, 'p' + tab.openerTabId, undefined, true);
+        tree.addNode(page, ['chromeId', tab.openerTabId], undefined, true);
         return;
     }
 
@@ -140,7 +149,7 @@ function onTabCreated(tab)
         // is how we normally detect that a tab is being restored rather than created anew
         log('Adding non scriptable tab to tree via association attempt', tab.id, tab, tab.url);
 
-        var winNode = tree.getNode('w' + tab.windowId);
+        var winNode = tree.getNode(['chromeId', tab.windowId]);
         if (!winNode) {
             tree.addTabToWindow(tab, page);
         }
@@ -172,10 +181,17 @@ function onTabCreated(tab)
         log('Could not obtain winTabs for windowId ' + tab.windowId);
     }
 
+    if (ignoredPreloadedTab) {
+        log('Preloaded tab created as normal new tab, adding to end of window like normal alt+enter');
+        tree.addTabToWindow(tab, page);
+        tree.conformAllChromeTabIndexes(true);
+        return;
+    }
+
     if (!tab.openerTabId) {
         if (winTabs.length > 0 && tab.index == 0) {
             log('No openerTabId and index is at start of tree; prepending to window');
-            tree.addNodeRel(page, 'prepend', tree.getNode('w' + tab.windowId));
+            tree.addNodeRel(page, 'prepend', tree.getNode(['chromeId', tab.windowId]));
             return;
         }
         if (winTabs.length == 0 || winTabs.length == tab.index) {
@@ -195,7 +211,7 @@ function onTabCreated(tab)
         return;
     }
 
-    var opener = tree.getNode('p' + tab.openerTabId);
+    var opener = tree.getNode(['chromeId', tab.openerTabId]);
     if (!opener) {
         log('Could not find node matching openerTabId; just adding tab to window', 'openerTabId', openerTabId);
         tree.addTabToWindow(tab, page);
@@ -237,7 +253,7 @@ function onTabCreated(tab)
     tree.conformAllChromeTabIndexes(true);
 }
 
-function onTabRemoved(tabId, removeInfo)
+function onTabRemoved(tabId, removeInfo, denyTabSwap)
 {
     if (monitorInfo.isDetecting()) {
         return;
@@ -249,7 +265,7 @@ function onTabRemoved(tabId, removeInfo)
     }
     log(tabId, removeInfo);
 
-    if (expectingNavigationTabIdSwap) {
+    if (expectingNavigationTabIdSwap && !denyTabSwap) {
         if (removeInfo.isWindowClosing) {
             // if a window is closing with this tab removal, a tab swap
             // did not and will not be happening for the removed tab
@@ -264,14 +280,20 @@ function onTabRemoved(tabId, removeInfo)
             // If Chrome does not perform the tab swap very soon, then we
             // assume it never will
             setTimeout(function() {
-                if (expectingNavigationTabIdSwap) {
-                    log('Timing out expected navigation swap');
-                    resetExpectingNavigation();
-                    onTabRemoved(tabId, removeInfo);
-                    return;
+                // if (expectingNavigationTabIdSwap) {
+                //     log('Timing out expected navigation swap');
+                //     resetExpectingNavigation();
+                //     onTabRemoved(tabId, removeInfo);
+                //     return;
+                // }
+                // log('Navigation swap appears to have occurred before reset timeout');
+                var page = tree.getNode(['chromeId', tabId]);
+                if (!page) {
+                    return; // tab's node has either been swapped or otherwise removed from tree
                 }
-                log('Navigation swap appears to have occurred before reset timeout');
-            }, 250);
+                // tab was not removed yet so do it now
+                onTabRemoved(tabId, removeInfo, true);
+            }, 100);
             return;
         }
     }
@@ -348,6 +370,10 @@ function onTabRemoved(tabId, removeInfo)
     }
 
     var parent = page.parent;
+
+    // temporarily make tree.onModifiedDelayWaitMs larger to prevent
+    // unwanted saving of the tree during a shutdown operation
+    tree.onModifiedDelayedWaitMs = config.TREE_ONMODIFIED_SAVE_AFTER_TAB_CLOSE_MS;
 
     // remove the page element from the tree
     tree.removeNode(page);
@@ -541,7 +567,7 @@ function onTabUpdated(tabId, changeInfo, tab)
             page.placed = true;
         }
     }
-    else if (!page.placed && tab.openerTabId && !page.openerTabId && page.parent.id != 'p' + tab.openerTabId) {
+    else if (!page.placed && tab.openerTabId && !page.openerTabId && page.parent.chromeId != tab.openerTabId) {
         // openerTabId was missing initially in onTabCreated but exists now; this happens when
         // using "open selected links" extension, so place these under their correct parent now
 
@@ -713,7 +739,7 @@ function onTabAttached(tabId, attachInfo) {
     }
     else {
         log('moving to last node under window ' + attachInfo.newWindowId);
-        tree.moveNodeRel(moving, 'append', 'w' + attachInfo.newWindowId);
+        tree.moveNodeRel(moving, 'append', ['chromeId', attachInfo.newWindowId]);
     }
 
     tree.rebuildPageNodeWindowIds(function() {
@@ -723,5 +749,12 @@ function onTabAttached(tabId, attachInfo) {
 
 function onTabHighlighted(highlightInfo) {
     // log(highlightInfo);
-    PageTreeCallbackProxy('multiSelectInWindow', highlightInfo);
+    var windowNode = tree.getNode(['chromeId', highlightInfo.windowId]);
+    var windowNodeId = windowNode ? windowNode.id : undefined;
+
+    var pageNodeIds = highlightInfo.tabIds.map(function(e) {
+        var pageNode = tree.getNode(['chromeId', e]);
+        return pageNode ? pageNode.id : undefined;
+    });
+    PageTreeCallbackProxy('multiSelectInWindow', { windowNodeId: windowNodeId, pageNodeIds: pageNodeIds });
 }
