@@ -51,11 +51,29 @@ section#main.debugEnabled {
     opacity: 1.0;
 }
 
+.ftRowNode.ftCollapsed > .ftItemRow > .ftExpander + .ftItemRowContent > .ftInnerRow > .ftRowIcon {
+    opacity: 0.0;
+}
+
 .ftExpander:hover + .ftItemRowContent > .ftInnerRow > .ftRowIcon {
     visibility: hidden;
 }
 
+ .ftExpander + .ftItemRowContent > .ftInnerRow > .ftRowIcon:hover {
+    visibility: hidden;
+}
+
+/*.ftExpander + .ftItemRowContent > .ftInnerRow > .ftRowIcon {
+    visibility: hidden !important;
+    opacity: 0.0;
+    z-index: -255;
+}
+*/
 .ftRowIcon {
+    opacity: 1.0;
+}
+
+.ftRowNode.ftCollapsed > .ftItemRow > .ftExpander {
     opacity: 1.0;
 }
 
