@@ -349,12 +349,12 @@ function onRowsMoved(moves) {
                     // this works, but has the gray-window problem which we should be able to fix by building out winToWinMoves array again
                     // and using this here technique for doing the moves, but doing the temp-tab create-and-destroy crap in addition as needed
                     // (and possibly activating moved tabs after always, too)
-                    var movingTabId = getRowNumericId($row);
-                    var fromWindowId = getRowNumericId($oldTopParent);
+                    var movingTabId = getChromeId($row);
+                    var fromWindowId = getChromeId($oldTopParent);
                     var node = bg.tree.getNode(rowId);
 
                     if ($toTopParent.attr('hibernated') == 'false') {
-                        node.windowId = getRowNumericId($toTopParent);
+                        node.windowId = getChromeId($toTopParent);
                     }
                     else {
                         needNewWindow = true;
@@ -375,7 +375,7 @@ function onRowsMoved(moves) {
         // perform window-to-window moves
         bg.tree.rebuildTabIndex();
         var newWindowCreated = false;
-        var toWindowId = getRowNumericId($toTopParent);
+        var toWindowId = getChromeId($toTopParent);
 
         var fn = function(onCompleteFn) {
             var i = 0;
@@ -754,7 +754,7 @@ function onContextMenuItemReload($rows) {
         if ($e.attr('rowtype') != 'page' || $e.attr('hibernated') == 'true') {
             return;
         }
-        var chromeId = getRowNumericId($e);
+        var chromeId = getChromeId($e);
         chrome.tabs.executeScript(chromeId, { code: "window.location.reload();" });
     });
 }
@@ -992,7 +992,7 @@ function onPageRowClick(evt) {
     ft.focusRow(row);
 
     // actually set Chrome's focused tab
-    chrome.tabs.update(getRowNumericId(row), { active: true }, function(tab) {
+    chrome.tabs.update(getChromeId(row), { active: true }, function(tab) {
         // if the tab's hosting window is currently minimized, un-minimize it
         chrome.windows.get(tab.windowId, function(win) {
             if (win.state == 'minimized') {
@@ -1228,7 +1228,7 @@ function onWindowRowClick(evt) {
     var row = evt.data.row;
     var treeObj = evt.data.treeObj;
 
-    var windowId = getRowNumericId(row);
+    var windowId = getChromeId(row);
 
     if (windowId) {
         chrome.windows.update(windowId, { focused: true });
@@ -1316,7 +1316,7 @@ function onWindowRowCreateTabButton(evt) {
     var treeObj = evt.data.treeObj;
     var row = evt.data.row;
 
-    createNewTabInWindow(getRowNumericId(row) || undefined);
+    createNewTabInWindow(getChromeId(row) || undefined);
 }
 
 function onWindowRowFormatTitle(row, itemTextElem) {
@@ -1376,7 +1376,7 @@ function closeRow($row) {
     else {
         $row.addClass('closing'); // "about to close" styling
         bg.tree.removeNode($row.attr('id'));
-        setTimeout(function(e) { chrome.tabs.remove(getRowNumericId($row)); }, 0);
+        setTimeout(function(e) { chrome.tabs.remove(getChromeId($row)); }, 0);
     }
     if ($parent.attr('rowtype') == 'window' && $parent.find('.ftRowNode').length == 0) {
         bg.tree.removeNode($parent.attr('id'), true);
@@ -1397,7 +1397,7 @@ function closeWindowRow(row) {
         }
 
         var id = row.attr('id');
-        var windowId = getRowNumericId(row);
+        var windowId = getChromeId(row);
         var winNode = bg.tree.getNode(id);
 
         if (row.attr('hibernated') == 'true' || !windowId) {
@@ -1445,7 +1445,7 @@ function setPageRowPinnedState(row, pinned) {
     if (row.attr('hibernated') == 'true') {
         return;
     }
-    chrome.tabs.update(getRowNumericId(row), { pinned: pinned });
+    chrome.tabs.update(getChromeId(row), { pinned: pinned });
 }
 
 function setRowLabels(rows) {
