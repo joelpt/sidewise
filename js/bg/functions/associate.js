@@ -226,7 +226,7 @@ function tryFastAssociateTab(tab, mustBeRestorable) {
 }
 
 function tryAssociateExistingToRestorablePageNode(existingPage) {
-    var tabId = getNumericId(existingPage.id);
+    var tabId = existingPage.chromeId;
 
     if (!tabId) {
         console.error('tabId not available for provided existingPage', existingPage.id, existingPage);
@@ -636,7 +636,7 @@ function associateWindowstoWindowNodes(requireChildrenCountMatch, prohibitMergin
             var win = wins[i];
             var groups = tree.reduce(function(last, e) {
                 if (!e.isTab()) return last;
-                var tabId = getNumericId(e.id);
+                var tabId = e.chromeId;
                 var tab = first(tabs, function(e) { return e.id == tabId; })[1];
                 var windowId = tab.windowId;
 

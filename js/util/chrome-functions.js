@@ -50,10 +50,20 @@ function refreshPageStatus(page) {
         var pageId = page.id;
         page = tree.getNode(pageId);
         if (!page) {
-            log('Aborting page status refresh because page no longer exists in tree', pageId);
+            log('Aborting page status refresh because page node no longer exists in tree', pageId);
             return;
         }
-        chrome.tabs.get(getNumericId(page.id), function(tab) {
+        chrome.tabs.get(page.chromeId, function(tab) {
+            if (!tab) {
+                log('Aborting page status refresh because tab no longer exists in Chrome', tabId);
+                return;
+            }
+            var tabId = tab.id;
+            page = tree.getNode(['chromeId', tabId]);
+            if (!page) {
+                log('Aborting page status refresh because tab no longer exists in tree', tabId);
+                return;
+            }
             tree.updateNode(page, { status: tab.status });
         });
     }, 100);

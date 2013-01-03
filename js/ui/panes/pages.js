@@ -405,7 +405,7 @@ function onRowsMoved(moves) {
                         }
                         var removeTabId = tabs[0].id;
                         toWindowId = win.id;
-                        var existingWinNode = bg.tree.getNode('w' + toWindowId);
+                        var existingWinNode = bg.tree.getNode(['chromeId', toWindowId]);
                         if (existingWinNode) {
                             bg.tree.updateNode(existingWinNode, { id: 'X' + generateGuid() });
                             bg.tree.removeNode(existingWinNode, true);

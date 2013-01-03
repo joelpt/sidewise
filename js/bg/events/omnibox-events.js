@@ -74,5 +74,5 @@ function onOmniboxInputEntered(text) {
         tree.awakenPages([page], true);
         return;
     }
-    chrome.tabs.update(getNumericId(text), { active: true });
+    chrome.tabs.update(page.chromeId, { active: true });
 }

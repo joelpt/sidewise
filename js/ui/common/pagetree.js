@@ -55,15 +55,8 @@ function initPageTree(dataTree, paneName) {
 // Helpers
 ///////////////////////////////////////////////////////////
 
-function getChromeId($row) {
-    // return parseInt(pageRow.attr('id').slice(1));
-    return parseInt($row.attr('chromeid'));
-}
-
-
-function getRowNumericId(pageRow) {
-    return getChromeId(pageRow);
-    // return parseInt(pageRow.attr('id').slice(1));
+function getChromeId(pageRow) {
+    return parseInt(pageRow.attr('chromeId'));
 }
 
 
