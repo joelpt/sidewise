@@ -46,8 +46,9 @@ function onTabCreated(tab)
         if (expectingNavigationPossibleNewTabIds.indexOf(tab.id) >= 0) {
             if (expectingNavigationOldTabId) {
                 // it did occur; swap tab ids
-                log('Swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id);
-                var page = tree.getPage(expectingNavigationOldTabId);
+                var page = tree.getNode(['chromeId', expectingNavigationOldTabId]);
+                log(tree.dump());
+                log('Swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id, 'found page node', page);
                 tree.updatePage(page, {
                     id: 'p' + tab.id,
                     chromeId: tab.id,
@@ -274,7 +275,7 @@ function onTabRemoved(tabId, removeInfo, denyTabSwap)
         else {
             // We think Chrome is about to swap this tab with another tab
             // due to preloading a tab in the background and swapping it in
-            log('Recording expected navigation old tab id', tabId);
+            log('Recording expected navigation old tab id ' + tabId + ' and retriggering onTabRemoved in 100ms');
             expectingNavigationOldTabId = tabId;
 
             // If Chrome does not perform the tab swap very soon, then we
@@ -418,8 +419,8 @@ function findNextTabToFocus(nextToNodeId, preferCousins) {
         // parent, when node is only child of parent and
         // we were just focusing the parent
         if (node.isTab() && node.parent.isTab() && node.parent.children.length == 1) {
-            var nodeTabId = getNumericId(node.id);
-            var parentTabId = getNumericId(node.parent.id);
+            var nodeTabId = node.chromeId;
+            var parentTabId = node.parent.chromeId;
 
             // test node and parent matching focused and last-focused in either pairing
             // combination; due to variances in timing of onTabActivated() event firings
@@ -710,7 +711,7 @@ function onTabAttached(tabId, attachInfo) {
     var topParent = moving.topParent();
     if (topParent instanceof WindowNode
         && !(topParent.hibernated)
-        && getNumericId(topParent.id) == attachInfo.newWindowId
+        && topParent.chromeId == attachInfo.newWindowId
         && tree.getTabIndex(moving) == attachInfo.newPosition)
     {
         log('attach move would have no effect, just updating moving.windowId/index, windowId ' + attachInfo.newWindowId + ' index ' + attachInfo.newPosition);
