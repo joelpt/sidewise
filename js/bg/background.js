@@ -236,17 +236,20 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
 
     tree.loadTree(storedPageTree, PAGETREE_NODE_TYPES);
 
-    if (!rememberOpenPagesBetweenSessions) {
-        tree.tree.forEach(function(node) {
-            // clear media values on every page node we load
+    tree.tree.forEach(function(node) {
+        // clear media values on every page node we load
+        if (node instanceof PageNode || node instanceof WindowNode) {
+            node.chromeId = null;
+            node.windowId = null;
             if (node instanceof PageNode) {
                 node.mediaState = null;
                 node.mediaTime = null;
             }
+        }
+    });
 
-            node.chromeId = undefined;
-            node.windowId = undefined;
-
+    if (!rememberOpenPagesBetweenSessions) {
+        tree.tree.forEach(function(node) {
             if (!(node instanceof WindowNode)) {
                 return;
             }
@@ -273,8 +276,9 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
             if (!rememberOpenPagesBetweenSessions
                 && (node instanceof PageNode || node instanceof WindowNode)
                 && !node.hibernated) {
-                // forget non hibernated nodes between sessions
-                containingArray.splice(index, 1);
+
+                // remove the dead node
+                tree.removeNode(node);
                 return;
             }
 
@@ -284,8 +288,6 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
                 && !node.hibernated
                 && node.url.match(/^chrome-/)
                 && urlAndTitles.indexOf(node.url + '\n' + node.title) == -1) {
-
-                var nodeDetail = tree.getNodeEx(node);
 
                 // remove the dead node
                 tree.removeNode(node);
@@ -491,18 +493,19 @@ function deduplicateRecentlyClosedPageNode(node) {
 function addNodeToRecentlyClosedTree(node, addDescendants) {
     var originalChildren = node.children;
     var ghost = ghostTree.getNode(node.id);
-    if (!ghost) {
-        console.warn('Did not find ghost node matching', node.id);
-        return;
+    if (ghost) {
+        ghostTree.updateNode(ghost, { alive: false });
     }
-
-    ghostTree.updateNode(ghost, { alive: false });
+    else {
+        console.warn('Did not find ghost node matching', node.id);
+    }
 
     if (node instanceof WindowNode) {
         // don't add WindowNodes to the tree, instead just disable .collecting
         // on the top HeaderNode
         var first = recentlyClosedTree.root.children[0];
         if (first && first instanceof HeaderNode) {
+            log('Setting top HeaderNode.collecting to false', first);
             recentlyClosedTree.updateNode(first, { collecting: false });
         }
     }
@@ -516,45 +519,47 @@ function addNodeToRecentlyClosedTree(node, addDescendants) {
         // we have a positional relationship to
         var now = Date.now();
         var added = false;
-        try {
-            var before = firstElem(ghost.beforeSiblings(), function(e) {
-                return !e.alive;
-            });
-            if (before) {
-                before = recentlyClosedTree.getNode(before.id);
-                if (before && !(before.parent instanceof HeaderNode) && now - before.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
-                    recentlyClosedTree.addNodeRel(node, 'after', before);
-                    added = true;
-                }
-            }
-
-            if (!added) {
-                var after = firstElem(ghost.afterSiblings(), function(e) {
+        if (ghost) {
+            try {
+                var before = firstElem(ghost.beforeSiblings(), function(e) {
                     return !e.alive;
                 });
-                if (after) {
-                    after = recentlyClosedTree.getNode(after.id);
-                    if (after && !(after.parent instanceof HeaderNode) && now - after.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
-                        recentlyClosedTree.addNodeRel(node, 'before', after);
+                if (before) {
+                    before = recentlyClosedTree.getNode(before.id);
+                    if (before && !(before.parent instanceof HeaderNode) && now - before.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                        recentlyClosedTree.addNodeRel(node, 'after', before);
                         added = true;
                     }
                 }
-            }
 
-            if (!added) {
-                var parent = firstElem(ghost.parents(), function(e) {
-                    return !e.alive;
-                });
-                if (parent && !parent.isRoot) {
-                    parent = recentlyClosedTree.getNode(parent.id);
-                    if (parent && now - parent.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
-                        recentlyClosedTree.addNodeRel(node, 'append', parent);
-                        added = true;
+                if (!added) {
+                    var after = firstElem(ghost.afterSiblings(), function(e) {
+                        return !e.alive;
+                    });
+                    if (after) {
+                        after = recentlyClosedTree.getNode(after.id);
+                        if (after && !(after.parent instanceof HeaderNode) && now - after.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                            recentlyClosedTree.addNodeRel(node, 'before', after);
+                            added = true;
+                        }
+                    }
+                }
+
+                if (!added) {
+                    var parent = firstElem(ghost.parents(), function(e) {
+                        return !e.alive;
+                    });
+                    if (parent && !parent.isRoot) {
+                        parent = recentlyClosedTree.getNode(parent.id);
+                        if (parent && now - parent.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                            recentlyClosedTree.addNodeRel(node, 'append', parent);
+                            added = true;
+                        }
                     }
                 }
             }
+            catch (ex) { }
         }
-        catch (ex) { }
 
         if (!added) {
             // Fallback approach
