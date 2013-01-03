@@ -1086,7 +1086,7 @@ PageTree.prototype = {
                 + index + '|'
                 + Array(-4 + 1 + (1 + depth) * 4).join(' ')
                 + e.id + ': '
-                + (e.id[0] instanceof PageNode ? e.title : 'window ' + e.type + (e.incognito ? ' incognito' : ''))
+                + (e instanceof PageNode ? e.title : 'window ' + e.type + (e.incognito ? ' incognito' : ''))
                 // + ' +' + e.children.length + ''
                 // + (e.placed ? ' P' : ' -')
                 + ' @' + e.historylength
