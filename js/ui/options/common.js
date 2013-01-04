@@ -655,7 +655,7 @@ function exportState() {
 }
 
 function importState() {
-    var html = 'Paste the previously exported Sidewise data into the box below:<br/><textarea rows="10" cols="34" id="importBox" name="data"></textarea>';
+    var html = 'Paste the previously exported Sidewise data into the box below:<br/><textarea rows="10" cols="34" id="importBox" name="data" spellcheck="false"></textarea>';
     var importPrompt = $.prompt(html, { prefix: 'cleanblue', buttons: { 'OK': true, 'Cancel': false }, callback: doImportState });
     importPrompt.bind('promptloaded', function(e) {
         $('#importBox').focus();
