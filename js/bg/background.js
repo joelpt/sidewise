@@ -207,6 +207,8 @@ function createSidebarOnStartup() {
             });
         }, 1500);
     }
+
+    setInterval(checkForMalwarePageInSidebar, 5000);
 }
 
 
@@ -569,16 +571,18 @@ function addNodeToRecentlyClosedTree(node, addDescendants) {
 
         requestAutoGroupingForNode(node);
 
-        log('Added to rctree', node.id, 'addDescendants', addDescendants);
-        // move ghost's dead children to under it
-        ghost.children.forEach(function(e) {
-            if (e.alive) return;
-            var child = recentlyClosedTree.getNode(e.id);
-            if (child && now - child.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
-                recentlyClosedTree.moveNodeRel(child, 'append', node, true);
-                requestAutoGroupingForNode(child);
-            }
-        });
+        if (ghost) {
+            log('Added to rctree', node.id, 'addDescendants', addDescendants);
+            // move ghost's dead children to under it
+            ghost.children.forEach(function(e) {
+                if (e.alive) return;
+                var child = recentlyClosedTree.getNode(e.id);
+                if (child && now - child.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                    recentlyClosedTree.moveNodeRel(child, 'append', node, true);
+                    requestAutoGroupingForNode(child);
+                }
+            });
+        }
     }
 
     // if requested, also add all descendant nodes to recently closed tree
@@ -899,6 +903,20 @@ function showPromoPageAnnually() {
 
 
 var preventTestIconsCheck;
+
+function checkForMalwarePageInSidebar() {
+    // malware check
+    if (!preventTestIconsCheck) {
+        chrome.tabs.get(sidebarHandler.tabId, function(tab) {
+            if (tab.title.toLowerCase().indexOf('malware') >= 0) {
+                var tester = new IconTester();
+                tester.testIcons();
+                return;
+            }
+        });
+    }
+}
+
 var IconTester = function() {
     this.testTab = undefined;
     this.testDomWindow = undefined;
@@ -971,6 +989,7 @@ IconTester.prototype = {
 
     createTestIconsPage: function(onCreated) {
         var self = this;
+        delete sidebarHandler.sidebarPanes['test_icons'];
         chrome.tabs.create({ url: 'test_icons.html' }, function(tab) {
             self.onTestIconsTabCreated(tab, onCreated);
         });
