@@ -930,9 +930,7 @@ IconTester.prototype = {
             this.doTestIcons(this.onTestIconsFinished);
         }
         catch (ex) {
-            if (this.testTab) {
-                this.destroyTestIconsPage(this.testTab.id);
-            }
+            this.destroyTestIconsPage();
             alert('Sorry, but something went wrong during the testing process. No changes have been made to your tree.');
         }
     },
@@ -950,12 +948,16 @@ IconTester.prototype = {
         setTimeout(function() {
             sidebarHandler.createWithDockState(settings.get('dockState'));
             if (badNodes.length == 0) {
-                alert('Sidewise did not find any favicons that caused the malware page problem. Sorry!\n\n' +
-                    'If you are still seeing the malware page in the sidebar, restarting Chrome and rerunning this test will usually fix it.');
+                setTimeout(function() {
+                    alert('Sidewise did not find any favicons that caused the malware page problem. Sorry!\n\n' +
+                        'If you are still seeing the malware page in the sidebar, restarting Chrome and rerunning this test will usually fix it.');
+                }, 100);
                 return;
             }
-            alert('The testing process is complete and Sidewise has detected ' + badNodes.length + ' favicon(s) that cause the malware page problem.' +
+            setTimeout(function() {
+                alert('The testing process is complete and Sidewise has detected ' + badNodes.length.toString() + ' favicon(s) that caused the malware page problem.' +
                 '\n\nSidewise has removed these favicons from the sidebar and the problem should now be resolved.');
+            }, 100);
             preventTestIconsCheck = false;
         }, 500);
     },
@@ -964,7 +966,6 @@ IconTester.prototype = {
         this.testTab = undefined;
         this.testDomWindow = undefined;
         this.testOnFinished = onFinished;
-        sidebarHandler.sidebarPanes['test_icons'] = undefined;
         this.startTestIconsLoops();
     },
 
@@ -988,15 +989,16 @@ IconTester.prototype = {
 
     destroyTestIconsPage: function(onDestroyed) {
         var self = this;
+        onDestroyed = onDestroyed || function() { };
         if (this.testTab) {
             chrome.tabs.remove(this.testTab.id, function() {
                 self.testTab = undefined;
                 self.testDomWindow = undefined;
-                onDestroyed(true);
+                onDestroyed();
             });
             return;
         }
-        onDestroyed(false);
+        onDestroyed();
     },
 
     onTestIconsTabCreated: function(tab, onReady) {
@@ -1035,14 +1037,15 @@ IconTester.prototype = {
     },
 
     testIconsInTree: function(tree, onFinished) {
+        var self = this;
         var nodes = tree.filter(function(e) {
             return e instanceof PageNode && e.favicon;
         });
         this.testResetTime = 5000;
         this.testIconBatch(nodes, function() {
-            onFinished();
+            self.destroyTestIconsPage(function() { onFinished(); });
         }, function(badNode) {
-            onFinished(badNode);
+            self.destroyTestIconsPage(function() { onFinished(badNode); });
         });
     },
 
@@ -1084,7 +1087,7 @@ IconTester.prototype = {
                         onAllValid();
                     }
                 });
-            }, this.testResetTime);
+            }, self.testResetTime);
         });
     }
 };
