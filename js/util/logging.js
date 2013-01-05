@@ -1,24 +1,32 @@
 // Custom error handler
 var nativeError = Error;
 Error = function(message) {
+    this.message = message;
+    this.name = '';
+    this._stack = getCallStack();
+    var output = '';
     try {
-        log('*THROWN ERROR* ' + message);
+        output = writeDiagnosticLog.apply(this, ['[THROWING ERROR]'].concat(message));
+        // console.error(this.stack);
     }
     catch(ex) {
         console.error('Error in custom Error() handler!', ex);
+        output = ex.message;
     }
-    return new nativeError(message);
 };
+Error.prototype = new nativeError();
+Error.prototype.constructor = Error;
 
 var nativeConsoleError = console.error;
 console.error = function() {
+    nativeConsoleError.apply(console, arguments);
     try {
-        log.apply(this, ['*CONSOLE ERROR*'].concat(arguments));
+        arguments['0'] = '[CONSOLE ERROR] ' + arguments[0];
+        writeDiagnosticLog.apply(this, arguments);
     }
     catch(ex) {
         console.error('Error in custom console.error() handler!', ex);
     }
-    nativeConsoleError.apply(console, arguments);
 };
 
 
@@ -40,10 +48,32 @@ function setLoggingState() {
     loggingEnabled = localStorage['loggingEnabled'] == 'true' || false;
     logObjectsAsJSON = localStorage['logObjectsAsJSON'] == 'true' || false;
     if (loggingEnabled) {
-        log = writeDiagnosticLog;
+        log = writeAndLogToConsole;
         return;
     }
     log = function() { };
+}
+
+function writeAndLogToConsole() {
+    var messages = writeDiagnosticLog.apply(this, arguments);
+    if (console && messages) {
+        var stack = getCallStack();
+        if (typeof(arguments['0']) == 'string' || typeof(arguments['0']) == 'int') {
+            arguments['0'] = arguments['0'] + ' @ ' + stack[0];
+        }
+        else {
+            for (var i = arguments.length - 1; i >= 0; i--) {
+                arguments[(i + 1).toString()] = arguments[i.toString()];
+            };
+
+            // arguments[arguments.length.toString()] = arguments[0];
+            arguments[0] = stack[0];
+            arguments.length++;
+        }
+        console.groupCollapsed.apply(console, arguments);
+        console.log.apply(console, [stack.join('\n')]);
+        console.groupEnd();
+    }
 }
 
 // Logs all passed arguments to console if loggingEnabled is true.
@@ -111,13 +141,9 @@ function writeDiagnosticLog() {
         messages.pop();
     }
 
-    if (console) {
-        console.log.apply(console, messages);
-    }
-
     if (!isBackgroundPage) {
         // don't write running log in non bg pages
-        return;
+        return messages;
     }
 
     jsonMessages = jsonMessages.join(' ');
@@ -131,6 +157,7 @@ function writeDiagnosticLog() {
 
     firstElem = '';
     stack = '';
+    return messages;
 }
 
 // Like log(), but abbreviates multiline strings to 'first line...'
@@ -168,29 +195,22 @@ function trimRunningLog() {
 }
 
 function getCallStack() {
-    var stack;
-    try {
-        // induce an exception so we can capture the call stack
-        throw new nativeError();
-    }
-    catch(ex) {
-        stack = ex.stack;
+    var stack = new nativeError().stack;
 
-        stack = (stack + '\n')
-                .replace(/^\S[^\(]+?[\n$]/gm, '')
-                .replace(/^\s+(at eval )?at\s+/gm, '')
-                .replace(/^([^\(]+?)([\n$])/gm, '{anonymous}()@$1$2')
-                .replace(/^Object.<anonymous>\s*\(([^\)]+)\)/gm, '{anonymous}()@$1')
-                .replace(/chrome\-extension\:\/\/(.+?)\//g, '/')
-                .replace(/\n+$/gm, '')
-                .split('\n');
+    stack = (stack + '\n')
+        .replace(/^\S[^\(]+?[\n$]/gm, '')
+        .replace(/^\s+(at eval )?at\s+/gm, '')
+        .replace(/^([^\(]+?)([\n$])/gm, '{anonymous}()@$1$2')
+        .replace(/^Object.<anonymous>\s*\(([^\)]+)\)/gm, '{anonymous}()@$1')
+        .replace(/\n+$/gm, '');
 
-        // discard unwanted calls from top of stack
-        while (stack[0].indexOf('logging.js:') >= 0
-            || stack[0].indexOf('Error') == 0)
-        {
-            stack.shift(1);
-        }
+    stack = stack.split('\n');
+
+    // discard unwanted calls from top of stack
+    while (stack[0].indexOf('logging.js:') >= 0
+        || stack[0].indexOf('Error') == 0)
+    {
+        stack.shift(1);
     }
 
     return stack;
