@@ -119,9 +119,10 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
 }
 
 function populateFancyTreeFromPageTree(fancyTree, pageTree) {
+    var c = 0;
     pageTree.forEach(function(e, i, d, a, p) {
         var parentId = (p ? p.id : undefined);
-        addPageTreeNodeToFancyTree(fancyTree, e, parentId);
+        setTimeout(function() { addPageTreeNodeToFancyTree(fancyTree, e, parentId); }, c++);
     });
 }
 
@@ -335,12 +336,12 @@ function onRowsMoved(moves) {
                     // this works, but has the gray-window problem which we should be able to fix by building out winToWinMoves array again
                     // and using this here technique for doing the moves, but doing the temp-tab create-and-destroy crap in addition as needed
                     // (and possibly activating moved tabs after always, too)
-                    var movingTabId = getRowNumericId($row);
-                    var fromWindowId = getRowNumericId($oldTopParent);
+                    var movingTabId = getChromeId($row);
+                    var fromWindowId = getChromeId($oldTopParent);
                     var node = bg.tree.getNode(rowId);
 
                     if ($toTopParent.attr('hibernated') == 'false') {
-                        node.windowId = getRowNumericId($toTopParent);
+                        node.windowId = getChromeId($toTopParent);
                     }
                     else {
                         needNewWindow = true;
@@ -361,7 +362,7 @@ function onRowsMoved(moves) {
         // perform window-to-window moves
         bg.tree.rebuildTabIndex();
         var newWindowCreated = false;
-        var toWindowId = getRowNumericId($toTopParent);
+        var toWindowId = getChromeId($toTopParent);
 
         var fn = function(onCompleteFn) {
             var i = 0;
@@ -740,7 +741,7 @@ function onContextMenuItemReload($rows) {
         if ($e.attr('rowtype') != 'page' || $e.attr('hibernated') == 'true') {
             return;
         }
-        var chromeId = getRowNumericId($e);
+        var chromeId = getChromeId($e);
         chrome.tabs.executeScript(chromeId, { code: "window.location.reload();" });
     });
 }
@@ -1184,7 +1185,7 @@ function onWindowRowClick(evt) {
     var row = evt.data.row;
     var treeObj = evt.data.treeObj;
 
-    var windowId = getRowNumericId(row);
+    var windowId = getChromeId(row);
 
     if (windowId) {
         chrome.windows.update(windowId, { focused: true });
@@ -1272,7 +1273,7 @@ function onWindowRowCreateTabButton(evt) {
     var treeObj = evt.data.treeObj;
     var row = evt.data.row;
 
-    createNewTabInWindow(getRowNumericId(row) || undefined);
+    createNewTabInWindow(getChromeId(row) || undefined);
 }
 
 function onWindowRowFormatTitle(row, itemTextElem) {
@@ -1342,7 +1343,7 @@ function closeWindowRow(row) {
         }
 
         var id = row.attr('id');
-        var windowId = getRowNumericId(row);
+        var windowId = getChromeId(row);
         var winNode = bg.tree.getNode(id);
 
         if (row.attr('hibernated') == 'true' || !windowId) {
@@ -1396,7 +1397,7 @@ function setPageRowPinnedState(row, pinned) {
     if (row.attr('hibernated') == 'true') {
         return;
     }
-    chrome.tabs.update(getRowNumericId(row), { pinned: pinned });
+    chrome.tabs.update(getChromeId(row), { pinned: pinned });
 }
 
 function setRowLabels(rows) {
