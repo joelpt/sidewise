@@ -275,7 +275,7 @@ function onTabRemoved(tabId, removeInfo, denyTabSwap)
         else {
             // We think Chrome is about to swap this tab with another tab
             // due to preloading a tab in the background and swapping it in
-            log('Recording expected navigation old tab id ' + tabId + ' and retriggering onTabRemoved in 100ms');
+            log('Recording expected navigation old tab id ' + tabId + ' and retriggering onTabRemoved');
             expectingNavigationOldTabId = tabId;
 
             // If Chrome does not perform the tab swap very soon, then we
@@ -294,7 +294,7 @@ function onTabRemoved(tabId, removeInfo, denyTabSwap)
                 }
                 // tab was not removed yet so do it now
                 onTabRemoved(tabId, removeInfo, true);
-            }, 100);
+            }, 25);
             return;
         }
     }
