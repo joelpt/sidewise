@@ -297,17 +297,21 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
 
             node.restored = false;
 
-            if (node instanceof WindowNode && !node.hibernated) {
-                // retitle restorable window titles
+            if (node instanceof WindowNode) {
+                if (node.restorable && node.hibernated) {
+                    // mark for removal post-association
+                    node.old = true;
+                }
+                else if (!node.hibernated) {
+                    node.title = getMessage('text_LastSession') + ' - ' + lastSessionWindowNumber;
+                    lastSessionWindowNumber++;
+                    node.restorable = true;
+                    node.hibernated = true;
+                    node.id = node.id[0] + 'R' + node.UUID;
 
-                node.title = getMessage('text_LastSession') + ' - ' + lastSessionWindowNumber;
-                lastSessionWindowNumber++;
-                node.restorable = true;
-                node.hibernated = true;
-                node.id = node.id[0] + 'R' + node.UUID;
-
-                if (settings.get('autoCollapseLastSessionWindows')) {
-                    node.collapsed = true;
+                    if (settings.get('autoCollapseLastSessionWindows')) {
+                        node.collapsed = true;
+                    }
                 }
             }
             else if (node instanceof PageNode) {

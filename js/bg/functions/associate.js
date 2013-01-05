@@ -324,6 +324,7 @@ function cleanUpAfterAssociation(delay) {
                                     fixAllPinnedUnpinnedTabOrder();                 // correct ordering of pinned vs. unpinned tabs in the tree/tab order
                                     tree.conformAllChromeTabIndexes(true);          // conform chrome's tab order to match the tree's order
                                     tree.conformAllChromeTabIndexes(false);         // conform chrome's tab order to match the tree's order again after standard delay
+                                    removeOldWindows();                             // get rid of old 'Last Session' windows
                                     log('Post-association cleanup complete');
                                 });
                             });
@@ -922,4 +923,18 @@ function removeZeroChildWindowNodes() {
             last = duplicates[i];
         }
     }
+}
+
+function removeOldWindows() {
+    var oldWindows = tree.filter(function(e) { return e instanceof WindowNode && e.old; });
+    oldWindows.forEach(function(e) {
+        if (e.hibernated) {
+            // old window that is still hibernated - remove to rctree
+            tree.removeNode(e, true);
+            return;
+        }
+        // old window that is NOT hibernated - we must have associated successfully to it,
+        // so don't destroy it
+        tree.updateNode(e, { old: false });
+    });
 }

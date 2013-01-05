@@ -63,6 +63,7 @@ function onWindowRemoved(windowId)
         if (node.children.length > 0) {
             tree.updateNode(node, {
                 hibernated: true,
+                restorable: false,
                 title: getMessage('text_hibernatedWindow'),
                 id: 'wR' + node.UUID,
                 chromeId: null
