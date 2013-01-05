@@ -331,8 +331,7 @@ DataTree.prototype = {
     {
         var node = this.getNode(matcher);
         if (!node) {
-            console.error(matcher);
-            throw new Error('Could not find requested element to remove matching above matcher');
+            throw new Error('Could not find requested element to remove matching ' + matcher.toString());
         }
 
         if (removeChildren) {
