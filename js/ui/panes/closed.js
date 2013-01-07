@@ -122,7 +122,11 @@ function populateFancyTreeFromPageTree(fancyTree, pageTree) {
     var c = 0;
     pageTree.forEach(function(e, i, d, a, p) {
         var parentId = (p ? p.id : undefined);
-        setTimeout(function() { addPageTreeNodeToFancyTree(fancyTree, e, parentId); }, c++);
+        var batchSize = 25;
+        var waitBetweenBatches = 250;
+        var wait = Math.floor(c / batchSize) * waitBetweenBatches + c % batchSize;
+        setTimeout(function() { addPageTreeNodeToFancyTree(fancyTree, e, parentId); }, wait);
+        c++;
     });
 }
 
@@ -392,7 +396,7 @@ function onRowsMoved(moves) {
                         }
                         var removeTabId = tabs[0].id;
                         toWindowId = win.id;
-                        var existingWinNode = bg.tree.getNode('w' + toWindowId);
+                        var existingWinNode = bg.tree.getNode(['chromeId', toWindowId]);
                         if (existingWinNode) {
                             bg.tree.updateNode(existingWinNode, { id: 'X' + generateGuid() });
                             bg.tree.removeNode(existingWinNode, true);
@@ -467,7 +471,7 @@ function moveTabToWindow(movingTabId, toWindowId, toPosition, afterFn) {
         chrome.tabs.update(movingTabId, { active: true }, function(tab) {
             // Unpin tab if necessary (Chrome typically does so silenty for pinned tabs moved btwn windows this way)
             if (!tab.pinned) {
-                var page = bg.tree.getPage(movingTabId);
+                var page = bg.tree.getNode(['chromeId', movingTabId]);
                 if (page.pinned) {
                     bg.tree.updateNode(page, { pinned: false });
                     // TODO don't use below calling style: chrome-functions.js is bg specific so it should
