@@ -47,22 +47,27 @@ function onTabCreated(tab)
             if (expectingNavigationOldTabId) {
                 // it did occur; swap tab ids
                 var page = tree.getNode(['chromeId', expectingNavigationOldTabId]);
-                log(tree.dump());
-                log('Swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id, 'found page node', page);
-                tree.updatePage(page, {
-                    id: 'p' + tab.id,
-                    chromeId: tab.id,
-                    url: tab.url,
-                    windowId: tab.windowId
-                });
-                refreshPageStatus(page);
-                resetExpectingNavigation();
-                return;
+                if (page) {
+                    // log(tree.dump());
+                    log('Swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id, 'found page node', page);
+                    tree.updatePage(page, {
+                        id: 'p' + tab.id,
+                        chromeId: tab.id,
+                        url: tab.url,
+                        windowId: tab.windowId
+                    });
+                    refreshPageStatus(page);
+                    resetExpectingNavigation();
+                    return;
+                }
+                log('Old page for swap no longer exists, so adding as new node', 'old', expectingNavigationOldTabId, 'new', tab.id);
+            }
+            else {
+                log('No tab closed just before the preloaded tab was created so creating preloaded as new node');
             }
 
             // the preloaded tab has been created as a new normal tab, because we do not have
             // expectingNavigationOldTabId here which we otherwise would have if a swap was going on
-            log('Expected preloaded tab created as a new normal tab');
             ignoredPreloadedTab = true;
             resetExpectingNavigation(); // TODO just substract our tab.id from expectingPossibleNewTabIds, don't do a full reset?
                                         // sounds reasonable although it seems chrome only ever has one preload-tab open at once
@@ -175,18 +180,18 @@ function onTabCreated(tab)
 
     page.initialCreation = true;
 
-    var winTabs = tree.getWindowTabIndexArray(tab.windowId);
-
-    if (!winTabs) {
-        winTabs = [];
-        log('Could not obtain winTabs for windowId ' + tab.windowId);
-    }
-
     if (ignoredPreloadedTab) {
         log('Preloaded tab created as normal new tab, adding to end of window like normal alt+enter');
         tree.addTabToWindow(tab, page);
         tree.conformAllChromeTabIndexes(true);
         return;
+    }
+
+    var winTabs = tree.getWindowTabIndexArray(tab.windowId);
+
+    if (!winTabs) {
+        winTabs = [];
+        log('Could not obtain winTabs for windowId ' + tab.windowId);
     }
 
     if (!tab.openerTabId) {
@@ -272,6 +277,12 @@ function onTabRemoved(tabId, removeInfo, denyTabSwap)
             // did not and will not be happening for the removed tab
             resetExpectingNavigation();
         }
+        else if (expectingPossibleNewTabIds.indexOf(tabId) >= 0) {
+            // the preloaded tab has been removed so cannot be used
+            // in future tab swapping
+            resetExpectingNavigation();
+            return;
+        }
         else {
             // We think Chrome is about to swap this tab with another tab
             // due to preloading a tab in the background and swapping it in
@@ -299,7 +310,7 @@ function onTabRemoved(tabId, removeInfo, denyTabSwap)
         }
     }
 
-    var page = tree.getPage(tabId);
+    var page = tree.getNode(['chromeId', tabId]);
 
     if (!page) {
         // Page node with this tabId doesn't exist; this is most likely because
@@ -489,7 +500,7 @@ function onTabUpdated(tabId, changeInfo, tab)
         return;
     }
 
-    var page = tree.getPage(tabId);
+    var page = tree.getNode(['chromeId', tabId]);
 
     if (!page) {
         // page row entry doesn't exist so we cannot update it
@@ -572,7 +583,7 @@ function onTabUpdated(tabId, changeInfo, tab)
         // openerTabId was missing initially in onTabCreated but exists now; this happens when
         // using "open selected links" extension, so place these under their correct parent now
 
-        var newParent = tree.getPage(tab.openerTabId);
+        var newParent = tree.getNode(['chromeId', tab.openerTabId]);
         if (!newParent) {
             console.error('Could not find correct parent by openerTabId ' + tab.openerTabId);
         }
@@ -641,7 +652,7 @@ function onTabMoved(tabId, moveInfo) {
     log(tabId, moveInfo);
     if (removeFromExpectingTabMoves(tabId)) {
         log('Was expecting this tab move, just updating windowId and index');
-        var page = tree.getPage(tabId);
+        var page = tree.getNode(['chromeId', tabId]);
         tree.removeFromTabIndex(page);
         page.index = moveInfo.toIndex;
         page.windowId = moveInfo.windowId;
@@ -686,7 +697,7 @@ function onTabActivated(activeInfo) {
 function onTabDetached(tabId, detachInfo) {
     // remove detatched tabs temporarily from tree.tabIndexes, they will
     // be added back correctly when we receive onTabAttached shortly
-    var node = tree.getPage(tabId);
+    var node = tree.getNode(['chromeId', tabId]);
     if (node) {
         tree.removeFromTabIndex(node);
     }
@@ -695,7 +706,7 @@ function onTabDetached(tabId, detachInfo) {
 function onTabAttached(tabId, attachInfo) {
     log(tabId, attachInfo);
 
-    var moving = tree.getPage(tabId);
+    var moving = tree.getNode(['chromeId', tabId]);
     if (!moving) {
         throw new Error('Could not find page with tab id ' + tabId);
     }
