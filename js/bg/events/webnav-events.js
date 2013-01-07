@@ -57,12 +57,12 @@ function onCreatedNavigationTarget(details)
     }
 
 
-    var page = tree.getPage(details.tabId);
+    var page = tree.getNode(['chromeId', details.tabId]);
     log(details.tabId, details.sourceTabId, details, page, 'parent', page.parent.id);
     page.placed = true;
 
     if (page.parent instanceof WindowNode) {
-        var to = tree.getPage(details.sourceTabId);
+        var to = tree.getNode(['chromeId', details.sourceTabId]);
         if (!to) {
             log('Not moving because could not find sourceTabId ' + details.sourceTabId);
             return;
@@ -135,7 +135,7 @@ function onCommitted(details)
     if (monitorInfo.isDetecting()) {
         return;
     }
-    var page = tree.getPage(details.tabId);
+    var page = tree.getNode(['chromeId', details.tabId]);
 
     log(details.tabId, details, page);
 
@@ -175,7 +175,7 @@ function onCommitted(details)
 
     if (details.transitionType == 'link' && details.transitionQualifiers.indexOf('client_redirect') == -1) {
         if (page.openerTabId && page.parent instanceof WindowNode) {
-            var parent = tree.getPage(page.openerTabId);
+            var parent = tree.getNode(['chromeId', page.openerTabId]);
             var before = first(parent.children, function(e) {
                 return e instanceof PageNode && !e.hibernated && e.unread && e.index > page.index;
             });
@@ -202,7 +202,7 @@ function onBeforeNavigate(details)
 
     log(details);
 
-    var page = tree.getPage(details.tabId);
+    var page = tree.getNode(['chromeId', details.tabId]);
 
     if (page) {
         log('Marking existing page as preloading', page);
@@ -257,7 +257,7 @@ function onCompleted(details)
     if (monitorInfo.isDetecting()) {
         return;
     }
-    var page = tree.getPage(details.tabId);
+    var page = tree.getNode(['chromeId', details.tabId]);
     if (page === undefined)
     {
         // tab doesn't exist in page tree yet
@@ -320,7 +320,7 @@ function onCompletedLateUpdateTimeout(tabId) {
             chrome.tabs.get(tabId, function(tab) {
                 if (!tab) return;
 
-                var page = tree.getPage(tabId);
+                var page = tree.getNode(['chromeId', tabId]);
 
                 if (page && (!isStaticFavIconUrl(page.favicon) || page.favicon.indexOf('http://www.google.com/s2/favicons') == 0)) {
                     if (isStaticFavIconUrl(tab.favIconUrl) && tab.favIconUrl != page.favicon) {

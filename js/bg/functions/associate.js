@@ -115,7 +115,7 @@ function startAssociationRun() {
                 // this tab is the sidebar
                 continue;
             }
-            if (tree.getPage(tab.id)) {
+            if (tree.getNode(['chromeId', tab.id])) {
                 // this tab is already in the tree as a normal tab
                 continue;
             }
@@ -263,7 +263,7 @@ function tryAssociateExistingToRestorablePageNode(existingPage) {
 
 function associateExistingToRestorablePageNode(tab, referrer, historylength) {
     var tabId = tab.id;
-    var existingPage = tree.getPage(tabId);
+    var existingPage = tree.getNode(['chromeId', tabId]);
 
     log('associating existing to restorable', 'tabId', tabId, 'existing', existingPage, 'referrer', referrer,
         'historylength', historylength);
@@ -392,7 +392,7 @@ function associateTabToPageNode(runId, tab, referrer, historylength) {
         runInfo.count++;
     }
 
-    var existingPage = tree.getPage(tab.id);
+    var existingPage = tree.getNode(['chromeId', tab.id]);
 
     if (existingPage) {
         // tab is already properly present as a pagenode in the tree and we don't want to
@@ -810,7 +810,7 @@ function movePageNodesToCorrectWindows(onComplete) {
                     return;
                 }
 
-                var page = tree.getPage(tab.id);
+                var page = tree.getNode(['chromeId', tab.id]);
 
                 if (!page) {
                     console.error('Page with this open tab\'s id does not exist in tree', tab.id, tab);

@@ -799,7 +799,7 @@ function findTabParents(tabs) {
             log('will requery these tabs', tabsToRequery);
             for (var i in tabsToRequery) {
                 var tab = tabsToRequery[i];
-                var page = tree.getPage(tab.id);
+                var page = tree.getNode(['chromeId', tab.id]);
                 if (page && page.placed) {
                     // page has already been placed
                     log('Skipping already-placed page', 'tabId', tab.id);

@@ -547,7 +547,7 @@ DataTree.prototype = {
       * @param matcherFn Function(node): return true for each node to be included in the result set.
       * @param inArray If provided, act only on nodes and descendents in given array; acts on whole tree otherwise.
       * @returns An array of all matching nodes.
-      * @example tree.filter(function(node) { return node.id[0] == 'f'; });
+      * @example tree.filter(function(node) { return node instanceof FolderNode; });
       */
     filter: function(matcherFn, inArray)
     {

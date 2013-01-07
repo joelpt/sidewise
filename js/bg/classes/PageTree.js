@@ -352,22 +352,11 @@ PageTree.prototype = {
     // PageNode-specific manipulation
     ///////////////////////////////////////////////////////////
 
-    // retrieve a page from the tree given its tabId
-    getPage: function(tabId)
-    {
-        return this.getNode(['chromeId', tabId]);
-    },
-
-    // retrieve a page from the tree given its tabId, and return additional details
-    getPageEx: function(tabId, inArray) {
-        return this.getNodeEx(['chromeId', tabId], inArray);
-    },
-
     focusPage: function(tabId)
     {
         // log(tabId);
 
-        var page = this.getPage(tabId);
+        var page = this.getNode(['chromeId', tabId]);
 
         if (!page) {
             log('Page node does not exist to be focused yet', 'tabId', tabId);
@@ -892,7 +881,7 @@ PageTree.prototype = {
         chrome.tabs.query({ }, function(tabs) {
             for (var i in tabs) {
                 var tab = tabs[i];
-                var page = self.getPage(tab.id);
+                var page = self.getNode(['chromeId', tab.id]);
                 if (page) {
                     page.windowId = tab.windowId;
                     page.index = tab.index;
@@ -1008,7 +997,7 @@ PageTree.prototype = {
     {
         log('updating page index', tabId, windowId, fromIndex, toIndex);
         var to;
-        var moving = this.getPage(tabId);
+        var moving = this.getNode(['chromeId', tabId]);
         tree.updateNode(moving, { windowId: windowId });
 
         if (toIndex < fromIndex) {

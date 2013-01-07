@@ -110,7 +110,7 @@ function onRequest(request, sender, sendResponse) {
 
 function onGetUpdateMediaStateMessage(tab, msg) {
     // log(tab, msg);
-    var page = tree.getPage(tab.id);
+    var page = tree.getNode(['chromeId', tab.id]);
     if (!page) {
         console.error('Cannot find page for updating media state ' + tab.id);
         return;
@@ -180,7 +180,7 @@ function onGetPageDetailsMessage(tab, msg) {
     // log(tab, msg);
     var tabId = tab.id;
 
-    var page = tree.getPage(tabId);
+    var page = tree.getNode(['chromeId', tabId]);
 
     switch (msg.action) {
         case 'store':
