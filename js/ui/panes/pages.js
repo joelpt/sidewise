@@ -480,7 +480,7 @@ function moveTabToWindow(movingTabId, toWindowId, toPosition, afterFn) {
         chrome.tabs.update(movingTabId, { active: true }, function(tab) {
             // Unpin tab if necessary (Chrome typically does so silenty for pinned tabs moved btwn windows this way)
             if (!tab.pinned) {
-                var page = bg.tree.getPage(movingTabId);
+                var page = bg.tree.getNode(['chromeId', movingTabId]);
                 if (page.pinned) {
                     bg.tree.updateNode(page, { pinned: false });
                     // TODO don't use below calling style: chrome-functions.js is bg specific so it should
@@ -988,18 +988,29 @@ function onPageRowClick(evt) {
         return;
     }
 
-    // set visual focus asap in ft
-    ft.focusRow(row);
+    var keepUndockedTop = (bg.sidebarHandler.dockState == 'undocked' && settings.get('keepSidebarOnTop'));
 
-    // actually set Chrome's focused tab
-    chrome.tabs.update(getChromeId(row), { active: true }, function(tab) {
-        // if the tab's hosting window is currently minimized, un-minimize it
-        chrome.windows.get(tab.windowId, function(win) {
-            if (win.state == 'minimized') {
-                chrome.windows.update(win.id, { state: 'normal' });
-            }
+    // If we don't need to keep undocked sidebar on-top, OR if we do but the user changed the focused
+    // row...
+    if (!keepUndockedTop || bg.tree.focusedTabId != getChromeId(row)) {
+        // set visual focus asap in ft
+        ft.focusRow(row);
+
+        // actually set Chrome's focused tab
+        chrome.tabs.update(getChromeId(row), { active: true }, function(tab) {
+            // if the tab's hosting window is currently minimized, un-minimize it
+            chrome.windows.get(tab.windowId, function(win) {
+                if (win.state == 'minimized') {
+                    chrome.windows.update(win.id, { state: 'normal' });
+                }
+                if (keepUndockedTop) {
+                    // when in undocked mode and keepVisible is set, refocus
+                    // the sidebar 'popup'
+                    chrome.windows.update(bg.sidebarHandler.windowId, { focused: true });
+                }
+            });
         });
-    });
+    }
 
     // trigger page row tooltip to appear after 2s
     treeObj.startTooltipTimer(row, evt, 2000);
