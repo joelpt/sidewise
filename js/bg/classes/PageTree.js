@@ -675,6 +675,7 @@ PageTree.prototype = {
             restored: true,
             restorable: false,
             hibernated: false,
+            old: false,
             title: WINDOW_DEFAULT_TITLE
         });
     },

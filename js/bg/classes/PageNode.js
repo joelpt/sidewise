@@ -18,6 +18,8 @@ var PageNode = function(tab, overrideStatus)
     this.sessionGuid = null;
     this.mediaState = null;
     this.mediaTime = null;
+    this.restored = false;
+    this.restorable = false;
 
     if (tab) {
         var url = tab.url ? dropUrlHash(tab.url) : '';

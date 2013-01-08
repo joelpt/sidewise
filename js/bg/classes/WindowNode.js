@@ -32,6 +32,10 @@ var WindowNode = function(win)
     this.incognito = false;
     this.type = 'normal';
     this.hibernated = true;
+
+    this.restored = false;
+    this.restorable = false;
+    this.old = false;
 };
 
 extendClass(WindowNode, PageTreeNode, {});
