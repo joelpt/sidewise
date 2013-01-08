@@ -277,7 +277,7 @@ function onTabRemoved(tabId, removeInfo, denyTabSwap)
             // did not and will not be happening for the removed tab
             resetExpectingNavigation();
         }
-        else if (expectingPossibleNewTabIds.indexOf(tabId) >= 0) {
+        else if (expectingNavigationPossibleNewTabIds.indexOf(tabId) >= 0) {
             // the preloaded tab has been removed so cannot be used
             // in future tab swapping
             resetExpectingNavigation();
