@@ -2,7 +2,7 @@ var bg;
 
 $(document).ready(function() {
     bg = chrome.extension.getBackgroundPage();
-    bg.sidebarHandler.registerSidebarPane('test_icons', window);
+    bg.IconTesterDomWindow = window;
 });
 
 function testIcon(url) {
