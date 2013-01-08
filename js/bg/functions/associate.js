@@ -696,6 +696,7 @@ function associateWindowstoWindowNodes(requireChildrenCountMatch, prohibitMergin
                     if (!prohibitMergingWindows) {
                         // already exists, so merge its children into our restorable window
                         log('Merging windows', existingWinNode.id, win.id);
+                        mergeWindowsPreservingTabIndexes(existingWinNode, win);
                         tree.mergeNodes(existingWinNode, win);
                     }
                     else {
@@ -926,15 +927,83 @@ function removeZeroChildWindowNodes() {
 }
 
 function removeOldWindows() {
-    var oldWindows = tree.filter(function(e) { return e instanceof WindowNode && e.old; });
+    var youngWindows = tree.root.children.filter(function(e) {
+        return e instanceof WindowNode
+            && e.hibernated
+            && e.restorable
+            && !e.old;
+    });
+
+    var oldWindows = tree.root.children.filter(function(e) {
+        return e instanceof WindowNode && e.old;
+    });
+
     oldWindows.forEach(function(e) {
-        if (e.hibernated) {
+        if (e.hibernated && youngWindows.length > 0) {
             // old window that is still hibernated - remove to rctree
             tree.removeNode(e, true);
             return;
         }
-        // old window that is NOT hibernated - we must have associated successfully to it,
-        // so don't destroy it
+        // old window that is not hibernated, or there are no younger Last Session
+        // windows found
         tree.updateNode(e, { old: false });
     });
 }
+
+function mergeWindowsPreservingTabIndexes(fromWindow, toWindow) {
+    var incoming = tree.filter(function(e) { return true; }, fromWindow.children);
+    var existing = tree.filter(function(e) { return true; }, toWindow.children);
+    var insertPosition;
+
+    for (var i = incoming.length - 1; i >= 0; i--) {
+        var node = incoming[i];
+
+        if (!node.isTab()) {
+            if (insertPosition) {
+                tree.moveNodeRel(node, 'after', insertPosition);
+                insertPosition = node;
+                continue;
+            }
+            tree.moveNodeRel(node, 'prepend', toWindow);
+            insertPosition = node;
+            continue;
+        }
+
+        if (node.index == 0) {
+            if (insertPosition) {
+                tree.moveNodeRel(node, 'after', insertPosition);
+                insertPosition = node;
+                continue;
+            }
+            tree.moveNodeRel(node, 'prepend', toWindow);
+            insertPosition = node;
+            continue;
+        }
+
+        var following = firstElem(existing, function(e) {
+            return e.isTab() && e.index == node.index + 1;
+        });
+        if (following) {
+            tree.moveNodeRel(node, 'before', following);
+            insertPosition = node;
+            continue;
+        }
+
+        var preceding = firstElem(existing, function(e) {
+            return e.isTab() && e.index == node.index - 1;
+        });
+        if (preceding) {
+            if (preceding.children.length > 0) {
+                tree.moveNodeRel(node, 'prepend', preceding);
+                continue;
+            }
+            tree.moveNodeRel(node, 'after', preceding);
+            insertPosition = node;
+            continue;
+        }
+
+        console.warn('Did not find preceding node by index during win merging');
+        tree.moveNodeRel(node, 'append', toWindow);
+    }
+}
+
