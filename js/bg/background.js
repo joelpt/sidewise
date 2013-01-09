@@ -147,13 +147,8 @@ function postLoad(focusedWin) {
             ghostTree.loadTree(ghosts, GHOSTTREE_NODE_TYPES);
         }
 
-        if (settings.get('rememberOpenPagesBetweenSessions')) {
-            setTimeout(startAssociationRun, 2000); // wait a couple seconds for content scripts to get going
-            populatePages(true);
-        }
-        else {
-            populatePages();
-        }
+        setTimeout(startAssociationRun, 2000); // wait a couple seconds for content scripts to get going
+        populatePages(true);
 
         if (updatedSidewise) {
             showWhatsNewPane();
@@ -234,8 +229,6 @@ function loadTreeFromLocalStorage(tree, settingKey, casts) {
 
 // loads saved tree data from local storage and populates the tree with it
 function loadPageTreeFromLocalStorage(storedPageTree) {
-    var rememberOpenPagesBetweenSessions = settings.get('rememberOpenPagesBetweenSessions');
-
     tree.loadTree(storedPageTree, PAGETREE_NODE_TYPES);
 
     tree.tree.forEach(function(node) {
@@ -250,37 +243,22 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
         }
     });
 
-    if (!rememberOpenPagesBetweenSessions) {
-        tree.tree.forEach(function(node) {
-            if (!(node instanceof WindowNode)) {
-                return;
-            }
-
-            // set any non-hibernated window nodes which contain at least one
-            // hibernated child node to hibernated
-            var hibernatedChild = tree.getNodeEx(function(e) { return e.hibernated }, node.children);
-
-            if (hibernatedChild) {
-                node.hibernated = true;
-                node.id = 'wH' + node.UUID;
-                node.title = getMessage('text_hibernatedWindow');
-            }
-        });
-    }
-
     chrome.tabs.query({ }, function(tabs) {
         var urlAndTitles = tabs.map(function(e) { return e.url + '\n' + e.title });
         var lastSessionWindowNumber = 1;
+        var toRemove = [];
 
         // set hibernated+restorable flags on all non-hibernated nodes
         tree.forEach(function(node, index, depth, containingArray, parentNode) {
 
-            if (!rememberOpenPagesBetweenSessions
-                && (node instanceof PageNode || node instanceof WindowNode)
-                && !node.hibernated) {
-
-                // remove the dead node
-                tree.removeNode(node);
+            // Remove window nodes that have only a single New Tab page row child
+            if (node instanceof WindowNode && node.children.length == 1
+                && node.children[0] instanceof PageNode
+                && node.children[0].url == 'chrome://newtab/'
+                && node.children[0].children.length == 0)
+            {
+                toRemove.push(node.children[0]);
+                toRemove.push(node);
                 return;
             }
 
@@ -289,11 +267,10 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
             if (node instanceof PageNode
                 && !node.hibernated
                 && node.url.match(/^chrome-/)
-                && urlAndTitles.indexOf(node.url + '\n' + node.title) == -1) {
-
+                && urlAndTitles.indexOf(node.url + '\n' + node.title) == -1)
+            {
                 // remove the dead node
-                tree.removeNode(node);
-
+                toRemove.push(node);
                 return;
             }
 
@@ -305,7 +282,7 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
                     node.old = true;
                 }
                 else if (!node.hibernated) {
-                    node.title = getMessage('text_LastSession') + ' - ' + lastSessionWindowNumber;
+                    node.title = getMessage('text_LastSession');
                     lastSessionWindowNumber++;
                     node.restorable = true;
                     node.hibernated = true;
@@ -332,12 +309,17 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
             }
         });
 
+        toRemove.forEach(function(e) {
+            try {
+                tree.removeNode(e);
+            } catch(ex) { }
+        });
+        var toRemove = [];
 
         // remove any WindowNodes that now have no children
-        var toRemove = [];
-        tree.tree.forEach(function(e) {
+        tree.root.children.forEach(function(e) {
             if (e instanceof WindowNode && e.children.length == 0) {
-                toRemove.push(e); // don't remove immediately as it would mess up our containing .forEach indexes
+                toRemove.push(e);
             }
         });
         toRemove.forEach(function(e) {
@@ -517,13 +499,13 @@ function addNodeToRecentlyClosedTree(node, addDescendants) {
     }
     else {
         // Clone the node so we don't get weird "shared between trees" behavior
+        var now = Date.now();
         node = clone(node, ['root', 'parent', 'children']);
         node.__proto__ = PAGETREE_NODE_TYPES[node.elemType].prototype;
         node.children = [];
 
         // Find insert position by looking for another dead ghost node that
         // we have a positional relationship to
-        var now = Date.now();
         var added = false;
         if (ghost) {
             try {
@@ -726,8 +708,8 @@ function populatePages(incognito)
             var win = windows[i];
 
             // Obey incognito condition, if present
-            if (incognito == true && !win.incognito) continue;
-            if (incognito == false && win.incognito) continue;
+            if (incognito === true && !win.incognito) continue;
+            if (incognito === false && win.incognito) continue;
 
             var tabs = win.tabs;
             var numTabs = tabs.length;
