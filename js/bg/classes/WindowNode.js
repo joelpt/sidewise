@@ -19,16 +19,15 @@ var WindowNode = function(win)
 
     this.elemType = 'window';
     this.title = WINDOW_DEFAULT_TITLE;
+    this.id = 'w' + this.UUID;
 
     if (win) {
-        this.id = 'w' + win.id;
         this.chromeId = win.id;
         this.incognito = win.incognito;
         this.type = win.type;
         return;
     }
 
-    this.id = 'wH' + this.UUID;
     this.incognito = false;
     this.type = 'normal';
     this.hibernated = true;

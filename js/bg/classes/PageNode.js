@@ -6,6 +6,7 @@ var PageNode = function(tab, overrideStatus)
 {
     this.$base();
 
+    this.id = 'p' + this.UUID;
     this.elemType = 'page';
     this.referrer = '';
     this.historylength = 1;
@@ -23,7 +24,6 @@ var PageNode = function(tab, overrideStatus)
 
     if (tab) {
         var url = tab.url ? dropUrlHash(tab.url) : '';
-        this.id = 'p' + tab.id;
         this.chromeId = tab.id;
         this.windowId = tab.windowId;
         this.openerTabId = tab.openerTabId;
@@ -36,7 +36,6 @@ var PageNode = function(tab, overrideStatus)
     }
     else {
         this.hibernated = true;
-        this.id = 'p' + this.UUID;
         this.chromeId = null;
         this.windowId = null;
         this.openerTabId = null;

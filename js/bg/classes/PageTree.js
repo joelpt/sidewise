@@ -615,7 +615,7 @@ PageTree.prototype = {
                 self.setWindowToAwake(existingWindowNode, win.id);
                 self.expandNode(existingWindowNode);
 
-                cleanUpAfterAssociation(1000);
+                rectifyAssociations(1000);
             });
             return;
         }
@@ -665,13 +665,12 @@ PageTree.prototype = {
                 active: activateAfter || false,
                 pinned: e.pinned,
                 index: index
-            }, function() { cleanUpAfterAssociation(1000); });
+            }, function() { rectifyAssociations(1000); });
         });
     },
 
     setWindowToAwake: function(winNode, newWindowId) {
         this.updateNode(winNode, {
-            id: 'w' + newWindowId,
             chromeId: newWindowId,
             restored: true,
             restorable: false,
@@ -1042,41 +1041,24 @@ PageTree.prototype = {
         var self = this;
         var dumpFn = function(lastValue, e, depth) {
             var topParent = self.getNodeEx(e).ancestors[0];
-            var indexes = self.tabIndexes[topParent.id];
+            var indexes = self.tabIndexes[topParent.chromeId];
+            var index;
+
             if (indexes) {
-                var index = indexes.indexOf(e);
+                index = indexes.indexOf(e);
                 if (index == -1) {
-                    index = '---';
-                }
-                else {
-                    index = '   ' + index;
-                    index = index.slice(index.length - 3);
+                    index = '';
                 }
             }
             else {
-                var index = '---';
-            }
-
-            if (e.index === undefined) {
-                index += '----';
-            }
-            else {
-                var index2 = '   ' + e.index;
-                index += '=' + index2.slice(index2.length - 3);
-            }
-
-            if (e.chromeId) {
-                var chromeId = '     ' + e.chromeId;
-                index += ' #' + chromeId.slice(chromeId.length - 5);
-            }
-            else {
-                index += '       ';
+                index = '';
             }
 
             return lastValue + '\n'
-                + index + '|'
+                + padStringLeft(index, 3) + '/'
+                + padStringLeft(e.index, 3) + '|'
+                + padStringLeft(e.id, 30) + ': '
                 + Array(-4 + 1 + (1 + depth) * 4).join(' ')
-                + e.id + ': '
                 + (e instanceof PageNode ? e.title : 'window ' + e.type + (e.incognito ? ' incognito' : ''))
                 // + ' +' + e.children.length + ''
                 // + (e.placed ? ' P' : ' -')
