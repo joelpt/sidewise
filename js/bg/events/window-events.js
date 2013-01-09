@@ -65,7 +65,6 @@ function onWindowRemoved(windowId)
                 hibernated: true,
                 restorable: false,
                 title: getMessage('text_hibernatedWindow'),
-                id: 'wR' + node.UUID,
                 chromeId: null
             });
         }
