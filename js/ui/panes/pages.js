@@ -3,15 +3,8 @@
 ///////////////////////////////////////////////////////////
 
 $(document).ready(function() {
-
     initDebugBar();
-
-    ft = initTree('#treePlaceholder', '#filterBoxPlaceholder', bg.tree);
-
-    var binder = new SidebarPaneFancyTreeBinder(ft, bg);
-    binder.bind();
-
-    bg.sidebarHandler.registerSidebarPane('pages', window);
+    initPageTree(bg.tree, 'pages', createFancyTree);
     bg.focusCurrentTabInPageTree(true);
 
     if (!settings.get('createdNewTabViaDoubleClick')) {
@@ -20,7 +13,6 @@ $(document).ready(function() {
 
     $(document).on('dblclick', 'body, .ftBottomPadding', onBodyDoubleClick);
     $(document).on('keydown', 'body', onBodyKeyDown);
-
 });
 
 function onBodyKeyDown(evt) {
@@ -62,7 +54,7 @@ function debugBarClickResetTree() {
     }, 500);
 }
 
-function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
+function createFancyTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     var rowTypes = {
         'page': {
             allowedDropTargets: ['window', 'page', 'folder'],
@@ -71,8 +63,6 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onMiddleClick: onPageRowMiddleClick,
             onExpanderClick: onRowExpanderClick,
             onIconError: onPageRowIconError,
-            onFormatTitle: onPageRowFormatTitle,
-            onFormatTooltip: onPageRowFormatTooltip,
             buttons: [
                 {id: 'hibernate', icon: '/images/hibernate_wake.png', tooltip: getMessage('pages_pageRowButtonTip_hibernateWake'), onClick: onPageRowHibernateButton },
                 {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
@@ -83,8 +73,6 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onDoubleClick: onFolderRowDoubleClick,
             onMiddleClick: onFolderRowMiddleClick,
             onExpanderClick: onRowExpanderClick,
-            onFormatTitle: onFolderRowFormatTitle,
-            onFormatTooltip: onFolderRowFormatTooltip,
             buttons: [
                 {id: 'close', icon: '/images/close.png', tooltip: getMessage('pages_folderRowButtonTip_close'), onClick: onFolderRowCloseButton }
             ]
@@ -95,8 +83,6 @@ function initTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
             onDoubleClick: onWindowRowDoubleClick,
             onMiddleClick: onWindowRowMiddleClick,
             onExpanderClick: onRowExpanderClick,
-            onFormatTitle: onWindowRowFormatTitle,
-            onFormatTooltip: onWindowRowFormatTooltip,
             onShowButtons: onWindowShowButtons,
             buttons: [
                 {id: 'createTab', icon: '/images/create_tab.png', tooltip: getMessage('pages_windowRowButtonTip_createTab'), onClick: onWindowRowCreateTabButton },
@@ -941,34 +927,6 @@ function onFolderRowCloseButton(evt) {
     });
 }
 
-function onFolderRowFormatTitle(row, itemTextElem) {
-    var label = row.attr('label');
-    var childCount = row.children('.ftChildren').find('.ftRowNode').length;
-
-    var textAffix;
-    if (childCount > 0) {
-        textAffix = '&nbsp;(' + childCount + ')';
-    }
-    else {
-        textAffix = '';
-    }
-
-    if (loggingEnabled) {
-        label = row.attr('id').slice(0, 4) + (label ? ': ' : '') + label;
-    }
-
-    itemTextElem.children('.ftItemLabel').html(label);
-    itemTextElem.children('.ftItemTitle').html(textAffix).show();
-}
-
-function onFolderRowFormatTooltip(evt) {
-    var childCount = evt.data.treeObj.getChildrenCount(evt.data.row);
-    var icon = evt.data.icon;
-    var label = evt.data.label;
-    var body = childCount + ' '  + (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'));
-    return getBigTooltipContent(label, icon, body);
-}
-
 
 ///////////////////////////////////////////////////////////
 // Page rowtype handlers
@@ -1046,164 +1004,6 @@ function handlePageRowAction(action, evt) {
             setRowHighlight(evt.data.row, 0);
             break;
     }
-}
-
-function onPageRowFormatTitle(row, itemTextElem) {
-    var label = row.attr('label');
-    var text = row.attr('text');
-
-    var textAffix = '';
-
-    if (settings.get('pages_showMediaPlayTime')) {
-        var mediaState = row.attr('media-state');
-        if (mediaState == 'playing') {
-            var mediaTime = parseInt(row.attr('media-time'));
-            if (mediaTime > 0) {
-                textAffix = formatSecondsAsHMS(mediaTime);
-            }
-        }
-    }
-
-    if (row.hasClass('ftCollapsed')) {
-        var childCount = row.children('.ftChildren').find('.ftRowNode').length;
-        if (childCount > 0) {
-            textAffix += (textAffix == '' ? '' : ' ') + '(' + childCount + ')';
-        }
-    }
-
-    if (loggingEnabled) {
-        label = row.attr('id').slice(0, 4) + (label ? ': ' : '') + label;
-    }
-
-    if (settings.get('pages_trimPageTitlePrefixes') && row.attr('url').indexOf(text) == -1) {
-        text = getTrimmedPageTitle(row);
-    }
-
-    itemTextElem.children('.ftItemTitle').text(text);
-    itemTextElem.children('.ftItemLabel').html(label + (text && label ? ': ' : ''));
-
-    var itemTextAffix = row.children('.ftItemRow').find('.ftItemTextAffix');
-    if (textAffix) {
-        itemTextAffix.html(textAffix);
-        var buttonsShowing = row.children('.ftItemRow').find('.ftButtons').is(':visible');
-        if (!buttonsShowing) {
-            itemTextAffix.show();
-        }
-    }
-    else {
-        itemTextAffix.html('').hide();
-    }
-
-    var existingPin = itemTextElem.parent().children('.pinned');
-    if (row.attr('pinned') == 'true') {
-        if (existingPin.length == 0) {
-            var newPin = $('<img/>', { class: 'pinned', src: '/images/pinned.png' });
-            itemTextElem.before(newPin);
-        }
-    }
-    else {
-        if (existingPin.length > 0) {
-            existingPin.remove();
-        }
-    }
-
-}
-
-function getTrimmedPageTitle(row) {
-    // trim common prefixes from child page titles vs. parent/preceding/next page titles
-    var text = row.attr('text');
-    var parent = row.parent().closest('.ftRowNode');
-    if (parent.length > 0) { // && parent.attr('text').substring(0, 5) == text.substring(0, 5)) {
-        var nearby = $();
-        var nearbyTitle;
-        var reformatPrev;
-
-        var next = row.next();
-        if (next.is(row.following('.ftRowNode'))) {
-            nearby = next;
-            nearbyTitle = nearby.attr('text');
-            reformatPrev = false;
-        }
-
-        if (nearby.length == 0 || nearbyTitle == text || nearbyTitle.substring(0, 5) != text.substring(0, 5))
-        {
-            nearby = row.preceding('.ftRowNode');
-            nearbyTitle = nearby.attr('text');
-            reformatPrev = true;
-        }
-
-        if (nearby.length == 0 || nearbyTitle == text || nearbyTitle.substring(0, 5) != text.substring(0, 5)) {
-            nearby = parent;
-            nearbyTitle = nearby.attr('text');
-            reformatPrev = false;
-        }
-
-        if (reformatPrev && nearby.index() == 0) {
-            onPageRowFormatTitle(nearby, nearby.find('> .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText'));
-        }
-
-        if (nearby && nearby.attr('rowtype') == 'page') {
-            if (nearbyTitle != text) {
-                var pos = 0;
-                while (pos < text.length && pos < nearbyTitle.length && text[pos] == nearbyTitle[pos]) {
-                    pos++;
-                }
-                if (pos >= 5) {
-                    while (text[pos] != ' ' && pos > 0) {
-                        // Move pos back to last non space char so we don't include partial words at the end of the prefix
-                        pos--;
-                    }
-
-                    if (pos >= 5 && text[pos].match(/[^A-Za-z0-9,]/) && text[pos-1].match(/[^A-Za-z0-9,]/)) {
-                        // Only perform trimming when the prefix ends with two non-alphanumeric chars
-                        text = text.substring(pos).trim().replace(/^([^A-Za-z0-9]* )?(.+?)( [^A-Za-z0-9]*)?$/, '$2');
-                    }
-                }
-            }
-        }
-    }
-    return text;
-}
-
-function onPageRowFormatTooltip(evt) {
-    var row = evt.data.row;
-    var icon = evt.data.icon;
-    var url = row.attr('url');
-    var text = evt.data.text;
-
-    if (url == text) {
-        text = '';
-    }
-
-    var headerPrefix;
-    if (row.attr('hibernated') == 'true') {
-        headerPrefix = '<div class="hibernatedHint">' + getMessage('pages_hibernatedHint') + '</div>';
-    }
-
-    if (loggingEnabled) {
-        var page = bg.tree.getNode(row.attr('id'));
-        url += '<br/><br/>Id: ' + page.id
-            + '<br/>History length: ' + page.historylength
-            + '<br/>Referrer: ' + (page.referrer || "''")
-            + '<br/>Chrome ID: ' + (page.chromeId || "''")
-            + '<br/>WinId/index: ' + page.windowId + '/' + page.index;
-    }
-
-    var elem = getBigTooltipContent(text, icon, url, headerPrefix);
-
-    var onIconError = evt.data.rowTypeParams.onIconError;
-    if (onIconError) {
-        elem.find('.ftBigTipImage').error(evt.data, onIconError);
-    }
-
-    return elem;
-
-}
-
-function onPageRowIconError(evt) {
-    setTimeout(function() {
-        evt.target.src = getChromeFavIconUrl(evt.data.row.attr('url'));
-    }, ICON_ERROR_FALLBACK_DELAY_MS);
 }
 
 function onPageRowCloseButton(evt) {
@@ -1328,49 +1128,6 @@ function onWindowRowCreateTabButton(evt) {
     var row = evt.data.row;
 
     createNewTabInWindow(getChromeId(row) || undefined);
-}
-
-function onWindowRowFormatTitle(row, itemTextElem) {
-    var label = row.attr('label');
-    var text = row.attr('text');
-    var childCount = row.children('.ftChildren').find('.ftRowNode[rowtype=page]').length;
-
-    if (!text) {
-        text = getMessage('text_Window');
-    }
-
-    text = (label ? '' : text)
-        + ' (' + childCount + ' '
-        + getMessage(childCount == 1 ? 'text_page' : 'text_pages') + ')';
-
-    if (loggingEnabled) {
-        label = row.attr('id').slice(0, 4) + ': ' + label;
-    }
-
-    itemTextElem.children('.ftItemTitle').text(text);
-    itemTextElem.children('.ftItemLabel').text(label);
-}
-
-function onWindowRowFormatTooltip(evt) {
-    var incognito = (evt.data.row.attr('incognito') == 'true');
-    var popup = (evt.data.row.attr('type') == 'popup');
-    var childCount = evt.data.treeObj.getChildrenCount(evt.data.row);
-
-    var img;
-    if (incognito) {
-        img = '/images/incognito-32.png';
-    }
-    else if (popup) {
-        img ='/images/tab-single-32.png';
-    }
-    else {
-        img = '/images/tab-stack-32.png';
-    }
-
-    var body = childCount + ' '
-        + (incognito ? 'incognito' + ' ' : '')
-        + (childCount == 1 ? getMessage('text_page') : getMessage('text_pages'));
-    return getBigTooltipContent(evt.data.label, img, body);
 }
 
 
@@ -1517,42 +1274,3 @@ function createNewTabInWindow(windowId, url) {
     });
 }
 
-
-///////////////////////////////////////////////////////////
-// Miscellaneous helper functions
-///////////////////////////////////////////////////////////
-
-function getBigTooltipContent(header, icon, body, headerPrefix) {
-    var elem = $('<div class="ftBigTip"/>');
-    var table = $('<table/>');
-    var tr = $('<tr/>');
-
-    var img = $('<img class="ftBigTipImage">').attr('src', icon);
-
-    tr.append($('<td>').append(img));
-
-    var td = $('<td>');
-    tr.append(td);
-
-    if (header) {
-        var headerElem = $('<div class="ftBigTipHeader">').text(header);
-        td.append(headerElem);
-    }
-
-    if (headerPrefix) {
-        td.prepend(headerPrefix);
-    }
-
-    if (body) {
-        var bodyElem = $('<div class="ftBigTipBody">').html(body);
-        td.append(bodyElem);
-
-        if (loggingEnabled) {
-            bodyElem.css('max-height', '999em');
-        }
-    }
-
-    table.append(tr);
-    elem.append(table);
-    return elem;
-}

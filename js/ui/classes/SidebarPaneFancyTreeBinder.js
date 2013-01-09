@@ -1,6 +1,7 @@
-var SidebarPaneFancyTreeBinder = function(fancyTree, backgroundPage) {
+var SidebarPaneFancyTreeBinder = function(fancyTree, dataTree, backgroundPage) {
 
     this.fancyTree = fancyTree;
+    this.dataTree = dataTree;
     this.backgroundPage = backgroundPage;
 };
 
