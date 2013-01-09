@@ -162,17 +162,38 @@ function endAssociationRun(runId) {
 
 // Returns true if tab was immediately associated or false if an asynchronous
 // call to the page's content script was required to do potential association later
-function tryAssociateTab(runInfo, tab) {
+function tryAssociateTab(runInfo, tab, forceNewTabAssociation) {
     var runId = runInfo.runId;
 
     if (tab.incognito) {
         // Since incognito tabs are never saved to disk they cannot be reassociated
         // after loading the old tree from disk
-        return;
+        return false;
+    }
+
+    if (!forceNewTabAssociation && tab.url == 'chrome://newtab/' && tab.index == 0 && !tab.pinned) {
+        chrome.tabs.query({ windowId: tab.windowId }, function(tabs) {
+            if (tabs.length == 1) {
+                // Never associate New Tab pages which are all by themselves in a window;
+                // we'll just create new nodes for this
+                tree.addTabToWindow(tab, new PageNode(tab));
+                return;
+            }
+            // Allow us to do normal association for this New Tab node
+            tryAssociateTab(runInfo, tab, true);
+            return;
+        });
+        return false;
     }
 
     if (tryFastAssociateTab(tab, true)) {
         return true;
+    }
+
+    if (tab.url == 'chrome://newtab/') {
+        // Only permit trying fast association for New Tab pages to avoid improperly resurrecting
+        // Last Session windows when starting Chrome with 'start with New Tab' option set
+        return false;
     }
 
     if (!isScriptableUrl(tab.url)) {
@@ -927,6 +948,8 @@ function removeZeroChildWindowNodes() {
 }
 
 function removeOldWindows() {
+    var rememberOpenPages = settings.get('rememberOpenPagesBetweenSessions');
+
     var youngWindows = tree.root.children.filter(function(e) {
         return e instanceof WindowNode
             && e.hibernated
@@ -939,7 +962,7 @@ function removeOldWindows() {
     });
 
     oldWindows.forEach(function(e) {
-        if (e.hibernated && youngWindows.length > 0) {
+        if (e.hibernated && (!rememberOpenPages || youngWindows.length > 0)) {
             // old window that is still hibernated - remove to rctree
             tree.removeNode(e, true);
             return;
