@@ -6,10 +6,10 @@
   */
 var DataTreeNode = function()
 {
-    this.id = null;
+    this.UUID = generateGuid();
+    this.id = this.UUID;
     this.elemType = 'node';
     this.children = [];
-    this.UUID = generateGuid();
     this.parent = null;
     this.root = null;
 };
