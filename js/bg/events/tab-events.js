@@ -48,10 +48,8 @@ function onTabCreated(tab)
                 // it did occur; swap tab ids
                 var page = tree.getNode(['chromeId', expectingNavigationOldTabId]);
                 if (page) {
-                    // log(tree.dump());
                     log('Swapping in new tab id and url', 'old', expectingNavigationOldTabId, 'new', tab.id, 'found page node', page);
                     tree.updatePage(page, {
-                        id: 'p' + tab.id,
                         chromeId: tab.id,
                         url: tab.url,
                         windowId: tab.windowId
@@ -85,7 +83,6 @@ function onTabCreated(tab)
         var wakingPage = waking[1];
         log('associating waking tab to existing hibernated page element', tab, wakingPage);
         tree.updatePage(wakingPage, {
-            id: 'p' + tab.id,
             chromeId: tab.id,
             windowId: tab.windowId,
             hibernated: false,
