@@ -1,18 +1,49 @@
-// Custom error handler
+///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
+var RUNNING_LOG_MAX_SIZE = 1.0 * 1024 * 1024;
+var RUNNING_LOG_OVERTRIM_PCT = 0.25;
+var MAX_JSON_ARG_LENGTH = 250;
+
+
+///////////////////////////////////////////////////////////
+// Globals
+///////////////////////////////////////////////////////////
+
+var loggingEnabled;
+var logObjectsAsJSON;
+var runningLog = '';
+
+
+///////////////////////////////////////////////////////////
+// Initialization
+///////////////////////////////////////////////////////////
+
+var log = function() { };
+
+setLoggingState();
+startLogTrimmer();
+
+
+///////////////////////////////////////////////////////////
+// Custom error handling overrides
+///////////////////////////////////////////////////////////
+
+// Catches top level exceptions.
+window.onerror = function(msg, url, lineNum) {
+    var topLine = '[THROWN ERROR] ' + msg + ' @ ' + url + ':' + lineNum + '\n';
+    writeDiagnosticLog.apply(this, [topLine]);
+};
+
+// Custom Error class that makes a nice stack trace available for window.onerror
 var nativeError = Error;
 Error = function(message) {
     this.message = message;
     this.name = '';
     this._stack = getCallStack();
     var output = '';
-    try {
-        output = writeDiagnosticLog.apply(this, ['[THROWING ERROR]'].concat(message));
-        // console.error(this.stack);
-    }
-    catch(ex) {
-        console.error('Error in custom Error() handler!', ex);
-        output = ex.message;
-    }
+    lastKnownError = this;
 };
 Error.prototype = new nativeError();
 Error.prototype.constructor = Error;
@@ -30,19 +61,9 @@ console.error = function() {
 };
 
 
-var RUNNING_LOG_MAX_SIZE = 1.0 * 1024 * 1024;
-var RUNNING_LOG_OVERTRIM_PCT = 0.25;
-var MAX_JSON_ARG_LENGTH = 250;
-
-var loggingEnabled;
-var logObjectsAsJSON;
-
-var runningLog = '';
-
-var log = function() { };
-
-setLoggingState();
-startLogTrimmer();
+///////////////////////////////////////////////////////////
+// Main logging functions
+///////////////////////////////////////////////////////////
 
 function setLoggingState() {
     loggingEnabled = localStorage['loggingEnabled'] == 'true' || false;
@@ -128,7 +149,7 @@ function writeDiagnosticLog() {
     }
 
     var stack = { CallStack: getCallStack() };
-    var firstElem = stack.CallStack[0].toString();
+    var firstElem = (stack.CallStack[0] + '').toString();
 
     if (typeof(arguments[0]) == 'string') {
         messages.splice(1, 0, '@', firstElem, stack, '\n');
@@ -147,9 +168,9 @@ function writeDiagnosticLog() {
     }
 
     jsonMessages = jsonMessages.join(' ');
-    runningLog += jsonMessages + '\n';
-    if (jsonMessages.indexOf('---') == 0) {
-        runningLog += '\n\n';
+    runningLog += jsonMessages.trim() + '\n';
+    if (jsonMessages.indexOf('---') == 0 || stack.CallStack.length == 0) {
+        runningLog += '\n';
     }
     else {
         runningLog += '    ' + stack.CallStack.join('\n    ') + '\n\n';
@@ -179,6 +200,11 @@ function log_brief() {
     log.apply(this, newargs);
 }
 
+
+///////////////////////////////////////////////////////////
+// Log trimmer
+///////////////////////////////////////////////////////////
+
 function startLogTrimmer() {
     if (chrome.extension.getBackgroundPage() !== window) {
         return;
@@ -194,9 +220,13 @@ function trimRunningLog() {
     }
 }
 
+
+///////////////////////////////////////////////////////////
+// Helpers
+///////////////////////////////////////////////////////////
+
 function getCallStack() {
     var stack = new nativeError().stack;
-
     stack = (stack + '\n')
         .replace(/^\S[^\(]+?[\n$]/gm, '')
         .replace(/^\s+(at eval )?at\s+/gm, '')
@@ -206,11 +236,15 @@ function getCallStack() {
 
     stack = stack.split('\n');
 
-    // discard unwanted calls from top of stack
-    while (stack[0].indexOf('logging.js:') >= 0
-        || stack[0].indexOf('Error') == 0)
-    {
-        stack.shift(1);
+    if (stack.length > 0) {
+        // discard unwanted calls from top of stack
+        while (stack[0] && (
+            stack[0].indexOf('logging.js:') >= 0
+            || stack[0].indexOf('Error') == 0)
+        )
+        {
+            stack.shift(1);
+        }
     }
 
     return stack;
