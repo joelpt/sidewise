@@ -170,6 +170,7 @@ PageTree.prototype = {
             var descendants = this.filter(function(e) { return e; }, node.children);
             for (var i = descendants.length - 1; i >= 0; i--) {
                 this.removeFromTabIndex(descendants[i]);
+                descendants[i].removedAt = Date.now();
             }
         }
         else {
