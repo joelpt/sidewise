@@ -945,7 +945,7 @@ function onFolderRowFormatTitle(row, itemTextElem) {
     }
 
     if (loggingEnabled) {
-        label = row.attr('id').slice(0, 5) + (label ? ': ' : '') + label;
+        label = row.attr('id').slice(0, 4) + (label ? ': ' : '') + label;
     }
 
     itemTextElem.children('.ftItemLabel').html(label);
@@ -1015,7 +1015,7 @@ function onPageRowFormatTitle(row, itemTextElem) {
     }
 
     if (loggingEnabled) {
-        label = row.attr('id').slice(0, 5) + (label ? ': ' : '') + label;
+        label = row.attr('id').slice(0, 4) + (label ? ': ' : '') + label;
     }
 
     if (settings.get('pages_trimPageTitlePrefixes') && row.attr('url').indexOf(text) == -1) {
@@ -1294,7 +1294,7 @@ function onWindowRowFormatTitle(row, itemTextElem) {
         + getMessage(childCount == 1 ? 'text_page' : 'text_pages') + ')';
 
     if (loggingEnabled) {
-        label = row.attr('id').slice(0, 5) + ': ' + label;
+        label = row.attr('id').slice(0, 4) + ': ' + label;
     }
 
     itemTextElem.children('.ftItemTitle').text(text);
