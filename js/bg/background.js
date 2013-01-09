@@ -124,9 +124,6 @@ function postLoad(focusedWin) {
         first.collecting = false;
     }
 
-    loadTreeFromLocalStorage(ghostTree, 'ghostTree', GHOSTTREE_NODE_TYPES);
-    setInterval(cleanGhostTree, HOUR_MS);
-
     var storedPageTree = settings.get('pageTree', []);
 
     if (storedPageTree.length == 0) {
@@ -139,14 +136,6 @@ function postLoad(focusedWin) {
         log('--- loading page tree from storage ---');
         loadPageTreeFromLocalStorage(storedPageTree);
 
-        if (ghostTree.root.children.length == 0) {
-            // first time population of ghost tree for users who already had stored tree data
-            var ghosts = tree.mapTree(function(e) {
-                return new GhostNode(e.id, e.elemType);
-            });
-            ghostTree.loadTree(ghosts, GHOSTTREE_NODE_TYPES);
-        }
-
         setTimeout(startAssociationRun, 2000); // wait a couple seconds for content scripts to get going
         populatePages(true);
 
@@ -155,6 +144,10 @@ function postLoad(focusedWin) {
         }
         showPromoPageAnnually();
     }
+
+    loadTreeFromLocalStorage(ghostTree, 'ghostTree', GHOSTTREE_NODE_TYPES);
+    synchronizeGhostTree();
+    setInterval(synchronizeGhostTree, MINUTE_MS * 30);
 
     reportEvent('sidewise', 'loaded');
 
@@ -286,7 +279,6 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
                     lastSessionWindowNumber++;
                     node.restorable = true;
                     node.hibernated = true;
-                    node.id = node.id[0] + 'R' + node.UUID;
 
                     if (settings.get('autoCollapseLastSessionWindows')) {
                         node.collapsed = true;
@@ -300,7 +292,6 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
                     node.hibernated = true;
                     node.restorable = true;
                     node.status = 'complete';
-                    node.id = node.id[0] + 'R' + node.UUID;
                 }
             }
 
@@ -678,9 +669,15 @@ function truncateRecentlyClosedTree(max) {
     }
 }
 
+function synchronizeGhostTree() {
+    removeMissingNodesFromGhostTree();
+    addMissingNodesToGhostTree(tree, true);
+    addMissingNodesToGhostTree(recentlyClosedTree, false);
+}
+
 // Remove nodes from ghost tree which are no longer present in either the pages or
 // recently closed trees.
-function cleanGhostTree() {
+function removeMissingNodesFromGhostTree() {
     var nodes = ghostTree.filter(function(e) { return true; });
     for (var i = nodes.length - 1; i >= 0; i--) {
         var node = nodes[i];
@@ -688,6 +685,27 @@ function cleanGhostTree() {
         if (recentlyClosedTree.getNode(node.id)) continue;
         ghostTree.removeNode(node, false);
     }
+}
+
+function addMissingNodesToGhostTree(fromTree, asAlive) {
+    var missing = fromTree.getCondensedTree(function(e) {
+        return ghostTree.getNode(e.id) === undefined;
+    });
+    if (missing.length == 0) return;
+
+    function _mapper(e) {
+        var r = new GhostNode(e.node.id, e.node.elemType);
+        r.children = e.children.map(_mapper);
+        r.alive = asAlive;
+        return r;
+    }
+
+    var newGhosts = missing.map(_mapper);
+    newGhosts.forEach(function(e) {
+        ghostTree.addNode(e);
+    });
+
+    ghostTree.rebuildIndexes(); // addNode doesn't index existing descendants
 }
 
 // TODO move this to a new file
