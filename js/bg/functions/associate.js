@@ -148,7 +148,7 @@ function endAssociationRun(runId) {
     associationConcurrentRuns--;
 
     tree.rebuildTabIndex();
-    cleanUpAfterAssociation(CLEANUP_AFTER_ASSOCIATION_RUN_DELAY_MS);
+    rectifyAssociations(CLEANUP_AFTER_ASSOCIATION_RUN_DELAY_MS);
 
     try {
         TimeoutManager.clear(runId);
@@ -319,13 +319,13 @@ function associateExistingToRestorablePageNode(tab, referrer, historylength) {
     // TODO call cleanup only iff all existing restorable windows
     // have zero .restorable children (and there is at least one such restorable window
     // still left to try and restore) ??
-    cleanUpAfterAssociation(CLEANUP_AFTER_ASSOCIATE_EXISTING_PAGE_DELAY_MS);
+    rectifyAssociations(CLEANUP_AFTER_ASSOCIATE_EXISTING_PAGE_DELAY_MS);
 }
 
 // Run a series of association, disambiguation, and guarantee steps to get the tree as accurate as possible when
 // there are ambiguous tab-to-page mappings, window nodes with no children, improperly ordered tabs on Chrome's tabbar, etc.
-function cleanUpAfterAssociation(delay) {
-    TimeoutManager.reset('cleanUpAfterAssociation', function() {
+function rectifyAssociations(delay) {
+    TimeoutManager.reset('rectifyAssociations', function() {
         tree.rebuildPageNodeWindowIds(function() {                                  // obtain fresh tab windowIds and indexes
             associateWindowstoWindowNodes(true, false, function() {                 // associate OR merge windows, stringent match
                 disambiguatePageNodesByWindowId();                                  // disambiguate tabs
@@ -346,7 +346,7 @@ function cleanUpAfterAssociation(delay) {
                                     tree.conformAllChromeTabIndexes(true);          // conform chrome's tab order to match the tree's order
                                     tree.conformAllChromeTabIndexes(false);         // conform chrome's tab order to match the tree's order again after standard delay
                                     removeOldWindows();                             // get rid of old 'Last Session' windows
-                                    log('Post-association cleanup complete');
+                                    log('Rectification complete');
                                 });
                             });
                         });
