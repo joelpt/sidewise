@@ -594,11 +594,31 @@ function getTimeDeltaAbbreviated(a, b, showSeconds) {
 
 
 ///////////////////////////////////////////////////////////
+// String tools
+///////////////////////////////////////////////////////////
+
+function padStringLeft(string, width) {
+    if (string === undefined) {
+        return Array(width + 1).join(' ');
+    }
+    if (typeof(string) != 'string') {
+        string = string.toString();
+    }
+    if (string.length >= width) {
+        return string;
+    }
+
+    var r = Array(width - string.length + 1).join(' ') + string;
+    return r;
+}
+
+
+///////////////////////////////////////////////////////////
 // GUID generation
 ///////////////////////////////////////////////////////////
 
 function generateGuid() {
-    var guid = Math.random().toString(36);
+    var guid = Math.random().toString(36).toUpperCase();
     return guid.substring(2, 6) + '-' + guid.substring(6, 15) + '-' + Math.random().toString(36).substring(2, 15);
 }
 
