@@ -456,7 +456,6 @@ function restoreAssociatedPage(tab, page) {
         restored: true,
         hibernated: false,
         restorable: false,
-        id: 'p' + tab.id,
         chromeId: tab.id,
         windowId: tab.windowId,
         index: tab.index,
@@ -524,7 +523,6 @@ function restoreParentWindowViaUniqueChildPageNode(parentWindowNode, childPageNo
     tree.updateNode(parentWindowNode, {
         restorable: false,
         hibernated: false,
-        id: 'w' + childWindowId,
         chromeId: childWindowId,
         title: WINDOW_DEFAULT_TITLE
     });
@@ -732,7 +730,6 @@ function associateWindowstoWindowNodes(requireChildrenCountMatch, prohibitMergin
                 var details = {
                     restorable: false,
                     hibernated: false,
-                    id: 'w' + windowId,
                     chromeId: windowId,
                     title: WINDOW_DEFAULT_TITLE
                 };
