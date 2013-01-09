@@ -603,6 +603,51 @@ DataTree.prototype = {
         });
     },
 
+    // Returns a data structure looking like
+    //  [
+    //      {
+    //          node: node,
+    //          children: [
+    //              {
+    //                  node: node,
+    //                  children: [...]
+    //              }, ...
+    //          ]
+    //      }, ...
+    //  ]
+    //
+    //  Only nodes for which matcherFn(node) returns true are included in the
+    //  resultant structure. The 'real' children of a given node is available
+    //  via node.children in the structure, whereas the 'matching' children
+    //  are in children. When a node does not match but its descendant(s) do,
+    //  we pull those descendants up to the nearest matching-parent's children
+    //  depth.
+    //
+    getCondensedTree: function(matcherFn, inArray)
+    {
+        var self = this;
+        var ary = inArray || this.tree;
+        var result = [];
+        for (var i = 0; i < ary.length; i++) {
+            var node = ary[i];
+            var matchedChildren = this.getCondensedTree(matcherFn, node.children);
+
+            // When we match, add the node to result and recurse on its children
+            if (matcherFn(node)) {
+                var r = {
+                    node: node,
+                    children: matchedChildren
+                };
+                result.push(r);
+                continue;
+            }
+
+            // Otherwise, concatenate
+            result = result.concat(matchedChildren);
+        }
+        return result;
+    },
+
     /**
       * Execute eachFn for each item.
       * @param eachFn Function(node, depth, containingArray, parentNode):
