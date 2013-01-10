@@ -14,7 +14,7 @@ var MAX_JSON_ARG_LENGTH = 250;
 var loggingEnabled;
 var logObjectsAsJSON;
 var runningLog = '';
-
+var lastKnownError;
 
 ///////////////////////////////////////////////////////////
 // Initialization
@@ -33,7 +33,8 @@ startLogTrimmer();
 // Catches top level exceptions.
 window.onerror = function(msg, url, lineNum) {
     var topLine = '[THROWN ERROR] ' + msg + ' @ ' + url + ':' + lineNum + '\n';
-    writeDiagnosticLog.apply(this, [topLine]);
+    writeDiagnosticLog.call(this, { '0': topLine }, lastKnownError ? lastKnownError._stack : undefined);
+    lastKnownError = null;
 };
 
 // Custom Error class that makes a nice stack trace available for window.onerror
@@ -44,6 +45,12 @@ Error = function(message) {
     this._stack = getCallStack();
     var output = '';
     lastKnownError = this;
+    var self = this;
+    setTimeout(function() {
+        if (self === lastKnownError) {
+            lastKnownError = null;
+        }
+    }, 0);
 };
 Error.prototype = new nativeError();
 Error.prototype.constructor = Error;
@@ -53,7 +60,7 @@ console.error = function() {
     nativeConsoleError.apply(console, arguments);
     try {
         arguments['0'] = '[CONSOLE ERROR] ' + arguments[0];
-        writeDiagnosticLog.apply(this, arguments);
+        writeDiagnosticLog.call(this, arguments);
     }
     catch(ex) {
         console.error('Error in custom console.error() handler!', ex);
@@ -76,7 +83,7 @@ function setLoggingState() {
 }
 
 function writeAndLogToConsole() {
-    var messages = writeDiagnosticLog.apply(this, arguments);
+    var messages = writeDiagnosticLog.call(this, arguments);
     if (console && messages) {
         var stack = getCallStack();
         if (typeof(arguments['0']) == 'string' || typeof(arguments['0']) == 'int') {
@@ -102,7 +109,7 @@ function writeAndLogToConsole() {
 //   if not, the caller function name is used instead.
 // Object arguments are turned into JSON strings and output if logObjectsAsJSON is true.
 // Call stack data is included in the output.
-function writeDiagnosticLog() {
+function writeDiagnosticLog(arguments, stack) {
     if (!loggingEnabled) return;
 
     var messages = [];
@@ -148,7 +155,7 @@ function writeDiagnosticLog() {
         continue;
     }
 
-    var stack = { CallStack: getCallStack() };
+    var stack = { CallStack: stack || getCallStack() };
     var firstElem = (stack.CallStack[0] + '').toString();
 
     if (typeof(arguments[0]) == 'string') {
