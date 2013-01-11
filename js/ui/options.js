@@ -663,8 +663,8 @@ function restoreFromPreviousSessionBackup() {
         return;
     }
 
-    if (!confirm('If your page tree has gotten empty or corrupted, you can try restoring the tree to a recent automatic backup.\n\n' +
-        'We have a backup from ' + when + '.\n\n' +
+    if (!confirm('If your page tree has gotten empty or corrupted, you can try restoring the tree from a recent automatic backup.\n\n' +
+        'The best backup we have is from ' + when + '.\n\n' +
         'Proceed with restore?')) {
         return;
     }
@@ -672,8 +672,8 @@ function restoreFromPreviousSessionBackup() {
     alert('Sidewise will now restart to complete the restore operation.');
 
     settings.set('pageTree', backup);
-    bg.restartSidewise();
-    setTimeout(function() { document.location.reload(); }, 3000);
+    bg.setTimeout(bg.restartSidewise, 100);
+    setTimeout(function() { window.close(); }, 10);
 }
 
 ///////////////////////////////////////////////////////////
