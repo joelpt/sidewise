@@ -14,6 +14,7 @@ function onReady() {
     $(document)
         .on('click', '#closeButton', function() {
             bg.paneCatalog.removePane('whatsnew');
+            bg.paneCatalog.saveState();
             bg.sidebarHandler.sidebarPanes['sidebarHost'].manager.removeSidebarPane('whatsnew');
         })
         .on('click', '#showAfterNew', function() {

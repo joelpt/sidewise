@@ -564,9 +564,12 @@ function restartSidewise() {
 // Show What's New pane after Sidewise is updated
 function showWhatsNewPane() {
     var newsPane = paneCatalog.getPane('whatsnew');
-    if (!newsPane) {
-        if (!newsPane && settings.get('showWhatsNewPane') ) {
-            paneCatalog.addPane('whatsnew', true, '/sidebars/whatsnew.html', 'What\'s New', '/images/nav/whatsnew.gif');
+    if (newsPane && settings.get('showWhatsNewPane') && !newsPane.enabled) {
+        newsPane.enabled = true;
+        paneCatalog.saveState();
+        if (sidebarHandler.sidebarExists()) {
+            var manager = sidebarHandler.sidebarPanes.sidebarHost.manager;
+            manager.enableSidebarPane(pane.id);
         }
     }
 }
