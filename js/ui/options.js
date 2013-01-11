@@ -650,7 +650,7 @@ function restoreFromPreviousSessionBackup() {
     var backup = settings.get('backupPageTreeLastSession', []);
     var when;
     if (backup.length > 0) {
-        when = 'your PREVIOUS browser session';
+        when = 'during your PREVIOUS browser session';
     }
     else {
         backup = settings.get('backupPageTree', []);
@@ -663,8 +663,8 @@ function restoreFromPreviousSessionBackup() {
         return;
     }
 
-    if (!confirm('If your page tree has gotten empty or corrupted, you can try restoring the tree from a recent automatic backup.\n\n' +
-        'The best backup we have is from ' + when + '.\n\n' +
+    if (!confirm('If your page tree has gotten wiped out or corrupted, Sidewise can try restoring the tree from a recent automatic backup.\n\n' +
+        'The best backup we have was saved ' + when + '.\n\n' +
         'Proceed with restore?')) {
         return;
     }
