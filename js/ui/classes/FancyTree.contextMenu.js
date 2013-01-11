@@ -43,6 +43,7 @@ FancyTree.prototype.onContextMenuItemClick = function(evt) {
     var $rows = contextMenuItem.$rows;
 
     treeObj.disableContextMenu();
+    treeObj.sortMultiSelection();
 
     if (!contextMenuItem.preserveSelectionAfter) {
         treeObj.clearMultiSelection();

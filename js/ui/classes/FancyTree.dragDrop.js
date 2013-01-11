@@ -400,6 +400,9 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
     }
 
     this.dropping = true;
+
+    this.sortMultiSelection();
+
     var $rows = this.multiSelection.not(this.draggingOverRow);
     if ($rows.length == 0) {
         return false;
@@ -420,6 +423,8 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
         var evtSaved = evt;
 
         $.fx.off = fxAreOff;
+        self.sortMultiSelection();
+
         if (self.onRowsMoved) {
             self.onRowsMoved(moves);
         }
