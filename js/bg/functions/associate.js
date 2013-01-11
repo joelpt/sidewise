@@ -298,6 +298,12 @@ function cleanUpAfterAssociation(delay) {
                                     fixAllPinnedUnpinnedTabOrder();                 // correct ordering of pinned vs. unpinned tabs in the tree/tab order
                                     tree.conformAllChromeTabIndexes(true);          // conform chrome's tab order to match the tree's order
                                     tree.conformAllChromeTabIndexes(false);         // conform chrome's tab order to match the tree's order again after standard delay
+
+                                    // make a backup if we don't have one yet
+                                    if (settings.get('backupPageTree', []).length == 0) {
+                                        backupPageTree(true);
+                                    }
+
                                     log('Post-association cleanup complete');
                                 });
                             });

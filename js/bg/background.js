@@ -5,6 +5,8 @@
 var DENIED_SAVE_TREE_RETRY_MS = 2000;           // how soon to retry saving the page tree when it is temporariliy disallowed
 var SAVE_TREE_BACKUP_EVERY_MS = 1000 * 60 * 15; // how often to save a backup of the page tree (15 minutes)
 var MIN_NODES_TO_BACKUP_TREE = 6;               // skip backups when we have fewer than this many nodes in the tree
+var SAVE_TREE_INITIAL_BACKUP_AFTER_MS = 15000;  // save the initial backup when none yet exists this soon after startup
+
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -128,6 +130,11 @@ function postLoad(focusedWin) {
         showPromoPageAnnually();
     }
 
+    // make an initial backup if we don't have one yet
+    if (settings.get('backupPageTree', []).length == 0) {
+        setTimeout(function() { backupPageTree(true); }, SAVE_TREE_INITIAL_BACKUP_AFTER_MS);
+    }
+
     // save a backup of pageTree periodically
     setInterval(backupPageTree, SAVE_TREE_BACKUP_EVERY_MS);
 
@@ -197,13 +204,13 @@ function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
     settings.set(settingName, saveTree);
 }
 
-function backupPageTree() {
+function backupPageTree(force) {
     if (browserIsClosed) {
         log('Skipped saving backup of tree because browser is closed');
         return;
     }
     var count = tree.reduce(function(last, e) { return last + 1; }, 0);
-    if (count < MIN_NODES_TO_BACKUP_TREE) {
+    if (count < MIN_NODES_TO_BACKUP_TREE && !force) {
         log('Skipped saving backup of tree due to too few nodes (' + count + ')');
         return;
     }
