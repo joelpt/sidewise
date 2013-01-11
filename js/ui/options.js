@@ -658,6 +658,10 @@ function restoreFromPreviousSessionBackup() {
             when = 'earlier THIS browser session';
         }
     }
+    if (backup.length == 0) {
+        alert('Sorry, but there are no automatic backups to restore from! :(');
+        return;
+    }
 
     if (!confirm('If your page tree has gotten empty or corrupted, you can try restoring the tree to a recent automatic backup.\n\n' +
         'We have a backup from ' + when + '.\n\n' +
