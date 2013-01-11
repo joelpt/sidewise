@@ -2,8 +2,9 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-var DENIED_SAVE_TREE_RETRY_MS = 2000;
-var SAVE_TREE_BACKUP_EVERY_MS = 1000 * 60 * 15; // 15 mins
+var DENIED_SAVE_TREE_RETRY_MS = 2000;           // how soon to retry saving the page tree when it is temporariliy disallowed
+var SAVE_TREE_BACKUP_EVERY_MS = 1000 * 60 * 15; // how often to save a backup of the page tree (15 minutes)
+var MIN_NODES_TO_BACKUP_TREE = 6;               // skip backups when we have fewer than this many nodes in the tree
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -202,7 +203,7 @@ function backupPageTree() {
         return;
     }
     var count = tree.reduce(function(last, e) { return last + 1; }, 0);
-    if (count < 10) {
+    if (count < MIN_NODES_TO_BACKUP_TREE) {
         log('Skipped saving backup of tree due to too few nodes (' + count + ')');
         return;
     }
