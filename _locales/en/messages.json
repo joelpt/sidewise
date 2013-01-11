@@ -184,8 +184,9 @@
 
     "option_closeButton": { "message": "Close settings" },
     "option_resetButton": { "message": "Reset to defaults" },
-    "option_exportButton": { "message": "Export Sidewise data" },
-    "option_importButton": { "message": "Import Sidewise data" },
+    "option_exportButton": { "message": "Export data" },
+    "option_importButton": { "message": "Import data" },
+    "option_recoverLastSessionButton": { "message": "Emergency restore" },
     "option_submitBugReportButton": { "message": "Send diagnostic report" },
     "option_submitBugReportButton_hint": { "message": "To send diagnostic reports, first check the \"Enable diagnostics\" checkbox option above. Reproduce the problem you were having, then click this button to send a report." },
     "optionsSaveNotNeeded": { "message": "Note: Settings are automatically saved as you change them." },

@@ -643,6 +643,36 @@ function submitBugReport() {
 
 
 ///////////////////////////////////////////////////////////
+// Emergency restore
+///////////////////////////////////////////////////////////
+
+function restoreFromPreviousSessionBackup() {
+    var backup = settings.get('backupPageTreeLastSession', []);
+    var when;
+    if (backup.length > 0) {
+        when = 'your PREVIOUS browser session';
+    }
+    else {
+        backup = settings.get('backupPageTree', []);
+        if (backup.length > 0) {
+            when = 'earlier THIS browser session';
+        }
+    }
+
+    if (!confirm('If your page tree has gotten empty or corrupted, you can try restoring the tree to a recent automatic backup.\n\n' +
+        'We have a backup from ' + when + '.\n\n' +
+        'Proceed with restore?')) {
+        return;
+    }
+
+    alert('Sidewise will now restart to complete the restore operation.');
+
+    settings.set('pageTree', backup);
+    bg.restartSidewise();
+    setTimeout(function() { document.location.reload(); }, 3000);
+}
+
+///////////////////////////////////////////////////////////
 // Import/export
 ///////////////////////////////////////////////////////////
 

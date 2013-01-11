@@ -27,6 +27,7 @@ function postInit() {
         .on('click', '#submitBugReportButton', submitBugReport)
         .on('click', '#exportButton', exportState)
         .on('click', '#importButton', importState)
+        .on('click', '#recoverLastSessionButton', restoreFromPreviousSessionBackup)
         .on('click', '#donateLink', onDonateLinkClick)
         .on('click', '#loggingEnabled', onLoggingEnabledClick)
         .on('click', '#panePickerExpander', showPanePicker);

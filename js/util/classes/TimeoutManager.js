@@ -47,6 +47,8 @@ var TimeoutManager = {
         if (this.exists(label)) {
             var timeout = this.get(label);
             clearTimeout(timeout.id);
+            timeout.fn = fn || timeout.fn;
+            timeout.ms = timeoutMs !== undefined ? timeoutMs : timeout.ms;
             timeout.id = setTimeout(timeout.fn, timeout.ms);
             return;
         }

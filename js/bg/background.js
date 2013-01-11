@@ -1,4 +1,11 @@
 ///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
+var DENIED_SAVE_TREE_RETRY_MS = 2000;
+var SAVE_TREE_BACKUP_EVERY_MS = 1000 * 60 * 15; // 15 mins
+
+///////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////
 
@@ -10,6 +17,8 @@ var monitorInfo;
 var settings;
 var browserIsClosed = false;
 var firstTimeInstallTabId;
+var allowSavingPageTree = true;
+var denyingSavingPageTreeForMs;
 
 ///////////////////////////////////////////////////////////
 // Initialization
@@ -23,15 +32,30 @@ function onLoad()
     chrome.tabs.getCurrent(function() {
         // Early initialization
         settings = new Settings();
-        tree = new PageTree(PageTreeCallbackProxy, function() {
-            savePageTreeToLocalStorage(tree, 'pageTree', true);
-        });
+        tree = new PageTree(PageTreeCallbackProxy, onPageTreeModifiedDelayed);
         sidebarHandler = new SidebarHandler();
 
         // Call postLoad() after focusTracker initializes to do remaining initialization
         focusTracker = new ChromeWindowFocusTracker(postLoad);
     });
 }
+
+function onPageTreeModifiedDelayed() {
+    if (browserIsClosed) {
+        log('Browser is closed, will not save page tree!');
+        return;
+    }
+    if (!allowSavingPageTree) {
+        // log('Page tree saving currently not allowed, retry in ' + DENIED_SAVE_TREE_RETRY_MS + 'ms');
+        TimeoutManager.reset('retryOnPageTreeModifiedDelayed', onPageTreeModifiedDelayed, DENIED_SAVE_TREE_RETRY_MS);
+        return;
+    }
+    if (tree.lastModified != tree.lastSaved) {
+        savePageTreeToLocalStorage(tree, 'pageTree', true);
+        tree.lastSaved = tree.lastModified;
+    }
+}
+
 
 // IDEA for warmup executescript association fails:
 // - use c.ext.onConnect to establish a port first?
@@ -55,8 +79,31 @@ function postLoad(focusedWin) {
     registerEventHandlers();
     injectContentScriptInExistingTabs('content_script.js');
 
+    var backup = settings.get('backupPageTree', []);
+    if (backup.length > 0 && localStorage['backupPageTreeLastSession'] != localStorage['backupPageTree']) {
+        // don't use settings.set() so we don't have to JSON parse and restringify
+        // the copied value
+        localStorage['backupPageTreeLastSession'] = localStorage['backupPageTree'];
+        settings.cache['backupPageTreeLastSession'] = backup;
+    }
+
     var storedPageTree = settings.get('pageTree', []);
-    if (storedPageTree.length == 0) {
+    var loadIt = false;
+    if (storedPageTree.length > 0) {
+        log('Have stored tree data');
+        loadIt = true;
+    }
+    else {
+        log('Missing stored tree data');
+        // recover from backup if possible
+        if (backup.length > 0) {
+            log('Backup exists of tree data, restoring');
+            storedPageTree = backup;
+            loadIt = true;
+        }
+    }
+
+    if (!loadIt) {
         // first time population of page tree
         log('--- first time population of page tree ---');
         populatePages();
@@ -79,6 +126,9 @@ function postLoad(focusedWin) {
         }
         showPromoPageAnnually();
     }
+
+    // save a backup of pageTree periodically
+    setInterval(backupPageTree, SAVE_TREE_BACKUP_EVERY_MS);
 
     reportEvent('sidewise', 'loaded');
 
@@ -134,16 +184,46 @@ function createSidebarOnStartup() {
 ///////////////////////////////////////////////////////////
 
 function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
-    if (tree.lastModified != tree.lastSaved) {
-        log('--- saving tree to local storage ---');
-        var saveTree = clone(tree.tree, ['parent', 'root', 'hostTree']);
-        if (excludeIncognitoNodes) {
-            saveTree = saveTree.filter(function(e) { return !e.incognito; });
-        }
-        settings.set(settingName, saveTree);
-        tree.lastSaved = tree.lastModified;
+    log('--- saving tree to ' + settingName + ' ---');
+    var saveTree = clone(tree.tree, ['parent', 'root', 'hostTree']);
+    if (excludeIncognitoNodes) {
+        saveTree = saveTree.filter(function(e) { return !e.incognito; });
     }
+    if (saveTree.length == 0) {
+        console.error('Did not save tree because it is empty!');
+        return;
+    }
+    settings.set(settingName, saveTree);
 }
+
+function backupPageTree() {
+    if (browserIsClosed) {
+        log('Skipped saving backup of tree because browser is closed');
+        return;
+    }
+    var count = tree.reduce(function(last, e) { return last + 1; }, 0);
+    if (count < 10) {
+        log('Skipped saving backup of tree due to too few nodes (' + count + ')');
+        return;
+    }
+    savePageTreeToLocalStorage(tree, 'backupPageTree', true);
+}
+
+function disallowSavingTreeForDuration(ms) {
+    if (!allowSavingPageTree && denyingSavingPageTreeForMs > ms) {
+        log('Already disallowing tree saving for ' + denyingSavingPageTreeForMs + ' (vs. ' + ms + ')');
+        return;
+    }
+
+    log('Disallowing tree saving for ' + ms);
+    allowSavingPageTree = false;
+    denyingSavingPageTreeForMs = ms;
+    TimeoutManager.reset('allowSavingPageTree', function() {
+        log('Reallowing tree saving');
+        allowSavingPageTree = true;
+    }, ms);
+}
+
 
 // loads saved tree data from local storage and populates the tree with it
 function loadPageTreeFromLocalStorage(storedPageTree) {
@@ -436,6 +516,7 @@ function shutdownSidewise() {
 
     // Prevent page tree from being saved from this point forward
     TimeoutManager.clear('onPageTreeModified');
+    TimeoutManager.clear('retryOnPageTreeModifiedDelayed');
     tree.onModifiedDelayed = function() {};
 
     // Prevent further UI updates

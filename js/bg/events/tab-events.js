@@ -1,4 +1,11 @@
 ///////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////
+
+var TAB_REMOVE_SAVE_TREE_DELAY_MS = 3000;
+
+
+///////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////
 
@@ -347,6 +354,10 @@ function onTabRemoved(tabId, removeInfo)
     }
 
     var parent = page.parent;
+
+    // delay tree saving after a removal to avoid accidentally recording removals
+    // when browser is in the process of shutting down
+    disallowSavingTreeForDuration(TAB_REMOVE_SAVE_TREE_DELAY_MS);
 
     // remove the page element from the tree
     tree.removeNode(page);
