@@ -643,6 +643,40 @@ function submitBugReport() {
 
 
 ///////////////////////////////////////////////////////////
+// Emergency restore
+///////////////////////////////////////////////////////////
+
+function restoreFromPreviousSessionBackup() {
+    var backup = settings.get('backupPageTreeLastSession', []);
+    var when;
+    if (backup.length > 0) {
+        when = 'during your PREVIOUS browser session';
+    }
+    else {
+        backup = settings.get('backupPageTree', []);
+        if (backup.length > 0) {
+            when = 'earlier THIS browser session';
+        }
+    }
+    if (backup.length == 0) {
+        alert('Sorry, but there are no automatic backups to restore from! :(');
+        return;
+    }
+
+    if (!confirm('If your page tree has gotten wiped out or corrupted, Sidewise can try restoring the tree from a recent automatic backup.\n\n' +
+        'The best backup we have was saved ' + when + '.\n\n' +
+        'Proceed with restore?')) {
+        return;
+    }
+
+    alert('Sidewise will now restart to complete the restore operation.');
+
+    settings.set('pageTree', backup);
+    bg.setTimeout(bg.restartSidewise, 100);
+    setTimeout(function() { window.close(); }, 10);
+}
+
+///////////////////////////////////////////////////////////
 // Import/export
 ///////////////////////////////////////////////////////////
 

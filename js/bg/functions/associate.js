@@ -345,7 +345,14 @@ function rectifyAssociations(delay) {
                                     fixAllPinnedUnpinnedTabOrder();                 // correct ordering of pinned vs. unpinned tabs in the tree/tab order
                                     tree.conformAllChromeTabIndexes(true);          // conform chrome's tab order to match the tree's order
                                     tree.conformAllChromeTabIndexes(false);         // conform chrome's tab order to match the tree's order again after standard delay
-                                    removeOldWindows();                             // get rid of old 'Last Session' windows
+                                    removeOldWindows();                            // get rid of old 'Last Session' windows
+
+									// make a backup if we don't have one yet
+                                    var backup = settings.get('backupPageTree', []);
+                                    if (!backup || backup.length == 0) {
+                                        backupPageTree(true);
+                                    }
+
                                     log('Rectification complete');
                                 });
                             });

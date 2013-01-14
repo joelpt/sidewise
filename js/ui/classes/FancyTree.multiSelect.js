@@ -146,7 +146,14 @@ FancyTree.prototype.setMultiSelectedChildrenUnderRow = function($underRow, $newS
     }
 
     $adds.each(function(i, e) { self.toggleMultiSelectionSingle($(e), true); });
-}
+};
+
+FancyTree.prototype.sortMultiSelection = function() {
+    if (this.multiSelection.length == 0) return;
+
+    var ids = this.multiSelection.map(function(i, e) { return e.id; }).toArray();
+    this.multiSelection = $('#' + ids.join(',#'));
+};
 
 FancyTree.prototype.addSelectionEffect = function($row) {
     var rowTypeParams = this.getRowTypeParams($row);

@@ -1,36 +1,4 @@
 ///////////////////////////////////////////////////////////
-// Constants
-///////////////////////////////////////////////////////////
-
-var PAGETREE_NODE_TYPES = {
-    'window': WindowNode,
-    'page': PageNode,
-    'folder': FolderNode,
-    'header': HeaderNode
-};
-
-var GHOSTTREE_NODE_TYPES = {
-    'ghost': GhostNode
-};
-
-var PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 750;
-var GROUPING_ROW_COUNT_THRESHOLD = 7;
-var GROUPING_ROW_COUNT_WAIT_THRESHOLD = 8;
-var GROUPING_ROW_COUNT_WAIT_ITERATIONS = 4;
-
-// Nodes in the recently closed tree must be at most no older than this many
-// ms to qualify for having another node matched to an associated position vs.
-// them, e.g. a new recently-closed node being made a child of an existing
-// recently-closed node. When a recently-closed node can't be placed in
-// relative positioning to another node due to exceeding this timeout or just
-// not finding any qualifying nodes, the fallback behavior is simply to
-// prepend it to the top .collecting=true HeaderNode in the recently closed
-// tree.
-var RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS = MINUTE_MS * 10;
-
-var RECENTLY_CLOSED_GROUP_AFTER_REMOVE_IDLE_MS = HOUR_MS * 3;
-
-///////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////
 
@@ -47,6 +15,8 @@ var monitorInfo;
 var settings;
 var browserIsClosed = false;
 var firstTimeInstallTabId;
+var allowSavingPageTree = true;
+var denyingSavingPageTreeForMs;
 
 ///////////////////////////////////////////////////////////
 // Initialization
@@ -60,10 +30,7 @@ function onLoad()
     chrome.tabs.getCurrent(function() {
         // Early initialization
         settings = new Settings();
-        tree = new PageTree(PageTreeCallbackProxy, function() {
-            savePageTreeToLocalStorage(tree, 'pageTree', true);
-            tree.onModifiedDelayedWaitMs = config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS;
-        });
+        tree = new PageTree(PageTreeCallbackProxy, onPageTreeModifiedDelayed);
 
         recentlyClosedTree = new UiDataTree(
             RecentlyClosedTreeCallbackProxy,
@@ -99,6 +66,28 @@ function onLoad()
     });
 }
 
+function onPageTreeModifiedDelayed() {
+    if (browserIsClosed) {
+        log('Browser is closed, will not save page tree!');
+        return;
+    }
+    if (!allowSavingPageTree) {
+        // log('Page tree saving currently not allowed, retry in ' + DENIED_SAVE_TREE_RETRY_MS + 'ms');
+        TimeoutManager.reset('retryOnPageTreeModifiedDelayed', onPageTreeModifiedDelayed, config.DENIED_SAVE_TREE_RETRY_MS);
+        return;
+    }
+    if (tree.lastModified != tree.lastSaved) {
+        savePageTreeToLocalStorage(tree, 'pageTree', true);
+        tree.lastSaved = tree.lastModified;
+    }
+    tree.onModifiedDelayedWaitMs = config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS;
+}
+
+
+// IDEA for warmup executescript association fails:
+// - use c.ext.onConnect to establish a port first?
+//   - keep retrying on chrome.ext.lastError, esp. if lastError is something meaningful that can distinguish this case?
+
 function postLoad(focusedWin) {
     if (!focusedWin) {
         // If no focused win yet then there are no actual Chrome windows
@@ -117,16 +106,39 @@ function postLoad(focusedWin) {
     registerEventHandlers();
     injectContentScriptInExistingTabs('content_script.js');
 
-    loadTreeFromLocalStorage(recentlyClosedTree, 'recentlyClosedTree', PAGETREE_NODE_TYPES);
+    loadTreeFromLocalStorage(recentlyClosedTree, 'recentlyClosedTree', config.PAGETREE_NODE_TYPES);
     recentlyClosedTree.removeZeroChildTopNodes();
     var first = recentlyClosedTree.root.children[0];
     if (first && first.collecting) {
         first.collecting = false;
     }
 
-    var storedPageTree = settings.get('pageTree', []);
+    var backup = settings.get('backupPageTree', []);
+    var haveBackup = backup && backup.length > 0
+    if (haveBackup && localStorage['backupPageTreeLastSession'] != localStorage['backupPageTree']) {
+        // don't use settings.set() so we don't have to JSON parse and restringify
+        // the copied value
+        localStorage['backupPageTreeLastSession'] = localStorage['backupPageTree'];
+        settings.cache['backupPageTreeLastSession'] = backup;
+    }
 
-    if (storedPageTree.length == 0) {
+    var storedPageTree = settings.get('pageTree', []);
+    var loadIt = false;
+    if (storedPageTree.length > 0) {
+        log('Have stored tree data');
+        loadIt = true;
+    }
+    else {
+        log('Missing stored tree data');
+        // recover from backup if possible
+        if (backup.length > 0) {
+            log('Backup exists of tree data, restoring');
+            storedPageTree = backup;
+            loadIt = true;
+        }
+    }
+
+    if (!loadIt) {
         // first time population of page tree
         log('--- first time population of page tree ---');
         populatePages();
@@ -145,9 +157,17 @@ function postLoad(focusedWin) {
         showPromoPageAnnually();
     }
 
-    loadTreeFromLocalStorage(ghostTree, 'ghostTree', GHOSTTREE_NODE_TYPES);
+    loadTreeFromLocalStorage(ghostTree, 'ghostTree', config.GHOSTTREE_NODE_TYPES);
     synchronizeGhostTree();
     setInterval(synchronizeGhostTree, MINUTE_MS * 30);
+
+    // make an initial backup if we don't have one yet
+    if (!haveBackup) {
+        setTimeout(function() { backupPageTree(true); }, config.SAVE_TREE_INITIAL_BACKUP_AFTER_MS);
+    }
+
+    // save a backup of pageTree periodically
+    setInterval(backupPageTree, config.SAVE_TREE_BACKUP_EVERY_MS);
 
     reportEvent('sidewise', 'loaded');
 
@@ -206,14 +226,46 @@ function createSidebarOnStartup() {
 
 function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
     if (!tree.lastModified || !tree.lastSaved || tree.lastModified != tree.lastSaved) {
-        log('--- saving ' + settingName + ' to local storage ---');
+        log('--- saving tree to ' + settingName + ' ---');
         var saveTree = clone(tree.tree, ['parent', 'root', 'hostTree', 'chromeId']);
         if (excludeIncognitoNodes) {
             saveTree = saveTree.filter(function(e) { return !e.incognito; });
-        }
-        settings.set(settingName, saveTree);
-        tree.lastSaved = tree.lastModified;
+    	}
+    	if (saveTree.length == 0) {
+        	console.error('Did not save tree because it is empty!');
+        	return;
+    	}
+    	settings.set(settingName, saveTree);
+    	tree.lastSaved = tree.lastModified;
     }
+}
+
+function backupPageTree(force) {
+    if (browserIsClosed) {
+        log('Skipped saving backup of tree because browser is closed');
+        return;
+    }
+    var count = tree.reduce(function(last, e) { return last + 1; }, 0);
+    if (count < config.MIN_NODES_TO_BACKUP_TREE && !force) {
+        log('Skipped saving backup of tree due to too few nodes (' + count + ')');
+        return;
+    }
+    savePageTreeToLocalStorage(tree, 'backupPageTree', true);
+}
+
+function disallowSavingTreeForDuration(ms) {
+    if (!allowSavingPageTree && denyingSavingPageTreeForMs > ms) {
+        log('Already disallowing tree saving for ' + denyingSavingPageTreeForMs + ' (vs. ' + ms + ')');
+        return;
+    }
+
+    log('Disallowing tree saving for ' + ms);
+    allowSavingPageTree = false;
+    denyingSavingPageTreeForMs = ms;
+    TimeoutManager.reset('allowSavingPageTree', function() {
+        log('Reallowing tree saving');
+        allowSavingPageTree = true;
+    }, ms);
 }
 
 function loadTreeFromLocalStorage(tree, settingKey, casts) {
@@ -222,7 +274,7 @@ function loadTreeFromLocalStorage(tree, settingKey, casts) {
 
 // loads saved tree data from local storage and populates the tree with it
 function loadPageTreeFromLocalStorage(storedPageTree) {
-    tree.loadTree(storedPageTree, PAGETREE_NODE_TYPES);
+    tree.loadTree(storedPageTree, config.PAGETREE_NODE_TYPES);
 
     tree.tree.forEach(function(node) {
         // clear media values on every page node we load
@@ -492,7 +544,7 @@ function addNodeToRecentlyClosedTree(node, addDescendants) {
         // Clone the node so we don't get weird "shared between trees" behavior
         var now = Date.now();
         node = clone(node, ['root', 'parent', 'children']);
-        node.__proto__ = PAGETREE_NODE_TYPES[node.elemType].prototype;
+        node.__proto__ = config.PAGETREE_NODE_TYPES[node.elemType].prototype;
         node.children = [];
 
         // Find insert position by looking for another dead ghost node that
@@ -505,7 +557,7 @@ function addNodeToRecentlyClosedTree(node, addDescendants) {
                 });
                 if (before) {
                     before = recentlyClosedTree.getNode(before.id);
-                    if (before && !(before.parent instanceof HeaderNode) && now - before.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                    if (before && !(before.parent instanceof HeaderNode) && now - before.removedAt <= config.RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
                         recentlyClosedTree.addNodeRel(node, 'after', before);
                         added = true;
                     }
@@ -517,7 +569,7 @@ function addNodeToRecentlyClosedTree(node, addDescendants) {
                     });
                     if (after) {
                         after = recentlyClosedTree.getNode(after.id);
-                        if (after && !(after.parent instanceof HeaderNode) && now - after.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                        if (after && !(after.parent instanceof HeaderNode) && now - after.removedAt <= config.RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
                             recentlyClosedTree.addNodeRel(node, 'before', after);
                             added = true;
                         }
@@ -530,7 +582,7 @@ function addNodeToRecentlyClosedTree(node, addDescendants) {
                     });
                     if (parent && !parent.isRoot) {
                         parent = recentlyClosedTree.getNode(parent.id);
-                        if (parent && now - parent.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                        if (parent && now - parent.removedAt <= config.RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
                             recentlyClosedTree.addNodeRel(node, 'append', parent);
                             added = true;
                         }
@@ -554,7 +606,7 @@ function addNodeToRecentlyClosedTree(node, addDescendants) {
             ghost.children.forEach(function(e) {
                 if (e.alive) return;
                 var child = recentlyClosedTree.getNode(e.id);
-                if (child && now - child.removedAt <= RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
+                if (child && now - child.removedAt <= config.RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS) {
                     recentlyClosedTree.moveNodeRel(child, 'append', node, true);
                     requestAutoGroupingForNode(child);
                 }
@@ -588,8 +640,8 @@ function requestAutoGroupingForNode(node) {
 }
 
 function scheduleAutoGrouping() {
-   TimeoutManager.reset('autoGroupRecentlyClosedTreeNodes', autoGroupRecentlyClosedTreeNodes, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
-   TimeoutManager.reset('autoGroupRecentlyClosedTreeAfterIdle', autoGroupRecentlyClosedTreeAfterIdle, RECENTLY_CLOSED_GROUP_AFTER_REMOVE_IDLE_MS);
+   TimeoutManager.reset('autoGroupRecentlyClosedTreeNodes', autoGroupRecentlyClosedTreeNodes, config.PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
+   TimeoutManager.reset('autoGroupRecentlyClosedTreeAfterIdle', autoGroupRecentlyClosedTreeAfterIdle, config.RECENTLY_CLOSED_GROUP_AFTER_REMOVE_IDLE_MS);
 }
 
 function autoGroupRecentlyClosedTreeAfterIdle() {
@@ -604,27 +656,27 @@ function autoGroupRecentlyClosedTreeNodes() {
         return;
     }
 
-    if (recentlyClosedGroupList.length <= GROUPING_ROW_COUNT_THRESHOLD) {
+    if (recentlyClosedGroupList.length <= config.GROUPING_ROW_COUNT_THRESHOLD) {
         recentlyClosedGroupList = [];
         return;
     }
 
-    // Retrigger this function instead of performing a grouping if there are more than GROUPING_ROW_COUNT_WAIT_THRESHOLD
+    // Retrigger this function instead of performing a grouping if there are more than config.GROUPING_ROW_COUNT_WAIT_THRESHOLD
     // tabs in the group list; once the number of tabs in the group list does not change between successive checks here,
     // we'll do the groupification. This helps to prevent unwanted splitting of a large multiple-tab-close operation
     // into multiple groups in the recently closed tree.
-    if (recentlyClosedGroupList.length >= GROUPING_ROW_COUNT_WAIT_THRESHOLD) {
+    if (recentlyClosedGroupList.length >= config.GROUPING_ROW_COUNT_WAIT_THRESHOLD) {
         if (recentlyClosedGroupListLastCount != recentlyClosedGroupList.length) {
             recentlyClosedGroupWaitIteration = 0;
             recentlyClosedGroupListLastCount = recentlyClosedGroupList.length;
-            TimeoutManager.reset('autoGroupRecentlyClosedTreeNodes', autoGroupRecentlyClosedTreeNodes, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
+            TimeoutManager.reset('autoGroupRecentlyClosedTreeNodes', autoGroupRecentlyClosedTreeNodes, config.PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
             log('Retriggering autoGroupRecentlyClosedTreeNodes()');
             return;
         }
         // Tab count in group list didn't change between successive calls
-        if (recentlyClosedGroupWaitIteration < GROUPING_ROW_COUNT_WAIT_ITERATIONS) {
+        if (recentlyClosedGroupWaitIteration < config.GROUPING_ROW_COUNT_WAIT_ITERATIONS) {
             recentlyClosedGroupWaitIteration++;
-            TimeoutManager.reset('autoGroupRecentlyClosedTreeNodes', autoGroupRecentlyClosedTreeNodes, PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
+            TimeoutManager.reset('autoGroupRecentlyClosedTreeNodes', autoGroupRecentlyClosedTreeNodes, config.PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS);
             log('Retriggering autoGroupRecentlyClosedTreeNodes() due to wait iteration');
             return;
         }
@@ -832,6 +884,7 @@ function shutdownSidewise() {
     tree.disableCallbacks();
     recentlyClosedTree.disableCallbacks();
     ghostTree.disableCallbacks();
+    TimeoutManager.clear('retryOnPageTreeModifiedDelayed');
 
     // Prevent onWindowUpdateCheckInterval from firing again
     try {
@@ -867,9 +920,12 @@ function restartSidewise() {
 // Show What's New pane after Sidewise is updated
 function showWhatsNewPane() {
     var newsPane = paneCatalog.getPane('whatsnew');
-    if (!newsPane) {
-        if (!newsPane && settings.get('showWhatsNewPane') ) {
-            paneCatalog.addPane('whatsnew', true, '/sidebars/whatsnew.html', 'What\'s New', '/images/nav/whatsnew.gif');
+    if (newsPane && settings.get('showWhatsNewPane') && !newsPane.enabled) {
+        newsPane.enabled = true;
+        paneCatalog.saveState();
+        if (sidebarHandler.sidebarExists()) {
+            var manager = sidebarHandler.sidebarPanes.sidebarHost.manager;
+            manager.enableSidebarPane(pane.id);
         }
     }
 }

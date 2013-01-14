@@ -1,6 +1,7 @@
 var WINDOW_UPDATE_CHECK_INTERVAL_SLOW_MS = 300;
 var WINDOW_UPDATE_CHECK_INTERVAL_FAST_MS = 150;
 var WINDOW_UPDATE_CHECK_INTERVAL_RATE_RESET_MS = 5000;
+var WINDOW_REMOVE_SAVE_TREE_DELAY_MS = 10000;
 
 var windowUpdateCheckInterval = null;
 
@@ -50,6 +51,7 @@ function onWindowRemoved(windowId)
     }
 
     focusTracker.remove(windowId);
+    disallowSavingTreeForDuration(WINDOW_REMOVE_SAVE_TREE_DELAY_MS);
 
     // temporarily make tree.onModifiedDelayWaitMs larger to prevent
     // unwanted saving of the tree during a shutdown operation
@@ -57,6 +59,7 @@ function onWindowRemoved(windowId)
 
     var node = tree.getNode(['chromeId', windowId]);
     if (node) {
+
         // If the window node of the window being removed still has some children,
         // convert the window node to a hibernated window node rather than
         // removing it
