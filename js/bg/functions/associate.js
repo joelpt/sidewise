@@ -229,7 +229,7 @@ function tryFastAssociateTab(tab, mustBeRestorable) {
             && tab.pinned == e.pinned;
     }, inArray);
 
-    if (matches.length == 1) {
+    if (matches.length == 1 || (matches.length > 0 && !isScriptableUrl(tab.url))) {
         // Exactly one page node matches this tab by url+index so assume it's a match
         // and do the association
         var match = matches[0];
@@ -344,6 +344,7 @@ function rectifyAssociations(delay) {
                                     tree.rebuildIndexes();                          // sanity guarantee
                                     tree.rebuildParents();                          // sanity guarantee
                                     fixAllPinnedUnpinnedTabOrder();                 // correct ordering of pinned vs. unpinned tabs in the tree/tab order
+                                    swapPageNodesByIndex();
                                     tree.conformAllChromeTabIndexes(true);          // conform chrome's tab order to match the tree's order
                                     tree.conformAllChromeTabIndexes(false);         // conform chrome's tab order to match the tree's order again after standard delay
                                     removeOldWindows();                            // get rid of old 'Last Session' windows
@@ -787,7 +788,7 @@ function disambiguatePageNodesByWindowId(iterations) {
             continue;
         }
         for (var i = 0; i < items.length; i++) {
-            var item = items[i];
+            var item = items[(i + iterations) % items.length];
             var topParentId = item.topParent().id;
             var topParentChromeId = item.topParent().chromeId;
             if (item.windowId == topParentChromeId) {
@@ -799,26 +800,45 @@ function disambiguatePageNodesByWindowId(iterations) {
             swapCount++;
 
             // In order of preference:
-            // (1) swap with a same-key node whose .windowId and topParent.id are transpositions of our working node's
-            var swapWith = items.filter(function(e) { return e !== item && e.windowId == topParentChromeId && item.windowId == e.topParent().chromeId; });
-            // (2) swap with a same-key node whose topParent.id matches our working node's .windowId (we need to be in that window)
+            var swapWith;
+            // swap with a same-key node whose .windowId and topParent.id are transpositions of our working node's and .index values match
+            swapWith = items.filter(function(e) { return e !== item && e.windowId == topParentChromeId && item.windowId == e.topParent().chromeId && e.index == item.index; });
             if (swapWith.length == 0) {
-                swapWith = items.filter(function(e) { return e !== item && item.windowId == e.topParent().chromeId; });
+                // swap with a same-key node whose .windowId and topParent.id are transpositions of our working node's
+                swapWith = items.filter(function(e) { return e !== item && e.windowId == topParentChromeId && item.windowId == e.topParent().chromeId; });
                 if (swapWith.length == 0) {
-                    swapWith = items.filter(function(e) { return e !== item && e.windowId == topParentChromeId; });
+                    // swap with a same-key node whose topParent.id matches our working node's .windowId (we need to be in that window)
+                    swapWith = items.filter(function(e) { return e !== item && item.windowId == e.topParent().chromeId; });
                     if (swapWith.length == 0) {
-                        // node is in the wrong window but there is nobody to swap with in that window with the same key;
-                        // this should never happen and if it does we need to track down what caused that to occur
-                        log('Disambiguation missed:', swapCount, g, i, item);
-                        continue;
+                        swapWith = items.filter(function(e) { return e !== item && e.windowId == topParentChromeId; });
+                        if (swapWith.length == 0) {
+                            // node is in the wrong window but there is nobody to swap with in that window with the same key;
+                            // this should never happen and if it does we need to track down what caused that to occur
+                            log('Disambiguation missed:', swapCount, g, i, item);
+                            continue;
+                        }
                     }
                 }
             }
             log('Swapping for disambiguation:', swapCount, 'page ids', item.id, swapWith[0].id, '.windowIds', item.windowId, swapWith[0].windowId, 'topParentIds', item.topParent().id, swapWith[0].topParent().id, 'group', g, items);
 
             var temp = item.chromeId;
-            item.chromeId = swapWith[0].chromeId;
-            swapWith[0].chromeId = temp;
+            tree.updateNode(item, { chromeId: swapWith[0].chromeId });
+            tree.updateNode(swapWith[0], { chromeId: temp });
+
+            var temp = item.windowId;
+            tree.updateNode(item, { windowId: swapWith[0].windowId });
+            tree.updateNode(swapWith[0], { windowId: temp });
+
+            var temp = item.index;
+            tree.updateNode(item, { index: swapWith[0].index });
+            tree.updateNode(swapWith[0], { index: temp });
+
+            log('After swap, primary windowid matchup is', item.windowId, item.topParent().chromeId);
+            var swappee = tree.getNode(swapWith[0].id);
+            log('After swap, secondary windowid matchup is', swappee.windowId, swappee.topParent().chromeId);
+
+            // break;
         }
     }
     if (swapCount > 0 && iterations > 1) {
@@ -827,6 +847,47 @@ function disambiguatePageNodesByWindowId(iterations) {
         return;
     }
     // log('Disambiguation complete');
+}
+
+function swapPageNodesByIndex() {
+    // find all matching-key groups we might want to swap around
+    var groups = tree.groupBy(function(e) {
+        if (!e.isTab()) {
+            return undefined;
+        }
+        var topParent = e.topParent();
+        if (!topParent) {
+            return undefined;
+        }
+        var key = [topParent.id, e.url, e.referrer, e.historylength, e.pinned, e.incognito].join('|');
+        return key;
+    });
+    for (var g in groups) {
+        var items = groups[g];
+        console.log(g, items);
+        if (items.length < 2) {
+            continue;
+        }
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+
+            if (item.index == tree.getTabIndex(item)) {
+                continue;
+            }
+
+            var swapWith = items.filter(function(e) { return tree.getTabIndex(e) == item.index; });
+            if (swapWith.length > 0) {
+                log('Swapping for index correction:', 'page ids', item.id, swapWith[0].id, 'indexes', item.index, swapWith[0].index);
+                var temp = item.index;
+                tree.updateNode(item, { index: swapWith[0].index });
+                tree.updateNode(swapWith[0], { index: temp });
+
+                var temp = item.chromeId;
+                tree.updateNode(item, { chromeId: swapWith[0].chromeId });
+                tree.updateNode(swapWith[0], { chromeId: temp });
+            }
+        }
+    }
 }
 
 function movePageNodesToCorrectWindows(onComplete) {
