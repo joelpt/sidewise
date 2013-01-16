@@ -193,7 +193,8 @@ function tryAssociateTab(runInfo, tab, forceNewTabAssociation) {
     if (tab.url == 'chrome://newtab/') {
         // Only permit trying fast association for New Tab pages to avoid improperly resurrecting
         // Last Session windows when starting Chrome with 'start with New Tab' option set
-        return false;
+        tree.addTabToWindow(tab, new PageNode(tab));
+        return true;
     }
 
     if (!isScriptableUrl(tab.url)) {
