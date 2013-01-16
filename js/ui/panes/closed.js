@@ -28,6 +28,7 @@ function createFancyTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree
             onMiddleClick: onPageRowMiddleClick,
             onExpanderClick: onRowExpanderClick,
             onIconError: onPageRowIconError,
+            onFormatTitle: onPageRowFormatTitle,
             buttons: [
                 {id: 'close', icon: '/images/close.png', tooltip: getMessage('closed_pageRowButtonTip_close'), onClick: onPageRowCloseButton }
             ]
@@ -961,6 +962,61 @@ function onPageRowCloseButton(evt) {
 
 function onPageRowHibernateButton(evt) {
     togglePageRowsHibernated(evt.data.row);
+}
+
+function onPageRowFormatTitle(row, itemTextElem) {
+    var label = row.attr('label');
+    var text = row.attr('text');
+
+    var textAffix = '';
+
+    var removedAt = row.attr('removedAt');
+    if (removedAt) {
+        textAffix = getTimeDeltaAbbreviated(removedAt, Date.now(), false) || '<1m';
+    }
+
+    if (loggingEnabled) {
+        label = row.attr('id').slice(0, 5) + (label ? ': ' : '') + label;
+    }
+
+    if (settings.get('pages_trimPageTitlePrefixes') && row.attr('url').indexOf(text) == -1) {
+        text = getTrimmedPageTitle(row);
+    }
+
+    itemTextElem.children('.ftItemTitle').text(text);
+    itemTextElem.children('.ftItemLabel').html(label + (text && label ? ': ' : ''));
+
+    if (row.hasClass('ftCollapsed')) {
+        var childCount = row.children('.ftChildren').find('.ftRowNode').length;
+        if (childCount > 0) {
+            textAffix = '(' + childCount + ')' + (textAffix == '' ? '' : ' ') + textAffix;
+        }
+    }
+
+    var itemTextAffix = row.children('.ftItemRow').find('.ftItemTextAffix');
+    if (textAffix) {
+        itemTextAffix.html(textAffix);
+        var buttonsShowing = row.children('.ftItemRow').find('.ftButtons').is(':visible');
+        if (!buttonsShowing) {
+            itemTextAffix.show();
+        }
+    }
+    else {
+        itemTextAffix.html('').hide();
+    }
+
+    var existingPin = itemTextElem.parent().children('.pinned');
+    if (row.attr('pinned') == 'true') {
+        if (existingPin.length == 0) {
+            var newPin = $('<img/>', { class: 'pinned', src: '/images/pinned.png' });
+            itemTextElem.before(newPin);
+        }
+    }
+    else {
+        if (existingPin.length > 0) {
+            existingPin.remove();
+        }
+    }
 }
 
 
