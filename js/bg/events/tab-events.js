@@ -199,17 +199,32 @@ function onTabCreated(tab)
     }
 
     if (!tab.openerTabId) {
-        if (winTabs.length > 0 && tab.index == 0) {
-            log('No openerTabId and index is at start of tree; prepending to window');
-            tree.addNodeRel(page, 'prepend', tree.getNode(['chromeId', tab.windowId]));
-            return;
-        }
-        if (winTabs.length == 0 || winTabs.length == tab.index) {
-            log('No openerTabId and index is at end of tree, or no tab indexes are found for hosting window; appending to window');
-            tree.addTabToWindow(tab, page);
-            return;
-        }
+        // if (winTabs.length > 0 && tab.index == 0) {
+        //     log('No openerTabId and index is at start of tree; prepending to window');
+        //     tree.addNodeRel(page, 'prepend', tree.getNode(['chromeId', tab.windowId]));
+        //     return;
+        // }
+        // if (winTabs.length == 0 || winTabs.length == tab.index) {
+        //     log('No openerTabId and index is at end of tree, or no tab indexes are found for hosting window; appending to window');
+        //     tree.addTabToWindow(tab, page);
+        //     return;
+        // }
+        var prevByIndex = winTabs[tab.index - 1];
         var nextByIndex = winTabs[tab.index];
+
+        if (prevByIndex && nextByIndex) {
+            if (prevByIndex.chromeId == tree.focusedTabId) {
+                log('Making child of previous by index because previous is also focused tab');
+                tree.addNodeRel(page, 'prepend', prevByIndex);
+                return;
+            }
+            if (prevByIndex.parent && prevByIndex.parent.chromeId == tree.focusedTabId) {
+                log('Making sibling after previous-by-index because PBI\'s parent is focused tab');
+                tree.addNodeRel(page, 'after', prevByIndex);
+                return;
+            }
+        }
+
         if (!nextByIndex) {
             log('nextByIndex not found though it should have been; just adding tab to window and scheduling full rebuild');
             tree.addTabToWindow(tab, page);

@@ -143,11 +143,11 @@ function onCommitted(details)
         return;
     }
 
-    if (details.transitionQualifiers.indexOf('from_address_bar') != -1) {
-        // stick pages which were created by the user typing into the
-        // address bar under their parent window, rather than potentially
-        // beneath the page which the user was viewing at the time of
-        // typing into the address bar and hitting alt+enter
+    if (details.transitionQualifiers.indexOf('from_address_bar') > -1 || details.transitionType == 'auto_bookmark') {
+        // stick pages which were created via address bar alt+enter or middle
+        // clicking bookmark buttons under their parent window, rather than
+        // potentially beneath the page which the user was viewing at the time
+        // of tab-creation.
         var winNode = tree.getNode(['chromeId', page.windowId]);
         if (!winNode) {
             throw new Error('Could not find WindowNode to put page under that was opened via url bar alt-enter');
