@@ -30,3 +30,20 @@ config.PAGETREE_NODE_TYPES = {
 config.GHOSTTREE_NODE_TYPES = {
     'ghost': GhostNode
 };
+
+config.PREPEND_RECENTLY_CLOSED_GROUP_HEADER_INTERVAL_MS = 750;
+config.GROUPING_ROW_COUNT_THRESHOLD = 7;
+config.GROUPING_ROW_COUNT_WAIT_THRESHOLD = 8;
+config.GROUPING_ROW_COUNT_WAIT_ITERATIONS = 4;
+
+// Nodes in the recently closed tree must be at most no older than this many
+// ms to qualify for having another node matched to an associated position vs.
+// them, e.g. a new recently-closed node being made a child of an existing
+// recently-closed node. When a recently-closed node can't be placed in
+// relative positioning to another node due to exceeding this timeout or just
+// not finding any qualifying nodes, the fallback behavior is simply to
+// prepend it to the top .collecting=true HeaderNode in the recently closed
+// tree.
+config.RECENTLY_CLOSED_ALLOW_RESTRUCTURING_MS = MINUTE_MS * 10;
+
+config.RECENTLY_CLOSED_GROUP_AFTER_REMOVE_IDLE_MS = HOUR_MS * 3;
