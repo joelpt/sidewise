@@ -89,6 +89,7 @@ function injectPageScript(fn) {
 
 function injectPageScriptSendEventFn() {
     injectPageScript(function() {
+
         window.sidewise_sendEvent = function(name, value) {
             var e = document.createElement('meta');
             e.setAttribute('name', 'sidewise_event');
@@ -96,6 +97,12 @@ function injectPageScriptSendEventFn() {
             e.setAttribute('event-value', value);
             document.head.appendChild(e);
         };
+
+        window.sidewise_sendMediaUpdateEvent = function(state, time) {
+            // console.log('updateMediaState', state + ',' + time);
+            window.sidewise_sendEvent('updateMediaState', state + ',' + time);
+        };
+
     });
 }
 
@@ -109,7 +116,7 @@ function receivePageEvent(eventElement) {
             var parts = value.split(',');
             chrome.extension.sendRequest({
                 op: 'updateMediaState',
-                state: YOUTUBE_PLAYER_STATES[parts[0]],
+                state: parts[0],
                 time: parts[1]
             });
             break;
@@ -189,17 +196,35 @@ function generateGuid() {
 ///////////////////////////////////////////////////////////
 
 function setUpYouTubeMonitor() {
-    // log('setUpYouTubeMonitor called', document.location.href);
-    if (!document.location.href.match('youtube.+/(user|watch)')) {
-        return;
-    }
     injectPageScriptSendEventFn();
-    injectPageScript(youTubePageScript);
+    injectPageScript(jwplayerPageScript);
+
+    // if (document.location.href.match('youtube.+/(user|watch)')) {
+        injectPageScript(youTubePageScript);
+        // return;
+    // }
 }
 
 function youTubePageScript() {
     window.onYouTubePlayerReady = function(playerid) {
-        // console.log('Calling onYouTubePlayerReady', playerid);
+        // define onPlayerStateChange once it's needed
+        window.sidewise_onPlayerStateChange = function(state) {
+            // console.log('onPlayerStateChange', state);
+            if (state == 1) {
+                // Report current time value periodically during playback
+                if (!window.sidewise_onVideoPlayingIntervalTimer) {
+                    window.sidewise_onVideoPlayingIntervalTimer = setInterval(function() {
+                        window.sidewise_sendMediaUpdateEvent(YOUTUBE_PLAYER_STATES[state], sidewise_ytplayer.getCurrentTime());
+                    }, 500);
+                }
+            }
+            else {
+                clearInterval(window.sidewise_onVideoPlayingIntervalTimer);
+                window.sidewise_onVideoPlayingIntervalTimer = null;
+            }
+            window.sidewise_sendMediaUpdateEvent(YOUTUBE_PLAYER_STATES[state], sidewise_ytplayer.getCurrentTime());
+        };
+
         clearTimeout(window.sidewise_missedOnYoutubePlayerReadyTimer);
         if (window.sidewise_ytplayer) {
             return;
@@ -217,30 +242,41 @@ function youTubePageScript() {
         }
         window.sidewise_ytplayer.addEventListener('onStateChange', 'sidewise_onPlayerStateChange');
     };
-
-    window.sidewise_onPlayerStateChange = function(state) {
-        // console.log('onPlayerStateChange', state);
-        if (state == 1) {
-            // Report current time value periodically during playback
-            if (!window.sidewise_onVideoPlayingIntervalTimer) {
-                window.sidewise_onVideoPlayingIntervalTimer = setInterval(function() {
-                    window.sidewise_sendYouTubeUpdateEvent(1);
-                }, 500);
-            }
-        }
-        else {
-            clearInterval(window.sidewise_onVideoPlayingIntervalTimer);
-            window.sidewise_onVideoPlayingIntervalTimer = null;
-        }
-        window.sidewise_sendYouTubeUpdateEvent(state);
-    };
-
-    window.sidewise_sendYouTubeUpdateEvent = function(state) {
-        // console.log('updateMediaState', state + ',' + sidewise_ytplayer.getCurrentTime());
-        window.sidewise_sendEvent('updateMediaState', state + ',' + sidewise_ytplayer.getCurrentTime());
-    };
 }
 
+
+function jwplayerPageScript() {
+    if (typeof(jwplayer) != 'function') {
+        return;
+    }
+
+    window.sidewise_onJwPlayerCheck = function() {
+        var jw = jwplayer();
+        if (!jw) {
+            return;
+        }
+        var state = jw.getState();
+
+        if (!state) {
+            return;
+        }
+
+        state = state.toLowerCase();
+        var time = jw.getPosition();
+
+        if (state == 'playing' || state != window.sidewise_jwPlayerLastState) {
+            // Report current time value periodically during playback
+            window.sidewise_sendMediaUpdateEvent(state, time);
+            window.sidewise_jwPlayerLastState = state;
+        }
+    };
+
+    if (window.sidewise_onJwPlayerCheckInterval) {
+        clearInterval(window.sidewise_onJwPlayerCheckInterval);
+    }
+
+    window.sidewise_onJwPlayerCheckInterval = setInterval(window.sidewise_onJwPlayerCheck, 500);
+}
 
 ///////////////////////////////////////////////////////////
 // Logging
