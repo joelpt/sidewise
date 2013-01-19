@@ -3,7 +3,7 @@
 ///////////////////////////////////////////////////////////
 
 var LOGGING_ENABLED = false;
-var YOUTUBE_PLAYER_STATES = {
+var MEDIA_PLAYER_STATE_ALIASES = {
     '-1': 'unstarted',
     '0': 'ended',
     '1': 'playing',
@@ -29,7 +29,7 @@ window.addEventListener('DOMContentLoaded', onDOMContentLoaded);
 function onDOMContentLoaded() {
     log('onDOMContentLoaded');
     setUpTitleObserver();
-    setUpYouTubeMonitor();
+    setUpMediaMonitors();
 }
 
 function setUpTitleObserver() {
@@ -72,57 +72,6 @@ function connectPort() {
     port.onDisconnect.addListener(function() {
         log('disconnect', port);
     });
-}
-
-
-///////////////////////////////////////////////////////////
-// In-page script injection and passed event handling
-///////////////////////////////////////////////////////////
-
-function injectPageScript(fn) {
-    var code = '(' + fn + ')();';
-    var script = document.createElement('script');
-    script.textContent = code;
-    (document.head||document.documentElement).appendChild(script);
-    script.parentNode.removeChild(script);
-}
-
-function injectPageScriptSendEventFn() {
-    injectPageScript(function() {
-
-        window.sidewise_sendEvent = function(name, value) {
-            var e = document.createElement('meta');
-            e.setAttribute('name', 'sidewise_event');
-            e.setAttribute('event-name', name);
-            e.setAttribute('event-value', value);
-            document.head.appendChild(e);
-        };
-
-        window.sidewise_sendMediaUpdateEvent = function(state, time) {
-            // console.log('updateMediaState', state + ',' + time);
-            window.sidewise_sendEvent('updateMediaState', state + ',' + time);
-        };
-
-    });
-}
-
-function receivePageEvent(eventElement) {
-    var name = eventElement.getAttribute('event-name');
-    var value = eventElement.getAttribute('event-value');
-    eventElement.parentElement.removeChild(eventElement);
-
-    switch (name) {
-        case 'updateMediaState':
-            var parts = value.split(',');
-            chrome.extension.sendRequest({
-                op: 'updateMediaState',
-                state: parts[0],
-                time: parts[1]
-            });
-            break;
-        default:
-            throw new Error('Unrecognized event-name ' + name);
-    }
 }
 
 
@@ -191,20 +140,69 @@ function generateGuid() {
 }
 
 
-///////////////////////////////////////////////////////////
-// Youtube
-///////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+// In-page script injection and page-to-content-script event passing
+/////////////////////////////////////////////////////////////////////
 
-function setUpYouTubeMonitor() {
-    injectPageScriptSendEventFn();
-    injectPageScript(jwplayerPageScript);
-
-    // if (document.location.href.match('youtube.+/(user|watch)')) {
-        injectPageScript(youTubePageScript);
-        // return;
-    // }
+function injectPageScript(fn) {
+    var code = '(' + fn + ')();';
+    var script = document.createElement('script');
+    script.textContent = code;
+    (document.head||document.documentElement).appendChild(script);
+    script.parentNode.removeChild(script);
 }
 
+function injectPageScriptSendEventFn() {
+    injectPageScript(function() {
+
+        window.sidewise_sendEvent = function(name, value) {
+            var e = document.createElement('meta');
+            e.setAttribute('name', 'sidewise_event');
+            e.setAttribute('event-name', name);
+            e.setAttribute('event-value', value);
+            document.head.appendChild(e);
+        };
+
+        window.sidewise_sendMediaUpdateEvent = function(state, time) {
+            // console.log('updateMediaState', state + ',' + time);
+            window.sidewise_sendEvent('updateMediaState', state + ',' + time);
+        };
+
+    });
+}
+
+function receivePageEvent(eventElement) {
+    var name = eventElement.getAttribute('event-name');
+    var value = eventElement.getAttribute('event-value');
+    eventElement.parentElement.removeChild(eventElement);
+
+    switch (name) {
+        case 'updateMediaState':
+            var parts = value.split(',');
+            chrome.extension.sendRequest({
+                op: 'updateMediaState',
+                state: MEDIA_PLAYER_STATE_ALIASES[parts[0]] || parts[0],
+                time: parts[1]
+            });
+            break;
+        default:
+            throw new Error('Unrecognized event-name ' + name);
+    }
+}
+
+
+///////////////////////////////////////////////////////////
+// Media state monitoring on e.g. youtube players
+///////////////////////////////////////////////////////////
+
+// Injects scripts into the page's context to do media state monitoring
+function setUpMediaMonitors() {
+    injectPageScriptSendEventFn();
+    injectPageScript(youTubePageScript);
+    injectPageScript(jwplayerPageScript);
+}
+
+// Monitor youtube players
 function youTubePageScript() {
     window.onYouTubePlayerReady = function(playerid) {
         // define onPlayerStateChange once it's needed
@@ -214,7 +212,7 @@ function youTubePageScript() {
                 // Report current time value periodically during playback
                 if (!window.sidewise_onVideoPlayingIntervalTimer) {
                     window.sidewise_onVideoPlayingIntervalTimer = setInterval(function() {
-                        window.sidewise_sendMediaUpdateEvent(YOUTUBE_PLAYER_STATES[state], sidewise_ytplayer.getCurrentTime());
+                        window.sidewise_sendMediaUpdateEvent(state, sidewise_ytplayer.getCurrentTime());
                     }, 500);
                 }
             }
@@ -222,7 +220,7 @@ function youTubePageScript() {
                 clearInterval(window.sidewise_onVideoPlayingIntervalTimer);
                 window.sidewise_onVideoPlayingIntervalTimer = null;
             }
-            window.sidewise_sendMediaUpdateEvent(YOUTUBE_PLAYER_STATES[state], sidewise_ytplayer.getCurrentTime());
+            window.sidewise_sendMediaUpdateEvent(state, sidewise_ytplayer.getCurrentTime());
         };
 
         clearTimeout(window.sidewise_missedOnYoutubePlayerReadyTimer);
@@ -244,7 +242,7 @@ function youTubePageScript() {
     };
 }
 
-
+// Monitor jwplayer players
 function jwplayerPageScript() {
     if (typeof(jwplayer) != 'function') {
         return;
@@ -277,6 +275,7 @@ function jwplayerPageScript() {
 
     window.sidewise_onJwPlayerCheckInterval = setInterval(window.sidewise_onJwPlayerCheck, 500);
 }
+
 
 ///////////////////////////////////////////////////////////
 // Logging
