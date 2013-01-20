@@ -604,7 +604,7 @@ function onContextMenuShow($rows) {
         if (awakeCount || hibernatedCount)
             items.push({ separator: true });
 
-        items.push({ $rows: $firstRow, id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
+        items.push({ $rows: $firstRow, id: 'setLabel', icon: '/images/label.png', label: 'Edit title', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
         items.push({ separator: true });
         items.push({ $rows: $firstRow, id: 'closeWindow', icon: '/images/close.png', label: 'Close window', callback: onContextMenuItemCloseWindow });
 
@@ -644,7 +644,15 @@ function onContextMenuShow($rows) {
         items.push({ separator: true });
     }
 
-    items.push({ $rows: $rows, id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
+    var editLabel;
+    if (items.length == 1 && $rows.attr('rowtype') == 'folder') {
+        editLabel = 'Edit title';
+    }
+    else {
+        editLabel = 'Set label';
+    }
+
+    items.push({ $rows: $rows, id: 'setLabel', icon: '/images/label.png', label: editLabel, callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
 
     if (unhighlightedCount)
        items.push({ $rows: $rows, id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
@@ -660,6 +668,9 @@ function onContextMenuShow($rows) {
 
     if ($pages.length > 0)
         items.push({ $rows: $rows, id: 'copyUrl', icon: '/images/copy_url.png', label: 'Copy URL', callback: onContextMenuItemCopyURL, preserveSelectionAfter: true });
+
+    if (bg.loggingEnabled)
+        items.push({ $rows: $rows, id: 'copyId', icon: '/images/copy_url.png', label: 'Copy ID', callback: onContextMenuItemCopyId, preserveSelectionAfter: true });
 
     items.push({ separator: true });
 
@@ -755,22 +766,6 @@ function onContextMenuItemSetHighlight($rows) {
 
 function onContextMenuItemClearHighlight($rows) {
     $rows.each(function(i, e) { setRowHighlight($(e), -1); });
-}
-
-function onContextMenuItemCopyURL($rows) {
-    var urls = $rows.map(function(i, e) {
-        var $e = $(e);
-        if ($e.attr('rowtype') != 'page') {
-            return;
-        }
-        return $(e).attr('url');
-    });
-
-    copyTextToClipboard(urls.toArray().join('\n') + '\n');
-
-    ft.resetDragDropState(function() {
-        alert(urls.length + ' URL(s) copied to clipboard.');
-    });
 }
 
 function onContextMenuItemMoveToNewFolder($rows) {

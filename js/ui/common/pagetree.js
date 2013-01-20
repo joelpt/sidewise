@@ -319,6 +319,39 @@ function onWindowRowFormatTooltip(evt) {
 
 
 ///////////////////////////////////////////////////////////
+// Common context menu item handlers
+///////////////////////////////////////////////////////////
+
+function onContextMenuItemCopyURL($rows) {
+    var urls = $rows.map(function(i, e) {
+        var $e = $(e);
+        if ($e.attr('rowtype') != 'page') {
+            return;
+        }
+        return $e.attr('url');
+    });
+
+    copyTextToClipboard(urls.toArray().join('\n'));
+
+    ft.resetDragDropState(function() {
+        alert(urls.length + ' URL(s) copied to clipboard.');
+    });
+}
+
+function onContextMenuItemCopyId($rows) {
+    var ids = $rows.map(function(i, e) {
+        return $(e).attr('id');
+    });
+
+    copyTextToClipboard(ids.toArray().join('\n'));
+
+    ft.resetDragDropState(function() {
+        alert(ids.length + ' ID(s) copied to clipboard.');
+    });
+}
+
+
+///////////////////////////////////////////////////////////
 // Helpers
 ///////////////////////////////////////////////////////////
 

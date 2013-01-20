@@ -53,7 +53,7 @@
         }
     },
     "prompt_confirmResetOptions": { "message": "Are you sure you want to reset all options to the defaults?" },
-    "prompt_setLabel": { "message": "Enter the desired label, or clear box for no label:" },
+    "prompt_setLabel": { "message": "Enter the new label/title, or clear box for none:" },
     "prompt_setNewFolderName": { "message": "Enter the new folder's name:" },
     "prompt_hibernatingLastTab": { "message": "You just hibernated the last open tab in Chrome. // Since this would normally cause Chrome to automatically exit, Sidewise has created a New Tab tab to prevent it from doing so." },
 
