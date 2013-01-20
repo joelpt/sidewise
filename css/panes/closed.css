@@ -52,7 +52,7 @@ section#main.debugEnabled {
 }
 
 .ftRowNode.ftCollapsed > .ftItemRow > .ftExpander + .ftItemRowContent > .ftInnerRow > .ftRowIcon {
-    opacity: 0.0;
+    opacity: 0.25;
 }
 
 .ftExpander:hover + .ftItemRowContent > .ftInnerRow > .ftRowIcon {
@@ -81,6 +81,7 @@ section#main.debugEnabled {
     opacity: 1.0;
 }
 
-.ftRowNode.ftCollapsed > .ftItemRow:hover > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
+/*.ftRowNode.ftCollapsed > .ftItemRow:hover > .ftItemRowContent > .ftInnerRow > .ftRowIcon {
     visibility: hidden;
 }
+*/
