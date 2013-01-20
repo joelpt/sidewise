@@ -55,6 +55,11 @@ UiDataTree.prototype = {
       */
     addNode: function(node, parentMatcher, beforeSiblingMatcher)
     {
+        var existing = this.getNode(node.id);
+        if (existing) {
+            throw new Error('A node with this id already exists in the tree', node.id, node);
+        }
+
         var r = this.$super('addNode')(node, parentMatcher, beforeSiblingMatcher);
 
         this.callbackProxyFn('add', {

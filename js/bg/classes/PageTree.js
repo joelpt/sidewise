@@ -63,6 +63,11 @@ PageTree.prototype = {
       */
     addNode: function(node, parentMatcher, beforeSiblingMatcher, preferChromeTabIndex)
     {
+        var existing = this.getNode(node.id);
+        if (existing) {
+            throw new Error('A node with this id already exists in the tree', node.id, node);
+        }
+
         if (node instanceof WindowNode) {
             this.tabIndexes[node.windowId] = [];
         }
@@ -406,7 +411,6 @@ PageTree.prototype = {
         var page = this.updatePage(['chromeId', tabId], {
             hibernated: true,
             restorable: false,
-            id: 'pH' + generateGuid(),
             chromeId: null,
             status: 'complete',
             mediaState: null,
@@ -628,13 +632,13 @@ PageTree.prototype = {
             var prev;
             var next = e.following(function(test) { return test.isTab() && test.windowId == e.windowId; });
             if (next) {
-                console.log('looking up tab index for next tab', next.id);
+                log('looking up tab index for next tab', next.id);
                 index = self.getTabIndex(next);
             }
             else {
                 var prev = e.preceding(function(test) { return test.isTab() && test.windowId == e.windowId; });
                 if (prev) {
-                    console.log('looking up tab index for preceding tab', prev.id);
+                    log('looking up tab index for preceding tab', prev.id);
                     index = self.getTabIndex(prev);
                     if (index !== undefined) {
                         index += 1;
@@ -644,11 +648,11 @@ PageTree.prototype = {
 
             if (index === undefined) {
                 if (next) {
-                    console.log('fallback on next.index', next.id, next.index);
+                    log('fallback on next.index', next.id, next.index);
                     index = next.index;
                 }
                 else if (prev) {
-                    console.log('fallback on prev.index', prev.id, prev.index);
+                    log('fallback on prev.index', prev.id, prev.index);
                     index = prev.index + 1;
                 }
 
@@ -1047,11 +1051,11 @@ PageTree.prototype = {
             if (indexes) {
                 index = indexes.indexOf(e);
                 if (index == -1) {
-                    index = '';
+                    index = '---';
                 }
             }
             else {
-                index = '';
+                index = '---';
             }
 
             return lastValue + '\n'
