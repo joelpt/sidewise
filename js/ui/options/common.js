@@ -598,8 +598,13 @@ function submitBugReport() {
         return;
     }
 
+    bg.log('--- tree ---');
     bg.log(bg.tree.dump());
     bg.log(bg.tree.dumpTabIndexes());
+
+    bg.log('--- stored tree ---');
+    bg.log(localStorage['pageTree']);
+
     bg.log('--- sidebarHandler ---');
 
     bg.log(BUG_REPORT_SIDEBARHANDLER_PROPS.map(function(e) {
@@ -611,7 +616,7 @@ function submitBugReport() {
     bg.log(JSON.stringify(bg.monitorInfo.monitors));
 
     bg.log('--- Settings ---');
-    bg.log(settings.dump(1000));
+    bg.log(settings.dump(400));
 
     bg.log('--- Versions ---');
     bg.log([
