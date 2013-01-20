@@ -558,112 +558,40 @@ function onContextMenuShow($rows) {
 
     var items = [];
 
-    var $firstRow = $rows.first();
-    if ($firstRow.attr('rowtype') == 'window') {
-        var $children = $firstRow.find('.ftChildren > .ftRowNode');
-
-        var hibernatedCount = $children.filter(function(i, e) { return $(e).attr('hibernated') == 'true' }).length;
-        var awakeCount = $children.length - hibernatedCount;
-
-        if (hibernatedCount)
-            items.push({ $rows: $firstRow, id: 'awakenWindow', icon: '/images/wake_branch.png', label: 'Wake tabs in window', callback: onContextMenuItemWakeWindow });
-
-        if (awakeCount)
-            items.push({ $rows: $firstRow, id: 'hibernateWindow', icon: '/images/hibernate_branch.png', label: 'Hibernate tabs in window', callback: onContextMenuItemHibernateWindow });
-
-        if (awakeCount || hibernatedCount)
-            items.push({ separator: true });
-
-        items.push({ $rows: $firstRow, id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
-        items.push({ separator: true });
-        items.push({ $rows: $firstRow, id: 'closeWindow', icon: '/images/close.png', label: 'Close window', callback: onContextMenuItemCloseWindow });
-
-        return items;
-    }
-
     var $pages = $rows.filter(function(i, e) { return $(e).attr('rowtype') == 'page' });
     var $descendants = $rows.find('.ftRowNode');
     var $branches = $rows.add($descendants);
     var $branchesPages = $branches.filter(function(i, e) { return $(e).attr('rowtype') == 'page' });
 
-    var hibernatedCount = $pages.filter(function(i, e) { return $(e).attr('hibernated') == 'true'; }).length;
-    var awakeCount = $pages.length - hibernatedCount;
+    items.push({ $rows: $rows, id: 'restoreRow', icon: '/images/wake.png', label: 'Restore selected', callback: onContextMenuItemRestoreRows });
 
-    var hibernatedBranchCount = $branchesPages.filter(function(i, e) { return $(e).attr('hibernated') == 'true'; }).length;
-    var awakeBranchCount = $branchesPages.length - hibernatedBranchCount;
-
-    var highlightedCount = $rows.filter(function(i, e) { return $(e).attr('highlighted') == 'true'; }).length;
-    var unhighlightedCount = $rows.length - highlightedCount;
-
-    var pinnedCount = $pages.filter(function(i, e) { return $(e).attr('pinned') == 'true'; }).length;
-    var unpinnedCount = $pages.length - pinnedCount;
-
-    if (hibernatedCount)
-        items.push({ $rows: $pages, id: 'awakenPage', icon: '/images/wake.png', label: 'Wake tab', callback: onContextMenuItemWakePages });
-
-    if (awakeCount)
-        items.push({ $rows: $pages, id: 'hibernatePage', icon: '/images/hibernate.png', label: 'Hibernate tab', callback: onContextMenuItemHibernatePages });
-
-    if (hibernatedBranchCount && hibernatedBranchCount != hibernatedCount)
-        items.push({ $rows: $branchesPages, id: 'awakenBranch', icon: '/images/wake_branch.png', label: 'Wake branch', callback: onContextMenuItemWakePages });
-
-    if (awakeBranchCount && awakeBranchCount != awakeCount)
-        items.push({ $rows: $branchesPages, id: 'hibernateBranch', icon: '/images/hibernate_branch.png', label: 'Hibernate branch', callback: onContextMenuItemHibernatePages });
-
-    if (awakeCount || hibernatedCount) {
-        items.push({ separator: true });
-    }
-
-    items.push({ $rows: $rows, id: 'setLabel', icon: '/images/label.png', label: 'Set label', callback: onContextMenuItemSetLabel, preserveSelectionAfter: true });
-
-    if (unhighlightedCount)
-       items.push({ $rows: $rows, id: 'setHighlight', icon: '/images/highlight.png', label: 'Highlight', callback: onContextMenuItemSetHighlight, preserveSelectionAfter: true });
-
-    if (highlightedCount)
-        items.push({ $rows: $rows, id: 'clearHighlight', icon: '/images/clear_highlight.png', label: 'Clear highlight', callback: onContextMenuItemClearHighlight, preserveSelectionAfter: true });
-
-    if (unpinnedCount)
-        items.push({ $rows: $pages, id: 'pinPage', icon: '/images/pinned.png', label: 'Pin tab', callback: onContextMenuItemPinPages, preserveSelectionAfter: true });
-
-    if (pinnedCount)
-        items.push({ $rows: $pages, id: 'unpinPage', icon: '/images/unpin.png', label: 'Unpin tab', callback: onContextMenuItemUnpinPages, preserveSelectionAfter: true });
+    items.push({ separator: true });
 
     if ($pages.length > 0)
         items.push({ $rows: $rows, id: 'copyUrl', icon: '/images/copy_url.png', label: 'Copy URL', callback: onContextMenuItemCopyURL, preserveSelectionAfter: true });
 
+    if (bg.loggingEnabled)
+        items.push({ $rows: $rows, id: 'copyId', icon: '/images/copy_url.png', label: 'Copy ID', callback: onContextMenuItemCopyId, preserveSelectionAfter: true });
+
+
     items.push({ separator: true });
 
-    items.push({ $rows: $rows, id: 'moveToNewFolder', icon: '/images/folder.png', label: 'Put in new folder', callback: onContextMenuItemMoveToNewFolder, preserveSelectionAfter: true });
-
-    items.push({ separator: true });
-
-    if (awakeCount)
-       items.push({ $rows: $rows, id: 'reloadPage', icon: '/images/reload.png', label: 'Reload tab', callback: onContextMenuItemReload, preserveSelectionAfter: true });
-
-    if ($pages.length > 0) {
-        items.push({ $rows: $rows, id: 'closePage', icon: '/images/close.png', label: 'Close tab', callback: onContextMenuItemClosePages });
-    }
-    else {
-        items.push({ $rows: $rows, id: 'closeFolder', icon: '/images/close_branch.png', label: 'Remove folder', callback: onContextMenuItemCloseBranches });
-    }
-
-    if ($rows.length != $branches.length || $descendants.length > 0) {
-        items.push({ separator: true });
-    }
-
-    if ($descendants.length > 0) {
-        var $subrows = $descendants.find('.ftRowNode');
-        if ($subrows.length > 0) {
-            items.push({ $rows: $rows, id: 'flattenBranch', icon: '/images/text_indent_remove.png', label: 'Flatten branch', callback: onContextMenuItemFlattenBranch, preserveSelectionAfter: true });
-        }
-        items.push({ $rows: $rows, id: 'promoteChildren', icon: '/images/text_indent_promote.png', label: 'Promote children', callback: onContextMenuItemPromoteChildren, preserveSelectionAfter: true });
-    }
-
-    if ($rows.length != $branches.length) {
-        items.push({ $rows: $rows, id: 'closeBranch', icon: '/images/close_branch.png', label: 'Close branch', callback: onContextMenuItemCloseBranches });
-    }
+    items.push({ $rows: $rows, id: 'removeRow', icon: '/images/close.png', label: 'Permanently remove selected', callback: onContextMenuItemRemoveRows });
 
     return items;
+}
+
+function onContextMenuItemRestoreRows($rows) {
+    $rows.each(function(i, e) {
+        restoreRow($(e));
+    });
+    focusPagesPaneAfterRestoringPage();
+}
+
+function onContextMenuItemRemoveRows($rows) {
+    $rows.each(function(i, e) {
+        removeRow($(e));
+    });
 }
 
 function onContextMenuItemCloseWindow($rows) {
@@ -671,7 +599,7 @@ function onContextMenuItemCloseWindow($rows) {
 }
 
 function onContextMenuItemClosePages($rows) {
-    $rows.each(function(i, e) { closeRow($(e)); });
+    $rows.each(function(i, e) { removeRow($(e)); });
 }
 
 function onContextMenuItemCloseBranches($rows) {
@@ -685,161 +613,7 @@ function onContextMenuItemCloseBranches($rows) {
         return;
     }
 
-    $rows.add($children).each(function(i, e) { closeRow($(e)); });
-}
-
-function onContextMenuItemWakeWindow($rows) {
-    bg.tree.awakenWindow($rows.first().attr('id'));
-}
-
-function onContextMenuItemHibernateWindow($rows) {
-    bg.tree.hibernateWindow($rows.first().attr('id'));
-}
-
-function onContextMenuItemHibernatePages($rows) {
-    togglePageRowsHibernated($rows, -1);
-}
-
-function onContextMenuItemWakePages($rows) {
-    togglePageRowsHibernated($rows, 1);
-}
-
-function onContextMenuItemReload($rows) {
-    $rows.each(function(i, e) {
-        var $e = $(e);
-        if ($e.attr('rowtype') != 'page' || $e.attr('hibernated') == 'true') {
-            return;
-        }
-        var chromeId = getChromeId($e);
-        chrome.tabs.executeScript(chromeId, { code: "window.location.reload();" });
-    });
-}
-
-function onContextMenuItemSetLabel($rows) {
-    setRowLabels($rows);
-}
-
-function onContextMenuItemSetHighlight($rows) {
-    $rows.each(function(i, e) { setRowHighlight($(e), 1); });
-}
-
-function onContextMenuItemClearHighlight($rows) {
-    $rows.each(function(i, e) { setRowHighlight($(e), -1); });
-}
-
-function onContextMenuItemCopyURL($rows) {
-    var urls = $rows.map(function(i, e) {
-        var $e = $(e);
-        if ($e.attr('rowtype') != 'page') {
-            return;
-        }
-        return $(e).attr('url');
-    });
-
-    copyTextToClipboard(urls.toArray().join('\n') + '\n');
-
-    ft.resetDragDropState(function() {
-        alert(urls.length + ' URL(s) copied to clipboard.');
-    });
-}
-
-function onContextMenuItemMoveToNewFolder($rows) {
-    var $branchesChildren = $rows.not('.ftCollapsed').find('.ftRowNode').not($rows).not(function() {
-        return $(this).parents('.ftCollapsed').length != 0;
-    });
-
-    if ($branchesChildren.length > 0 && confirm('Move entire branches of selected rows into new folder?\nPress Cancel to move just the selected rows.') ) {
-        $rows = $rows.add($branchesChildren);
-    }
-
-    var newFolderLabel;
-
-    // Guess at a new folder label if a majority of the pages have the same domain excluding subdomain and TLD
-    var domains = $rows.map(function(i, e) {
-        var $e = $(e);
-        var url = $e.attr('url');
-        if (url) {
-            try {
-                return splitUrl(url).domain.replace('www.', '').split('.')[0];
-            }
-            catch(ex) {
-                return undefined;
-            }
-        }
-    });
-    var guess = mostFrequent(domains);
-    if (guess.count >= domains.length / 2 && guess.val) {
-        newFolderLabel = guess.val;
-    }
-    else {
-        newFolderLabel = getMessage('text_NewFolder');
-    }
-
-    var label = prompt(getMessage('prompt_setNewFolderName'), newFolderLabel);
-
-    if (!label) {
-        // user cancelled or entered no label
-        return;
-    }
-
-    var folder = new bg.FolderNode(label);
-
-    // TODO implement .addNodeRel
-    bg.tree.addNode(folder);
-    bg.tree.moveNodeRel(folder, 'before', $rows.first().attr('id'));
-
-    ft.moveRowSetAnimate($rows, 'append', ft.getRow(folder.id), function(moves) {
-        onRowsMoved(moves);
-    });
-}
-
-function onContextMenuItemFlattenBranch($rows) {
-    var $subrows = $rows.find('.ftRowNode');
-    $rows = $rows.add($subrows);
-
-    // var threshold = settings.get('multiSelectActionConfirmThreshold');
-    // if (threshold > 0 && $subrows.length >= threshold && !confirm('Flatten ' + $subrows.length + ' rows?') ) {
-    //     return;
-    // }
-
-    flattenRows($rows, 'prepend', false);
-}
-
-function onContextMenuItemPromoteChildren($rows) {
-    var $children = $rows.children('.ftChildren').children();
-
-    // var threshold = settings.get('multiSelectActionConfirmThreshold');
-    // if (threshold > 0 && $children.length >= threshold && !confirm('Promote ' + $children.length + ' rows to parent tree depth?') ) {
-    //     return;
-    // }
-
-    flattenRows($rows.add($children), 'after', true);
-}
-
-function flattenRows($rows, relation, keepChildren) {
-    for (var i = $rows.length; i >= 0; i--) {
-        var $row = $($rows[i]);
-        var $parents = $row.parents();
-        var $matching = $parents.filter($rows);
-        if ($matching.length > 0) {
-            var $target = $($matching[$matching.length - 1]);
-            bg.tree.moveNodeRel($row.attr('id'), relation, $target.attr('id'), keepChildren);
-        }
-    }
-    ft.formatLineageTitles($rows);
-}
-
-
-function onContextMenuItemUnpinPages($rows) {
-    $rows
-        .filter(function(i, e) { $e = $(e); return $e.attr('pinned') == 'true'; })
-        .each(function(i, e) { setPageRowPinnedState($(e), false); });
-}
-
-function onContextMenuItemPinPages($rows) {
-    $rows
-        .filter(function(i, e) { $e = $(e); return $e.attr('pinned') == 'false'; })
-        .each(function(i, e) { setPageRowPinnedState($(e), true); });
+    $rows.add($children).each(function(i, e) { removeRow($(e)); });
 }
 
 
@@ -892,7 +666,7 @@ function onFolderRowCloseButton(evt) {
         }
 
         $rows.each(function(i, e) {
-            closeRow($(e));
+            removeRow($(e));
         });
     });
 }
@@ -908,10 +682,24 @@ function onPageRowClick(evt) {
 
 function onPageRowDoubleClick(evt) {
     restoreRow(evt.data.row);
+    focusPagesPaneAfterRestoringPage();
+}
+
+function focusPagesPaneAfterRestoringPage() {
+    if (settings.get('focusPagesPaneAfterRestoringPage') || true) {
+        try {
+            // focus pages pane via iframe-parent
+            window.parent.manager.showSidebarPane('pages');
+        }
+        catch (ex) {
+            // we ignore errors which occur when pages pane
+            // is currently disnabled by user
+        }
+    }
 }
 
 function restoreRow($row) {
-    // bg.restoreNodeFromRecentlyClosedTree($row.attr('id'));
+    bg.restoreNode($row.attr('id'));
 }
 
 function onPageRowMiddleClick(evt) {
@@ -955,7 +743,7 @@ function onPageRowCloseButton(evt) {
         }
 
         $rows.each(function(i, e) {
-            closeRow($(e));
+            removeRow($(e));
         });
     });
 }
@@ -1024,7 +812,7 @@ function onPageRowFormatTitle(row, itemTextElem) {
 // Row action helper functions
 ///////////////////////////////////////////////////////////
 
-function closeRow($row) {
+function removeRow($row) {
     bg.recentlyClosedTree.removeNode($row.attr('id'));
     bg.recentlyClosedTree.removeZeroChildTopNodes();
 }

@@ -390,6 +390,11 @@ function PageTreeCallbackProxy(methodName, args) {
     if (node && !node.incognito) {
         switch (methodName) {
             case 'add':
+                var existingGhost = ghostTree.getNode(node.id);
+                if (existingGhost) {
+                    break;
+                }
+
                 var ghost = new GhostNode(node.id, node.elemType);
                 try {
                     ghostTree.addNode(ghost, args.parentId, args.beforeSiblingId);
@@ -488,10 +493,10 @@ function RecentlyClosedTreeCallbackProxy(methodName, args) {
     }
 
     if (methodName == 'remove' && !(args.element instanceof HeaderNode)) {
-        try {
+        var ghost = ghostTree.getNode(args.element.id);
+        if (ghost && !ghost.alive) { // don't remove nodes that get removed because they have been restored
             ghostTree.removeNode(args.element.id);
         }
-        catch (ex) {}
     }
 
     var closedWindow = sidebarHandler.sidebarPanes['closed'];
@@ -622,6 +627,123 @@ function addNodeToRecentlyClosedTree(node, addDescendants) {
         });
     }
 }
+
+function restoreNode(closedNodeMatcher, addDescendants) {
+    var closedNode = recentlyClosedTree.getNode(closedNodeMatcher);
+    if (!closedNode) {
+        throw new Error('Could not find requested node to restore in rctree', closedNodeMatcher);
+    }
+    var wakes = 0;
+    var wasHibernated = closedNode.hibernated;
+    closedNode.hibernated = true;
+    restoreNodeFromRecentlyClosedTree(closedNode, addDescendants, function(restoredNode) {
+        if (!wasHibernated) {
+            wakes++;
+            tree.awakenPageNodes([restoredNode], restoredNode.topParent(), wakes == 1);
+        }
+        recentlyClosedTree.removeNode(closedNode);
+        recentlyClosedTree.removeZeroChildTopNodes();
+    });
+}
+
+function restoreNodeFromRecentlyClosedTree(node, addDescendants, onRestored) {
+    var originalChildren = node.children;
+    var ghost = ghostTree.getNode(node.id);
+    if (ghost) {
+        ghostTree.updateNode(ghost, { alive: true });
+    }
+    else {
+        console.warn('Did not find ghost node matching', node.id);
+    }
+
+    if (node instanceof HeaderNode) {
+        // don't restore HeaderNodes to the tree
+    }
+    else {
+        // Clone the node so we don't get weird "shared between trees" behavior
+        var now = Date.now();
+        node = clone(node, ['root', 'parent', 'children']);
+        node.__proto__ = config.PAGETREE_NODE_TYPES[node.elemType].prototype;
+        node.children = [];
+
+        // Find insert position by looking for another living ghost node that
+        // we have a positional relationship to
+        var added = false;
+        if (ghost) {
+            try {
+                var before = firstElem(ghost.beforeSiblings(), function(e) { return e.alive; });
+                if (before) {
+                    before = tree.getNode(before.id);
+                    if (before) {
+                        tree.addNodeRel(node, 'after', before);
+                        added = true;
+                    }
+                }
+
+                if (!added) {
+                    var after = firstElem(ghost.afterSiblings(), function(e) { return e.alive; });
+                    if (after) {
+                        after = tree.getNode(after.id);
+                        if (after) {
+                            tree.addNodeRel(node, 'before', after);
+                            added = true;
+                        }
+                    }
+                }
+
+                if (!added) {
+                    var parent = firstElem(ghost.parents(), function(e) { return e.alive; });
+                    if (parent && !parent.isRoot) {
+                        parent = tree.getNode(parent.id);
+                        if (parent) {
+                            tree.addNodeRel(node, 'append', parent);
+                            added = true;
+                        }
+                    }
+                }
+            }
+            catch (ex) { }
+        }
+
+        if (!added) {
+            // Fallback approach
+            var to = tree.getNode(['chromeId', focusTracker.getFocused()]);
+            if (!to || to.incognito || to.type != 'normal') {
+                to = tree.getNode(function(e) { return e instanceof WindowNode && !e.hibernated && !e.incognito && e.type == 'normal'; });
+                if (!to) {
+                    to = tree.getNode(function(e) { return e instanceof WindowNode && !e.incognito && e.type == 'normal'; });
+                    if (!to) {
+                        throw new Error('Could not find any WindowNode to restore node under');
+                    }
+                }
+            }
+            tree.addNodeRel(node, 'append', to);
+        }
+
+        if (ghost) {
+            log('Restored to tree', node.id, 'addDescendants', addDescendants);
+            // move ghost's dead children to under it
+            ghost.children.forEach(function(e) {
+                if (!e.alive) return;
+                var child = tree.getNode(e.id);
+                if (child) {
+                    tree.moveNodeRel(child, 'append', node, true);
+                }
+            });
+        }
+    }
+
+    if (onRestored) onRestored(node);
+
+    // if requested, also restore all descendant nodes
+    if (addDescendants) {
+        originalChildren.forEach(function(e) {
+            log('Restore children to tree', 'parent', node.id, 'doing child', e.id);
+            restoreNodeFromRecentlyClosedTree(e, true, onRestored);
+        });
+    }
+}
+
 
 function getOrCreateTopCollectingHeaderNode() {
     var header = recentlyClosedTree.root.children[0];
