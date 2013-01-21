@@ -226,11 +226,11 @@ function receivePageEvent(eventElement) {
 // Injects scripts into the page's context to do media state monitoring
 function setUpMediaMonitors() {
     injectPageScriptSendEventFn();
+
     injectYouTubeMonitoring();
+    injectVimeoMonitoring();
     injectPageScript(jwPlayerEmbedScript);
-    if (document.querySelector('iframe[src*="player.vimeo."]')) {
-        injectPageScript(vimeoPlayerEmbedScript);
-    }
+
     if (document.querySelector('video')) {
         injectPageScript(html5VideoScript);
     }
@@ -238,10 +238,10 @@ function setUpMediaMonitors() {
 
 // Do youtube page/embed monitoring if we detect any suitable existing youtube player
 function injectYouTubeMonitoring() {
-    var onYoutube = document.location.href.match(/https?:\/\/.+?youtube\..+?\//) !== null;
-    var iframes = document.querySelectorAll('iframe[src*="youtube."]');
+    var onYoutube = document.location.href.match(/https?:\/\/.*?youtube\..+?\//) !== null;
+    var hasIframes = document.querySelector('iframe[src*="youtube."]') !== null;
 
-    if (!onYoutube && iframes.length == 0) {
+    if (!onYoutube && !hasIframes) {
         return;
     }
 
@@ -252,7 +252,7 @@ function injectYouTubeMonitoring() {
         // return;
     }
 
-    injectPageScript(youTubeEmbedScript);
+    injectPageScript(youTubePlayerEmbedScript);
 }
 
 // Common code for youtube player monitoring
@@ -260,8 +260,7 @@ function youTubeCommonScript() {
     clearTimeout(window.sidewise_missedOnYoutubePlayerReadyTimer);
     clearInterval(window.sidewise_onVideoPlayingIntervalTimer);
 
-    window.sidewise_onPlayerStateChange = function(event) {
-        console.log('CHANGE', event);
+    window.sidewise_onYouTubePlayerStateChange = function(event) {
         var player, state;
         if (typeof(event) == 'number') {
             // fired from youtube.com page player
@@ -274,7 +273,6 @@ function youTubeCommonScript() {
             state = event.data;
         }
 
-        console.log('onPlayerStateChange', state);
         if (state == 1) {
             // Report current time value periodically during playback
             if (!window.sidewise_onVideoPlayingIntervalTimer) {
@@ -308,12 +306,12 @@ function youTubePageScript() {
             window.sidewise_missedOnYouTubePlayerReadyTimer = setTimeout(window.onYouTubePlayerReady, 5000);
             return;
         }
-        window.sidewise_ytplayer.addEventListener('onStateChange', 'sidewise_onPlayerStateChange');
+        window.sidewise_ytplayer.addEventListener('onStateChange', 'sidewise_onYouTubePlayerStateChange');
     };
 }
 
 // Monitor youtube players embedded on non-youtube.com sites
-function youTubeEmbedScript() {
+function youTubePlayerEmbedScript() {
     window.getFrameId = function(id){
         var elem = document.getElementById(id);
         if (elem) {
@@ -394,7 +392,7 @@ function youTubeEmbedScript() {
             if (frameId) { //If the frame exists
                 players[frameId] = new YT.Player(frameId, {
                     events: {
-                        "onStateChange": sidewise_onPlayerStateChange
+                        "onStateChange": sidewise_onYouTubePlayerStateChange
                     }
                 });
             }
@@ -437,7 +435,54 @@ function jwPlayerEmbedScript() {
     window.sidewise_onJwPlayerCheckInterval = setInterval(window.sidewise_onJwPlayerCheck, 500);
 }
 
-// Monitor vimeo players
+// Do vimeo page/embed monitoring if we detect any suitable existing vimeo player
+var vimeoPageCheckInterval = null;
+function injectVimeoMonitoring() {
+    if (document.location.href.match(/https?:\/\/.*?vimeo\..+?\//)) {
+        clearInterval(vimeoPageCheckInterval);
+        vimeoPageCheckInterval = setInterval(function() {
+            if (!document.querySelector('object[type*=flash][data*=moogaloop]')) {
+                return;
+            }
+            clearInterval(vimeoPageCheckInterval);
+            injectPageScript(vimeoPageScript);
+        }, 1000);
+
+        // don't check for more than the first 20s after page load
+        setTimeout(function() { clearInterval(vimeoPageCheckInterval); }, 20000);
+        return;
+    }
+
+    if (document.querySelector('iframe[src*="player.vimeo."]')) {
+        injectPageScript(vimeoPlayerEmbedScript);
+    }
+}
+
+// Monitor vimeo.com players
+function vimeoPageScript() {
+    window.sidewise_vimeoPagePlayers = document.querySelectorAll('object[type*=flash][data*=moogaloop]');
+    if (window.sidewise_vimeoPagePlayers.length == 0) {
+        return;
+    }
+
+    window.sidewise_onVimeoPagePause = function() {
+        window.sidewise_sendMediaUpdateEvent('paused', 0);
+    };
+
+    window.sidewise_onVimeoPageProgress = function(time) {
+        window.sidewise_sendMediaUpdateEvent('playing', time);
+    };
+
+    setTimeout(function() {
+        for (var i = 0; i < window.sidewise_vimeoPagePlayers.length; i++) {
+            var player = window.sidewise_vimeoPagePlayers[i];
+            player.api_addEventListener('onProgress', 'sidewise_onVimeoPageProgress');
+            player.api_addEventListener('onPause', 'sidewise_onVimeoPagePause');
+        }
+    }, 2000); // gives the flash object time to ready the api
+}
+
+// Monitor vimeo embedded players on non-vimeo.com sites
 function vimeoPlayerEmbedScript() {
     // Find all viable vimeo iframes
     window.sidewise_vimeoIframes = document.querySelectorAll('iframe[src*="player.vimeo."]');
