@@ -464,13 +464,16 @@ function vimeoPageScript() {
     if (window.sidewise_vimeoPagePlayers.length == 0) {
         return;
     }
-
     window.sidewise_onVimeoPagePause = function() {
         window.sidewise_sendMediaUpdateEvent('paused', 0);
     };
 
-    window.sidewise_onVimeoPageProgress = function(time) {
-        window.sidewise_sendMediaUpdateEvent('playing', time);
+    window.sidewise_onVimeoPageProgress = function(data) {
+        if (typeof(data) == 'number') {
+            window.sidewise_sendMediaUpdateEvent('playing', data);
+            return;
+        }
+        window.sidewise_sendMediaUpdateEvent('playing', data.seconds);
     };
 
     setTimeout(function() {
