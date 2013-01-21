@@ -231,6 +231,9 @@ function setUpMediaMonitors() {
     if (document.querySelector('iframe[src*="player.vimeo."]')) {
         injectPageScript(vimeoPlayerEmbedScript);
     }
+    if (document.querySelector('video')) {
+        injectPageScript(html5VideoScript);
+    }
 }
 
 // Do youtube page/embed monitoring if we detect any suitable existing youtube player
@@ -776,6 +779,26 @@ function vimeoPlayerEmbedScript() {
     }
 }
 
+// Monitor html5 <video> players
+function html5VideoScript() {
+    // Find all viable vimeo iframes
+    window.sidewise_html5videos = document.querySelectorAll('video');
+    if (window.sidewise_html5videos.length == 0) {
+        return;
+    }
+
+    window.sidewise_onHtml5VideoProgress = function(evt) {
+        var video = evt.target;
+        console.log('hit', video.playing, video.currentTime);
+        window.sidewise_sendMediaUpdateEvent(video.paused ? 'paused' : 'playing', video.currentTime);
+    };
+
+    for (var i = 0; i < window.sidewise_html5videos.length; i++) {
+        var video = window.sidewise_html5videos[i];
+        console.log('addEv', video);
+        video.addEventListener('progress', window.sidewise_onHtml5VideoProgress);
+    };
+}
 
 ///////////////////////////////////////////////////////////
 // Logging
