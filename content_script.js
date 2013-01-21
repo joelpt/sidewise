@@ -210,7 +210,7 @@ function receivePageEvent(eventElement) {
             chrome.extension.sendRequest({
                 op: 'updateMediaState',
                 state: MEDIA_PLAYER_STATE_ALIASES[parts[0]] || parts[0],
-                time: parts[1]
+                time: parseFloat(parts[1])
             });
             break;
         default:
@@ -363,8 +363,8 @@ function youTubePlayerEmbedScript() {
     };
 
     // Find all viable youtube iframes
-    window.sidewise_youtubeIframes = document.querySelectorAll('iframe[src*="youtube."]');
-    if (window.sidewise_youtubeIframes.length == 0) {
+    var iframes = document.querySelectorAll('iframe[src*="youtube."]');
+    if (iframes.length == 0) {
         return;
     }
 
@@ -382,8 +382,8 @@ function youTubePlayerEmbedScript() {
     // to all iframe-embedded youtube players found on the page
     // TODO look within iframes for other iframes too, e.g. for /r/videos
     sidewise_onYouTubeIframesReady(function(){
-        for (var i = 0; i < window.sidewise_youtubeIframes.length; i++) {
-            var iframe = window.sidewise_youtubeIframes[i];
+        for (var i = 0; i < iframes.length; i++) {
+            var iframe = iframes[i];
             if (!iframe.id) {
                 // make sure the iframe has an id so we can work with it
                 iframe.id = Math.random().toString(26).slice(2);
@@ -460,8 +460,8 @@ function injectVimeoMonitoring() {
 
 // Monitor vimeo.com players
 function vimeoPageScript() {
-    window.sidewise_vimeoPagePlayers = document.querySelectorAll('object[type*=flash][data*=moogaloop]');
-    if (window.sidewise_vimeoPagePlayers.length == 0) {
+    var players = document.querySelectorAll('object[type*=flash][data*=moogaloop]');
+    if (players.length == 0) {
         return;
     }
     window.sidewise_onVimeoPagePause = function() {
@@ -477,8 +477,8 @@ function vimeoPageScript() {
     };
 
     setTimeout(function() {
-        for (var i = 0; i < window.sidewise_vimeoPagePlayers.length; i++) {
-            var player = window.sidewise_vimeoPagePlayers[i];
+        for (var i = 0; i < players.length; i++) {
+            var player = players[i];
             player.api_addEventListener('onProgress', 'sidewise_onVimeoPageProgress');
             player.api_addEventListener('onPause', 'sidewise_onVimeoPagePause');
         }
@@ -488,8 +488,8 @@ function vimeoPageScript() {
 // Monitor vimeo embedded players on non-vimeo.com sites
 function vimeoPlayerEmbedScript() {
     // Find all viable vimeo iframes
-    window.sidewise_vimeoIframes = document.querySelectorAll('iframe[src*="player.vimeo."]');
-    if (window.sidewise_vimeoIframes.length == 0) {
+    var iframes = document.querySelectorAll('iframe[src*="player.vimeo."]');
+    if (iframes.length == 0) {
         return;
     }
 
@@ -801,8 +801,8 @@ function vimeoPlayerEmbedScript() {
     };
 
     // wire up each vimeo-embed iframe using Froogaloop
-    for (var i = 0; i < window.sidewise_vimeoIframes.length; i++) {
-        var iframe = window.sidewise_vimeoIframes[i];
+    for (var i = 0; i < iframes.length; i++) {
+        var iframe = iframes[i];
 
         // make sure the iframe has an id so we can work with it
         if (!iframe.id) {

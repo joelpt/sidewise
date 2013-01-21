@@ -177,8 +177,8 @@ function onPageRowFormatTitle(row, itemTextElem) {
     if (settings.get('pages_showMediaPlayTime')) {
         var mediaState = row.attr('media-state');
         if (mediaState == 'playing') {
-            var mediaTime = parseInt(row.attr('media-time'));
-            if (mediaTime > 0) {
+            var mediaTime = parseFloat(row.attr('media-time'));
+            if (mediaTime >= 0.1) {
                 textAffix = formatSecondsAsHMS(mediaTime);
             }
         }
