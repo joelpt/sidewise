@@ -796,7 +796,9 @@ function html5VideoScript() {
     for (var i = 0; i < window.sidewise_html5videos.length; i++) {
         var video = window.sidewise_html5videos[i];
         console.log('addEv', video);
+        video.addEventListener('playing', window.sidewise_onHtml5VideoProgress);
         video.addEventListener('progress', window.sidewise_onHtml5VideoProgress);
+        video.addEventListener('pause', window.sidewise_onHtml5VideoProgress);
     };
 }
 
