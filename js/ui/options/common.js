@@ -228,7 +228,7 @@ function onSettingModified(evt) {
     if (saveOneSetting(target)) {
         $target.removeClass('invalid');
         showStatusMessage(getMessage('optionsSuccessSavingSetting'));
-        settings.updateStateFromSettings();
+        settings.updateStateFromSettings($target.attr('id'));
         setCloudPlayState();
         $.fx.off = !settings.get('animationEnabled');
         return;

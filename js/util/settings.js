@@ -156,7 +156,7 @@ Settings.prototype = {
     // Setting-related helpers
     ///////////////////////////////////////////////////////////
 
-    updateStateFromSettings: function() {
+    updateStateFromSettings: function(changedSetting) {
         var bg = chrome.extension.getBackgroundPage();
         var sh = bg.sidebarHandler;
 
@@ -196,7 +196,10 @@ Settings.prototype = {
                             clickOnHoverDelayMs = this.get('pages_clickOnHoverDelayMs');
                         }
                         domWindow.ft.clickOnHoverDelayMs = clickOnHoverDelayMs;
-                        domWindow.ft.formatAllRowTitles.call(domWindow.ft);
+
+                        if (changedSetting == 'pages_trimPageTitlePrefixes' && k == 'pages') {
+                            domWindow.ft.formatAllRowTitles.call(domWindow.ft);
+                        }
                     }
                     catch(ex) {}
 
