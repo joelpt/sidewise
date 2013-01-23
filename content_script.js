@@ -239,9 +239,9 @@ function setUpMediaMonitors() {
 // Do youtube page/embed monitoring if we detect any suitable existing youtube player
 function injectYouTubeMonitoring() {
     var onYoutube = document.location.href.match(/https?:\/\/.*?youtube\..+?\//) !== null;
-    var hasIframes = document.querySelector('iframe[src*="youtube."]') !== null;
+    var hasEmbeds = document.querySelector('iframe[src*="youtube."],embed[src*="youtube."]') !== null;
 
-    if (!onYoutube && !hasIframes) {
+    if (!onYoutube && !hasEmbeds) {
         return;
     }
 
@@ -249,10 +249,12 @@ function injectYouTubeMonitoring() {
 
     if (onYoutube) {
         injectPageScript(youTubePageScript);
-        // return;
+        return;
     }
 
-    injectPageScript(youTubePlayerEmbedScript);
+    // Wait a bit before injecting Youtube embedded player page script to allow for the host
+    // page to potentially load embeds during or after onDOMContentLoaded
+    setTimeout(function() { injectPageScript(youTubePlayerEmbedScript); }, 4000);
 }
 
 // Common code for youtube player monitoring
@@ -260,11 +262,11 @@ function youTubeCommonScript() {
     clearTimeout(window.sidewise_missedOnYoutubePlayerReadyTimer);
     clearInterval(window.sidewise_onVideoPlayingIntervalTimer);
 
-    window.sidewise_onYouTubePlayerStateChange = function(event) {
+    window.sidewise_onYouTubePlayerStateChange = function(event, fromPlayer) {
         var player, state;
         if (typeof(event) == 'number') {
             // fired from youtube.com page player
-            player = window.sidewise_ytplayer;
+            player = fromPlayer || window.sidewise_ytplayer;
             state = event;
         }
         else {
@@ -364,7 +366,8 @@ function youTubePlayerEmbedScript() {
 
     // Find all viable youtube iframes
     var iframes = document.querySelectorAll('iframe[src*="youtube."]');
-    if (iframes.length == 0) {
+    var embeds = document.querySelectorAll('embed[src*="youtube."]');
+    if (iframes.length == 0 && embeds.length == 0) {
         return;
     }
 
@@ -378,10 +381,20 @@ function youTubePlayerEmbedScript() {
 
     var players = {};
 
+    // Returns a function that we can use an an onStateChange handler
+    // in YT.Player.events (below); we do this because YT.Player does
+    // not tell the event handler which player triggered the event so
+    // we need to pass the player argument in manually
+    var getStateChangeDelegate = function(player) {
+        return function(state) {
+            window.sidewise_onYouTubePlayerStateChange(state, player);
+        };
+    };
+
     // Executed when the API is ready to add onStateChange listeners
     // to all iframe-embedded youtube players found on the page
     // TODO look within iframes for other iframes too, e.g. for /r/videos
-    sidewise_onYouTubeIframesReady(function(){
+    sidewise_onYouTubeIframesReady(function() {
         for (var i = 0; i < iframes.length; i++) {
             var iframe = iframes[i];
             if (!iframe.id) {
@@ -396,6 +409,17 @@ function youTubePlayerEmbedScript() {
                     }
                 });
             }
+        }
+        for (var i = 0; i < embeds.length; i++) {
+            var embed = embeds[i];
+            if (!embed.id) {
+                // make sure the iframe has an id so we can work with it
+                embed.id = Math.random().toString(26).slice(2);
+            }
+            // create a new function to handle this specific player's onStateChange events
+            var funcName = 'sidewise_onYouTubePlayerStateChange_' + embed.id;
+            window[funcName] = getStateChangeDelegate(embed);
+            embeds[i].addEventListener('onStateChange', funcName);
         }
         return;
     });
@@ -819,7 +843,6 @@ function vimeoPlayerEmbedScript() {
         }
         if (iframe.src != newSrc) {
             iframe.src = newSrc;
-            console.log('updated src', iframe.src);
         }
 
         // wire it up
@@ -837,13 +860,11 @@ function html5VideoScript() {
 
     window.sidewise_onHtml5VideoProgress = function(evt) {
         var video = evt.target;
-        console.log('hit', video.playing, video.currentTime);
         window.sidewise_sendMediaUpdateEvent(video.paused ? 'paused' : 'playing', video.currentTime);
     };
 
     for (var i = 0; i < window.sidewise_html5videos.length; i++) {
         var video = window.sidewise_html5videos[i];
-        console.log('addEv', video);
         video.addEventListener('playing', window.sidewise_onHtml5VideoProgress);
         video.addEventListener('progress', window.sidewise_onHtml5VideoProgress);
         video.addEventListener('pause', window.sidewise_onHtml5VideoProgress);
