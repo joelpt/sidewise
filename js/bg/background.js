@@ -800,8 +800,8 @@ function moveReopenedNode(openNode, closedNode, onRestored) {
     tree.removeNode(openNode);
 
     // Refocus closedNode if openNode was focused
-    if (tree.focusedTabId == closedNode.chromeId) {
-        tree.focusPage(tree.focusedTabId);
+    if (tree.focusedTabId == closedNodeClone.chromeId) {
+        tree.focusPage(closedNodeClone.chromeId);
     }
 
     setTimeout(function() {
@@ -813,7 +813,7 @@ function moveReopenedNode(openNode, closedNode, onRestored) {
 
         // Remove empty HeaderNodes from rctree
         recentlyClosedTree.removeZeroChildTopNodes();
-    }, 100);
+    }, 0);
 
     log('Reopened to tree', closedNodeClone.id);
 
