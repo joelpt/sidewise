@@ -61,7 +61,7 @@ DataTree.prototype = {
             var index = this.indexes[matcher[0]];
             if (!index) {
                 // no index for the requested key so just scan the tree for a match
-                return this.getNodeStep(this.getKeyMatcherFn(matcher[0], matcher[1]));
+                return this.getNodeStep(this.getKeyMatcherFn(matcher[0], matcher[1]), this.root.children);
             }
             var r = index[matcher[1]];
             if (!r) {
@@ -76,7 +76,7 @@ DataTree.prototype = {
         }
 
         if (matcher instanceof Function) {
-            return this.getNodeStep(matcher, this.tree);
+            return this.getNodeStep(matcher, this.root.children);
         }
 
         console.error('Bad matcher type:', typeof(matcher));
