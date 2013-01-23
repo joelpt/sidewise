@@ -208,7 +208,7 @@ function onGetPageDetailsMessage(tab, msg) {
             break;
 
         case 'associate_existing':
-            associateExistingToRestorablePageNode(tab, msg.referrer, msg.historylength);
+            associateExistingToRestorablePageNode(tab, msg.referrer, msg.historylength, msg.sessionGuid);
             break;
 
         case 'find_parent':

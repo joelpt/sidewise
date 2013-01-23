@@ -283,12 +283,21 @@ function tryAssociateExistingToRestorablePageNode(existingPage) {
     delete associationGetDetailsRetryList[tabId];
 }
 
-function associateExistingToRestorablePageNode(tab, referrer, historylength) {
+function associateExistingToRestorablePageNode(tab, referrer, historylength, sessionGuid) {
     var tabId = tab.id;
     var existingPage = tree.getNode(['chromeId', tabId]);
 
     log('associating existing to restorable', 'tabId', tabId, 'existing', existingPage, 'referrer', referrer,
         'historylength', historylength);
+
+    // try restoring by sessionGuid match vs. rctree first
+    if (sessionGuid) {
+        var rcNode = recentlyClosedTree.getNode(['sessionGuid', sessionGuid]);
+        if (rcNode) {
+            moveReopenedNode(existingPage, rcNode);
+            return;
+        }
+    }
 
     var match = findPageNodeForAssociation({
         mustBeHibernated: true,

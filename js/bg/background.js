@@ -646,6 +646,37 @@ function restoreNode(closedNodeMatcher, addDescendants) {
     });
 }
 
+// Find insert position by looking for another ghost node that
+// ghostNode has a positional relationship to in ghost tree;
+// any matched ghost node's alive bool must equal the alive arg
+function findInsertPositionByGhostNode(ghostNode, alive, destinationTree) {
+    var before = firstElem(ghostNode.beforeSiblings(), function(e) { return e.ghostType != 'window' && e.alive == alive; });
+    if (before) {
+        var to = destinationTree.getNode(before.id);
+        if (to) {
+            return { relation: 'after', to: to };
+        }
+    }
+
+    var after = firstElem(ghostNode.afterSiblings(), function(e) { return e.ghostType != 'window' && e.alive == alive; });
+    if (after) {
+        var to = destinationTree.getNode(after.id);
+        if (to) {
+            return { relation: 'before', to: to };
+        }
+    }
+
+    var parent = firstElem(ghostNode.parents(), function(e) { return e.ghostType != 'window' && e.alive == alive; });
+    if (parent) {
+        var to = destinationTree.getNode(parent.id);
+        if (to) {
+            return { relation: 'append', to: to };
+        }
+    }
+
+    return undefined;
+}
+
 function restoreNodeFromRecentlyClosedTree(node, addDescendants, onRestored) {
     var originalChildren = node.children;
     var ghost = ghostTree.getNode(node.id);
@@ -656,53 +687,20 @@ function restoreNodeFromRecentlyClosedTree(node, addDescendants, onRestored) {
         console.warn('Did not find ghost node matching', node.id);
     }
 
-    if (node instanceof HeaderNode) {
-        // don't restore HeaderNodes to the tree
-    }
-    else {
+    if (!(node instanceof HeaderNode)) {
         // Clone the node so we don't get weird "shared between trees" behavior
-        var now = Date.now();
         node = clone(node, ['root', 'parent', 'children']);
         node.__proto__ = config.PAGETREE_NODE_TYPES[node.elemType].prototype;
         node.children = [];
 
-        // Find insert position by looking for another living ghost node that
-        // we have a positional relationship to
+        var insertPosition;
         var added = false;
         if (ghost) {
-            try {
-                var before = firstElem(ghost.beforeSiblings(), function(e) { return e.alive; });
-                if (before) {
-                    before = tree.getNode(before.id);
-                    if (before) {
-                        tree.addNodeRel(node, 'after', before);
-                        added = true;
-                    }
-                }
-
-                if (!added) {
-                    var after = firstElem(ghost.afterSiblings(), function(e) { return e.alive; });
-                    if (after) {
-                        after = tree.getNode(after.id);
-                        if (after) {
-                            tree.addNodeRel(node, 'before', after);
-                            added = true;
-                        }
-                    }
-                }
-
-                if (!added) {
-                    var parent = firstElem(ghost.parents(), function(e) { return e.alive; });
-                    if (parent && !parent.isRoot) {
-                        parent = tree.getNode(parent.id);
-                        if (parent) {
-                            tree.addNodeRel(node, 'append', parent);
-                            added = true;
-                        }
-                    }
-                }
+            insertPosition = findInsertPositionByGhostNode(ghost, true, tree);
+            if (insertPosition) {
+                tree.addNodeRel(node, insertPosition.relation, insertPosition.to);
+                added = true;
             }
-            catch (ex) { }
         }
 
         if (!added) {
@@ -720,16 +718,10 @@ function restoreNodeFromRecentlyClosedTree(node, addDescendants, onRestored) {
             tree.addNodeRel(node, 'append', to);
         }
 
+        log('Restored to tree', node.id, 'addDescendants', addDescendants);
+
         if (ghost) {
-            log('Restored to tree', node.id, 'addDescendants', addDescendants);
-            // move ghost's dead children to under it
-            ghost.children.forEach(function(e) {
-                if (!e.alive) return;
-                var child = tree.getNode(e.id);
-                if (child) {
-                    tree.moveNodeRel(child, 'append', node, true);
-                }
-            });
+            restoreTreeChildrenToPreviousParentByGhost(ghost, node);
         }
     }
 
@@ -742,6 +734,94 @@ function restoreNodeFromRecentlyClosedTree(node, addDescendants, onRestored) {
             restoreNodeFromRecentlyClosedTree(e, true, onRestored);
         });
     }
+}
+
+function restoreTreeChildrenToPreviousParentByGhost(ghostNode, parentNode) {
+    // move ghost's dead children to under it
+    for (var i = ghostNode.children.length - 1; i >= 0; i--) {
+        var ghostChild = ghostNode.children[i];
+        if (!ghostChild.alive) {
+            continue;
+        }
+
+        var child = tree.getNode(ghostChild.id);
+        if (child) {
+            tree.moveNodeRel(child, 'append', parentNode, true);
+        }
+    }
+}
+
+// Replace openNode (found in tree) with closedNode (found in rctree) within tree,
+// also changing the resultant node's position in the tree based on closedNode's
+// position in the ghost tree if possible
+function moveReopenedNode(openNode, closedNode, onRestored) {
+    log(openNode.id, closedNode.id);
+    var ghost = ghostTree.getNode(closedNode.id);
+    if (ghost) {
+        ghostTree.updateNode(ghost, { alive: true });
+    }
+    else {
+        console.warn('Did not find ghost node matching', closedNode.id);
+    }
+
+    // Clone the node so we don't get weird "shared between trees" behavior
+    var closedNodeClone = clone(closedNode, ['root', 'parent', 'children']);
+    closedNodeClone.__proto__ = config.PAGETREE_NODE_TYPES[closedNode.elemType].prototype;
+    closedNodeClone.children = [];
+
+    var added = false;
+    if (ghost) {
+        var insertPosition = findInsertPositionByGhostNode(ghost, true, tree);
+        if (insertPosition) {
+            log('Reopen to ghost position', closedNode.id, insertPosition.relation, insertPosition.to.id);
+            tree.addNodeRel(closedNodeClone, insertPosition.relation, insertPosition.to);
+            added = true;
+        }
+    }
+
+    if (!added) {
+        // Did not find relative insert position via ghost tree association
+        // Put our closedNode in the same position as openNode in the tree
+        log('Reopen to existing open-node position', closedNode.id, 'before', openNode.id);
+        tree.addNodeRel(closedNodeClone, 'before', openNode);
+    }
+
+    // Migrate Chrome values to closedNode and ensure it's awake
+    tree.updateNode(closedNodeClone, {
+        chromeId: openNode.chromeId,
+        windowId: openNode.windowId,
+        pinned: openNode.pinned,
+        hibernated: false,
+        restorable: false,
+        restored: true
+    });
+
+    // Remove openNode now that closedNode has been added to tree in best position
+    tree.removeNode(openNode);
+
+    // Refocus closedNode if openNode was focused
+    if (tree.focusedTabId == closedNode.chromeId) {
+        tree.focusPage(tree.focusedTabId);
+    }
+
+    setTimeout(function() {
+        // Remove original closed node from rctree
+        recentlyClosedTree.removeNode(closedNode.id);
+
+        // Remove open node from rctree too
+        recentlyClosedTree.removeNode(openNode.id);
+
+        // Remove empty HeaderNodes from rctree
+        recentlyClosedTree.removeZeroChildTopNodes();
+    }, 100);
+
+    log('Reopened to tree', closedNodeClone.id);
+
+    if (ghost) {
+        restoreTreeChildrenToPreviousParentByGhost(ghost, closedNodeClone);
+    }
+
+    if (onRestored) onRestored(closedNodeClone);
 }
 
 
