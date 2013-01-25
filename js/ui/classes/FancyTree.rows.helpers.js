@@ -69,6 +69,13 @@ FancyTree.prototype.formatLineageTitles = function($rows) {
     this.formatRowTitle($rows.parents('.ftRowNode').add($rows));
 };
 
-FancyTree.prototype.formatAllRowTitles = function() {
-    this.formatRowTitle(this.root.find('.ftRowNode'));
+// Format all row titles
+// @param matcher Function() When defined, only rows for which this returns true
+//                are formatted; use $(this) in the function to reference a $row
+FancyTree.prototype.formatAllRowTitles = function(matcher) {
+    var $rows = this.root.find('.ftRowNode');
+    if (matcher) {
+        $rows = $rows.filter(matcher);
+    }
+    this.formatRowTitle($rows);
 };
