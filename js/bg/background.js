@@ -432,7 +432,8 @@ function PageTreeCallbackProxy(methodName, args) {
         return;
     }
 
-    if (methodName == 'remove') {
+    // add removed nodes to recently closed tree, excluding incognito, empty-url, and chrome*://* tabs
+    if (methodName == 'remove' && !node.incognito && node.url && !node.url.match(/^chrome/)) {
         addNodeToRecentlyClosedTree(node, args.removeChildren);
         recentlyClosedTree.removeZeroChildTopNodes();
     }
@@ -545,7 +546,7 @@ function addNodeToRecentlyClosedTree(node, addDescendants) {
             recentlyClosedTree.updateNode(first, { collecting: false });
         }
     }
-    else {
+    else if (!recentlyClosedTree.getNode(node.id)) { // as long as a node with this id isn't already in rctree...
         // Clone the node so we don't get weird "shared between trees" behavior
         var now = Date.now();
         node = clone(node, ['root', 'parent', 'children']);
