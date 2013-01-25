@@ -356,42 +356,38 @@ function onTabRemoved(tabId, removeInfo, denyTabSwap)
         && sidebarHandler.sidebarExists()
         && tabId == tree.focusedTabId)
     {
-        var nextTabId;
-        if (page.smartFocusParentTabId) {
-            nextTabId = page.smartFocusParentTabId;
-        }
-        else {
-            nextTabId = findNextTabToFocus(page.id, settings.get('smartFocusPrefersCousins'));
-            if (nextTabId) {
-                nextTabId = parseInt(nextTabId.slice(1));
-            }
-        }
+        var nextNode = findNextTabToFocus(page, settings.get('smartFocusPrefersCousins'));
 
         // if we found a next tab to show per our own logic, switch to it
-        if (nextTabId) {
-            log('Smart focus setting selected tab to ' + nextTabId);
-            expectingSmartFocusTabId = nextTabId;
+        if (nextNode) {
+            expectingSmartFocusTabId = nextNode.chromeId;
             TimeoutManager.reset('resetExpectingSmartFocusTabId', function() {
                 expectingSmartFocusTabId = null;
             }, 500);
             try {
-                chrome.tabs.update(nextTabId, { active: true }, function(tab) {
+                chrome.tabs.update(nextNode.chromeId, { active: true }, function(tab) {
                     expectingSmartFocusTabId = null;
                     TimeoutManager.clear('resetExpectingSmartFocusTabId');
                     if (!tab) {
                         // an error occurred while trying to smart focus, most likely
                         // the tab we tried to focus was removed, so let Chrome decide
+                        log('Smart focus tab no longer exists, letting Chrome decide');
                         focusCurrentTabInPageTree(true);
+                        return;
                     }
+                    log('Smart focused tab ' + tab.id);
                 });
             }
             catch (ex) {
-                log('Smart focus tab no longer exists, letting Chrome decide', nextTabId);
+                log('Smart focus tab no longer exists, letting Chrome decide', nextNode.chromeId);
                 expectingSmartFocusTabId = null;
                 TimeoutManager.clear('resetExpectingSmartFocusTabId');
             }
         }
-        // else, nothing suitable was found; we'll just let Chrome decide
+        else {
+            // else, nothing suitable was found; we'll just let Chrome decide
+            log('Smart focus found nothing suitable, letting Chrome decide');
+        }
     }
 
     if (page.hibernated) {
@@ -415,10 +411,9 @@ function onTabRemoved(tabId, removeInfo, denyTabSwap)
     }
 }
 
-function findNextTabToFocus(nextToNodeId, preferCousins) {
+function findNextTabToFocus(node, preferCousins) {
         // identify the next tab we would like to navigate to
-        var node = tree.getNode(nextToNodeId);
-        var id;
+        var nextNode;
 
         var topParent = node.topParent();
         if (topParent instanceof WindowNode && topParent.children.length <= 1) {
@@ -429,21 +424,21 @@ function findNextTabToFocus(nextToNodeId, preferCousins) {
 
         // first valid descendant
         for (var i = 0; i < node.children.length; i++) {
-            var id = testNodeForFocus(node.children[i], true);
-            if (id) return id;
+            nextNode = testNodeForFocus(node.children[i], true);
+            if (nextNode) return nextNode;
         }
 
         // next valid sibling or sibling-descendant
         var afters = node.afterSiblings();
         for (var i = 0; i < afters.length; i++) {
-            var id = testNodeForFocus(afters[i], true);
-            if (id) return id;
+            nextNode = testNodeForFocus(afters[i], true);
+            if (nextNode) return nextNode;
         }
 
         // use nearest preceding node unless it is at parent or higher level
         var preceding = node.preceding(function(e) { return e.isTab() });
         if (preceding && node.parents().indexOf(preceding) == -1) {
-            return preceding.id;
+            return preceding;
         }
 
         // parent, when node is only child of parent and
@@ -458,7 +453,7 @@ function findNextTabToFocus(nextToNodeId, preferCousins) {
             if ((nodeTabId == tree.focusedTabId && parentTabId == tree.lastFocusedTabId)
                 || (nodeTabId == tree.lastFocusedTabId && parentTabId == tree.focusedTabId))
             {
-                return node.parent.id;
+                return node.parent;
             }
         }
 
@@ -466,26 +461,26 @@ function findNextTabToFocus(nextToNodeId, preferCousins) {
         if (preferCousins) {
             for (var i = node.parent.siblingIndex() + 1; i < node.parent.siblings().length; i++) {
                 if (node.parent.siblings()[i].children.length > 0) {
-                    var id = testNodeForFocus(node.parent.siblings()[i].children[0], true);
-                    if (id) return id;
+                    nextNode = testNodeForFocus(node.parent.siblings()[i].children[0], true);
+                    if (nextNode) return nextNode;
                 }
             }
         }
 
         // use parent
         if (settings.get('smartFocusPrefersParent') && node.parent.isTab()) {
-            return node.parent.id;
+            return node.parent;
         }
 
         // use nearest following node within the same top level node (window)
         var following = node.following(function(e) { return e.isTab(); }, node.topParent());
         if (following) {
-            return following.id;
+            return following;
         }
 
         // use nearest preceding node including ancestors
         if (preceding) {
-            return preceding.id;
+            return preceding;
         }
 
         // nothing suitable found
