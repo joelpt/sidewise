@@ -2,9 +2,9 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-// wait this long between 'update all page row titles' intervals;
-// this is done to keep offset times shown reasonably accurate
-var REFORMAT_ALL_ROW_TITLES_INTERVAL_MS = 50000;
+var REFORMAT_ALL_ROW_TITLES_1H_INTERVAL_MS = SECOND_MS * 45;    // update row titles <1h old this often
+var REFORMAT_ALL_ROW_TITLES_1D_INTERVAL_MS = MINUTE_MS * 45;    // update row titles <1d old this often
+var REFORMAT_ALL_ROW_TITLES_OLDER_INTERVAL_MS = HOUR_MS * 12;   // update row titles older than 1d this often
 
 
 ///////////////////////////////////////////////////////////
@@ -13,11 +13,38 @@ var REFORMAT_ALL_ROW_TITLES_INTERVAL_MS = 50000;
 
 $(document).ready(function() {
     initPageTree(bg.recentlyClosedTree, 'closed', createFancyTree);
-    setInterval(function() {
-        if (ft.filtering) return;
-        ft.formatAllRowTitles();
-    }, REFORMAT_ALL_ROW_TITLES_INTERVAL_MS);
+    initRowTitleUpdater();
 });
+
+function initRowTitleUpdater() {
+    // formats all row titles whose removedAt value is between minAge and maxAge
+    var _update = function(minAge, maxAge) {
+        if (ft.filtering) {
+            return;
+        }
+
+        var now = Date.now();
+        ft.formatAllRowTitles(function() {
+            var removedAt = parseInt($(this).attr('removedAt'));
+            if (!removedAt) {
+                return false;
+            }
+            var age = now - removedAt;
+            if (minAge != null && age <= minAge) {
+                return false;
+            }
+            if (maxAge != null && age > maxAge) {
+                return false;
+            }
+            return true;
+        });
+    };
+
+    // schedule tiered title updating based on age of pages
+    setInterval(function() { _update(0, HOUR_MS); }, REFORMAT_ALL_ROW_TITLES_1H_INTERVAL_MS);
+    setInterval(function() { _update(HOUR_MS, DAY_MS); }, REFORMAT_ALL_ROW_TITLES_1D_INTERVAL_MS);
+    setInterval(function() { _update(DAY_MS, null); }, REFORMAT_ALL_ROW_TITLES_OLDER_INTERVAL_MS);
+}
 
 function createFancyTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree) {
     var rowTypes = {
