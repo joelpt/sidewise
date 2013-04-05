@@ -22,32 +22,39 @@ FancyTree.prototype.onFilterBoxModified = function(evt) {
     var treeObj = evt.data.treeObj;
     treeObj.handleHideTooltipEvent(evt);
 
+    clearTimeout(treeObj.applyFilterTimer);
+    treeObj.applyFilterTimer = setTimeout(function() {
+        treeObj.applyFilter.call(evt.data.treeObj, filter);
+    }, 100);
+};
+
+FancyTree.prototype.applyFilter = function(filter) {
     // remove char highlighting effects
-    treeObj.root.find('.ftFilteredIn > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText')
+    this.root.find('.ftFilteredIn > .ftItemRow > .ftItemRowContent > .ftInnerRow > .ftItemText')
         .children().each(function(i, e) {
             var $e = $(e);
             $e.text($e.text());
         });
 
     // reset which rows are filtered
-    treeObj.root.find('.ftFilteredIn').removeClass('ftFilteredIn');
+    this.root.find('.ftFilteredIn').removeClass('ftFilteredIn');
 
     if (filter.length == 0)
     {
-        treeObj.filtering = false;
+        this.filtering = false;
 
         // remove filtering class
-        treeObj.root.removeClass('ftFiltering');
+        this.root.removeClass('ftFiltering');
 
         // hide filter status message
-        treeObj.filterStatusElem.hide();
+        this.filterStatusElem.hide();
     }
     else
     {
-        treeObj.filtering = true;
+        this.filtering = true;
 
         // filter out non matching entries
-        var advancedFilter = treeObj.useAdvancedFiltering;
+        var advancedFilter = this.useAdvancedFiltering;
         var escapedFilter = filter.replace('"', '\\"'); // escape embedded double quotes
         if (advancedFilter) {
             filter = filter.replace(/ /g, '');
@@ -60,18 +67,18 @@ FancyTree.prototype.onFilterBoxModified = function(evt) {
             var selector = '.ftItemText:regexicontains("' + regexFilter + '")';
         }
 
-        var matches = treeObj.root.find(selector).closest('.ftRowNode');
+        var matches = this.root.find(selector).closest('.ftRowNode');
 
         // highlight matched letters in row's visible text
-        treeObj.highlightMatches.call(treeObj, matches, filter, words, advancedFilter);
+        this.highlightMatches.call(this, matches, filter, words, advancedFilter);
 
         // filter by additional per-rowType parameter filters
-        for (var rowType in treeObj.rowTypes) {
-            var extraParams = treeObj.rowTypes[rowType].filterByExtraParams;
+        for (var rowType in this.rowTypes) {
+            var extraParams = this.rowTypes[rowType].filterByExtraParams;
             if (extraParams && extraParams.length > 0) {
                 for (var i in extraParams) {
                     var selector = '.ftRowNode[' + extraParams[i] + '*="' + escapedFilter + '"]';
-                    matches = matches.add(treeObj.root.find(selector));
+                    matches = matches.add(this.root.find(selector));
                 }
             }
         }
@@ -80,10 +87,10 @@ FancyTree.prototype.onFilterBoxModified = function(evt) {
         matches.each(function(i, e) { $(e).addClass('ftFilteredIn'); });
 
         // apply filtering css styling which will filter out unmatched rows
-        treeObj.root.addClass('ftFiltering');
+        this.root.addClass('ftFiltering');
 
         // show filter status message
-        treeObj.filterStatusElem.show();
+        this.filterStatusElem.show();
 
     }
 };
