@@ -433,7 +433,11 @@ function PageTreeCallbackProxy(methodName, args) {
     }
 
     // add removed nodes to recently closed tree, excluding incognito, empty-url, and chrome*://* tabs
-    if (methodName == 'remove' && !node.incognito && node.url && !node.url.match(/^chrome/)) {
+    if (methodName == 'remove' && !node.incognito && (
+            !(node instanceof PageNode)
+            || (node.url && !node.url.match(/^chrome/))
+        )
+    ) {
         addNodeToRecentlyClosedTree(node, args.removeChildren);
         recentlyClosedTree.removeZeroChildTopNodes();
     }
