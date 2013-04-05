@@ -144,10 +144,12 @@ function onCommitted(details)
     }
 
     if (details.transitionQualifiers.indexOf('from_address_bar') > -1 || details.transitionType == 'auto_bookmark') {
-        // stick pages which were created via address bar alt+enter or middle
-        // clicking bookmark buttons under their parent window, rather than
-        // potentially beneath the page which the user was viewing at the time
-        // of tab-creation.
+        // for pages which were created via address bar alt+enter or middle
+        // clicking bookmark buttons under their parent window, ensure these
+        // are not nested
+        if (page.parent instanceof WindowNode) {
+            return;
+        }
         var winNode = tree.getNode(['chromeId', page.windowId]);
         if (!winNode) {
             throw new Error('Could not find WindowNode to put page under that was opened via url bar alt-enter');
