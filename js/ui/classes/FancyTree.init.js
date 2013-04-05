@@ -195,6 +195,7 @@ FancyTree.prototype.init = function(treeReplaceElem, filterBoxReplaceElem, optio
     // configure tooltip stuff
     this.tooltipTopOffset = options.tooltipTopOffset || 20;
     this.tooltip = null;
+    this.usingFastTooltip = false;
     this.simpletip = $('<div id="ftSimpleTip"/>').hide();
     $('body').append(this.simpletip);
     this.tooltipShowTimer = null;

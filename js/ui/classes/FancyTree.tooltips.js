@@ -13,6 +13,17 @@ FancyTree.prototype.startTooltipTimer =  function(row, evt, afterDelay) {
         clearTimeout(this.tooltipShowTimer);
     }
 
+    var delay;
+    if (afterDelay) {
+        delay = afterDelay;
+    }
+    else if (this.usingFastTooltip) {
+        delay = ROW_TOOLTIP_SHOW_DELAY_FAST_MS;
+    }
+    else {
+        delay = ROW_TOOLTIP_SHOW_DELAY_MS;
+    }
+
     var self = this;
     this.tooltipShowTimer = setTimeout(function() {
         // obtain and pass bodyWidth here due to some oddness where within showTooltip,
@@ -20,7 +31,8 @@ FancyTree.prototype.startTooltipTimer =  function(row, evt, afterDelay) {
         // the FancyTree object was created, even if window has since been resized
         var bodyWidth = document.body.clientWidth;
         self.showTooltip.call(self, row, bodyWidth, evt);
-    }, (afterDelay >= 0 ? afterDelay : ROW_TOOLTIP_SHOW_DELAY_MS));
+        self.usingFastTooltip = true;
+    }, delay);
 };
 
 FancyTree.prototype.handleHideTooltipEvent =  function(evt) {

@@ -33,6 +33,7 @@ FancyTree.prototype.onBodyMouseUp = function(evt) {
 
 FancyTree.prototype.onBodyMouseLeave = function(evt) {
     evt.data.treeObj.hideTooltip.call(evt.data.treeObj);
+    evt.data.treeObj.usingFastTooltip = false;
 };
 
 FancyTree.prototype.onBodyMouseWheel = function(evt) {

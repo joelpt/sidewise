@@ -4,6 +4,8 @@
 ///////////////////////////////////////////////////////////
 
 FancyTree.prototype.rowMouseDownHandler = function(evt) {
+    evt.data.treeObj.usingFastTooltip = false;
+
     if (evt.data.onMiddleClick && evt.which == 2) {
         // middle click
         return false; // eat middle click event to avoid the autoscroll cursor
