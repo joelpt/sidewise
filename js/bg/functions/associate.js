@@ -356,7 +356,7 @@ function rectifyAssociations(delay) {
                                     swapPageNodesByIndex();
                                     tree.conformAllChromeTabIndexes(true);          // conform chrome's tab order to match the tree's order
                                     tree.conformAllChromeTabIndexes(false);         // conform chrome's tab order to match the tree's order again after standard delay
-                                    removeOldWindows();                            // get rid of old 'Last Session' windows
+                                    //removeOldWindows();                            // get rid of old 'Last Session' windows
 
 									// make a backup if we don't have one yet
                                     var backup = settings.get('backupPageTree', []);
