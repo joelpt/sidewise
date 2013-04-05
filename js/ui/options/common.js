@@ -285,7 +285,7 @@ function initPaneGrid() {
     $picker.parents("div.ui-jqgrid-view").children("div.ui-jqgrid-hdiv").remove();
 
     // populate grid with panes data
-    var panes = bg.paneCatalog.panes.map(function(e) {
+    var panes = bg.paneCatalog.items.map(function(e) {
         return {
             paneid: e.id,
             enabled: e.enabled,

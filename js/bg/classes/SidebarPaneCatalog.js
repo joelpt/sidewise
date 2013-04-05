@@ -1,22 +1,15 @@
 var SidebarPaneCatalog = function() {
-    this.panes = config.AVAILABLE_PANES;
+    this.$base(config.AVAILABLE_PANES);
 };
 
 SidebarPaneCatalog.prototype = {
 
     getPane: function(id) {
-        for (var i = 0; i < this.panes.length; i++) {
-            var pane = this.panes[i];
-            if (pane.id == id) {
-                return pane;
-            }
-        }
-        return undefined;
-        // throw new Error('Could not find pane with specified id ' + id);
+        return this.getItem(id);
     },
 
     getPaneIds: function() {
-        return this.panes.map(function(e) { return e.id; });
+        return this.getIds();
     },
 
     loadState: function() {
@@ -26,7 +19,7 @@ SidebarPaneCatalog.prototype = {
             return;
         }
 
-        this.panes = [];
+        this.items = [];
         var seenPanes = [];
 
         var availPanes = clone(config.AVAILABLE_PANES);
@@ -49,7 +42,7 @@ SidebarPaneCatalog.prototype = {
                 lastEnabledPaneIndex++;
             }
 
-            this.panes.push(pane);
+            this.items.push(pane);
         }
 
         // add panes from the available panes which did not have a known state from settings
@@ -65,55 +58,32 @@ SidebarPaneCatalog.prototype = {
                 // add new default-enabled panes just after last state-enabled pane;
                 // helps prevent us from adding important new panes after "detritus" panes
                 // that the user has not enabled
-                this.panes.splice(lastEnabledPaneIndex + 1, 0, pane);
+                this.items.splice(lastEnabledPaneIndex + 1, 0, pane);
             }
             else {
                 // add new default-disabled panes at the end of the panes
-                this.panes.push(pane);
+                this.items.push(pane);
             }
         }
     },
 
     saveState: function() {
-        var state = [];
-
-        for (var i = 0; i < this.panes.length; i++) {
-            state.push({ id: this.panes[i].id, enabled: this.panes[i].enabled });
-        }
-
-        settings.set('sidebarPanesState', state);
+        return this.$super('saveState')('sidebarPanesState');
     },
 
     addPane: function(id, enabled, url, label, icon) {
         var pane = { id: id, enabled: enabled, url: url, label: label, icon: icon };
-        this.panes.push(pane);
-        return pane;
+        return this.appendItem(pane);
     },
 
     removePane: function(id) {
-        var found = first(this.panes, function(e) { return e.id == id; });
-        if (!found) {
-            throw new Error('Could not find pane to remove with id ' + id);
-        }
-        this.panes.splice(found[0], 1);
+        return this.removeItem(id);
     },
 
     reorderPane: function(id, newIndex) {
-        var index, pane;
-        for (var i = 0; i < this.panes.length; i++) {
-            pane = this.panes[i];
-            if (pane.id == id) {
-                index = i;
-                break;
-            }
-        }
-
-        if (index === undefined) {
-            throw new Error('Could not find pane by id ' + id);
-        }
-        log(index, newIndex);
-        this.panes.splice(index, 1);
-        this.panes.splice(newIndex, 0, pane);
+        return this.reorderItem(id, newIndex);
     }
 
 };
+
+extendClass(SidebarPaneCatalog, Catalog, SidebarPaneCatalog.prototype);

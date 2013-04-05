@@ -16,12 +16,12 @@ function onReady() {
 
     manager = new SidebarNavManager($('ul#sidebarButtons'), $('tr#sidebars'),
         $('table#main'), $('body'), 'td');
-    manager.addSidebarPanes(bg.paneCatalog.panes);
+    manager.addSidebarPanes(bg.paneCatalog.items);
 
     // Set initial sidebar position
     var initialSidebar = settings.get('lastSidebarPaneId');
     if (initialSidebar === undefined || bg.paneCatalog.getPaneIds().indexOf(initialSidebar) == -1) {
-        initialSidebar = bg.paneCatalog.panes[0].id;
+        initialSidebar = bg.paneCatalog.items[0].id;
     }
     manager.showSidebarPane(initialSidebar);
 
