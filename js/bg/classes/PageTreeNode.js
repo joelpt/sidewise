@@ -12,6 +12,7 @@ var PageTreeNode = function()
     this.collapsed = false;
     this.hibernated = false;
     this.restorable = false;
+    this.createdOn = Date.now();
 };
 
 PageTreeNode.prototype = {
