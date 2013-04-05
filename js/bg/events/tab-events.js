@@ -3,7 +3,7 @@
 ///////////////////////////////////////////////////////////
 
 var TAB_REMOVE_SAVE_TREE_DELAY_MS = 3000;
-
+var SMART_FOCUS_DISABLE_FOR_TABS_CREATED_IN_LAST_MS = 8000;
 
 ///////////////////////////////////////////////////////////
 // Globals
@@ -191,6 +191,12 @@ function onTabCreated(tab)
         return;
     }
 
+    if (tree.focusedTabId == tab.id) {
+        // try to counteract late-firing smart focus when we miss a preloading event
+        log('Trying to counteract potential late-firing smart focus');
+        chrome.tabs.update(tab.id, { active: true });
+    }
+
     var winTabs = tree.getWindowTabIndexArray(tab.windowId);
 
     if (!winTabs) {
@@ -209,10 +215,10 @@ function onTabCreated(tab)
         //     tree.addTabToWindow(tab, page);
         //     return;
         // }
+
         var prevByIndex = winTabs[tab.index - 1];
         var nextByIndex = winTabs[tab.index];
-
-        if (prevByIndex && nextByIndex) {
+        if (prevByIndex && nextByIndex) {   // is the tab in the middle of the tab index (not at just one end)?
             if (prevByIndex.chromeId == tree.focusedTabId) {
                 log('Making child of previous by index because previous is also focused tab');
                 tree.addNodeRel(page, 'prepend', prevByIndex);
@@ -225,14 +231,26 @@ function onTabCreated(tab)
             }
         }
 
-        if (!nextByIndex) {
-            log('nextByIndex not found though it should have been; just adding tab to window and scheduling full rebuild');
-            tree.addTabToWindow(tab, page);
-            tree.conformAllChromeTabIndexes(true);
+        if (nextByIndex) {
+            log('No openerTabId and index is in middle of window\'s tabs; inserting before ' + nextByIndex.id, nextByIndex);
+            tree.addNodeRel(page, 'before', nextByIndex);
             return;
         }
-        log('No openerTabId and index is in middle of window\'s tabs; inserting before ' + nextByIndex.id, nextByIndex);
-        tree.addNodeRel(page, 'before', nextByIndex);
+
+        if (prevByIndex) {
+            log('Place after previous by index', prevByIndex.id, prevByIndex);
+            if (prevByIndex.children.length > 0) {
+                tree.addNodeRel(page, 'prepend', prevByIndex);
+            }
+            else {
+                tree.addNodeRel(page, 'after', prevByIndex);
+            }
+            return;
+        }
+
+        log('nextByIndex not found though it should have been; just adding tab to window and scheduling full rebuild');
+        tree.addTabToWindow(tab, page);
+        tree.conformAllChromeTabIndexes(false);
         return;
     }
 
@@ -240,7 +258,7 @@ function onTabCreated(tab)
     if (!opener) {
         log('Could not find node matching openerTabId; just adding tab to window', 'openerTabId', openerTabId);
         tree.addTabToWindow(tab, page);
-        tree.conformAllChromeTabIndexes(true);
+        tree.conformAllChromeTabIndexes(false);
         return;
     }
 
@@ -275,8 +293,26 @@ function onTabCreated(tab)
 
     log('Could not find insert position on tab index basis, resorting to simple parent-append', opener, nextByIndex, precedingByIndex, winTabs);
     tree.addNodeRel(page, 'append', opener);
-    tree.conformAllChromeTabIndexes(true);
+    tree.conformAllChromeTabIndexes(false);
 }
+
+//
+// TODO: probable fix for the smart focus failing issue (if the counteract in ontabcreated does not work <well>),
+//       is to always delay in ontabremoved for 125ms to make sure ontabcreated doesn't fire AFTER us with our replacement?
+//       problem with this is how do we tell in this case that chrome did a tab-swap on us?
+//
+//       could we do something like chrome.tabs.get(current active tab, function() { ... rest of ontabremoved/created ... })
+//       type of thing in order to verify which tab has been made active after a remove/create event? then we hose smart focus
+//       which really needs to be able to ensure we smart-focus the right tab ASAP and negates chrome's choice
+//
+//  POSSIBLE BETTER SOLUTION: can we hook stuff in webRequest that yields the tab.id before that tab fires webNav/tab events?
+//  that is really the only better possibility to catch this "earlier"
+//
+//  well that did not help.
+//
+//  what about refusing to do smart-focus when the tab that is removed was very recently created (last 10 seconds)?
+//  if it is a timing issue this might fix it
+
 
 function onTabRemoved(tabId, removeInfo, denyTabSwap)
 {
@@ -288,22 +324,24 @@ function onTabRemoved(tabId, removeInfo, denyTabSwap)
         // we ignore the sidebar tab
         return;
     }
-    log(tabId, removeInfo);
+    log(tabId, removeInfo, 'denyTabSwap', denyTabSwap || false);
 
     if (expectingNavigationTabIdSwap && !denyTabSwap) {
         if (removeInfo.isWindowClosing) {
             // if a window is closing with this tab removal, a tab swap
             // did not and will not be happening for the removed tab
+            log('Window is closing with this tab removal, so stop expecting a tab swap');
             resetExpectingNavigation();
         }
         else if (expectingNavigationPossibleNewTabIds.indexOf(tabId) >= 0) {
             // the preloaded tab has been removed so cannot be used
             // in future tab swapping
+            log('Expected preload tab has been removed, so stop expecting a tab swap', tabId, 'not in', expectingPossibleNewTabIds);
             resetExpectingNavigation();
             return;
         }
         else {
-            // We think Chrome is about to swap this tab with another tab
+            // We think Chrome is about to swap this tab with another tab,
             // due to preloading a tab in the background and swapping it in
             log('Recording expected navigation old tab id ' + tabId + ' and retriggering onTabRemoved');
             expectingNavigationOldTabId = tabId;
@@ -324,7 +362,7 @@ function onTabRemoved(tabId, removeInfo, denyTabSwap)
                 }
                 // tab was not removed yet so do it now
                 onTabRemoved(tabId, removeInfo, true);
-            }, 25);
+            }, 125);
             return;
         }
     }
@@ -356,37 +394,43 @@ function onTabRemoved(tabId, removeInfo, denyTabSwap)
         && sidebarHandler.sidebarExists()
         && tabId == tree.focusedTabId)
     {
-        var nextNode = findNextTabToFocus(page, settings.get('smartFocusPrefersCousins'));
-
-        // if we found a next tab to show per our own logic, switch to it
-        if (nextNode) {
-            expectingSmartFocusTabId = nextNode.chromeId;
-            TimeoutManager.reset('resetExpectingSmartFocusTabId', function() {
-                expectingSmartFocusTabId = null;
-            }, 500);
-            try {
-                chrome.tabs.update(nextNode.chromeId, { active: true }, function(tab) {
-                    expectingSmartFocusTabId = null;
-                    TimeoutManager.clear('resetExpectingSmartFocusTabId');
-                    if (!tab) {
-                        // an error occurred while trying to smart focus, most likely
-                        // the tab we tried to focus was removed, so let Chrome decide
-                        log('Smart focus tab no longer exists, letting Chrome decide');
-                        focusCurrentTabInPageTree(true);
-                        return;
-                    }
-                    log('Smart focused tab ' + tab.id);
-                });
-            }
-            catch (ex) {
-                log('Smart focus tab no longer exists, letting Chrome decide', nextNode.chromeId);
-                expectingSmartFocusTabId = null;
-                TimeoutManager.clear('resetExpectingSmartFocusTabId');
-            }
+        if (Date.now() - page.createdOn < SMART_FOCUS_DISABLE_FOR_TABS_CREATED_IN_LAST_MS) {
+            log('Smart focus skipped due to removing tab being too recently created', (Date.now() - page.createdOn) / 1000, 'seconds old');
         }
         else {
-            // else, nothing suitable was found; we'll just let Chrome decide
-            log('Smart focus found nothing suitable, letting Chrome decide');
+            var nextNode = findNextTabToFocus(page, settings.get('smartFocusPrefersCousins'));
+
+            // if we found a next tab to show per our own logic, switch to it
+            if (nextNode) {
+                expectingSmartFocusTabId = nextNode.chromeId;
+                TimeoutManager.reset('resetExpectingSmartFocusTabId', function() {
+                    expectingSmartFocusTabId = null;
+                }, 500);
+                try {
+                    log('Smart focus queueing for tab ' + nextNode.chromeId, nextNode.id);
+                    chrome.tabs.update(nextNode.chromeId, { active: true }, function(tab) {
+                        expectingSmartFocusTabId = null;
+                        TimeoutManager.clear('resetExpectingSmartFocusTabId');
+                        if (!tab) {
+                            // an error occurred while trying to smart focus, most likely
+                            // the tab we tried to focus was removed, so let Chrome decide
+                            log('Smart focus tab no longer exists, letting Chrome decide');
+                            focusCurrentTabInPageTree(true);
+                            return;
+                        }
+                        log('Smart focused tab ' + tab.id);
+                    });
+                }
+                catch (ex) {
+                    log('Smart focus tab no longer exists, letting Chrome decide', nextNode.chromeId);
+                    expectingSmartFocusTabId = null;
+                    TimeoutManager.clear('resetExpectingSmartFocusTabId');
+                }
+            }
+            else {
+                // else, nothing suitable was found; we'll just let Chrome decide
+                log('Smart focus found nothing suitable, letting Chrome decide');
+            }
         }
     }
 
@@ -705,7 +749,40 @@ function onTabActivated(activeInfo) {
         }
         expectingSmartFocusTabId = null;
     }
-    tree.focusPage(activeInfo.tabId);
+
+    if (!tree.focusedTabId) {
+        // just focus the page
+        tree.focusPage(activeInfo.tabId);
+        return;
+    }
+
+    // test if we've lost our focused tab; if so we believe we are seeing
+    // a preloaded-tab swap
+    var focused = tree.focusedTabId;
+    chrome.tabs.get(focused, function(tab) {
+        if (tab) {
+            // just focus the page
+            tree.focusPage(activeInfo.tabId);
+            return;
+        }
+
+        // perform tab swap
+        var page = tree.getNode(['chromeId', focused]);
+        if (!page) {
+            // the reportedly focused tab does not exist
+            log('Focused tab does not have a page node to do preload tab swapping against after tab focused', focused, activeInfo);
+            return;
+        }
+
+        log('Swapping in new tab id and url', 'old', focused, 'new', activeInfo.tabId, 'found page node', page);
+        tree.updatePage(page, {
+            chromeId: activeInfo.tabId,
+            windowId: activeInfo.windowId
+        });
+        refreshPageStatus(page);
+        resetExpectingNavigation();
+        return;
+    });
 }
 
 function onTabDetached(tabId, detachInfo) {
