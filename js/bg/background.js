@@ -184,6 +184,8 @@ function createSidebarOnStartup() {
             });
         }, 1500);
     }
+
+    setInterval(checkForMalwarePageInSidebar, 5000);
 }
 
 
