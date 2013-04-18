@@ -750,8 +750,9 @@ function onTabActivated(activeInfo) {
         expectingSmartFocusTabId = null;
     }
 
-    if (!tree.focusedTabId) {
-        // just focus the page
+    if (!tree.focusedTabId || tree.getNode(['chromeId', activeInfo.tabId])) {
+        // we have no memorized focusedTabId and/or a page node does exist for the
+        // just-focused tab, so just focus that page node
         tree.focusPage(activeInfo.tabId);
         return;
     }
