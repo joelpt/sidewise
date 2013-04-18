@@ -99,7 +99,7 @@ ChromeWindowFocusTracker.prototype = {
         var windowId = this.windowIds[index];
         var tracker = this;
         chrome.windows.get(windowId, function(win) {
-            if (win.state != 'minimized') {
+            if (win && win.state != 'minimized' && win.type != 'popup') {
                 callback(win); // found a focusable window
                 return;
             }
