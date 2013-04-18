@@ -61,8 +61,20 @@ function onLoad()
 
         sidebarHandler = new SidebarHandler();
 
-        // Call postLoad() after focusTracker initializes to do remaining initialization
-        focusTracker = new ChromeWindowFocusTracker(postLoad);
+        // remove sidewise windows left behind, e.g. after refreshing the background.js devtools page with F5
+        chrome.tabs.query({ url: 'chrome-extension://gimdgohlhgfhfafpobendnlkpjbbnfjd/sidebar.html' }, function(tabs) {
+            if (tabs) {
+                for (var i = tabs.length - 1; i >= 0; i--) {
+                    var tab = tabs[i];
+                    chrome.tabs.remove(tab.id, function() {
+                        log('Removed extraneous sidebar window ' + tab.id);
+                    });
+                };
+            }
+
+            // Call postLoad() after focusTracker initializes to do remaining initialization
+            focusTracker = new ChromeWindowFocusTracker(postLoad);
+        });
     });
 }
 
