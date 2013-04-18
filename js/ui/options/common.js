@@ -641,8 +641,10 @@ function submitBugReport() {
         '<style>* { font-family: Lucida Console; font-size: 12px; } .stack { font-size: 11px; color: #bbb; }</style>'
         + data;
 
-    $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': data }, function(data, textStatus, jqXHR) {
-        alert('Diagnostic report sent. Thank you for the report.\n\nServer response:\n' + data);
+    $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': data, 'type': 'log' }, function(data, textStatus, jqXHR) {
+        $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': bg.settings.toJSON(), 'type': 'state' }, function(data, textStatus, jqXHR) {
+            alert('Diagnostic report sent. Thank you for the report.\n\nServer response:\n' + data);
+        });
     });
 }
 
