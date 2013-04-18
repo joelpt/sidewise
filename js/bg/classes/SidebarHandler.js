@@ -52,10 +52,12 @@ SidebarHandler.prototype = {
                     focused: false
                 };
                 chrome.windows.create(winSpec, function(win) {
-                    handler.onCreatedSidebarWindow.call(handler, win);
-                    if (onCreated) {
-                        onCreated(win);
-                    }
+                    chrome.windows.update(win.id, { left: winSpec.left, top: winSpec.top }, function() {
+                        handler.onCreatedSidebarWindow.call(handler, win);
+                        if (onCreated) {
+                            onCreated(win);
+                        }
+                    });
                 });
             });
             return;
@@ -111,8 +113,16 @@ SidebarHandler.prototype = {
     },
 
     createDockedToCurrentWin: function() {
-        this.dockWindowId = focusTracker.getFocused();
-        this.create();
+        var self = this;
+        focusTracker.getTopFocusableWindow(function(win) {
+            if (win) {
+                self.dockWindowId = win.id;
+            }
+            else {
+                self.dockWindowId = focusTracker.getFocused();
+            }
+            self.create();
+        });
     },
 
     createWithDockState: function(dockState) {
