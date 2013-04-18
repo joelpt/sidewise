@@ -644,7 +644,7 @@ function removeFromExpectingTabMoves(tabId) {
 }
 
 function onTabActivated(activeInfo) {
-    // log(activeInfo);
+    log(activeInfo);
     if (monitorInfo.isDetecting()) {
         return;
     }
@@ -663,7 +663,41 @@ function onTabActivated(activeInfo) {
         }
         expectingSmartFocusTabId = null;
     }
-    tree.focusPage(activeInfo.tabId);
+
+    if (!tree.focusedTabId) {
+        // just focus the page
+        tree.focusPage(activeInfo.tabId);
+        return;
+    }
+
+    // test if we've lost our focused tab; if so we believe we are seeing
+    // a preloaded-tab swap
+    var focused = tree.focusedTabId;
+    chrome.tabs.get(focused, function(tab) {
+        if (tab) {
+            // just focus the page
+            tree.focusPage(activeInfo.tabId);
+            return;
+        }
+
+        // perform tab swap
+        var page = tree.getPage(focused);
+        if (!page) {
+            // the reportedly focused tab does not exist
+            log('Focused tab does not have a page node to do preload tab swapping against after tab focused', focused, activeInfo);
+            return;
+        }
+
+        log('Swapping in new tab id', 'old', focused, 'new', activeInfo.tabId, 'found page node', page);
+        tree.updateNode(page, {
+            id: 'p' + activeInfo.tabId,
+            windowId: activeInfo.windowId
+        });
+        refreshPageStatus(page);
+        refreshFaviconAndTitle(activeInfo.tabId);
+        resetExpectingNavigation();
+        return;
+    });
 }
 
 function onTabDetached(tabId, detachInfo) {
