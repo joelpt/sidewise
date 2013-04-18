@@ -56,7 +56,6 @@ IconTester.prototype = {
                 e.favicon = 'chrome://favicon';
             });
             savePageTreeToLocalStorage(tree, 'pageTree', true);
-            savePageTreeToLocalStorage(recentlyClosedTree, 'recentlyClosedTree', true);
         }
 
         setTimeout(function() {
@@ -141,13 +140,7 @@ IconTester.prototype = {
                 console.warn('GOT IT', badNode.id, badNode.favicon);
                 badNodes.push(badNode);
             }
-            self.testIconsInTree(recentlyClosedTree, function(badNode) {
-                if (badNode) {
-                    console.warn('RC GOT IT', badNode.id, badNode.favicon);
-                    badNodes.push(badNode);
-                }
-                self.testOnFinished(badNodes);
-            });
+            self.testOnFinished(badNodes);
         });
     },
 
