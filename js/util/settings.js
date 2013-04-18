@@ -61,7 +61,8 @@ Settings.prototype = {
     toJSON: function() {
         return '{' +
             mapObjectProps(this.cache, function(k, v) {
-                return '"' + k + '": ' + JSON.stringify(JSON.stringify(v));
+                var value = localStorage[k];
+                return '"' + k + '": ' + JSON.stringify(value);
             }).join(',') +
             '}';
     },
