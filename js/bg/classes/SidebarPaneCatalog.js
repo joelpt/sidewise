@@ -13,11 +13,7 @@ SidebarPaneCatalog.prototype = {
     },
 
     loadState: function() {
-        var saved = settings.get('sidebarPanesState');
-
-        if (!saved) {
-            return;
-        }
+        var saved = settings.get('sidebarPanesState', []);
 
         this.items = [];
         var seenPanes = [];
@@ -53,17 +49,8 @@ SidebarPaneCatalog.prototype = {
                 // already added
                 continue;
             }
-            // new pane
-            if (pane.enabled) {
-                // add new default-enabled panes just after last state-enabled pane;
-                // helps prevent us from adding important new panes after "detritus" panes
-                // that the user has not enabled
-                this.items.splice(lastEnabledPaneIndex + 1, 0, pane);
-            }
-            else {
-                // add new default-disabled panes at the end of the panes
-                this.items.push(pane);
-            }
+            // add new default panes at the end
+            this.items.push(pane);
         }
     },
 
