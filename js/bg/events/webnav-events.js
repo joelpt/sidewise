@@ -3,9 +3,9 @@
 ///////////////////////////////////////////////////////////
 
 // delays before asking Chrome for favicon again after onComplete
-var ONCOMPLETED_POST_UPDATE_DELAY_MS = 3000;
-var ONCOMPLETED_S2_FAVICON_UPDATE_DELAY_MS = 0;
-var ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS = 10000;
+var REFRESH_FAVICON_DELAYED_MS = 3000;
+var S2_FAVICON_UPDATE_DELAY_MS = 0;
+var CHROME_FAVICON_UPDATE_DELAY_MS = 10000;
 
 
 ///////////////////////////////////////////////////////////
@@ -274,25 +274,33 @@ function onCompleted(details)
         initialCreation: false
     });
 
+    refreshFaviconAndTitle(details.tabId);
+}
+
+function refreshFaviconAndTitle(tabId) {
     // Ask for the latest static favicon and page title
-    chrome.tabs.get(details.tabId, function(tab) {
+    chrome.tabs.get(tabId, function(tab) {
+        if (!tab) {
+            return;
+        }
+
         var url = tab.url ? dropUrlHash(tab.url) : '';
         if (isStaticFavIconUrl(tab.favIconUrl)) {
             // got a static favicon url, use it now
             var favicon = getBestFavIconUrl(tab.favIconUrl, url);
-            tree.updatePage(details.tabId, { favicon: favicon, title: getBestPageTitle(tab.title, tab.url) });
+            tree.updatePage(tabId, { favicon: favicon, title: getBestPageTitle(tab.title, tab.url) });
             return;
         }
 
         // Delay a bit, then ask for the favicon again; if we don't get one we'll try to fall back
         // on the Google S2 or chrome://favicon/URL icon cache
         setTimeout(function() {
-            onCompletedLateUpdateTimeout(details.tabId)
-        }, ONCOMPLETED_POST_UPDATE_DELAY_MS);
+            refreshFaviconTitleLateTimer(tabId)
+        }, REFRESH_FAVICON_DELAYED_MS);
     });
 }
 
-function onCompletedLateUpdateTimeout(tabId) {
+function refreshFaviconTitleLateTimer(tabId) {
     chrome.tabs.get(tabId, function(tab) {
         if (!tab) return;
 
@@ -310,7 +318,7 @@ function onCompletedLateUpdateTimeout(tabId) {
         if (split) {
             var favicon = 'http://www.google.com/s2/favicons?domain=' + split.domain;
             setTimeout(function() { tree.updatePage(tabId, { favicon: favicon, title: title }); },
-                ONCOMPLETED_S2_FAVICON_UPDATE_DELAY_MS);
+                S2_FAVICON_UPDATE_DELAY_MS);
         }
 
         // eventually use chrome://favicon cache which can be slow to populate, but should always
@@ -333,7 +341,7 @@ function onCompletedLateUpdateTimeout(tabId) {
                     return;
                 }
             });
-        }, ONCOMPLETED_CHROME_FAVICON_UPDATE_DELAY_MS);
+        }, CHROME_FAVICON_UPDATE_DELAY_MS);
 
     });
 }
