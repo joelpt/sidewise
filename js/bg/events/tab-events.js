@@ -685,6 +685,7 @@ function onTabActivated(activeInfo) {
         if (!page) {
             // the reportedly focused tab does not exist
             log('Focused tab does not have a page node to do preload tab swapping against after tab focused', focused, activeInfo);
+            tree.focusPage(activeInfo.tabId);
             return;
         }
 
