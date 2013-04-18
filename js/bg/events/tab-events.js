@@ -664,7 +664,7 @@ function onTabActivated(activeInfo) {
         expectingSmartFocusTabId = null;
     }
 
-    if (!tree.focusedTabId) {
+    if (!tree.focusedTabId || tree.getPage(activeInfo.tabId)) {
         // just focus the page
         tree.focusPage(activeInfo.tabId);
         return;
