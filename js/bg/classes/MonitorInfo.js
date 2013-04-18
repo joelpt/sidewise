@@ -106,6 +106,7 @@ MonitorInfo.prototype = {
                 chrome.windows.update(winId, { state: 'maximized' }, function(winAfter) {
                     var topAfter = winAfter.top;
                     self.destroyDetectionWindow.call(self, function() {
+                        log('Detected maximized top-offset before and afters', topBefore, topAfter);
                         self.maximizedOffset = topBefore - topAfter;
                         callback();
                     });
@@ -178,16 +179,18 @@ MonitorInfo.prototype = {
         chrome.windows.create(
             { url: '/detect-monitor.html', type: 'popup', left: left, top: top, width: 500, height: 200 },
             function(win) {
-                setTimeout(function() {
-                    log('Created detection window', win.id);
-                    self.lastDetectionWindowId = win.id;
-                    var views = chrome.extension.getViews();
-                    var domWindow = views.filter(function(e) {
-                        return e.location.pathname == '/detect-monitor.html';
-                    })[0];
-                    self.detectionDOMWindow = domWindow;
-                    callback(win);
-                }, 200);
+                chrome.windows.update(win.id, { left: left, top: top }, function() {
+                    setTimeout(function() {
+                        log('Created detection window', win.id);
+                        self.lastDetectionWindowId = win.id;
+                        var views = chrome.extension.getViews();
+                        var domWindow = views.filter(function(e) {
+                            return e.location.pathname == '/detect-monitor.html';
+                        })[0];
+                        self.detectionDOMWindow = domWindow;
+                        callback(win);
+                    }, 200);
+                });
             }
         );
     },
