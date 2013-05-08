@@ -436,7 +436,13 @@ function jwPlayerEmbedScript() {
         if (!jw) {
             return;
         }
-        var state = jw.getState();
+
+        try {
+            var state = jw.getState();
+        }
+        catch (ex) {
+            return;
+        }
 
         if (!state) {
             return;
