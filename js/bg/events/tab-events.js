@@ -730,7 +730,7 @@ function removeFromExpectingTabMoves(tabId) {
 }
 
 function onTabActivated(activeInfo) {
-    // log(activeInfo);
+    log(activeInfo);
     if (monitorInfo.isDetecting()) {
         return;
     }
@@ -772,6 +772,7 @@ function onTabActivated(activeInfo) {
         if (!page) {
             // the reportedly focused tab does not exist
             log('Focused tab does not have a page node to do preload tab swapping against after tab focused', focused, activeInfo);
+            tree.focusPage(activeInfo.tabId);
             return;
         }
 
@@ -781,6 +782,7 @@ function onTabActivated(activeInfo) {
             windowId: activeInfo.windowId
         });
         refreshPageStatus(page);
+        refreshFaviconAndTitle(activeInfo.tabId);
         resetExpectingNavigation();
         return;
     });
