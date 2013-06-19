@@ -51,6 +51,10 @@ function setUpTitleObserver() {
             receivePageEvent(first.target);
             return;
         }
+        if (first.type == 'childList' && first.addedNodes.length > 0 && first.addedNodes[0].name == 'sidewise_event') {
+            receivePageEvent(first.addedNodes[0]);
+            return;
+        }
         notifySidewise();
     });
     observer.observe(target, { attributes: true, subtree: true, characterData: true, childList: true });
@@ -120,12 +124,12 @@ function sendPageDetails(details) {
 
     var lastDetails = sessionStorage['sidewiseLastDetailsSent'];
     if (lastDetails == detailsJSON) {
-        // log('skipping notify message send because details have not changed from last time they were sent');
+        log('skipping notify message send because details have not changed from last time they were sent');
         return;
     }
     sessionStorage['sidewiseLastDetailsSent'] = detailsJSON;
 
-    // console.log('pushing details via sendRequest', detailsJSON);
+    log('pushing details via sendRequest', detailsJSON);
     chrome.extension.sendRequest(details);
 }
 
@@ -841,11 +845,13 @@ function vimeoPlayerEmbedScript() {
 
         // make sure the iframe.src contains api=1 and player_id=... query parameters
         var newSrc = iframe.src;
+        var sep = (iframe.src.indexOf('?') >= 0 ? '&' : '?');
         if (iframe.src.indexOf(/[\?\&]api=1/) == -1) {
-            newSrc += '&api=1';
+            newSrc += sep + 'api=1';
+            sep = '&';
         }
         if (iframe.src.indexOf(/[\?\&]player_id=/) == -1) {
-            newSrc += '&player_id=' + iframe.id;
+            newSrc += sep + 'player_id=' + iframe.id;
         }
         if (iframe.src != newSrc) {
             iframe.src = newSrc;
