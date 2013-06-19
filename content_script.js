@@ -234,10 +234,7 @@ function setUpMediaMonitors() {
     injectYouTubeMonitoring();
     injectVimeoMonitoring();
     injectPageScript(jwPlayerEmbedScript);
-
-    if (document.querySelector('video')) {
-        injectPageScript(html5VideoScript);
-    }
+    injectPageScript(html5VideoScript);
 }
 
 // Do youtube page/embed monitoring if we detect any suitable existing youtube player
@@ -866,7 +863,13 @@ function vimeoPlayerEmbedScript() {
 function html5VideoScript() {
     // Find all viable vimeo iframes
     window.sidewise_html5videos = document.querySelectorAll('video');
+    // console.log(window.sidewise_html5videos);
     if (window.sidewise_html5videos.length == 0) {
+        if (window.sidewise_html5videosRetried) {
+            return;
+        }
+        window.sidewise_html5videosRetried = true;
+        setTimeout(html5VideoScript, 100);
         return;
     }
 
