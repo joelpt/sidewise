@@ -125,7 +125,8 @@ Settings.prototype = {
             reportUsageStatistics: true,
             multiSelectActionConfirmThreshold: 5,
             showWhatsNewPane: true,
-            lastPromoPageShownDate: null
+            lastPromoPageShownDate: null,
+            focusSidebarOnHover: false
         };
 
         for (var setting in defaultSettings) {
