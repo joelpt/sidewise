@@ -303,6 +303,29 @@ SidebarHandler.prototype = {
         });
     },
 
+    focus: function(onFocused) {
+        if (!this.windowId) {
+            throw new Error('Cannot focus nonexistent sidebar');
+        }
+        chrome.windows.update(this.windowId, { focused: true }, function() {
+            if (onFocused) onFocused();
+        });
+    },
+
+    blur: function(onBlurred) {
+        if (!this.windowId) {
+            log('Cannot blur nonexistent sidebar');
+            return;
+        }
+
+        var self = this;
+        focusTracker.getTopFocusableWindow(function(win) {
+            chrome.windows.update(win.id || self.dockWindowId, { focused: true }, function() {
+                if (onBlurred) onBlurred();
+            });
+        });
+    },
+
     // adjust the window metrics of a window which is maximized
     // (has its edges going off the edge of the screen)
     fixMaximizedWinMetrics: function(win)
