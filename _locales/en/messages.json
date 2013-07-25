@@ -111,6 +111,8 @@
     "option_autoSelectChildrenOnDrag_hint": { "message": "#If enabled, when dragging a single row in a sidebar tree view, Sidewise will also select all its children rows (if any). This makes it easier to drag branches of the tree around. //// Regardless of this option, the following modifier keys can always be used when click-dragging a row: //// * Hold **Ctrl** to drag *only* the hovered row. // * Hold **Shift** to drag the selected rows along with all their children rows."},
         "option_allowAutoUnmaximize": { "message": "Allow Sidewise to unmaximize the dock window" },
     "option_allowAutoUnmaximize_hint": { "message": "!#If enabled, when you maximize the window that the sidebar is docked to, Sidewise will automatically resize the dock window so that both the dock window and its sidebar fit on the screen together.  //// Because this causes the dock window's 'unmaximize' button to become unavailable, Sidewise will restore the dock window to its original dimensions when you close the sidebar. //// Users of dual-monitor setups may prefer to disable this option, in which case Sidewise will just put the sidebar next to the maximized dock window (presumably onto an adjacent monitor)." },
+    "option_focusSidebarOnHover": { "message": "Focus the sidebar on mouse hover" },
+    "option_focusSidebarOnHover_hint": { "message": "#If enabled, Sidewise will automatically focus the sidebar when the mouse hovers over it. This may be especially helpful for Mac OSX users." },
     "option_browserActionButtonBehavior": { "message": "When browser toolbar button is clicked" },
     "option_browserActionButtonBehavior_toggle": { "message": "toggle sidebar on/off" },
     "option_browserActionButtonBehavior_show": { "message": "dock sidebar to window" },

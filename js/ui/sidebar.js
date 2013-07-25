@@ -33,7 +33,8 @@ function onReady() {
 
     $(document)
         .keydown(onDocumentKeyDown)
-        .scroll(onDocumentScroll);
+        .scroll(onDocumentScroll)
+        .mouseover(onDocumentMouseOver);
     $(window).resize(onWindowResize);
 
     $('#optionsButton')
@@ -84,6 +85,13 @@ function onDocumentScroll() {
     // prevent user scrolling of sidebar panes through e.g. drag-selecting some text
     // and moving the mouse off the edge of the sidebar window
     manager.scrollToCurrentSidebarPane(true);
+}
+
+function onDocumentMouseOver() {
+    if (!settings.get('focusSidebarOnHover')) {
+        return;
+    }
+    bg.sidebarHandler.focus();
 }
 
 function onWindowResize() {
