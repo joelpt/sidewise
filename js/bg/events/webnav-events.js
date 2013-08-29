@@ -1,3 +1,5 @@
+"use strict";
+
 ///////////////////////////////////////////////////////////
 // Constants
 ///////////////////////////////////////////////////////////
@@ -47,7 +49,7 @@ function resetExpectingNavigation() {
 
 function onCreatedNavigationTarget(details)
 {
-    if (details.frameId > 0)
+    if (details.frameId > 0 || details.tabId == -1)
     {
         // we don't care about activity occurring within a subframe of a tab
         return;
@@ -128,7 +130,7 @@ function onCreatedNavigationTarget(details)
 
 function onCommitted(details)
 {
-    if (details.frameId > 0)
+    if (details.frameId > 0 || details.tabId == -1)
     {
         return;  // don't care about subframe activity
     }
@@ -198,7 +200,7 @@ function onCommitted(details)
 
 function onBeforeNavigate(details)
 {
-    if (details.frameId > 0) {
+    if (details.frameId > 0 || details.tabId == -1) {
         return;
     }
 
@@ -251,7 +253,7 @@ function onBeforeNavigate(details)
 
 function onCompleted(details)
 {
-    if (details.frameId > 0)
+    if (details.frameId > 0 || details.tabId == -1)
     {
         // we don't care about activity occurring within a subframe of a tab
         return;
