@@ -67,7 +67,7 @@ function setUpTitleObserver() {
 
 // Set up a port to pass messages between Sidewise and this page
 function connectPort() {
-    port = chrome.extension.connect({ name: 'content_script' });
+    port = chrome.runtime.connect({ name: 'content_script' });
     log('connection', port);
 
     port.onMessage.addListener(function(msg) {
@@ -129,8 +129,8 @@ function sendPageDetails(details) {
     }
     sessionStorage['sidewiseLastDetailsSent'] = detailsJSON;
 
-    log('pushing details via sendRequest', detailsJSON);
-    chrome.extension.sendRequest(details);
+    log('pushing details via sendMessage', detailsJSON);
+    chrome.runtime.sendMessage(details);
 }
 
 
@@ -211,7 +211,7 @@ function receivePageEvent(eventElement) {
         case 'updateMediaState':
             var parts = value.split(',');
             // Send an updateMediaState request to the background page
-            chrome.extension.sendRequest({
+            chrome.runtime.sendMessage({
                 op: 'updateMediaState',
                 state: MEDIA_PLAYER_STATE_ALIASES[parts[0]] || parts[0],
                 time: parseFloat(parts[1])

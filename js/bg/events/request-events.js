@@ -1,9 +1,11 @@
+"use strict";
+
 ///////////////////////////////////////////////////////////
 // Constants
 ///////////////////////////////////////////////////////////
 
-var GET_PAGE_DETAILS_SCRIPT = "chrome.extension.sendRequest( { op: 'getPageDetails', referrer: document.referrer, historylength: history.length, title: document.title, action: '<ACTION>' }, function() { console.log('++++++++++++++++++++++'); } );";
-var GET_IS_FULL_SCREEN_SCRIPT = "chrome.extension.sendRequest({ op: 'getIsFullScreen', isFullScreen: document.webkitIsFullScreen });";
+var GET_PAGE_DETAILS_SCRIPT = "chrome.runtime.sendMessage( { op: 'getPageDetails', referrer: document.referrer, historylength: history.length, title: document.title, action: '<ACTION>' }, function() { console.log('++++++++++++++++++++++'); } );";
+var GET_IS_FULL_SCREEN_SCRIPT = "chrome.runtime.sendMessage({ op: 'getIsFullScreen', isFullScreen: document.webkitIsFullScreen });";
 
 
 ///////////////////////////////////////////////////////////
@@ -18,13 +20,19 @@ var connectedTabs = {};
 
 // Registers request event handlers
 function registerRequestEvents() {
-    chrome.extension.onRequest.addListener(onRequest);
-    chrome.extension.onConnect.addListener(onConnectPort);
+    chrome.runtime.onMessage.addListener(onMessage);
+    chrome.runtime.onConnect.addListener(onConnectPort);
 }
 
 
 function onConnectPort(port) {
-    // log('onConnect', port);
+    log('onConnect', port);
+
+    if (!port.sender.tab) {
+        // log('No tab specified to onConnect');
+        return;
+    }
+
     // add port to list of known tab ports
     connectedTabs[port.sender.tab.id] = port;
 
@@ -46,6 +54,11 @@ function onPortMessage(port, msg) {
 
 function onPortDisconnect(port) {
     // log('onPortDisconnect', port);
+
+    if (!port.sender.tab) {
+        // log('No tab specified to onConnect');
+        return;
+    }
 
     // delete entry from known tab ports list
     if (connectedTabs[port.sender.tab.id]) {
@@ -81,11 +94,16 @@ function getPort(tabId) {
 
 
 ///////////////////////////////////////////////////////////
-// onRequest event listener
+// onMessage event listener
 ///////////////////////////////////////////////////////////
 
-function onRequest(request, sender, sendResponse) {
-    // log(request, sender);
+function onMessage(request, sender, sendResponse) {
+    log(request, sender);
+
+    if (!sender.tab) {
+        // log('No tab specified to onMessage');
+        return;
+    }
 
     switch (request.op)
     {
@@ -99,7 +117,7 @@ function onRequest(request, sender, sendResponse) {
             onGetUpdateMediaStateMessage(sender.tab, request);
             break;
         default:
-            throw new Error('Unrecognized onRequest op ' + request.op);
+            throw new Error('Unrecognized onMessage op ' + request.op);
     }
 }
 
