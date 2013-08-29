@@ -1,3 +1,5 @@
+"use strict";
+
 var WINDOW_UPDATE_CHECK_INTERVAL_SLOW_MS = 300;
 var WINDOW_UPDATE_CHECK_INTERVAL_FAST_MS = 150;
 var WINDOW_UPDATE_CHECK_INTERVAL_RATE_RESET_MS = 5000;
@@ -27,7 +29,7 @@ function onWindowCreated(win)
     }
     log(win);
 
-    winElem = new WindowNode(win);
+    var winElem = new WindowNode(win);
     tree.addNode(winElem);
 }
 

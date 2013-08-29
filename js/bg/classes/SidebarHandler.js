@@ -1,3 +1,5 @@
+"use strict";
+
 var SidebarHandler = function()
 {
     // Initialize state
@@ -347,7 +349,7 @@ SidebarHandler.prototype = {
 
         // Monitors to the left of the primary monitor will have negative left values
         // for screen.availLeft and win.left. Determine how much that offset is.
-        primaryLeftOffset = monitors.reduce(
+        var primaryLeftOffset = monitors.reduce(
             function(last, elem) { return (elem.left < 0 ? last - elem.left : last) },
             0);
         log(primaryLeftOffset);

@@ -1,3 +1,5 @@
+"use strict";
+
 ///////////////////////////////////////////////////////////
 // Constants
 ///////////////////////////////////////////////////////////
@@ -360,7 +362,7 @@ PageTree.prototype = {
 
     focusPage: function(tabId)
     {
-        // log(tabId);
+        log(tabId);
 
         var page = this.getNode(['chromeId', tabId]);
 
@@ -383,7 +385,7 @@ PageTree.prototype = {
     // update an existing page with given details
     updatePage: function(tabIdOrElem, details)
     {
-        // log(tabIdOrElem, details);
+        log(tabIdOrElem, details);
 
         if (typeof(tabIdOrElem) == 'number') {
             var page = this.getNode(['chromeId', tabIdOrElem]);
@@ -1036,6 +1038,7 @@ PageTree.prototype = {
         this.tree = this.root.children;
         this.indexes = {'id': {}, 'chromeId': {}};
         this.tabIndexes = {};
+        this.clearChanges();
         this.updateLastModified();
     },
 

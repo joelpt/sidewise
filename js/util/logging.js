@@ -1,3 +1,5 @@
+"use strict";
+
 ///////////////////////////////////////////////////////////
 // Constants
 ///////////////////////////////////////////////////////////
@@ -109,15 +111,15 @@ function writeAndLogToConsole() {
 //   if not, the caller function name is used instead.
 // Object arguments are turned into JSON strings and output if logObjectsAsJSON is true.
 // Call stack data is included in the output.
-function writeDiagnosticLog(arguments, stack) {
+function writeDiagnosticLog(args, stack) {
     if (!loggingEnabled) return;
 
     var messages = [];
     var jsonMessages = [];
     var isBackgroundPage = (window.bg ? false : true);
 
-    for (var i in arguments) {
-        var arg = arguments[i];
+    for (var i in args) {
+        var arg = args[i];
         if (typeof(arg) == 'string' || typeof(arg) == 'number') {
             messages.push(arg);
             if (isBackgroundPage) {
@@ -158,7 +160,7 @@ function writeDiagnosticLog(arguments, stack) {
     var stack = { CallStack: stack || getCallStack() };
     var firstElem = (stack.CallStack[0] + '').toString();
 
-    if (typeof(arguments[0]) == 'string') {
+    if (typeof(args[0]) == 'string') {
         messages.splice(1, 0, '@', firstElem, stack, '\n');
     }
     else {

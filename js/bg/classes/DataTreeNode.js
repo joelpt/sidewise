@@ -1,3 +1,5 @@
+"use strict";
+
 /**
   * @class
   * Barebones node object for use as a node in DataTree.

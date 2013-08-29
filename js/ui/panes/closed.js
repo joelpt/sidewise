@@ -1,3 +1,5 @@
+"use strict";
+
 ///////////////////////////////////////////////////////////
 // Constants
 ///////////////////////////////////////////////////////////
@@ -87,7 +89,7 @@ function createFancyTree(treeReplaceSelector, filterBoxReplaceSelector, pageTree
         clickOnHoverDelayMs = settings.get('pages_clickOnHoverDelayMs');
     }
 
-    fancyTree = new FancyTree($(treeReplaceSelector), $(filterBoxReplaceSelector), {
+    var fancyTree = new FancyTree($(treeReplaceSelector), $(filterBoxReplaceSelector), {
         rowTypes: rowTypes,
         onContextMenuShow: onContextMenuShow,
         onRowsMoved: onRowsMoved,

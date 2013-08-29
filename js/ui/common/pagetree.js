@@ -1,5 +1,6 @@
+"use strict";
+
 // Supports a generic pagetree sidebar pane that contains pages, folders, et al.
-//
 
 ///////////////////////////////////////////////////////////
 // Constants
