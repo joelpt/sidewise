@@ -951,11 +951,17 @@ function onPageRowClick(evt) {
 
         // actually set Chrome's focused tab
         chrome.tabs.update(getChromeId(row), { active: true }, function(tab) {
-            // if the tab's hosting window is currently minimized, un-minimize it
             chrome.windows.get(tab.windowId, function(win) {
+                // if the tab's hosting window is currently minimized, un-minimize it
                 if (win.state == 'minimized') {
                     chrome.windows.update(win.id, { state: 'normal' });
                 }
+
+                // if the tab's hosting window is not focused, focus it now
+                if (!win.focused) {
+                    chrome.windows.update(win.id, { focused: true });
+                }
+
                 if (keepUndockedTop) {
                     // when in undocked mode and keepVisible is set, refocus
                     // the sidebar 'popup'
