@@ -1,3 +1,5 @@
+"use strict";
+
 ///////////////////////////////////////////////////////////
 // Constants
 ///////////////////////////////////////////////////////////
@@ -730,18 +732,22 @@ function removeFromExpectingTabMoves(tabId) {
 }
 
 function onTabActivated(activeInfo) {
-    log(activeInfo);
+    var tabId = activeInfo.tabId;
+    var windowId = activeInfo.windowId;
+    log(tabId, windowId);
+
     if (monitorInfo.isDetecting()) {
         return;
     }
     if (sidebarHandler.creatingSidebar) {
         return;
     }
-    if (sidebarHandler.tabId == activeInfo.tabId) {
+    if (sidebarHandler.tabId == tabId) {
         return;
     }
+
     if (expectingSmartFocusTabId) {
-        if (expectingSmartFocusTabId != activeInfo.tabId) {
+        if (expectingSmartFocusTabId != tabId) {
             // ignore Chrome's choice of focused tab when some tab is removed;
             // we'll set focus to Sidewise's choice when onTabActivated is
             // called again in a moment
@@ -750,10 +756,10 @@ function onTabActivated(activeInfo) {
         expectingSmartFocusTabId = null;
     }
 
-    if (!tree.focusedTabId || tree.getNode(['chromeId', activeInfo.tabId])) {
+    if (!tree.focusedTabId || tree.getNode(['chromeId', tabId])) {
         // we have no memorized focusedTabId and/or a page node does exist for the
         // just-focused tab, so just focus that page node
-        tree.focusPage(activeInfo.tabId);
+        tree.focusPage(tabId);
         return;
     }
 
@@ -763,7 +769,7 @@ function onTabActivated(activeInfo) {
     chrome.tabs.get(focused, function(tab) {
         if (tab) {
             // just focus the page
-            tree.focusPage(activeInfo.tabId);
+            tree.focusPage(tabId);
             return;
         }
 
@@ -772,17 +778,17 @@ function onTabActivated(activeInfo) {
         if (!page) {
             // the reportedly focused tab does not exist
             log('Focused tab does not have a page node to do preload tab swapping against after tab focused', focused, activeInfo);
-            tree.focusPage(activeInfo.tabId);
+            tree.focusPage(tabId);
             return;
         }
 
-        log('Swapping in new tab id and url', 'old', focused, 'new', activeInfo.tabId, 'found page node', page);
+        log('Swapping in new tab id and url', 'old', focused, 'new', tabId, 'found page node', page);
         tree.updatePage(page, {
-            chromeId: activeInfo.tabId,
-            windowId: activeInfo.windowId
+            chromeId: tabId,
+            windowId: windowId
         });
         refreshPageStatus(page);
-        refreshFaviconAndTitle(activeInfo.tabId);
+        refreshFaviconAndTitle(tabId);
         resetExpectingNavigation();
         return;
     });
