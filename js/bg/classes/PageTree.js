@@ -584,7 +584,7 @@ PageTree.prototype = {
                     && !(e.hibernated)
                     && e.children.length == 1
                     && e.children[0].children.length == 0
-                    && e.children[0].url == 'chrome://newtab/'
+                    && isNewTabUrl(e.children[0].url)
                     && !(e.children[0].hibernated);
             });
 
