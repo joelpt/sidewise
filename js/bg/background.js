@@ -311,7 +311,7 @@ function loadPageTreeFromLocalStorage(storedPageTree) {
             // Remove window nodes that have only a single New Tab page row child
             if (node instanceof WindowNode && node.children.length == 1
                 && node.children[0] instanceof PageNode
-                && isNewTab(node.children[0].url)
+                && isNewTabUrl(node.children[0].url)
                 && node.children[0].children.length == 0)
             {
                 toRemove.push(node.children[0]);
