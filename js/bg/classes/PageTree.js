@@ -927,7 +927,7 @@ PageTree.prototype = {
             return;
         }
 
-        if (node.isTab()) {
+        if (node.isTab() && node.chromeId) {
             var topParent = node.topParent();
             if (topParent instanceof WindowNode) {
                 var self = this;
