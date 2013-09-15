@@ -1,3 +1,5 @@
+"use strict";
+
 // ========================================================
 // Tab/window-to-PageTreeNode assocation functions.
 //
@@ -171,7 +173,7 @@ function tryAssociateTab(runInfo, tab, forceNewTabAssociation) {
         return false;
     }
 
-    if (!forceNewTabAssociation && tab.url == 'chrome://newtab/' && tab.index == 0 && !tab.pinned) {
+    if (!forceNewTabAssociation && isNewTabUrl(tab.url) && tab.index == 0 && !tab.pinned) {
         chrome.tabs.query({ windowId: tab.windowId }, function(tabs) {
             if (tabs.length == 1) {
                 // Never associate New Tab pages which are all by themselves in a window;
@@ -190,7 +192,7 @@ function tryAssociateTab(runInfo, tab, forceNewTabAssociation) {
         return true;
     }
 
-    if (tab.url == 'chrome://newtab/') {
+    if (isNewTabUrl(tab.url)) {
         // Only permit trying fast association for New Tab pages to avoid improperly resurrecting
         // Last Session windows when starting Chrome with 'start with New Tab' option set
         tree.addTabToWindow(tab, new PageNode(tab));
