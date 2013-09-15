@@ -105,7 +105,7 @@ function onTabCreated(tab)
         return;
     }
 
-    if (tab.url.indexOf('chrome://newtab') == 0 && !tab.pinned) {
+    if (isNewTabUrl(tab.url) && !tab.pinned) {
         // special handling for New Tabs
         var tabsCount = tree.getWindowIndexedTabsCount(tab.windowId);
         if (tabsCount == tab.index) {
