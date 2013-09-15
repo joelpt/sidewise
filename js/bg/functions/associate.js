@@ -794,7 +794,7 @@ function disambiguatePageNodesByWindowId(iterations) {
     });
     for (var g in groups) {
         var items = groups[g];
-        console.log(g, items);
+        // console.log(g, items);
         if (items.length < 2) {
             continue;
         }
@@ -875,7 +875,7 @@ function swapPageNodesByIndex() {
     });
     for (var g in groups) {
         var items = groups[g];
-        console.log(g, items);
+        // console.log(g, items);
         if (items.length < 2) {
             continue;
         }
