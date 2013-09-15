@@ -111,6 +111,10 @@ function isExtensionUrl(url)
     return url.indexOf('chrome-extension://') == 0;
 }
 
+function isNewTabUrl(url) {
+    return (url.substr(0, 15) === 'chrome://newtab');
+}
+
 function splitUrl(url)
 {
     var r = {};
