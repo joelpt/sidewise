@@ -29,7 +29,7 @@ echo COMPILING JAVASCRIPT
 echo --------------------------------------------------------
 
 if %ERRORLEVEL gt 0 (echo **** ERROR, ABORTING MAKE **** && quit)
-for /[!*min.js] /[!*jquery*] /[!*jqgrid*] /r %x in (*.js) do (set osize=%@FILESIZE[%x] & echo %x & java -jar c:\code\chrome\sidewise\closure-compiler\compiler.jar --js "%x" --js_output_file "%x.compiled" --summary_detail_level 1 && del /q "%x" && move /q "%x.compiled" "%x" && set delta=%@EVAL[%@FILESIZE[%x] / %osize% * 100=1,1] && echo %x [%osize% -^> %@FILESIZE[%x] bytes / %delta%%%])
+for /[!*min.js] /[!*jquery*] /[!*jqgrid*] /[!*.idea*] /r %x in (*.js) do (set osize=%@FILESIZE[%x] & echo %x & java -jar c:\code\chrome\sidewise\closure-compiler\compiler.jar --js "%x" --js_output_file "%x.compiled" --summary_detail_level 1 && del /q "%x" && move /q "%x.compiled" "%x" && set delta=%@EVAL[%@FILESIZE[%x] / %osize% * 100=1,1] && echo %x [%osize% -^> %@FILESIZE[%x] bytes / %delta%%%])
 for /r %x in (*.js.compiled) do del "%x"
 
 echo --------------------------------------------------------
