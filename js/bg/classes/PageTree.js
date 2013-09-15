@@ -1038,7 +1038,6 @@ PageTree.prototype = {
         this.tree = this.root.children;
         this.indexes = {'id': {}, 'chromeId': {}};
         this.tabIndexes = {};
-        this.clearChanges();
         this.updateLastModified();
     },
 
