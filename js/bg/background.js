@@ -1151,6 +1151,7 @@ function showWhatsNewPane() {
 
 // Show promo page once a year in late December
 function showPromoPageAnnually() {
+    return;
     var now = new Date();
     var nowMonth = now.getMonth();
     var nowDay = now.getDate();
