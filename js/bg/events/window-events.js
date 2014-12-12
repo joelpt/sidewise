@@ -23,10 +23,17 @@ function onWindowCreated(win)
         return;
     }
 
+    // Ignore Sidewise-created windows
     if ((win.type == 'popup' && sidebarHandler.creatingSidebar) || monitorInfo.isDetecting())
     {
         return;
     }
+
+    // Ignore all panels and detached-panels, e.g. Hangouts windows
+    if (win.type == 'panel' || win.type == 'detached-panel') {
+        return;
+    }
+
     log(win);
 
     var winElem = new WindowNode(win);
