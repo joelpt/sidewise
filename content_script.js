@@ -239,14 +239,8 @@ function setUpMediaMonitors() {
 function injectYouTubeMonitoring() {
     var onYoutube = document.location.href.match(/https?:\/\/.*?youtube\..+?\//) !== null;
     var hasEmbeds = document.querySelector('iframe[src*="youtube."],embed[src*="youtube."]') !== null;
-    var hasHtml5Video = document.querySelector('video') !== null;
 
     if (!onYoutube && !hasEmbeds) {
-        return;
-    }
-
-    if (onYoutube && hasHtml5Video) {
-        // we'll use the html5 <video> element's reporting mechanism instead
         return;
     }
 
@@ -271,7 +265,7 @@ function youTubeCommonScript() {
         var player, state;
         if (typeof(event) == 'number') {
             // fired from youtube.com page player
-            player = fromPlayer || window.sidewise_ytplayer;
+            player = (fromPlayer instanceof HTMLElement) ? fromPlayer : window.sidewise_ytplayer;
             state = event;
         }
         else {
@@ -865,6 +859,13 @@ function vimeoPlayerEmbedScript() {
 
 // Monitor html5 <video> players
 function html5VideoScript() {
+    var onYoutube = document.location.href.match(/https?:\/\/.*?youtube\..+?\//) !== null;
+
+    if (onYoutube) {
+        // rely on the native youtube monitoring, which is more reliable
+        return;
+    }
+
     // Find all viable vimeo iframes
     window.sidewise_html5videos = document.querySelectorAll('video');
     // console.log(window.sidewise_html5videos);
