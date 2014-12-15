@@ -241,8 +241,14 @@ function setUpMediaMonitors() {
 function injectYouTubeMonitoring() {
     var onYoutube = document.location.href.match(/https?:\/\/.*?youtube\..+?\//) !== null;
     var hasEmbeds = document.querySelector('iframe[src*="youtube."],embed[src*="youtube."]') !== null;
+    var hasHtml5Video = document.querySelector('video') !== null;
 
     if (!onYoutube && !hasEmbeds) {
+        return;
+    }
+
+    if (onYoutube && hasHtml5Video) {
+        // we'll use the html5 <video> element's reporting mechanism instead
         return;
     }
 
