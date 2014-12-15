@@ -11,7 +11,7 @@ var MEDIA_PLAYER_STATE_ALIASES = {  // player state aliases for youtube player a
     '3': 'buffering',
     '5': 'video cued'
 };
-var MIN_WAIT_BETWEEN_NOTIFIES_MS = 20; // don't notify bg page more than this often
+var MINIMUM_WAIT_BETWEEN_NOTIFIES_MS = 20; // don't notify bg page more than this often
 
 
 ///////////////////////////////////////////////////////////
@@ -35,7 +35,18 @@ window.addEventListener('DOMContentLoaded', onDOMContentLoaded);
 function onDOMContentLoaded() {
     log('onDOMContentLoaded');
     setUpTitleObserver();
+    setUpMessageListener();
     setUpMediaMonitors();
+}
+
+// listen for window.postMessage events posted by injected scripts
+function setUpMessageListener() {
+    window.addEventListener('message', function(evt) {
+        if (evt.source != window) {
+            return;
+        }
+        receivePageEvent(evt.data);
+    });
 }
 
 // set up an observer for the title element
@@ -46,15 +57,6 @@ function setUpTitleObserver() {
         return;
     }
     var observer = new window.WebKitMutationObserver(function(mutations) {
-        var first = mutations[0];
-        if (first.type == 'attributes' && first.target.name == 'sidewise_event') {
-            receivePageEvent(first.target);
-            return;
-        }
-        if (first.type == 'childList' && first.addedNodes.length > 0 && first.addedNodes[0].name == 'sidewise_event') {
-            receivePageEvent(first.addedNodes[0]);
-            return;
-        }
         notifySidewise();
     });
     observer.observe(target, { attributes: true, subtree: true, characterData: true, childList: true });
@@ -105,7 +107,7 @@ function notifySidewise() {
     clearTimeout(notifyTimeout);
     notifyTimeout = setTimeout(function() {
         sendPageDetails({ action: 'store' });
-    }, MIN_WAIT_BETWEEN_NOTIFIES_MS);
+    }, MINIMUM_WAIT_BETWEEN_NOTIFIES_MS);
 }
 
 // send a pack of page details to background page
@@ -127,6 +129,7 @@ function sendPageDetails(details) {
         log('skipping notify message send because details have not changed from last time they were sent');
         return;
     }
+    // TODO make a hash of this - if we really need it at all
     sessionStorage['sidewiseLastDetailsSent'] = detailsJSON;
 
     log('pushing details via sendMessage', detailsJSON);
@@ -182,13 +185,9 @@ function injectPageScript(fn) {
 function injectPageScriptSendEventFn() {
     injectPageScript(function() {
 
-        // Send an event from page context to content script context.
+        // Send an event from page's context to content script's context.
         window.sidewise_sendEvent = function(name, value) {
-            var e = document.createElement('meta');
-            e.setAttribute('name', 'sidewise_event');
-            e.setAttribute('event-name', name);
-            e.setAttribute('event-value', value);
-            document.head.appendChild(e);
+            window.postMessage({ 'name': name, 'value': value }, '*');
         };
 
         // Send a media update type of event using sidewise_sendEvent.
@@ -201,11 +200,10 @@ function injectPageScriptSendEventFn() {
 }
 
 // Acts as the receiving end of <page context>.sidewise_sendEvent() messages
-// into the content script's context
-function receivePageEvent(eventElement) {
-    var name = eventElement.getAttribute('event-name');
-    var value = eventElement.getAttribute('event-value');
-    eventElement.parentElement.removeChild(eventElement);
+// from injected scripts' contexts into the content script's context
+function receivePageEvent(evt) {
+    var name = evt.name;
+    var value = evt.value;
 
     switch (name) {
         case 'updateMediaState':
@@ -218,7 +216,7 @@ function receivePageEvent(eventElement) {
             });
             break;
         default:
-            throw new Error('Unrecognized event-name ' + name);
+            throw new Error('Unrecognized event name: ' + name);
     }
 }
 
