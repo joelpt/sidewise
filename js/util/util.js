@@ -4,7 +4,7 @@
 // Constants
 ///////////////////////////////////////////////////////////
 
-var IS_SCRIPTABLE_URL_REGEX = new RegExp(/^((about|file|view-source|chrome.*):|https?:\/\/chrome.google.com\/webstore)/);
+var IS_UNSCRIPTABLE_URL_REGEX = new RegExp(/^((data|about|file|view-source|chrome.*):|https?:\/\/chrome.google.com\/webstore)/);
 
 var SECOND_MS = 1000;
 var MINUTE_MS = SECOND_MS * 60;
@@ -103,7 +103,7 @@ function getBestPageTitle(title, url) {
 
 function isScriptableUrl(url)
 {
-    return !(url == '' || IS_SCRIPTABLE_URL_REGEX.test(url));
+    return (url !== '' && !IS_UNSCRIPTABLE_URL_REGEX.test(url));
 }
 
 function isExtensionUrl(url)
