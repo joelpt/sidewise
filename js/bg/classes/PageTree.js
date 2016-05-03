@@ -1025,7 +1025,7 @@ PageTree.prototype = {
         }
 
         log('moving to append by index', moving.id, 'append to', windowId);
-        this.moveNodeRel(moving, 'append', this.getNode(windowId));
+        this.moveNodeRel(moving, 'append', this.getNode(['chromeId', windowId]));
     },
 
 
