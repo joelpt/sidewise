@@ -206,11 +206,7 @@
     "option_installDoneButton": { "message": "Awesome! What now? -->" },
 
     "donateLink_1": { "message": "Think Sidewise is awesome?" },
-    "donateLink_2": { "message": "Did you know this is my full-time job?" },
-    "donateLink_3": { "message": "Support Sidewise with a donation!" },
-    "donateLink_4": { "message": "Donations = Features. Please consider a donation!" },
-    "donateLink_5": { "message": "Sidewise is donation-powered." },
-    "donateLink_6": { "message": "Wizard needs food, badly!" },
+    "donateLink_2": { "message": "Support Sidewise with a donation!" },
 
     "donate_back": { "message": "&lt;- Back to options" }
 }
