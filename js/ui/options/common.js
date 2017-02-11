@@ -689,10 +689,12 @@ async function restoreFromPreviousSessionBackup() {
 // Import/export
 ///////////////////////////////////////////////////////////
 
-function exportState() {
-    bg.savePageTreeToLocalStorage(bg.tree, 'pageTree', true);
+async function exportState() {
+    await bg.savePageTree(bg.tree, 'pageTree', true);
     var head = '/* Sidewise Data Export: v' + getVersion() + ' exported on ' + Date().toString() + ' */ ';
     var tail = ' /* End Sidewise Data */';
+    // TODO fix this so it actually outputs the tree data instead of just 'settings' (i.e. not just localStorage)
+    // probably by just making toJSON() also get all the stuff from chrome.storage.local
     copyTextToClipboard(head + bg.settings.toJSON() + tail);
     alert('Sidewise\'s configuration and state data has been exported and copied to your clipboard.\n\nPaste this into a text file to save it.');
 }

@@ -1204,13 +1204,19 @@ var preventTestIconsCheck;
 
 function checkForMalwarePageInSidebar() {
     // malware check
-    if (!preventTestIconsCheck) {
-        chrome.tabs.get(sidebarHandler.tabId, function(tab) {
-            if (tab.title.toLowerCase().indexOf('malware') >= 0) {
-                var tester = new IconTester();
-                tester.testIcons();
-                return;
-            }
-        });
+    if (preventTestIconsCheck) {
+        return;
     }
+
+    if (!sidebarHandler.sidebarExists) {
+        return;
+    }
+    
+    chrome.tabs.get(sidebarHandler.tabId, function(tab) {
+        if (tab.title.toLowerCase().indexOf('malware') >= 0) {
+            var tester = new IconTester();
+            tester.testIcons();
+            return;
+        }
+    });
 }
