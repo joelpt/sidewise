@@ -27,7 +27,7 @@ window.onload = onLoad;
 function onLoad()
 {
     // this functions like a bit like an onready event for Chrome
-    chrome.tabs.getCurrent(function() {
+    chrome.tabs.getCurrent(async function() {
         // Early initialization
         settings = new Settings();
         tree = new PageTree(PageTreeCallbackProxy, onPageTreeModifiedDelayed);
@@ -78,7 +78,7 @@ function onLoad()
     });
 }
 
-function onPageTreeModifiedDelayed() {
+async function onPageTreeModifiedDelayed() {
     if (browserIsClosed) {
         log('Browser is closed, will not save page tree!');
         return;
@@ -89,7 +89,7 @@ function onPageTreeModifiedDelayed() {
         return;
     }
     if (tree.lastModified != tree.lastSaved) {
-        savePageTreeToLocalStorage(tree, 'pageTree', true);
+        await savePageTreeToLocalStorage(tree, 'pageTree', true);
         tree.lastSaved = tree.lastModified;
     }
     tree.onModifiedDelayedWaitMs = config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS;
@@ -100,7 +100,7 @@ function onPageTreeModifiedDelayed() {
 // - use c.ext.onConnect to establish a port first?
 //   - keep retrying on chrome.ext.lastError, esp. if lastError is something meaningful that can distinguish this case?
 
-function postLoad(focusedWin) {
+async function postLoad(focusedWin) {
     if (!focusedWin) {
         // If no focused win yet then there are no actual Chrome windows
         // open yet; wait for one to be created then reload the background
@@ -109,7 +109,7 @@ function postLoad(focusedWin) {
         return;
     }
 
-    var updatedSidewise = settings.initializeDefaults();
+    var updatedSidewise = await settings.initializeDefaults();
     settings.updateStateFromSettings();
 
     paneCatalog = new SidebarPaneCatalog();
@@ -118,23 +118,24 @@ function postLoad(focusedWin) {
     registerEventHandlers();
     injectContentScriptInExistingTabs('content_script.js');
 
-    loadTreeFromLocalStorage(recentlyClosedTree, 'recentlyClosedTree', config.PAGETREE_NODE_TYPES);
+    await loadAndPopulateTree(recentlyClosedTree, 'recentlyClosedTree', config.PAGETREE_NODE_TYPES);
     recentlyClosedTree.removeZeroChildTopNodes();
     var first = recentlyClosedTree.root.children[0];
     if (first && first.collecting) {
         first.collecting = false;
     }
 
-    var backup = settings.get('backupPageTree', []);
-    var haveBackup = backup && backup.length > 0
-    if (haveBackup && localStorage['backupPageTreeLastSession'] != localStorage['backupPageTree']) {
-        // don't use settings.set() so we don't have to JSON parse and restringify
-        // the copied value
-        localStorage['backupPageTreeLastSession'] = localStorage['backupPageTree'];
-        settings.cache['backupPageTreeLastSession'] = backup;
+    var backup = await loadTreeData('backupPageTree');
+
+    var haveBackup = backup && backup.length > 0;
+    if (haveBackup) {
+        // Write out an additional backup copy of the tree data backup. This gives us one more possible
+        // rollback point in case of subsequent tree data corruption. We don't block on this operation
+        // because it is OK for it to just happen in the background asynchronously.
+        settings.saveData('backupPageTreeLastSession', backup);
     }
 
-    var storedPageTree = settings.get('pageTree', []);
+    var storedPageTree = await loadTreeData('pageTree');
     var loadIt = false;
     if (storedPageTree.length > 0) {
         log('Have stored tree data');
@@ -169,7 +170,7 @@ function postLoad(focusedWin) {
         showPromoPageAnnually();
     }
 
-    loadTreeFromLocalStorage(ghostTree, 'ghostTree', config.GHOSTTREE_NODE_TYPES);
+    await loadAndPopulateTree(ghostTree, 'ghostTree', config.GHOSTTREE_NODE_TYPES);
     synchronizeGhostTree();
     setInterval(synchronizeGhostTree, MINUTE_MS * 30);
 
@@ -237,27 +238,32 @@ function createSidebarOnStartup() {
 ///////////////////////////////////////////////////////////
 
 async function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
-    if (!tree.lastModified || !tree.lastSaved || tree.lastModified != tree.lastSaved) {
-        log('--- saving tree to ' + settingName + ' ---');
-        var saveTree = clone(tree.tree, ['parent', 'root', 'hostTree', 'chromeId']);
-        if (excludeIncognitoNodes) {
-            saveTree = saveTree.filter(function(e) { return !e.incognito; });
-    	}
-    	if (saveTree.length == 0) {
-        	console.error('Did not save tree because it is empty!');
-        	return;
-    	}
-    	
-        var payload = {};
-        payload[settingKey] = saveTree;
-        chrome.storage.sync.set(payload, function() {
-            tree.lastSaved = tree.lastModified;
-            "resolve";
-        });
+    if (! (!tree.lastModified || !tree.lastSaved || tree.lastModified != tree.lastSaved) ) {
+        // no changes to save
+        return;
     }
+
+    log('--- saving tree to ' + settingName + ' ---');
+
+    var saveTree = clone(tree.tree, ['parent', 'root', 'hostTree', 'chromeId']);
+
+    if (excludeIncognitoNodes) {
+        saveTree = saveTree.filter(function(e) { return !e.incognito; });
+	}
+
+	if (saveTree.length == 0) {
+        console.error('Did not save tree because it is empty!');
+        return;
+	}
+
+    // TODO remove this after async is all sorted out
+    settings.set(settingName, saveTree);
+
+    await settings.saveData(settingName, saveTree);
+    tree.lastSaved = tree.lastModified;
 }
 
-function backupPageTree(force) {
+async function backupPageTree(force) {
     if (browserIsClosed) {
         log('Skipped saving backup of tree because browser is closed');
         return;
@@ -267,7 +273,7 @@ function backupPageTree(force) {
         log('Skipped saving backup of tree due to too few nodes (' + count + ')');
         return;
     }
-    savePageTreeToLocalStorage(tree, 'backupPageTree', true);
+    await savePageTreeToLocalStorage(tree, 'backupPageTree', true);
 }
 
 function disallowSavingTreeForDuration(ms) {
@@ -285,11 +291,17 @@ function disallowSavingTreeForDuration(ms) {
     }, ms);
 }
 
-function loadTreeFromLocalStorage(tree, settingKey, casts) {
-    tree.loadTree(settings.get(settingKey), casts);
+// loads tree data with specified settingName key from persistent storage and loads the provided treeObject with it
+async function loadAndPopulateTree(treeObject, settingName, casts) {
+    treeObject.loadTree(await loadTreeData(settingName), casts);
 }
 
-// loads saved tree data from local storage and populates the tree with it
+// loads tree data from persistent storage
+async function loadTreeData(settingName) {
+    return await settings.loadData(settingName, []);
+}
+
+// loads the provided tree data into the tree object and prepares it
 function loadPageTreeFromLocalStorage(storedPageTree) {
     tree.loadTree(storedPageTree, config.PAGETREE_NODE_TYPES);
 
@@ -1097,12 +1109,12 @@ function findTabParents(tabs) {
 }
 
 // Perform 'Chrome is shutting down' tasks.
-function shutdownSidewise() {
+async function shutdownSidewise() {
     browserIsClosed = true;
 
     // Ensure ghost and rctree get saved immediately
-    savePageTreeToLocalStorage(recentlyClosedTree, 'recentlyClosedTree', true);
-    savePageTreeToLocalStorage(ghostTree, 'ghostTree', true);
+    await savePageTreeToLocalStorage(recentlyClosedTree, 'recentlyClosedTree', true);
+    await savePageTreeToLocalStorage(ghostTree, 'ghostTree', true);
 
     // Prevent page tree from being saved from this point forward
     tree.disableCallbacks();
@@ -1201,4 +1213,3 @@ function checkForMalwarePageInSidebar() {
         });
     }
 }
-

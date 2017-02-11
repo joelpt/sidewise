@@ -60,6 +60,28 @@ Settings.prototype = {
         return defaultValue;
     },
 
+    // Save data to chrome.storage.local. This differs from the set/get methods which rely
+    // on localStorage: for larger chunks of data such as tree data we prefer using
+    // chrome.storage.local to avoid the possibility of hitting the localStorage 5MB quota.
+    saveData: async function(key, data) {
+        return new Promise(resolve => {
+            const payload = {};
+            payload[key] = data;
+            chrome.storage.local.set(payload, function() {
+                resolve();
+            });
+        });
+    },
+
+    // Load data from chrome.storage.local.
+    loadData: async function(key, defaultValue) {
+        return new Promise(resolve => {
+            chrome.storage.local.get(key, function(result) {
+                resolve(result[key] || defaultValue);
+            });
+        });
+    },
+
     toJSON: function() {
         return '{' +
             mapObjectProps(this.cache, function(k, v) {
@@ -86,9 +108,15 @@ Settings.prototype = {
 
     // One-time initialization of default settings.
     // If already initialized, does nothing, unless forceReset is true.
-    initializeDefaults: function(forceReset) {
+    initializeDefaults: async function(forceReset) {
         var version = getVersion();
         var lastInitVersion = this.get('lastInitializedVersion');
+
+        const STORAGE_SWITCHOVER_VERSION_THRESHOLD = '2017.02.11';  // chrome.storage.local is in use after this version ID
+        if (lastInitVersion && lastInitVersion < STORAGE_SWITCHOVER_VERSION_THRESHOLD) {
+            console.log(`Need to migrate tree data to chrome.storage.local: ${lastInitVersion} < ${STORAGE_SWITCHOVER_VERSION_THRESHOLD}`);
+            await this.migrateTreeStorageToChromeStorage();
+        }
 
         if (version == lastInitVersion && !forceReset) {
             console.log('Settings are at current version', version);
@@ -155,6 +183,48 @@ Settings.prototype = {
         return true;
     },
 
+    // Beginning in the 2017 releases of Sidewise, chrome.storage.local is used instead of localStorage for all tree data
+    // (localStorage is still used for the other settings). When upgrading to this new version of Sidewise, we therefore
+    // must migrate any tree data from localStorage over to chrome.storage.local. This is a one-time operation per install.
+    migrateTreeStorageToChromeStorage: async function() {
+        console.log('Initiating migration of tree data to chrome.storage.local');
+
+        // Need to migrate now
+        var treeNames = ['pageTree', 'backupPageTree', 'backupPageTreeLastSession', 'ghostTree', 'recentlyClosedTree'];
+
+        for (const i in treeNames) {
+            var name = treeNames[i];
+            await migrateTreeData(name);
+        }
+
+        console.log('Finished migration of tree data to chrome.storage.local');
+        return;
+
+        async function migrateTreeData(name) {
+            console.log(`Migrating ${name}`);
+
+            // get the data from the old location
+            const data = localStorage[name];
+
+            if (!data || data.length === 0) {
+                console.log('No old data to migrate');
+                return;
+            }
+
+            // parse it
+            const dataObject = JSON.parse(data);
+
+            // deposit it in the new location
+            await settings.saveData(name, dataObject);
+
+            // clear the data from the old location
+            delete localStorage[name];
+
+            // validation via console log
+            var movedData = await settings.loadData(name);
+            console.log(`Migrated data successfully: ${movedData.length} top level entries, first entry has ${movedData[0].children.length} children`);
+        }
+    },
 
     ///////////////////////////////////////////////////////////
     // Setting-related helpers
