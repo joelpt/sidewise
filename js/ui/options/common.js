@@ -655,14 +655,14 @@ function submitBugReport() {
 // Emergency restore
 ///////////////////////////////////////////////////////////
 
-function restoreFromPreviousSessionBackup() {
-    var backup = settings.get('backupPageTreeLastSession', []);
+async function restoreFromPreviousSessionBackup() {
+    var backup = await settings.loadData('backupPageTreeLastSession', []);
     var when;
     if (backup.length > 0) {
         when = 'during your PREVIOUS browser session';
     }
     else {
-        backup = settings.get('backupPageTree', []);
+        backup = await settings.lodaData('backupPageTree', []);
         if (backup.length > 0) {
             when = 'earlier THIS browser session';
         }
@@ -680,7 +680,7 @@ function restoreFromPreviousSessionBackup() {
 
     alert('Sidewise will now restart to complete the restore operation.');
 
-    settings.set('pageTree', backup);
+    await settings.saveData('pageTree', backup);
     bg.setTimeout(bg.restartSidewise, 100);
     setTimeout(function() { window.close(); }, 10);
 }
