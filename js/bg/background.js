@@ -236,7 +236,7 @@ function createSidebarOnStartup() {
 // PageTree related
 ///////////////////////////////////////////////////////////
 
-function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
+async function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
     if (!tree.lastModified || !tree.lastSaved || tree.lastModified != tree.lastSaved) {
         log('--- saving tree to ' + settingName + ' ---');
         var saveTree = clone(tree.tree, ['parent', 'root', 'hostTree', 'chromeId']);
@@ -247,8 +247,13 @@ function savePageTreeToLocalStorage(tree, settingName, excludeIncognitoNodes) {
         	console.error('Did not save tree because it is empty!');
         	return;
     	}
-    	settings.set(settingName, saveTree);
-    	tree.lastSaved = tree.lastModified;
+    	
+        var payload = {};
+        payload[settingKey] = saveTree;
+        chrome.storage.sync.set(payload, function() {
+            tree.lastSaved = tree.lastModified;
+            "resolve";
+        });
     }
 }
 

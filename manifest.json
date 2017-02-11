@@ -34,7 +34,9 @@
         "*://*/*",
         "chrome://favicon/",
         "https://ssl.google-analytics.com/ga.js",
-        "clipboardWrite"
+        "clipboardWrite",
+        "storage",
+        "unlimitedStorage"
     ],
     "web_accessible_resources": [
         "/sidebars/pages.html",
