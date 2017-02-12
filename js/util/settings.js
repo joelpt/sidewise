@@ -4,8 +4,7 @@
   * @class
   * @constructor
   */
-var Settings = function()
-{
+var Settings = function() {
     this.cache = {};
 };
 
@@ -218,7 +217,7 @@ Settings.prototype = {
             await settings.saveData(name, dataObject);
 
             // clear the data from the old location
-            delete localStorage[name];
+            localStorage.removeItem(name);
 
             // validation via console log
             var movedData = await settings.loadData(name);
