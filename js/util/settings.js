@@ -239,54 +239,64 @@ class Settings {
         sh.targetWidth = this.get('sidebarTargetWidth');
 
         var dockState = this.get('dockState');
-        if (sh.sidebarExists()) {
-            if (sh.dockState != dockState) {
-                sh.remove(function() {
-                    sh.createWithDockState(dockState);
-                });
-                return;
+        
+        if (!sh.sidebarExists()) {
+            return;
+        }
+
+        if (sh.dockState != dockState) {
+            sh.remove(function() {
+                sh.createWithDockState(dockState);
+            });
+            return;
+        }
+
+        // Push changes out to sidebar panes
+        for (var k in sh.sidebarPanes) {
+            var domWindow = sh.sidebarPanes[k];
+            
+            if (!domWindow) {
+                continue;
             }
 
-            // Push changes out to sidebar panes
-            for (var k in sh.sidebarPanes) {
-                var domWindow = sh.sidebarPanes[k];
-                if (domWindow) {
-                    try {
-                        // TODO improve this; we assume too much wrt what's happening in
-                        // the child page with domWindow.ft. To fix, when someone calls
-                        // sbh.registerSidebarPane, accept an onSettingsChanged event handler arg
-                        // and call it here; SidebarPaneFancyTreeBinder can bind up the onSettingsChanged
-                        // event to listen for settings changes and set java.fx appropriately
-                        domWindow.ft.useAdvancedFiltering = this.get('useAdvancedTreeFiltering');
-                        domWindow.ft.autoSelectChildrenOnDrag = this.get('autoSelectChildrenOnDrag');
-                        domWindow.ft.clickOnMouseWheel = this.get('pages_clickOnMouseWheel');
+            try {
+                // TODO improve this; we assume too much wrt what's happening in
+                // the child page with domWindow.ft. To fix, when someone calls
+                // sbh.registerSidebarPane, accept an onSettingsChanged event handler arg
+                // and call it here; SidebarPaneFancyTreeBinder can bind up the onSettingsChanged
+                // event to listen for settings changes and set java.fx appropriately
+                domWindow.ft.useAdvancedFiltering = this.get('useAdvancedTreeFiltering');
+                domWindow.ft.autoSelectChildrenOnDrag = this.get('autoSelectChildrenOnDrag');
+                domWindow.ft.clickOnMouseWheel = this.get('pages_clickOnMouseWheel');
 
-                        var clickOnHoverDelayMs;
-                        if (this.get('pages_clickOnHoverDelay')) {
-                            clickOnHoverDelayMs = this.get('pages_clickOnHoverDelayMs');
-                        }
-                        domWindow.ft.clickOnHoverDelayMs = clickOnHoverDelayMs;
-
-                        if (changedSetting == 'pages_trimPageTitlePrefixes' && k == 'pages') {
-                            domWindow.ft.formatAllRowTitles.call(domWindow.ft);
-                        }
-                    }
-                    catch(ex) {}
-
-                    domWindow.$.fx.off = !this.get('animationEnabled');
-
-                    if (loggingChanged) {
-                        if (domWindow.loggingEnabled === undefined) {
-                            continue;
-                        }
-                        if (k != 'sidebarHost') {
-                            // reload the sidebar pane, which will cause it to get
-                            // an updated loggingEnabled value on load and redraw
-                            // its contents accordingly
-                            domWindow.location.reload();
-                        }
-                    }
+                var clickOnHoverDelayMs;
+                if (this.get('pages_clickOnHoverDelay')) {
+                    clickOnHoverDelayMs = this.get('pages_clickOnHoverDelayMs');
                 }
+
+                domWindow.ft.clickOnHoverDelayMs = clickOnHoverDelayMs;
+
+                if (changedSetting == 'pages_trimPageTitlePrefixes' && k == 'pages') {
+                    domWindow.ft.formatAllRowTitles.call(domWindow.ft);
+                }
+            }
+            catch(ex) {}
+
+            domWindow.$.fx.off = !this.get('animationEnabled');
+
+            if (!loggingChanged) {
+                continue;
+            }
+
+            if (domWindow.loggingEnabled === undefined) {
+                continue;
+            }
+
+            if (k != 'sidebarHost') {
+                // reload the sidebar pane, which will cause it to get
+                // an updated loggingEnabled value on load and redraw
+                // its contents accordingly
+                domWindow.location.reload();
             }
         }
     }
