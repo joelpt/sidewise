@@ -157,7 +157,7 @@ class Settings {
             browserActionButtonBehavior: 'show',
             useAdvancedTreeFiltering: false,
             pages_doubleClickAction: 'hibernate',
-            pages_middleClickAction: 'none',
+            pages_middleClickAction: 'close',
             pages_createNewTabUrl: 'newtab',
             pages_clickOnHoverDelay: false,
             pages_clickOnHoverDelayMs: 250,
@@ -178,7 +178,7 @@ class Settings {
             animationEnabled: true,
             autoSelectChildrenOnDrag: true,
             reportUsageStatistics: true,
-            multiSelectActionConfirmThreshold: 5,
+            multiSelectActionConfirmThreshold: 30,
             showWhatsNewPane: true,
             lastPromoPageShownDate: null,
             focusSidebarOnHover: false
