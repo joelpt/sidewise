@@ -593,7 +593,7 @@ var BUG_REPORT_SIDEBARHANDLER_PROPS = ['creatingSidebar', 'currentDockWindowMetr
         'resizingSidebar', 'sidebarUrl', 'tabId', 'targetWidth', 'windowId'
     ];
 
-function submitBugReport() {
+async function submitBugReport() {
     var desc = prompt('This sends a log of Sidewise\'s recent activity to the author for diagnostic purposes. It is best used immediately after you experience a problem.\n\nPlease clearly describe the problem below. Include row IDs from the tree when pertinent.\n\nNote that this report includes a list of everything in your sidebar panes/trees.');
     if (!desc) {
         alert('Diagnostic report cancelled.');
@@ -644,8 +644,10 @@ function submitBugReport() {
         + data;
 
     $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': data, 'type': 'log' }, function(data, textStatus, jqXHR) {
-        $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': bg.settings.toJSON(), 'type': 'state' }, function(data, textStatus, jqXHR) {
-            alert('Diagnostic report sent. Thank you for the report.\n\nServer response:\n' + data);
+        bg.settings.toJSON().then(function(json) {
+            $.post('http://www.sidewise.info/submit_error/index.php', { 'desc': desc, 'data': json, 'type': 'state' }, function(data, textStatus, jqXHR) {
+                alert('Diagnostic report sent. Thank you for the report.\n\nServer response:\n' + data);
+            });
         });
     });
 }
@@ -693,18 +695,14 @@ async function exportState() {
     await bg.savePageTree(bg.tree, 'pageTree', true);
     var head = '/* Sidewise Data Export: v' + getVersion() + ' exported on ' + Date().toString() + ' */ ';
     var tail = ' /* End Sidewise Data */';
-    // TODO fix this so it actually outputs the tree data instead of just 'settings' (i.e. not just localStorage)
-    // probably by just making toJSON() also get all the stuff from chrome.storage.local
-    copyTextToClipboard(head + bg.settings.toJSON() + tail);
+    copyTextToClipboard(head + await bg.settings.toJSON() + tail);
     alert('Sidewise\'s configuration and state data has been exported and copied to your clipboard.\n\nPaste this into a text file to save it.');
 }
 
 function importState() {
     var html = 'Paste the previously exported Sidewise data into the box below:<br/><textarea rows="10" cols="34" id="importBox" name="data" spellcheck="false"></textarea>';
     var importPrompt = $.prompt(html, { prefix: 'cleanblue', buttons: { 'OK': true, 'Cancel': false }, callback: doImportState });
-    importPrompt.bind('promptloaded', function(e) {
-        $('#importBox').focus();
-    });
+    importPrompt.bind('promptloaded', () => $('#importBox').focus());
 }
 
 function doImportState(e,v,m,f) {
@@ -713,35 +711,24 @@ function doImportState(e,v,m,f) {
         return;
     }
 
-    var data = f.data;
+    let data = f.data;
     if (!data) {
         alert('No data pasted. Import aborted.');
         return;
     }
 
+    // Drop leading/trailing comments
     data = data.replace(/^\/\*.+?\*\/\s*/, '');
     data = data.replace(/\/\*.+?\*\/\s*$/, '');
 
     try {
-        data = JSON.parse(data);
+        bg.settings.importFromJSON(data);
     }
     catch (ex) {
-        alert('There was a problem importing the data. No changes have been made.\n\n' + ex.message);
+        alert(`There was a problem importing the data.\n\n${ex.message}\n\n${ex.stack}`);
         return;
     }
 
-    try {
-        for (var k in data) {
-            if (k == 'lastInitializedVersion') {
-                continue;
-            }
-            bg.settings.set(k, JSON.parse(data[k]));
-        }
-    }
-    catch (ex) {
-        alert('There was a problem importing a setting. No changes have been made.\n\n' + ex.message + '\n' + 'Setting name: ' + k);
-        return;
-    }
     alert('Import successful!\nSidewise will now be restarted.');
 
     bg.restartSidewise();

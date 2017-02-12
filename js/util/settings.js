@@ -85,7 +85,7 @@ class Settings {
         });
     }
 
-    // Output all the settings and saved data as a JSON string
+    // Output all settings and saved data as a JSON string
     async toJSON() {
         const localStorageJson = mapObjectProps(localStorage, (k, v) => `"${k}": ${v}`).join(',');
 
@@ -106,6 +106,26 @@ class Settings {
         }).join('\n');
     }
 
+    // Import all settings and stored data in the provided JSON string.
+    // Used for Sidewise state recovery functions.
+    //
+    // @param jsonString A JSON string in the format { "localStorage": { ... }, "chromeStorage": { ... }}
+    importFromJSON(jsonString) {
+        let data = JSON.parse(jsonString);
+
+        const localData = data.localStorage;
+        for (var k in localData) {
+            if (k === 'lastInitializedVersion') {
+                continue;
+            }
+            this.set(k, localData[k]);
+        }
+
+        const chromeData = data.chromeStorage;
+        for (var k in chromeData) {
+            this.saveData(k, chromeData[k]);
+        }
+    }
 
     ///////////////////////////////////////////////////////////
     // Settings initialization
