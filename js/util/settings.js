@@ -1,20 +1,17 @@
 "use strict";
 
- /**
-  * @class
-  * @constructor
-  */
-var Settings = function() {
-    this.cache = {};
-};
+class Settings {
 
-Settings.prototype = {
+    constructor() {
+        // Used to reduce JSON-parsing cost of setting lookups
+        this.cache = {};
+    }
 
     ///////////////////////////////////////////////////////////
     // Setting set (save) and get (load)
     ///////////////////////////////////////////////////////////
 
-    set: function(name, value) {
+    set(name, value) {
         if (value === undefined) {
             // unset localStorage setting value
             localStorage.removeItem(name);
@@ -31,9 +28,9 @@ Settings.prototype = {
 
         // cache setting value
         this.cache[name] = value;
-    },
+    }
 
-    get: function(name, defaultValue) {
+    get(name, defaultValue) {
         // get setting value from cache
         var value = this.cache[name];
 
@@ -57,12 +54,12 @@ Settings.prototype = {
 
         // did not find the setting, use defaultValue as provided
         return defaultValue;
-    },
+    }
 
     // Save data to chrome.storage.local. This differs from the set/get methods which rely
     // on localStorage: for larger chunks of data such as tree data we prefer using
     // chrome.storage.local to avoid the possibility of hitting the localStorage 5MB quota.
-    saveData: async function(key, data) {
+    async saveData(key, data) {
         return new Promise(resolve => {
             const payload = {};
             payload[key] = data;
@@ -70,27 +67,27 @@ Settings.prototype = {
                 resolve();
             });
         });
-    },
+    }
 
     // Load data from chrome.storage.local.
-    loadData: async function(key, defaultValue) {
+    async loadData(key, defaultValue) {
         return new Promise(resolve => {
             chrome.storage.local.get(key, function(result) {
                 resolve(result[key] || defaultValue);
             });
         });
-    },
+    }
 
-    toJSON: function() {
+    toJSON() {
         return '{' +
             mapObjectProps(this.cache, function(k, v) {
                 var value = localStorage[k];
                 return '"' + k + '": ' + JSON.stringify(value);
             }).join(',') +
             '}';
-    },
+    }
 
-    dump: function(maxElemLength) {
+    dump(maxElemLength) {
         return mapObjectProps(this.cache, function(k, v) {
             var o = JSON.stringify(v, StringifyReplacer);
             if (maxElemLength && maxElemLength < o.length) {
@@ -98,7 +95,7 @@ Settings.prototype = {
             }
             return k + ': ' + o;
         }).join('\n');
-    },
+    }
 
 
     ///////////////////////////////////////////////////////////
@@ -107,7 +104,7 @@ Settings.prototype = {
 
     // One-time initialization of default settings.
     // If already initialized, does nothing, unless forceReset is true.
-    initializeDefaults: async function(forceReset) {
+    async initializeDefaults(forceReset) {
         var version = getVersion();
         var lastInitVersion = this.get('lastInitializedVersion');
 
@@ -180,12 +177,12 @@ Settings.prototype = {
         this.set('lastInitializedVersion', version);
         console.log('Initialization of settings done, settings version now at', version);
         return true;
-    },
+    }
 
     // Beginning in the 2017 releases of Sidewise, chrome.storage.local is used instead of localStorage for all tree data
     // (localStorage is still used for the other settings). When upgrading to this new version of Sidewise, we therefore
     // must migrate any tree data from localStorage over to chrome.storage.local. This is a one-time operation per install.
-    migrateTreeStorageToChromeStorage: async function() {
+    async migrateTreeStorageToChromeStorage() {
         console.log('Initiating migration of tree data to chrome.storage.local');
 
         // Need to migrate now
@@ -223,13 +220,13 @@ Settings.prototype = {
             var movedData = await settings.loadData(name);
             console.log(`Migrated data successfully: ${movedData.length} top level entries, first entry has ${movedData[0].children.length} children`);
         }
-    },
+    }
 
     ///////////////////////////////////////////////////////////
     // Setting-related helpers
     ///////////////////////////////////////////////////////////
 
-    updateStateFromSettings: function(changedSetting) {
+    updateStateFromSettings(changedSetting) {
         var bg = chrome.extension.getBackgroundPage();
         var sh = bg.sidebarHandler;
 
@@ -293,5 +290,4 @@ Settings.prototype = {
             }
         }
     }
-
-};
+}
