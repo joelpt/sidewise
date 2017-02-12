@@ -7,10 +7,7 @@ class Settings {
         this.cache = {};
     }
 
-    ///////////////////////////////////////////////////////////
-    // Setting set (save) and get (load)
-    ///////////////////////////////////////////////////////////
-
+    // Record a setting value.
     set(name, value) {
         if (value === undefined) {
             // unset localStorage setting value
@@ -30,6 +27,7 @@ class Settings {
         this.cache[name] = value;
     }
 
+    // Retrieve a setting value, or defaultValue if that setting has no existing value.
     get(name, defaultValue) {
         // get setting value from cache
         var value = this.cache[name];
@@ -78,17 +76,28 @@ class Settings {
         });
     }
 
-    toJSON() {
-        return '{' +
-            mapObjectProps(this.cache, function(k, v) {
-                var value = localStorage[k];
-                return '"' + k + '": ' + JSON.stringify(value);
-            }).join(',') +
-            '}';
+    // Returns all data stored in chrome.storage.local.
+    async loadAllData() {
+        return new Promise(resolve => {
+            chrome.storage.local.get(null, function(result) {
+                resolve(result);
+            });
+        });
+    }
+
+    // Output all the settings and saved data as a JSON string
+    async toJSON() {
+        const localStorageJson = mapObjectProps(localStorage, (k, v) => `"${k}": ${v}`).join(',');
+
+        const chromeStorageAll = await this.loadAllData();
+        const chromeStorageJson = mapObjectProps(chromeStorageAll, (k, v) => `"${k}": ${JSON.stringify(v)}`).join(',');
+
+        const result = `{ "localStorage": { ${localStorageJson} }, "chromeStorage": { ${chromeStorageJson} } }`;
+        return result;
     }
 
     dump(maxElemLength) {
-        return mapObjectProps(this.cache, function(k, v) {
+        return mapObjectProps(localStorage, function(k, v) {
             var o = JSON.stringify(v, StringifyReplacer);
             if (maxElemLength && maxElemLength < o.length) {
                 o = o.substring(0, maxElemLength) + '...';
