@@ -266,15 +266,17 @@ async function backupPageTree(force) {
         log('Skipped saving backup of tree because browser is closed');
         return;
     }
+
     var count = tree.reduce(function(last, e) { return last + 1; }, 0);
     if (count < config.MIN_NODES_TO_BACKUP_TREE && !force) {
         log('Skipped saving backup of tree due to too few nodes (' + count + ')');
         return;
     }
-    await savePageTree(tree, 'backupPageTree', true, true);
-    log('Backup of page tree saved');
 
     // TODO save N backup copies also, i.e. save up to 1 per day for preceding 30 days
+    // TODO save recently closed & ghost trees too
+    await savePageTree(tree, 'backupPageTree', true, true);
+    log('Backup of page tree saved');
 }
 
 function disallowSavingTreeForDuration(ms) {
@@ -1208,10 +1210,10 @@ function checkForMalwarePageInSidebar() {
         return;
     }
 
-    if (!sidebarHandler.sidebarExists) {
+    if (!sidebarHandler.sidebarExists()) {
         return;
     }
-    
+
     chrome.tabs.get(sidebarHandler.tabId, function(tab) {
         if (tab.title.toLowerCase().indexOf('malware') >= 0) {
             var tester = new IconTester();
