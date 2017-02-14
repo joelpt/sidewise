@@ -18,6 +18,7 @@ module.exports = function(grunt) {
 							'{js,images,_locales,panes,css}/**',
 							'*.{js,html}',
 							'!Gruntfile.js',
+							'manifest.json',
 							'LICENSE.txt',
 							'NOTICE'],
 						dest: distDir
