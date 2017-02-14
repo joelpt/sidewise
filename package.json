@@ -1,0 +1,19 @@
+{
+  "name": "sidewise",
+  "version": "1.0.0",
+  "description": "Sidewise extension for Google Chrome",
+  "main": "background.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Joel Thornton <sidewise@joelpt.net>",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-banner": "^0.6.0",
+    "grunt-cli": "^1.2.0",
+    "grunt-contrib-clean": "^1.0.0",
+    "grunt-contrib-compress": "^1.4.1",
+    "grunt-contrib-copy": "^1.0.0"
+  }
+}
