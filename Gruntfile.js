@@ -30,7 +30,10 @@ module.exports = function(grunt) {
 			dist: {
 				options: {
 					position: 'top',
-					banner: '/* Copyright 2017+ Joel Thornton <sidewise@joelpt.net> See LICENSE.txt for license details. */',
+					banner: '/*\n' +
+							' * Copyright 2019 Joel Thornton <sidewise@joelpt.net>\n' + 
+							' * Licensed under the MIT license. See LICENSE.txt for details.\n' +
+							' */',
 					linebreak: true
 				},
 				files: {
@@ -62,6 +65,6 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-banner');
 
 	// Default task(s).
-	grunt.registerTask('default', ['clean', 'copy', 'usebanner', 'compress']);
+	grunt.registerTask('default', ['clean', 'copy', 'usebanner', /* 'compress' */]);
 
 };

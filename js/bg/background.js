@@ -95,11 +95,6 @@ async function onPageTreeModifiedDelayed() {
     tree.onModifiedDelayedWaitMs = config.TREE_ONMODIFIED_DELAY_AFTER_STARTUP_MS;
 }
 
-
-// IDEA for warmup executescript association fails:
-// - use c.ext.onConnect to establish a port first?
-//   - keep retrying on chrome.ext.lastError, esp. if lastError is something meaningful that can distinguish this case?
-
 async function postLoad(focusedWin) {
     if (!focusedWin) {
         // If no focused win yet then there are no actual Chrome windows
@@ -999,13 +994,6 @@ function addMissingNodesToGhostTree(fromTree, asAlive) {
     ghostTree.rebuildIndexes(); // addNode doesn't index existing descendants
 }
 
-// TODO move this to a new file
-// TODO probably wanna sort by tabs.index
-// TODO find out if we need concern ourselves with the possibility that on session restore
-//      chrome might restore tabs in an order which would have us trying to add children
-//      to parents that aren't yet in the tree. this should NOT be an issue though because
-//      all we do is add the tabs in one loop, THEN do parent-child relating in a second loop
-//      after all pages are in the tree. so NO this will be a non issue !
 function populatePages(incognito)
 {
     chrome.windows.getAll({ populate: true }, function(windows) {

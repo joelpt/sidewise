@@ -1,7 +1,7 @@
 /**
   * @static
   * @class
-  * Used to manage timeouts easily.
+  * Used to manage timeouts more easily.
   * Use as a singleton: do not instatiate, just call TimeoutManager.set(), et al. directly.
   */
 var TimeoutManager = {

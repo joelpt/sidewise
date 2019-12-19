@@ -1,6 +1,6 @@
 // Manages an ordered array of items, each of which should be an Object
 // with a unique .id property (and other properties as desired)
-//
+
 var Catalog = function(items) {
     this.items = items || [];
 };
@@ -50,7 +50,6 @@ Catalog.prototype = {
         if (index === undefined) {
             throw new Error('Could not find item by id ' + id);
         }
-        // log(index, newIndex);
         this.items.splice(index, 1);
         this.items.splice(newIndex, 0, item);
     },

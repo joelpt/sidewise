@@ -67,8 +67,6 @@ function escapeOmniboxText(text) {
 
 // This event is fired with the user accepts the input in the omnibox.
 function onOmniboxInputEntered(text) {
-    // console.log('inputEntered: ' + text);
-    // alert('You just typed "' + text + '"');
     var page = tree.getNode(text);
     if (page.hibernated) {
         tree.awakenPages([page], true);

@@ -86,9 +86,6 @@ function fixAllPinnedUnpinnedTabOrder() {
 // Repair the tab ordering of the given PageTreeNode with respect to
 // its pinned state versus the pinned state of other page nodes in the tree
 function fixPinnedUnpinnedTabOrder(page) {
-    // log('doing fix un/pin tab order check', page.id, page);
-    // log(tree.dump());
-    // log(tree.dumpTabIndexes());
 
     // fix order wrt pinned tabs if necessary
     if (!page.pinned

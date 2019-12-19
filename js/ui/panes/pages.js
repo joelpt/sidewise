@@ -822,21 +822,11 @@ function onContextMenuItemFlattenBranch($rows) {
     var $subrows = $rows.find('.ftRowNode');
     $rows = $rows.add($subrows);
 
-    // var threshold = settings.get('multiSelectActionConfirmThreshold');
-    // if (threshold > 0 && $subrows.length >= threshold && !confirm('Flatten ' + $subrows.length + ' rows?') ) {
-    //     return;
-    // }
-
     flattenRows($rows, 'prepend', false);
 }
 
 function onContextMenuItemPromoteChildren($rows) {
     var $children = $rows.children('.ftChildren').children();
-
-    // var threshold = settings.get('multiSelectActionConfirmThreshold');
-    // if (threshold > 0 && $children.length >= threshold && !confirm('Promote ' + $children.length + ' rows to parent tree depth?') ) {
-    //     return;
-    // }
 
     flattenRows($rows.add($children), 'after', true);
 }

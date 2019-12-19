@@ -26,6 +26,7 @@
 	],
 	"default_locale": "en",
     "homepage_url": "http://www.sidewise.info",
+    "minimum_chrome_version": "56.0.2924.87",
     "omnibox": { "keyword": "sw" },
 	"options_page": "options.html",
 	"permissions": [

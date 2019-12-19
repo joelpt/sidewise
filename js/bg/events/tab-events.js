@@ -207,17 +207,6 @@ function onTabCreated(tab)
     }
 
     if (!tab.openerTabId) {
-        // if (winTabs.length > 0 && tab.index == 0) {
-        //     log('No openerTabId and index is at start of tree; prepending to window');
-        //     tree.addNodeRel(page, 'prepend', tree.getNode(['chromeId', tab.windowId]));
-        //     return;
-        // }
-        // if (winTabs.length == 0 || winTabs.length == tab.index) {
-        //     log('No openerTabId and index is at end of tree, or no tab indexes are found for hosting window; appending to window');
-        //     tree.addTabToWindow(tab, page);
-        //     return;
-        // }
-
         var prevByIndex = winTabs[tab.index - 1];
         var nextByIndex = winTabs[tab.index];
         if (prevByIndex && nextByIndex) {   // is the tab in the middle of the tab index (not at just one end)?
@@ -298,24 +287,6 @@ function onTabCreated(tab)
     tree.conformAllChromeTabIndexes(false);
 }
 
-//
-// TODO: probable fix for the smart focus failing issue (if the counteract in ontabcreated does not work <well>),
-//       is to always delay in ontabremoved for 125ms to make sure ontabcreated doesn't fire AFTER us with our replacement?
-//       problem with this is how do we tell in this case that chrome did a tab-swap on us?
-//
-//       could we do something like chrome.tabs.get(current active tab, function() { ... rest of ontabremoved/created ... })
-//       type of thing in order to verify which tab has been made active after a remove/create event? then we hose smart focus
-//       which really needs to be able to ensure we smart-focus the right tab ASAP and negates chrome's choice
-//
-//  POSSIBLE BETTER SOLUTION: can we hook stuff in webRequest that yields the tab.id before that tab fires webNav/tab events?
-//  that is really the only better possibility to catch this "earlier"
-//
-//  well that did not help.
-//
-//  what about refusing to do smart-focus when the tab that is removed was very recently created (last 10 seconds)?
-//  if it is a timing issue this might fix it
-
-
 function onTabRemoved(tabId, removeInfo, denyTabSwap)
 {
     if (monitorInfo.isDetecting()) {
@@ -351,13 +322,6 @@ function onTabRemoved(tabId, removeInfo, denyTabSwap)
             // If Chrome does not perform the tab swap very soon, then we
             // assume it never will
             setTimeout(function() {
-                // if (expectingNavigationTabIdSwap) {
-                //     log('Timing out expected navigation swap');
-                //     resetExpectingNavigation();
-                //     onTabRemoved(tabId, removeInfo);
-                //     return;
-                // }
-                // log('Navigation swap appears to have occurred before reset timeout');
                 var page = tree.getNode(['chromeId', tabId]);
                 if (!page) {
                     return; // tab's node has either been swapped or otherwise removed from tree

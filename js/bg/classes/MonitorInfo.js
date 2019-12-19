@@ -2,6 +2,10 @@
 // Multiple-monitor metrics detection
 ///////////////////////////////////////////////////////////
 
+// NOTE: It may be possible to eliminate all the monitor detection code now (untested).
+// This was all done originally because there was a Chrome bug that caused inaccurate and incomplete
+// screen metrics to be reported by window.screen.
+
 ///////////////////////////////////////////////////////////
 // Initialization of MonitorInfo class
 ///////////////////////////////////////////////////////////
@@ -62,7 +66,6 @@ MonitorInfo.prototype = {
         this.detectingMonitors = true;
         this.detectAllMonitorMetrics(function(monitors, maximizedOffset) {
             self.detectingMonitors = false;
-            // alert(getMessage('prompt_DetectMonitors_complete'));
             callback(monitors, maximizedOffset);
         });
     },
