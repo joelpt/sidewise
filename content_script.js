@@ -26,17 +26,22 @@ var notifyTimeout;
 // Initialization
 ///////////////////////////////////////////////////////////
 
-connectPort();
-notifySidewise();
+// FIXME this stuff is presently disabled because (1) it's semi buggy, (2) it breaks whenever the implemented
+// video APIs change; and (3) Chrome provides a much nicer "this tab is playing audio" API value that should
+// be used instead. Having the current playing time showing (as in this below implementation) is indeed nice but
+// it's a lot of logic for a little benefit.
 
-window.addEventListener('popstate', onLocationOrHistoryChanged);
-window.addEventListener('DOMContentLoaded', onDOMContentLoaded);
+// connectPort();
+// notifySidewise();
+
+// window.addEventListener('popstate', onLocationOrHistoryChanged);
+// window.addEventListener('DOMContentLoaded', onDOMContentLoaded);
 
 function onDOMContentLoaded() {
     log('onDOMContentLoaded');
-    setUpTitleObserver();
-    setUpMessageListener();
-    setUpMediaMonitors();
+    // setUpTitleObserver();
+    // setUpMessageListener();
+    // setUpMediaMonitors();
 }
 
 // listen for window.postMessage events posted by injected scripts
@@ -202,8 +207,12 @@ function injectPageScriptSendEventFn() {
 // Acts as the receiving end of <page context>.sidewise_sendEvent() messages
 // from injected scripts' contexts into the content script's context
 function receivePageEvent(evt) {
+    if (evt.name === undefined) {
+        return;
+    }
+
     var name = evt.name;
-    var value = evt.value;
+    var value = evt.value || '';
 
     switch (name) {
         case 'updateMediaState':
@@ -227,6 +236,8 @@ function receivePageEvent(evt) {
 
 // Injects scripts into the page's context to do media state monitoring
 function setUpMediaMonitors() {
+    return;
+
     injectPageScriptSendEventFn();
 
     injectYouTubeMonitoring();

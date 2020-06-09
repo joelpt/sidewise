@@ -3,7 +3,6 @@ var IFRAME_LOAD_TIMEOUT_MS = 12000;
 // Prevent access by iframe since it could theoretically
 // get at the extension's JS or chrome context, i.e. loading
 // the inner iframe with a chrome-extension:// url
-//
 window.parent = undefined;
 chrome = undefined;
 

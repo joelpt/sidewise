@@ -359,7 +359,11 @@ function copyObjectSubProps(fromObject, toObject, overwriteExisting) {
 // Javascript object subclassing
 ///////////////////////////////////////////////////////////
 
-// extendClass won't create surrogate child functions for these function names.
+// TODO drop smart surrogate logic. When a function that is defined on a parent prototype needs to call "across" to
+// another function on its own prototype, rather than calling "down" to the child's prototype, we should instead
+// just rename the target function in the parent and/or child.
+
+// Create surrogate child functions for OO-like parent accesses.
 var EXTEND_CLASS_BANNED_SURROGATE_NAMES =
     ['constructor', '$base', '$super', '$parent'];
 
@@ -403,6 +407,7 @@ function extendClass(subClass, superClass, prototype) {
             // subClass didn't override this superClass function,
             // so create a surrogate function for it
             subClass.prototype[x] = getExtendClassSurrogateFunction(x);
+            console.log('EXTENDED ' + getExtendClassSurrogateFunction(x));
         }
     }
     subClass.prototype.$super = function (propName) {
@@ -436,6 +441,7 @@ function extendClass(subClass, superClass, prototype) {
 // called with the parent's prototype context.
 function getExtendClassSurrogateFunction(functionName) {
     return function() {
+        console.log('called surrogate fn '+ functionName);
         return this.$super(functionName).apply(this, arguments);
     };
 }

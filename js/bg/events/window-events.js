@@ -100,12 +100,10 @@ function onWindowRemoved(windowId)
     }
 
     chrome.windows.getAll(null, function(wins) {
-        // log('shutdown attempt', wins);
         for (var i in wins) {
             if (wins[i].type == 'normal') {
                 // at least one normal window still exists aside
                 // from the one that was just removed
-                // log('cancel shutdown', wins[i].type);
                 focusCurrentTabInPageTree();
                 return;
             }
@@ -180,7 +178,6 @@ function onWindowFocusChanged(windowId)
                     raiseWindowId = sidebarHandler.dockWindowId;
                 }
                 // Sidebar has been focused; raise the dock window too then refocus sidebar
-                // log('Sidebar has been focused; raising its dock window alongside it');
                 chrome.windows.update(raiseWindowId, { focused: true }, function() {
                     chrome.windows.update(sidebarHandler.windowId, { focused: true });
                 });
@@ -193,8 +190,6 @@ function onWindowFocusChanged(windowId)
                 if (!isScriptableUrl(tab.url)) {
                     // if tab doesn't have a scriptable url we assume that the tab will not be in HTML5
                     // fullscreen mode either here
-
-                    // log('Non-sidebar Chrome window got focused; its current tab is non scriptable so raising sidebar now');
 
                     // focus the sidebar window ...
                     chrome.windows.update(sidebarHandler.windowId, { focused: true }, function() {
@@ -210,9 +205,6 @@ function onWindowFocusChanged(windowId)
                 // in onGetIsFullScreenMessage() if we discover it is not in fullscreen we'll
                 // raise the sidebar window (focus it) then refocus the window that brought us
                 // here.
-
-                // log('Non-sidebar Chrome window got focused; check its fullscreen state and possibly raise the sidebar after');
-
                 getIsFullScreen(tab);
             });
             return;
@@ -475,27 +467,6 @@ function onWindowUpdateCheckInterval() {
         });
         return;
 
-        // else if (dock.left != dockDims.left || dock.top != dockDims.top) {
-        //     // dock window is being moved; keep sidebar with it
-        //     sidebarDims.left += (dock.left - dockDims.left);
-        //     sidebarDims.top += (dock.top - dockDims.top);
-        // }
-
-        // Update stored metrics
-        // dockDims = { left: dock.left, top: dock.top, width: dock.width, height: dock.height, state: dock.state };
-        // dockDims.width = dock.width;
-        // dockDims.width = dock.width;
-
-        // Resize sidebar
-        // sidebarHandler.resizingSidebar = true;
-        // positionWindow(sidebarHandler.windowId, {
-        //     left: sidebarDims.left,
-        //     top: sidebarDims.top,
-        //     width: sidebarDims.width,
-        //     height: sidebarDims.height
-        // }, function() {
-        //     TimeoutManager.reset('resetResizingSidebar', onResetResizingSidebar, 500);
-        // });
     });
 }
 

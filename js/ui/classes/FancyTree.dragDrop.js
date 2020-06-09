@@ -228,48 +228,6 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
     var overItemRow = treeObj.getItemRow(overRow);
     var overItemRowContent = treeObj.getItemRowContent(overRow);
 
-    // TODO for left-of-node drops:
-    //  place node after the node which is at the level that we're gonna drop at,
-    //  rather than 'before first child'
-    // TODO for bottompadding drops:
-    //  start with the last top level node in the tree
-    //  if it can accept drop, this is our target - rel 'after'
-    //  otherwise repeat test with the last CHILD of the node just tested for drop-accept
-    //  and repeat through all descendant levels
-    //  if still cannot find a node in last top level node's last-descendants, repeat test
-    //  for next-to-last toplevel node node and so on until we have tried all the toplevel
-    //  nodes; if still cannot find a toplevel node match by here then just try to use
-    //  last node in entire tree and if we cannot accept a drop on that, deny the drop.
-    //  in short preferring shallower nodes as a first criteria,
-    //  and later-in-the-tree nodes as a second criteria, where passing the first
-    //  means we are happy with that result, if failing the first then we try
-    //  to find one matching the second criteria at one level deeper in the tree
-
-    // var isLeftOfNode = (evt.pageX - overItemRowContent.position().left < 0);
-    // console.log('TO LEFT: ', isLeftOfNode);
-
-    // if (treeObj.draggingOverRow && treeObj.draggingOverRow.length == 1) {
-    //     treeObj.draggingOverRow.removeClass('ftChildrenDropTarget');
-    // }
-
-    // if (isLeftOfNode) {
-    //     // console.log('selfish dragon test', overRow, treeObj.draggingRow);
-    //     console.log('target test', target, target.parent().closest('.ftRowNode')[0].id);
-    //     overRow = target.parent().closest('.ftRowNode').parent().closest('.ftRowNode');
-    //     if (overRow.length == 0) {
-    //         overRow = overRow.parent().closest('.ftRowNode');
-    //     }
-    //     // if (overRow.is(treeObj.draggingRow)) {
-    //     //     console.log('selfish dragon', overRow);
-    //     //     overRow = overRow.parent().closest('.ftRowNode').parent().closest('.ftRowNode');
-    //     // }
-    //     // else {
-    //     // }
-    //     overItemRow = treeObj.getItemRow(overRow);
-    //     overItemRowContent = treeObj.getItemRowContent(overRow);
-    //     overRow.addClass('ftChildrenDropTarget');
-    // }
-
     var draggingParams = treeObj.getRowTypeParams(treeObj.draggingRow);
     var allowedDropTargets = draggingParams.allowedDropTargets;
     var draggingToRowType = overRow.attr('rowtype');
@@ -277,11 +235,8 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
     var canAcceptDropTo = (allowedDropTargets.indexOf(draggingToRowType) >= 0);
 
     if (!canAcceptDropTo) {
-        // console.log('rejecting drag over', overRow.attr('id'));
         return;
     }
-
-    // console.log('accepting drag over', overRow.attr('id'));
 
     var rowHeight = overItemRow.height();
     var topDelta = evt.pageY - overItemRow.offset().top;
@@ -294,11 +249,6 @@ FancyTree.prototype.onItemRowMouseMove = function(evt) {
     var isCollapsed = overRow.hasClass('ftCollapsed');
     var underRoot = overRow.parent().parent().hasClass('ftRoot');
 
-    // if (isLeftOfNode) {
-    //     drag = ['after', overRow];
-    //     console.log(drag[1]);
-    // }
-    //else
     if (treeObj.multiSelection.is(overRow)) {
         // dropping on the row we dragged from; just append to it
         drag = ['append', overItemRowContent];
@@ -391,10 +341,6 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
         return false;
     }
 
-    // if (this.draggingOverRow && this.draggingOverRow.length == 1) {
-    //     this.draggingOverRow.removeClass('ftChildrenDropTarget');
-    // }
-
     if (!this.canAcceptDropTo || !this.draggingOverRow) {
         return false;
     }
@@ -428,10 +374,6 @@ FancyTree.prototype.onItemRowDrop = function(evt, ui) {
         if (self.onRowsMoved) {
             self.onRowsMoved(moves);
         }
-
-        // if ($(evt.toElement).hasClass('ftBottomPadding')) {
-        //     self.scrollTargetElem.scrollTo('+=200', { duration: 0 });
-        // };
 
         setTimeout(function() {
             self.dropping = false;

@@ -61,7 +61,6 @@ ChromeWindowFocusTracker.prototype = {
         }
         topIndex = topIndex || 0;
         var index = Math.max(0, this.windowIds.length - topIndex - 1);
-        // log(this.windowIds[index], this.windowIds);
         return this.windowIds[index];
     },
 
@@ -71,7 +70,6 @@ ChromeWindowFocusTracker.prototype = {
         }
         this.remove(windowId);
         this.windowIds.push(windowId);
-        // log(windowId, this.windowIds);
         return true;
     },
 
@@ -82,7 +80,6 @@ ChromeWindowFocusTracker.prototype = {
             return false;
         }
         this.windowIds.splice(index, 1);
-        // log('Removed windowId', windowId, this.windowIds);
         return true;
     },
 

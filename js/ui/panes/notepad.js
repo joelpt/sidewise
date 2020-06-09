@@ -3,10 +3,28 @@ var TAB_INSERT_STRING = '  ';
 
 initSidebarPane();
 
-$(document).ready(onReady);
+$(document).ready(() => {
+    // this call is wrapped in a fn closure because jQuery ready() doesn't like
+    // being passed async fns
+    onReady(); 
+});
 
-function onReady() {
+async function onReady() {
     setI18NText();
+
+    var notepadData = await settings.loadData('notepadContent', '');
+
+    if (notepadData === '') {
+        // If notepad data was previously stored in localStorage, migrate it now
+        var oldData = settings.get('notepadContent', '');
+
+        if (oldData !== '') {
+            await settings.saveData('notepadContent', oldData);
+            settings.set('notepadContent', undefined);
+            notepadData = oldData;
+            console.log('Migrated notepad data to chrome.storage.local');
+        }
+    }
 
     $('#notepad')
         .keyup(onNotepadKeyUp)
@@ -38,8 +56,8 @@ function onNotepadKeyDown(evt) {
     }
 }
 
-function saveNotepad() {
-    settings.set('notepadContent', $('#notepad').val());
+async function saveNotepad() {
+    await settings.saveData('notepadContent', $('#notepad').val());
 
     var dateVal = Date.now();
     settings.set('notepadSavedAt', dateVal);

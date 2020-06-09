@@ -200,7 +200,6 @@ function PageTreeCallbackProxyListener(op, args)
         return;
     }
 
-    // log(op, args);
     switch (op)
     {
         case 'add':

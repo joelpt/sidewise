@@ -1,3 +1,6 @@
+// Used to detect when Chrome is showing a malware warning page, which can cause the Sidewide sidebar to also
+// show as a malware warning page due to its loading of favicons from malware-warning sites.
+
 var IconTester = function() {
     this.testTab = undefined;
     this.testResetTime = undefined;
