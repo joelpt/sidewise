@@ -12,18 +12,18 @@ module.exports = function(grunt) {
 		copy: {
 			dist: {
 				files: [
-					{ 
-						expand: true, 
+					{
+						expand: true,
 						src: [
 							'{js,images,_locales,panes,css}/**',
 							'*.{js,html}',
 							'!Gruntfile.js',
 							'manifest.json',
-							'LICENSE.txt',
+							'LICENSE',
 							'NOTICE'],
 						dest: distDir
 					}
-				]	
+				]
 			}
 		},
 		usebanner: {
@@ -31,8 +31,8 @@ module.exports = function(grunt) {
 				options: {
 					position: 'top',
 					banner: '/*\n' +
-							' * Copyright 2019 Joel Thornton <sidewise@joelpt.net>\n' + 
-							' * Licensed under the MIT license. See LICENSE.txt for details.\n' +
+							' * Licensed under the Creative Commons Zero (CC0) license.\n' +
+							' * See LICENSE for details.\n' +
 							' */',
 					linebreak: true
 				},
@@ -47,11 +47,11 @@ module.exports = function(grunt) {
 					archive: distArchive
 				},
 				files: [
-					{ 
+					{
 						expand: true,
 						cwd: distDir,
-						src: ['**/*' ], 
-						dest: '/' 
+						src: ['**/*' ],
+						dest: '/'
 					}
 				]
 			}
