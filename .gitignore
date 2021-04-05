@@ -3,3 +3,6 @@
 /TEST.js
 node_modules
 dist
+sidewise.code-workspace
+.idea
+.DS_Store
