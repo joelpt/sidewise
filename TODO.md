@@ -1,0 +1,9 @@
+## Todos: top known issues to fix
+
+* Remove donation flows and associated code/HTML/CSS
+* Remove specialized super() behavior. See `js/util/util.js:extendClass()` implementation and notes at line 362 (from "TODO drop smart surrogate logic"). I believe this implementation is overwrought and arose because of a misunderstanding by me (original author) around how calling should work in an OO class hierarchy. Note that just removing the surrogate behavior will cause some parts of the code to break where this special behavior is expected. Possible fix strategy: tentatively replace each usage of `extendClass()` with a version that does NOT perform the surrogate behavior, and test the extension. If it breaks, then one of the classes involved is affected by the surrogate behavior.
+* Remove old video player tracking code from content-script.js and related files and adopt use of Chrome extension api for detecting which tabs are outputting audio instead, e.g. `tabs.query({ audible: true })`
+* In some cases, Sidewise can get 'out of sync' between Chrome's tab bar and Sidewise's tree. This may be connected to a problem in onTabCreated() where an error accessing tab.id, tab.windowId, or tab.openerTabId.
+* The MonitorInfo class and 'detect-monitor.html' file exist solely to workaround a deficiency Chrome had with regard to providing accurate multiple-monitor metrics data when this was implemented (ca. 2012). It is probable (but untested) that this code is no longer necessary; see https://developer.chrome.com/docs/extensions/reference/system_display/
+* The ChromeWindowFocusTracker class exhibits problematic behavior on some Linux window managers. This most likely is related to the particular sequence of window events raised on Windows vs Linux.
+* The right-click menu within Sidewise does not work properly on MacOS: the menu closes immediately upon mouse release. Most likely related to the particular sequence of mouse events raised on Windows vs MacOS.
