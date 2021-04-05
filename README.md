@@ -1,4 +1,4 @@
-# sidewise
+# Sidewise Tree Style Tabs
 Persistent sidebar extension for Chrome featuring tree style tabs and tab hibernation.
 
 This is the initial commit to github of the Sidewise codebase, in preparation for making it public.
