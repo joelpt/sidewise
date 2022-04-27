@@ -9,7 +9,7 @@
   "author": "Joel Thornton <sidewise@joelpt.net>",
   "license": "SEE LICENSE IN LICENSE.txt",
   "devDependencies": {
-    "grunt": "^1.0.1",
+    "grunt": "^1.5.2",
     "grunt-banner": "^0.6.0",
     "grunt-cli": "^1.2.0",
     "grunt-contrib-clean": "^1.0.0",
